@@ -10,32 +10,32 @@ interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   {
     label: "Home",
-    href: "/protected/home",
+    href: "/home",
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
     label: "Campus",
-    href: "/protected/campus",
+    href: "/campus",
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
     label: "Propose FTL",
-    href: "/protected/propose-ftl",
+    href: "/propose-ftl",
     requiredRoles: ["CHAIR", "ADMIN"],
   },
   {
     label: "Evaluate FTL",
-    href: "/protected/evaluate-ftl",
+    href: "/evaluate-ftl",
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
     label: "My Faculty Load",
-    href: "/protected/my-ftl",
+    href: "/my-ftl",
     requiredRoles: ["FACULTY"],
   },
   {
     label: "User Management",
-    href: "/protected/user",
+    href: "/user",
     requiredRoles: ["ADMIN"],
   },
 ];

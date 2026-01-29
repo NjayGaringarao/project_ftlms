@@ -1,5 +1,4 @@
 import UnderConstruction from "@/components/ui/under-construction";
-import React from "react";
 
 const MyFTLPage = () => {
   return (

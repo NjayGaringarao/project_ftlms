@@ -5,28 +5,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Link from "next/link";
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">
-                Thank you for signing up!
-              </CardTitle>
-              <CardDescription>Check your email to confirm</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                You&apos;ve successfully signed up. Please check your email to
-                confirm admin account before signing in.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+    <Card className="bg-background/90 backdrop-blur-md md:backdrop-blur-none md:bg-background h-screen rounded-none flex flex-col justify-center md:p-6">
+      <CardHeader>
+        <CardTitle className="text-4xl">Nice!</CardTitle>
+        <CardDescription>Check your email to confirm</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-12">
+        <p className="text-sm text-muted-foreground">
+          You&apos;ve successfully created admin account. You are one step away
+          from implementing Faculty Teaching Load Management System.
+        </p>
+        <Link
+          href="/auth/login"
+          className=" bg-foreground text-background rounded-sm py-2 px-3 w-fit"
+        >
+          Continue to Login
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
