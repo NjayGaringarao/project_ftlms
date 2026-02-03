@@ -15,10 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +37,8 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="bg-background/90 backdrop-blur-md md:backdrop-blur-none md:bg-background h-screen rounded-none flex flex-col justify-center md:p-6">
+    <>
+      <Card className="bg-transparent rounded-none flex flex-col justify-center border-none shadow-none">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
@@ -88,6 +85,6 @@ export function LoginForm({
           </form>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

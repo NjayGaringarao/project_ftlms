@@ -5,7 +5,7 @@ import { NAV_ITEMS, UserRole } from "@/types/navigation";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { LogoutButton } from "@/components/logout-button";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 interface SidebarNavProps {
   userActiveRoles: UserRole[];

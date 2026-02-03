@@ -1,26 +1,40 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/utils/style";
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ error: string }> }) {
-  const params = await searchParams
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string }>;
+}) {
+  const params = await searchParams;
+  const errorTitle = params?.error || "Sorry, something went wrong";
+  const errorMessage =
+    params?.message || "An unexpected error occurred. Please try again.";
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Sorry, something went wrong.</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {params?.error ? (
-                <p className="text-sm text-muted-foreground">Code error: {params.error}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">An unspecified error occurred.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+    <div className={cn("flex flex-col gap-6")}>
+      <Card className="bg-transparent rounded-none flex flex-col justify-center border-none shadow-none">
+        <CardHeader>
+          <CardTitle className="text-2xl">{errorTitle}</CardTitle>
+          <CardDescription>{errorMessage}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Button asChild>
+            <Link href="/auth/login">Back to Login</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/auth/forgot-password">Request Password Reset</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }

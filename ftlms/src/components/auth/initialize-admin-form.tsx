@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { signUp } from "@/lib/auth/actions";
+import { initializeAdmin } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 
-export function SignUpForm({
+export function InitializeAdminForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
@@ -24,7 +24,7 @@ export function SignUpForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleInitialize = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -36,7 +36,7 @@ export function SignUpForm({
     }
 
     try {
-      const result = await signUp(email, password);
+      const result = await initializeAdmin(email, password);
       if (result?.error) {
         setError(result.error);
       }
@@ -49,13 +49,13 @@ export function SignUpForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="bg-background/90 backdrop-blur-md md:backdrop-blur-none md:bg-background h-screen rounded-none flex flex-col justify-center md:p-6">
+      <Card className="bg-transparent rounded-none flex flex-col justify-center border-none shadow-none">
         <CardHeader>
-          <CardTitle className="text-2xl">Initialize</CardTitle>
+          <CardTitle className="text-2xl">Initialize Administrator</CardTitle>
           <CardDescription>Create an Admin Account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignUp}>
+          <form onSubmit={handleInitialize}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -111,8 +111,8 @@ export function SignUpForm({
                     address.
                   </li>
                   <li className="text-red-600">
-                    Email address cannot change it until it was verified thru
-                    e-mail.
+                    Email address cannot be changed until it has been verified
+                    through e-mail.
                   </li>
                   <li>
                     Contact the developer in case you have accidently registered

@@ -9,7 +9,7 @@ import Link from "next/link";
 
 export default function Page() {
   return (
-    <Card className="bg-background/90 backdrop-blur-md md:backdrop-blur-none md:bg-background h-screen rounded-none flex flex-col justify-center md:p-6">
+    <Card className="bg-transparent rounded-none flex flex-col justify-center border-none shadow-none">
       <CardHeader>
         <CardTitle className="text-4xl">Nice!</CardTitle>
         <CardDescription>Check your email to confirm</CardDescription>
