@@ -4,31 +4,31 @@ export const NAV_ITEMS: NavigationItem[] = [
   {
     label: "Home",
     href: "/home",
+    icon: "home",
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
-    label: "Campus",
-    href: "/campus",
+    label: "University",
+    href: "/university",
+    icon: "building-2",
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
-    label: "Propose FTL",
-    href: "/propose-ftl",
-    requiredRoles: ["CHAIR", "ADMIN"],
-  },
-  {
-    label: "Evaluate FTL",
-    href: "/evaluate-ftl",
+    label: "FTL",
+    href: "/ftl",
+    icon: "file-text",
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
-    label: "My Faculty Load",
-    href: "/my-ftl",
-    requiredRoles: ["FACULTY"],
-  },
-  {
-    label: "User Management",
-    href: "/user",
+    label: "Users",
+    href: "/users",
+    icon: "users",
     requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Me",
+    href: "/me",
+    icon: "user",
+    requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
 ];
