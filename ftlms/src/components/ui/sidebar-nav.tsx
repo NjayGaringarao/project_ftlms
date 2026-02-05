@@ -7,26 +7,10 @@ import Image from "next/image";
 import { getNavigationItems } from "@/lib/navigation/items";
 import { useEffect, useState } from "react";
 import { NavigationItem } from "@/lib/navigation/types";
-import {
-  Home,
-  Building2,
-  FileText,
-  Users,
-  User,
-  LucideIcon,
-  LogOutIcon,
-} from "lucide-react";
+import { LogOutIcon } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "./button";
-
-// Map icon identifiers to Lucide components
-const iconMap: Record<string, LucideIcon> = {
-  home: Home,
-  "building-2": Building2,
-  "file-text": FileText,
-  users: Users,
-  user: User,
-};
+import { mapIcon } from "@/utils/icon";
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -58,8 +42,9 @@ export function SidebarNav() {
         className="w-full p-3"
       />
       {menuItems.map((item) => {
-        const isActive = pathname === item.href;
-        const Icon = item.icon ? iconMap[item.icon] : null;
+        const isActive =
+          pathname === item.href || pathname.startsWith(item.href + "/");
+        const Icon = mapIcon(item.icon);
         return (
           <Link
             key={item.href}
