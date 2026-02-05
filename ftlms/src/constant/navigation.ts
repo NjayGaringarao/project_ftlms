@@ -1,13 +1,6 @@
-// Define the base roles based on your ERD tables
-export type UserRole = "ADMIN" | "CHAIR" | "FACULTY" | "EVALUATOR" | "DIRECTOR";
+import { NavigationItem } from "@/lib/navigation/types";
 
-interface NavItem {
-  label: string;
-  href: string;
-  requiredRoles: UserRole[]; // Any role in this list grants access
-}
-
-export const NAV_ITEMS: NavItem[] = [
+export const NAV_ITEMS: NavigationItem[] = [
   {
     label: "Home",
     href: "/home",

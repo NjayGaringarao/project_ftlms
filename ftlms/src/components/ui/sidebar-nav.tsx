@@ -1,41 +1,44 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { NAV_ITEMS, UserRole } from "@/types/navigation";
+import { cn } from "@/utils/style";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { getNavigationItems } from "@/lib/navigation/items";
+import { useEffect, useState } from "react";
+import { NavigationItem } from "@/lib/navigation/types";
 
-interface SidebarNavProps {
-  userActiveRoles: UserRole[];
-}
-
-export function SidebarNav({ userActiveRoles }: SidebarNavProps) {
+export function SidebarNav() {
   const pathname = usePathname();
+  const [menuItems, setMenuItems] = useState<NavigationItem[]>([]);
 
-  // The logic: "Show item if the user has AT LEAST ONE of the required roles"
-  const accessibleMenu = NAV_ITEMS.filter((item) =>
-    item.requiredRoles.some((role) => userActiveRoles.includes(role)),
-  );
+  useEffect(() => {
+    const loadMenuItems = async () => {
+      const items = await getNavigationItems();
+      setMenuItems(items);
+    };
+
+    loadMenuItems();
+  }, []);
 
   return (
-    <nav className="bg-foreground/5">
+    <nav className="bg-foreground/5 w-48 flex flex-col items-center justify-start">
       <Image
         src="/logo_light.png"
         alt="Logo"
-        width={50}
-        height={50}
+        width={128}
+        height={128}
         className="w-38 p-3"
       />
-      {accessibleMenu.map((item) => {
+      {menuItems.map((item) => {
         const isActive = pathname === item.href;
         return (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "block px-4 py-2 hover:bg-foreground/5",
+              "w-full px-4 py-2 hover:bg-foreground/5",
               isActive
                 ? "font-semibold border-l-4 border-foreground bg-foreground/5"
                 : "",
