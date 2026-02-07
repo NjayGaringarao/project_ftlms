@@ -66,3 +66,20 @@ export async function updatePassword(password: string) {
 
   redirect("/home");
 }
+
+export async function updateEmail(newEmail: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.updateUser(
+    { email: newEmail },
+    {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/change-email?next=/me/security`,
+    },
+  );
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: true };
+}
