@@ -49,12 +49,20 @@ create table semester (
 create table "user" (
   id uuid primary key references auth.users(id) on delete cascade,
   rank_id uuid references rank(id) on delete set null,
+  employment_status text 
+);
+
+create table identity (
+  user_id uuid primary key references "user"(id) on delete cascade,
   first_name text not null,
   middle_name text,
   last_name text not null,
   extension text,
-  employment_status text
-);
+  birth_date date not null,
+  address text,
+  zip_code text,
+  contact_number text 
+)
 
 create table degree (
   id uuid primary key default gen_random_uuid(),
