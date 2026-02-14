@@ -5,12 +5,7 @@ create extension if not exists "pgcrypto";
 -- CORE REFERENCE TABLES
 --------------------------------------------------
 
-create table rank (
-  id uuid primary key default gen_random_uuid(),
-  number int not null,
-  title text not null,
-  description text
-);
+
 
 create table department (
   id uuid primary key default gen_random_uuid(),
@@ -72,9 +67,17 @@ create table degree (
   year_earned int
 );
 
+create table rank (
+  id uuid primary key default gen_random_uuid(),
+  number int not null,
+  title text not null,
+  description text
+);
+
 create table designation (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references "user"(id) on delete cascade,
+  campus_id uuid references campus(id) on delete cascade,
   position text not null,
   department text,
   load int
