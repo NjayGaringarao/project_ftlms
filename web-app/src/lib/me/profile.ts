@@ -3,6 +3,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth/utils";
 import { Identity } from "@/models/identity";
+import { ExtendedDesignation } from "@/models/designation";
+import { Rank } from "@/models/rank";
+import { User } from "@/models/user";
 
 export type IdentityUpdateInput = {
   first_name: string;
@@ -83,4 +86,81 @@ export async function upsertIdentityForCurrentUser(
   }
 
   return { data: data as Identity };
+}
+
+export type ProfessionalInfo = {
+  user: User | null;
+  rank: Rank | null;
+  designations: ExtendedDesignation[];
+};
+
+export const getProfessionalInfoByUserId = async (
+  userId: string,
+): Promise<ProfessionalInfo> => {
+  const supabase = await createClient();
+
+  const { data: userData, error: userError } = await supabase
+    .from("user")
+    .select(
+      "id, rank_id, employment_status, rank ( id, number, title, description )",
+    )
+    .eq("id", userId)
+    .single();
+
+  if (userError && userError.code !== "PGRST116") {
+    console.error(
+      "lib.me.profile.getProfessionalInfoByUserId.user ::",
+      userError,
+    );
+  }
+
+  const user: User | null = userData
+    ? {
+        id: userData.id,
+        rank_id: userData.rank_id,
+        employment_status: userData.employment_status,
+      }
+    : null;
+
+  const rank: Rank | null = userData?.rank
+    ? Array.isArray(userData.rank)
+      ? (userData.rank[0] as Rank)
+      : (userData.rank as Rank)
+    : null;
+
+  const { data: designationData, error: designationError } = await supabase
+    .from("designation")
+    .select(
+      "id, user_id, campus_id, position, department, load, campus ( id, director_id, name, address, zip_code )",
+    )
+    .eq("user_id", userId)
+    .order("position", { ascending: true });
+
+  if (designationError) {
+    console.error(
+      "lib.me.profile.getProfessionalInfoByUserId.designations ::",
+      designationError,
+    );
+  }
+
+  const designations = (designationData ?? []).map((d: any) => ({
+    ...d,
+    campus: Array.isArray(d.campus) ? (d.campus[0] ?? null) : d.campus,
+  })) as ExtendedDesignation[];
+
+  return {
+    user,
+    rank,
+    designations,
+  };
+};
+
+export async function getProfessionalInfoForCurrentUser(): Promise<ProfessionalInfo> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return { user: null, rank: null, designations: [] };
+  }
+
+  return getProfessionalInfoByUserId(user.id);
 }
