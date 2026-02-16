@@ -62,9 +62,14 @@ create table identity (
 create table degree (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references "user"(id) on delete cascade,
-  level text not null,
-  name text not null,
-  year_earned int
+  academic_level text not null,
+  degree_type text not null,
+  field_of_study text not null,
+  year_graduated int,
+  institution text not null,
+  country_code text not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table rank (
