@@ -1,7 +1,9 @@
 import PersonalInformation from "@/components/me/personal-information";
 import ProfessionalInformation from "@/components/me/professional-information";
+import EducationInformation from "@/components/me/education-information";
 import { getCurrentUser } from "@/lib/auth/utils";
 import {
+  getDegreesByUserId,
   getIdentityByUserId,
   getProfessionalInfoByUserId,
 } from "@/lib/me/profile";
@@ -14,9 +16,10 @@ const ProfilePage = async () => {
     redirect("/auth/login");
   }
 
-  const [identity, professionalInfo] = await Promise.all([
+  const [identity, professionalInfo, degrees] = await Promise.all([
     getIdentityByUserId(user.id),
     getProfessionalInfoByUserId(user.id),
+    getDegreesByUserId(user.id),
   ]);
 
   return (
@@ -27,6 +30,7 @@ const ProfilePage = async () => {
         rank={professionalInfo.rank}
         designations={professionalInfo.designations}
       />
+      <EducationInformation initialDegrees={degrees} />
     </div>
   );
 };
