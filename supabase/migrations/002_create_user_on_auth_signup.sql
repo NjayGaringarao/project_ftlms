@@ -2,8 +2,8 @@
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public."user" (id)
-  VALUES (new.id);
+  INSERT INTO public."user" (id, employment_status)
+  VALUES (new.id, 'PART-TIME');
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth;
