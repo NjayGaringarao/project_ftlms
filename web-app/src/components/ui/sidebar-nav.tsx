@@ -33,14 +33,21 @@ export function SidebarNav() {
   }, []);
 
   return (
-    <nav className="bg-foreground/5 w-40 flex flex-col items-center justify-start">
+    <nav
+      className={cn(
+        "bg-foreground/5 w-full flex",
+        "flex-row items-center justify-around",
+        "md:w-40 md:flex-col md:justify-start md:items-start",
+      )}
+    >
       <Image
         src="/logo_light.png"
         alt="Logo"
         width={128}
         height={128}
-        className="w-full p-3"
+        className="w-full p-3 hidden md:block"
       />
+
       {menuItems.map((item) => {
         const isActive =
           pathname === item.href || pathname.startsWith(item.href + "/");
@@ -50,24 +57,26 @@ export function SidebarNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "w-full px-4 py-2 hover:bg-foreground/5 flex items-center gap-3 border-l-4",
+              "w-full px-4 py-2 hover:bg-foreground/5 flex items-center gap-3",
               isActive
                 ? "font-semibold border-foreground bg-foreground/5"
                 : "border-transparent",
+              "border-b-4 justify-center md:border-l-4 md:border-b-0 md:justify-start",
             )}
           >
             {Icon && <Icon className="w-5 h-5" />}
-            {item.label}
+
+            <span className="truncate hidden md:block">{item.label}</span>
           </Link>
         );
       })}
-      <Button
-        className="bg-transparent text-foreground text-base py-2 px-4 font-normal hover:bg-foreground/5 w-full rounded-none flex flex-row items-center justify-start"
+      <button
+        className="text-foreground text-base py-2 px-4 font-normal hover:bg-foreground/5 rounded-none flex flex-row items-center justify-start"
         onClick={logout}
       >
-        <LogOutIcon className="w-5 h-5 ml-3 mr-1" />
-        Logout
-      </Button>
+        <LogOutIcon className="w-5 h-5 ml-1 mr-1" />
+        <span className="truncate hidden md:block">Logout</span>
+      </button>
     </nav>
   );
 }
