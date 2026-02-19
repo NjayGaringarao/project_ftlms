@@ -1,21 +1,26 @@
-import { UserSummaryCard } from "@/components/users/user-summary-card";
+import { redirect } from "next/navigation";
 import { getUserById } from "@/lib/users/users";
+import { UserView } from "@/components/users/user-view";
 
 export const dynamic = "force-dynamic";
 
-type UserPageProps = {
+type ViewPageProps = {
   params: Promise<{ id: string }>;
 };
 
-const UserPage = async ({ params }: UserPageProps) => {
+const ViewPage = async ({ params }: ViewPageProps) => {
   const { id } = await params;
   const user = await getUserById(id);
 
+  if (!user) {
+    redirect("/users");
+  }
+
   return (
-    <div className="flex w-1/2 flex-col">
-      <UserSummaryCard user={user} />
+    <div className="flex w-2/3 flex-col">
+      <UserView user={user} />;
     </div>
   );
 };
 
-export default UserPage;
+export default ViewPage;

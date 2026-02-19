@@ -1,6 +1,8 @@
 import { Identity } from "./identity";
 import { Rank } from "./rank";
 
+export type UserRole = "FACULTY" | "CHAIR" | "EVALUATOR" | "DIRECTOR" | "ADMIN";
+
 export type User = {
   id: string;
   rank_id: string | null;

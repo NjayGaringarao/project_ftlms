@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle, UserPlus } from "lucide-react";
+import { AlertCircle, CheckCircle, User, UserPlus, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createUser } from "@/lib/users/actions";
+import Link from "next/link";
+import { Lock } from "lucide-react";
 
 type FormState = {
   email: string;
@@ -123,21 +125,23 @@ export const UserCreateForm = () => {
   };
 
   return (
-    <Card className="overflow-hidden m-4 -mb-2">
-      <CardHeader>
+    <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <UserPlus className="w-5 h-5" />
-          Create New User
+          User Information
         </CardTitle>
-        <p className="text-sm text-foreground/70">
-          Set up a new user account with authentication and profile details
-        </p>
+        <div className="flex flex-row items-center gap-4">
+          <Link href={`/users/`} className="text-foreground">
+            <X />
+          </Link>
+        </div>
       </CardHeader>
-      <CardContent className="overflow-y-auto">
+      <CardContent className="overflow-y-auto flex flex-col gap-8 py-6">
         <div className="space-y-4">
           {showSuccess && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-green-900">User Created</p>
                 <p className="text-sm text-green-800">
@@ -149,20 +153,23 @@ export const UserCreateForm = () => {
 
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <p className="text-red-900">{error}</p>
             </div>
           )}
 
           <div className="space-y-6">
             {/* Authentication Section */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3">
-                Authentication Details
-              </h3>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Lock className="w-5 h-5" />
+                <h3 className=" font-semibold">Authentication Credentials</h3>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="email">Email *</Label>
+                <div>
+                  <Label className="text-xs" htmlFor="email">
+                    Email *
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -176,8 +183,10 @@ export const UserCreateForm = () => {
                   />
                 </div>
 
-                <div className="md:col-span-2">
-                  <Label htmlFor="password">Password *</Label>
+                <div>
+                  <Label className="text-xs" htmlFor="password">
+                    Password *
+                  </Label>
                   <Input
                     id="password"
                     type="password"
@@ -194,13 +203,16 @@ export const UserCreateForm = () => {
             </div>
 
             {/* Personal Information Section */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3">
-                Personal Information
-              </h3>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <User className="w-5 h-5" />
+                <h3 className=" font-semibold">Personal Information</h3>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="firstName">First Name *</Label>
+                  <Label className="text-xs" htmlFor="firstName">
+                    First Name *
+                  </Label>
                   <Input
                     id="firstName"
                     placeholder="Enter first name"
@@ -214,7 +226,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="middleName">Middle Name</Label>
+                  <Label className="text-xs" htmlFor="middleName">
+                    Middle Name
+                  </Label>
                   <Input
                     id="middleName"
                     placeholder="Enter middle name"
@@ -228,7 +242,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Label className="text-xs" htmlFor="lastName">
+                    Last Name *
+                  </Label>
                   <Input
                     id="lastName"
                     placeholder="Enter last name"
@@ -242,7 +258,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="extension">Extension</Label>
+                  <Label className="text-xs" htmlFor="extension">
+                    Extension
+                  </Label>
                   <Input
                     id="extension"
                     placeholder="e.g. Jr., III"
@@ -256,7 +274,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="birthDate">Birth Date *</Label>
+                  <Label className="text-xs" htmlFor="birthDate">
+                    Birth Date *
+                  </Label>
                   <Input
                     id="birthDate"
                     type="date"
@@ -270,7 +290,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="contactNumber">Contact Number</Label>
+                  <Label className="text-xs" htmlFor="contactNumber">
+                    Contact Number
+                  </Label>
                   <Input
                     id="contactNumber"
                     placeholder="Enter contact number"
@@ -284,7 +306,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label className="text-xs" htmlFor="address">
+                    Address
+                  </Label>
                   <Input
                     id="address"
                     placeholder="Enter address"
@@ -298,7 +322,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="zipCode">ZIP Code</Label>
+                  <Label className="text-xs" htmlFor="zipCode">
+                    ZIP Code
+                  </Label>
                   <Input
                     id="zipCode"
                     placeholder="Enter ZIP code"
@@ -312,7 +338,9 @@ export const UserCreateForm = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="employmentStatus">Employment Status</Label>
+                  <Label className="text-xs" htmlFor="employmentStatus">
+                    Employment Status
+                  </Label>
                   <Input
                     id="employmentStatus"
                     placeholder="e.g. FULL_TIME, PART_TIME"

@@ -82,7 +82,7 @@ export const UsersList = ({ users }: UsersListProps) => {
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
             >
-              <option value="all">All statuses</option>
+              <option value="all">All Employment</option>
               {statuses.map((status) => (
                 <option key={status} value={status}>
                   {formatStatus(status)}
@@ -96,7 +96,12 @@ export const UsersList = ({ users }: UsersListProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div
+          className={cn(
+            "grid grid-cols-1 lg:grid-cols-3 gap-4",
+            !!selectedUserId && "flex flex-col gap-4",
+          )}
+        >
           {filteredUsers.length === 0 && (
             <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
               No users match your search.

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUserById } from "@/lib/users/users";
+import { getUserById, getRanks } from "@/lib/users/users";
 import { UserEditForm } from "@/components/users/user-edit-form";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ type EditPageProps = {
 
 const EditPage = async ({ params }: EditPageProps) => {
   const { id } = await params;
-  const user = await getUserById(id);
+  const [user, ranks] = await Promise.all([getUserById(id), getRanks()]);
 
   if (!user) {
     redirect("/users");
@@ -18,7 +18,7 @@ const EditPage = async ({ params }: EditPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <UserEditForm user={user} />{" "}
+      <UserEditForm user={user} ranks={ranks} />{" "}
     </div>
   );
 };
