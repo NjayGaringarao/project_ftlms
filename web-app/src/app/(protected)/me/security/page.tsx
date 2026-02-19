@@ -22,7 +22,7 @@ const SecurityPage = async ({
   }
 
   return (
-    <div className="p-6 bg-background w-full flex flex-col gap-6">
+    <div className="p-6 bg-background w-full flex flex-col gap-6 overflow-y-auto">
       <EmailChangeStatusBanner
         initialStatus={searchParams?.email_change_status}
         initialMessage={searchParams?.message}

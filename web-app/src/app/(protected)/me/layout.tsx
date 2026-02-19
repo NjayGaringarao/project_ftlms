@@ -3,7 +3,7 @@ import React from "react";
 
 const layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <TopBarNav
         title="Me"
         items={[
@@ -14,7 +14,7 @@ const layout = ({ children }: { children: React.ReactNode }) => {
         ]}
         icon="user"
       />
-      <div className="flex-1 overflow-y-auto">{children}</div>
+      <div className="flex flex-col h-full overflow-hidden">{children}</div>
     </div>
   );
 };

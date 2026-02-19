@@ -23,7 +23,7 @@ const ProfilePage = async () => {
   ]);
 
   return (
-    <div className="p-6 bg-background w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="p-6 bg-background w-full grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto">
       <PersonalInformation initialIdentity={identity} />
       <ProfessionalInformation
         user={professionalInfo.user}
