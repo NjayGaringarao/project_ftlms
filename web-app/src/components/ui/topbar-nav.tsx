@@ -21,10 +21,13 @@ export function TopBarNav({ title, items, icon }: TopBarNavProps) {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-row items-center bg-foreground/80 backdrop-blur-xs z-10 sticky top-0 w-full py-4 px-6 gap-2">
-      {Icon && <Icon className="w-8 h-8 text-background" />}
-      <p className="text-background text-2xl font-semibold">{title}</p>
-      <div className="flex flex-row gap-1 flex-1 h-12 items-center justify-end">
+    <div className="flex flex-row items-center justify-between bg-foreground/80 backdrop-blur-xs z-10 sticky top-0 w-full py-4 px-6 gap-2">
+      <div className="flex flex-row gap-2 items-center">
+        {Icon && <Icon className="w-8 h-8 text-background" />}
+        <p className="text-background text-2xl font-semibold">{title}</p>
+      </div>
+
+      <div className="flex flex-row gap-1 h-12 items-center overflow-x-auto overflow-y-hidden">
         {items.map((item) => {
           const isActive = pathname === item.href;
           return (

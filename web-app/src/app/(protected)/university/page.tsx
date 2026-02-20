@@ -2,7 +2,7 @@ import UnderConstruction from "@/components/ui/under-construction";
 
 const UniversityPage = () => {
   return (
-    <div className="h-full p-4">
+    <div className="flex-1 overflow-auto p-4">
       <UnderConstruction />
       <h1 className="text-3xl">University Page</h1>
       <h2 className="mt-4">

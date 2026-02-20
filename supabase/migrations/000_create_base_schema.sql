@@ -22,13 +22,6 @@ create table campus (
   zip_code text
 );
 
-create table college (
-  id uuid primary key default gen_random_uuid(),
-  department_id uuid references department(id) on delete set null,
-  campus_id uuid references campus(id) on delete set null,
-  description text
-);
-
 create table semester (
   id uuid primary key default gen_random_uuid(),
   academic_year text not null,
@@ -94,7 +87,8 @@ create table designation (
 
 create table program (
   id uuid primary key default gen_random_uuid(),
-  college_id uuid references college(id) on delete set null,
+  campus_id uuid references campus(id) on delete set null,
+  department_id uuid references department(id) on delete set null,
   chair_id uuid references "user"(id) on delete set null,
   name text not null,
   description text

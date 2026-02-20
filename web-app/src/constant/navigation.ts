@@ -10,7 +10,7 @@ export const NAV_ITEMS: NavigationItem[] = [
   {
     label: "University",
     href: "/university",
-    icon: "building-2",
+    icon: "landmark",
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
