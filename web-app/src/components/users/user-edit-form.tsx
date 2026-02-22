@@ -25,6 +25,7 @@ import {
   changeUserEmail,
   changeUserPassword,
 } from "@/lib/users/actions";
+import { DesignationAddForm } from "@/components/users/designation-add-form";
 import Link from "next/link";
 
 type UserEditFormProps = {
@@ -130,12 +131,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
   // UI States - Security
   const [isSecuritySaving, setIsSecuritySaving] = useState(false);
 
-  const [newDesignation, setNewDesignation] = useState({
-    job_title: "",
-    department_id: "",
-    load: "",
-  });
-
   // Handle Personal Data Change
   const handlePersonalChange = (
     field: keyof PersonalFormState,
@@ -154,26 +149,23 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     setProfessionalError("");
   };
 
-  // Handle Designation Addition
-  const handleAddDesignation = () => {
-    if (!newDesignation.job_title.trim()) {
-      setProfessionalError("Job title is required");
-      return;
-    }
-
+  // Handle Designation Addition (from DesignationAddForm)
+  const handleAddDesignation = (designation: any) => {
     setProfessionalData((prev) => ({
       ...prev,
       designations: [
         ...prev.designations,
         {
-          job_title: newDesignation.job_title.trim(),
-          department_id: newDesignation.department_id.trim() || null,
-          load: newDesignation.load ? parseInt(newDesignation.load) : null,
+          job_title: designation.job_title,
+          department_id: designation.department_id || null,
+          program_id: designation.program_id || null,
+          campus_id: designation.campus_id || null,
+          room_id: designation.room_id || null,
+          load: designation.load,
+          is_active: designation.is_active,
         },
       ],
     }));
-
-    setNewDesignation({ job_title: "", department_id: "", load: "" });
     setProfessionalError("");
   };
 
@@ -240,7 +232,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
   // PROFESSIONAL INFORMATION HANDLERS
   const handleResetProfessional = () => {
     setProfessionalData(savedProfessionalData);
-    setNewDesignation({ job_title: "", department_id: "", load: "" });
     setProfessionalError("");
     setProfessionalSuccess(false);
   };
@@ -264,7 +255,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
       }
 
       setSavedProfessionalData({ ...professionalData });
-      setNewDesignation({ job_title: "", department_id: "", load: "" });
       setProfessionalSuccess(true);
       setTimeout(() => setProfessionalSuccess(false), 3000);
     } finally {
@@ -631,24 +621,49 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
 
               {/* List of Current Designations */}
               {professionalData.designations.length > 0 && (
-                <div className="space-y-2 mb-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
                   {professionalData.designations.map((designation, idx) => (
                     <div
                       key={idx}
                       className="p-3 border rounded-lg bg-foreground/5 flex items-start justify-between"
                     >
-                      <div>
-                        <p className="font-medium">{designation.job_title}</p>
-                        {designation.department_id && (
-                          <p className="text-xs text-foreground/60">
-                            Department ID: {designation.department_id}
-                          </p>
-                        )}
-                        {designation.load && (
-                          <p className="text-xs text-foreground/60">
-                            Load: {designation.load}
-                          </p>
-                        )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{designation.job_title}</p>
+                          {designation.is_active === false && (
+                            <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1 mt-1">
+                          {designation.department_id && (
+                            <p className="text-xs text-foreground/60">
+                              Department: {designation.department_id}
+                            </p>
+                          )}
+                          {designation.program_id && (
+                            <p className="text-xs text-foreground/60">
+                              Program: {designation.program_id}
+                            </p>
+                          )}
+                          {designation.campus_id && (
+                            <p className="text-xs text-foreground/60">
+                              Campus: {designation.campus_id}
+                            </p>
+                          )}
+                          {designation.room_id && (
+                            <p className="text-xs text-foreground/60">
+                              Room: {designation.room_id}
+                            </p>
+                          )}
+                          {designation.load !== null &&
+                            designation.load !== undefined && (
+                              <p className="text-xs text-foreground/60">
+                                Load: {designation.load} hours
+                              </p>
+                            )}
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
@@ -663,80 +678,12 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                 </div>
               )}
 
-              {/* Add New Designation */}
-              <div className="border rounded-lg p-4 space-y-3 bg-foreground/2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="job_title" className="text-xs">
-                      Job Title *
-                    </Label>
-                    <Input
-                      id="job_title"
-                      placeholder="Enter job title"
-                      value={newDesignation.job_title}
-                      onChange={(e) =>
-                        setNewDesignation((prev) => ({
-                          ...prev,
-                          job_title: e.target.value,
-                        }))
-                      }
-                      className="mt-1"
-                      disabled={isProfessionalSaving}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="department_id" className="text-xs">
-                      Department ID
-                    </Label>
-                    <Input
-                      id="department_id"
-                      placeholder="Enter department UUID"
-                      value={newDesignation.department_id}
-                      onChange={(e) =>
-                        setNewDesignation((prev) => ({
-                          ...prev,
-                          department_id: e.target.value,
-                        }))
-                      }
-                      className="mt-1"
-                      disabled={isProfessionalSaving}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="load" className="text-xs">
-                      Load
-                    </Label>
-                    <Input
-                      id="load"
-                      type="number"
-                      placeholder="Enter load"
-                      value={newDesignation.load}
-                      onChange={(e) =>
-                        setNewDesignation((prev) => ({
-                          ...prev,
-                          load: e.target.value,
-                        }))
-                      }
-                      className="mt-1"
-                      disabled={isProfessionalSaving}
-                    />
-                  </div>
-
-                  <div className="flex items-end">
-                    <Button
-                      onClick={handleAddDesignation}
-                      disabled={isProfessionalSaving}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Designation
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              {/* Add New Designation Form */}
+              <DesignationAddForm
+                onAdd={handleAddDesignation}
+                isLoading={isProfessionalSaving}
+                error={professionalError}
+              />
             </div>
           </div>
           {/* Dedicated Save/Reset Buttons */}
@@ -768,7 +715,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
             user.
           </p>
 
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {/* Change Email */}
             <div className="p-4 border rounded-lg">
               <div className="flex items-center gap-2 mb-4">

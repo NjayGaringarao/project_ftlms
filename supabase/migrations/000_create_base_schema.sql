@@ -174,18 +174,21 @@ create table designation (
     is_active boolean not null default true,
     designated_at timestamptz not null default now(),
 
-    -- Must belong somewhere
-    constraint designation_requires_context check (
-        campus_id is not null
-        or department_id is not null
-        or program_id is not null
-        or room_id is not null
-    ),
-
     -- If program exists, department must exist
     constraint designation_program_requires_department check (
         program_id is null or department_id is not null
     )
+
+    -- Director for Instruction - only one active
+    CREATE UNIQUE INDEX idx_unique_director_for_instruction 
+    ON designation(job_title) 
+    WHERE job_title = 'Director for Instruction' AND is_active IS TRUE;
+
+    -- University President - only one active
+    CREATE UNIQUE INDEX idx_unique_university_president 
+    ON designation(job_title) 
+    WHERE job_title = 'University President' AND is_active IS TRUE;
+
 );
 
 

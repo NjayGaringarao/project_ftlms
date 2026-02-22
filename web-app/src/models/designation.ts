@@ -1,6 +1,36 @@
 import { Campus } from "./campus";
 import { Department } from "./department";
+import { Program } from "./program";
 import { User } from "./user";
+
+// Designation workflow types based on department.type
+export type DesignationWorkflow =
+  | "academic"
+  | "administrative"
+  | "student_services"
+  | "extension_services";
+
+// Academic workflow job titles
+export type AcademicJobTitle = "Program Chairperson" | "College Dean";
+
+// Administrative workflow job titles
+export type AdministrativeJobTitle =
+  | "University President"
+  | "Director for Instruction"
+  | "Campus Director";
+
+// Student Services workflow job titles
+export type StudentServicesJobTitle = "Coordinator" | "Director";
+
+// Extension Services allows free text
+export type ExtensionServicesJobTitle = string;
+
+// All valid job titles (union of specific types)
+export type DesignationJobTitle =
+  | AcademicJobTitle
+  | AdministrativeJobTitle
+  | StudentServicesJobTitle
+  | ExtensionServicesJobTitle;
 
 export type Designation = {
   id: string;
@@ -20,9 +50,5 @@ export type ExtendedDesignation = Designation & {
   user: User;
   campus: Campus | null;
   department: Department | null;
-};
-
-export type DesignationWithCampus = Designation & {
-  campus: Pick<Campus, "id" | "name"> | null;
-  department: Pick<Department, "id" | "code" | "name" | "type"> | null;
+  program: Program | null;
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -16,6 +16,7 @@ import {
   UserCircle,
   Edit,
   AlertTriangle,
+  WeightTilde,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,12 @@ export const UserView = ({ user }: UserViewProps) => {
     ? new Date(user.identity.birth_date)
     : null;
   const age = birthDate ? calculateAge(birthDate) : null;
+
+  useEffect(() => {
+    console.log(
+      `User designations updated: ${JSON.stringify(user.designations, null, 2)}`,
+    );
+  }, [user.designations]);
 
   return (
     <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
@@ -179,37 +186,45 @@ export const UserView = ({ user }: UserViewProps) => {
 
             {/* Designations */}
             <div className="md:col-span-2">
-              <p className="text-xs text-foreground/60 mb-3">Designations</p>
+              <div className="flex flex-row items-center gap-2 mb-1">
+                <Briefcase className="w-5 h-5 text-foreground/60 mt-0.5" />
+                <p className="text-xs text-foreground/60">Designations</p>
+              </div>
               {user.designations && user.designations.length > 0 ? (
-                <div className="space-y-2">
+                <div className="md:col-span-2 grid grid-cols-1 lg:grid-cols-3 gap-4">
                   {user.designations.map((designation) => (
                     <div
                       key={designation.id}
                       className="p-3 border rounded-lg bg-foreground/5"
                     >
-                      <p className="font-medium">{designation.job_title}</p>
-                      {designation.department?.name && (
-                        <p className="text-xs text-foreground/60">
-                          Department: {designation.department.name}
-                        </p>
-                      )}
-                      {!designation.department?.name &&
-                        designation.department_id && (
-                          <p className="text-xs text-foreground/60">
-                            Department ID: {designation.department_id}
-                          </p>
-                        )}
+                      <div className="flex flex-row gap-2 items-center">
+                        <p className="font-medium">{designation.job_title}</p>
+                        <div className="flex flex-row items-center text-foreground/60 gap-1">
+                          <p className="text-sm">{designation.load}</p>
+                          <WeightTilde className="w-4" />
+                        </div>
+                      </div>
+
+                      {/** CAMPUS */}
                       {designation.campus && (
                         <p className="text-xs text-foreground/60">
-                          Campus: {designation.campus.name}
+                          {designation.campus.name || "Unnamed"} Campus
                         </p>
                       )}
-                      {designation.load !== null &&
-                        designation.load !== undefined && (
-                          <p className="text-xs text-foreground/60">
-                            Load: {designation.load} hours
-                          </p>
-                        )}
+
+                      {/** DEPARTMENT */}
+                      {designation.department?.name && (
+                        <p className="text-xs text-foreground/60">
+                          {designation.department.name || "Unnamed Department"}
+                        </p>
+                      )}
+
+                      {/** PROGRAM */}
+                      {designation.program?.name && (
+                        <p className="text-xs text-foreground/60">
+                          {designation.program.name || "Unnamed Program"}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

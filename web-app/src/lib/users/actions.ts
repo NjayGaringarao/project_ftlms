@@ -269,13 +269,23 @@ export async function updateUserProfessional(
 
     // Insert new designations
     if (input.designations.length > 0) {
-      const invalidDesignation = input.designations.find(
-        (d) =>
-          !d.campus_id?.trim() &&
-          !d.department_id?.trim() &&
-          !d.program_id?.trim() &&
-          !d.room_id?.trim(),
-      );
+      // Allow context-less roles (Higher-ups: University President, Director for Instruction)
+      const contextLessJobTitles = [
+        "University President",
+        "Director for Instruction",
+      ];
+
+      const invalidDesignation = input.designations.find((d) => {
+        const hasContext =
+          d.campus_id?.trim() ||
+          d.department_id?.trim() ||
+          d.program_id?.trim() ||
+          d.room_id?.trim();
+        const isContextLessRole = contextLessJobTitles.includes(d.job_title);
+
+        // Invalid if no context AND not a context-less role
+        return !hasContext && !isContextLessRole;
+      });
 
       if (invalidDesignation) {
         return {

@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { Identity } from "@/models/identity";
 import { AcademicRank } from "@/models/rank";
-import { DesignationWithCampus } from "@/models/designation";
+import { ExtendedDesignation } from "@/models/designation";
 import { Degree } from "@/models/degree";
 
 export type UsersListItem = {
@@ -15,7 +15,7 @@ export type UsersListItem = {
 
 export type UserDetail = UsersListItem & {
   rank: AcademicRank | null;
-  designations: DesignationWithCampus[];
+  designations: ExtendedDesignation[];
   degrees: Degree[];
 };
 
@@ -75,14 +75,14 @@ const mapRowToUserDetail = (row: UsersRpcRow): UserDetail => {
       }
     : null;
 
-  let designations: DesignationWithCampus[] = [];
+  let designations: ExtendedDesignation[] = [];
   let degrees: Degree[] = [];
 
   try {
     if (typeof row.designations === "string") {
-      designations = JSON.parse(row.designations) as DesignationWithCampus[];
+      designations = JSON.parse(row.designations) as ExtendedDesignation[];
     } else if (Array.isArray(row.designations)) {
-      designations = row.designations as DesignationWithCampus[];
+      designations = row.designations as ExtendedDesignation[];
     }
   } catch (e) {
     console.error("Failed to parse designations JSON:", e);

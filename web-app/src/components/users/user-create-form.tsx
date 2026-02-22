@@ -220,6 +220,12 @@ export const UserCreateForm = () => {
                     onChange={(event) =>
                       handleChange("firstName", event.target.value)
                     }
+                    onBlur={(event) =>
+                      handleChange(
+                        "firstName",
+                        event.target.value.toUpperCase(),
+                      )
+                    }
                     className="mt-1"
                     disabled={isSaving}
                   />
@@ -235,6 +241,12 @@ export const UserCreateForm = () => {
                     value={formData.middleName}
                     onChange={(event) =>
                       handleChange("middleName", event.target.value)
+                    }
+                    onBlur={(event) =>
+                      handleChange(
+                        "middleName",
+                        event.target.value.toUpperCase(),
+                      )
                     }
                     className="mt-1"
                     disabled={isSaving}
@@ -252,6 +264,9 @@ export const UserCreateForm = () => {
                     onChange={(event) =>
                       handleChange("lastName", event.target.value)
                     }
+                    onBlur={(event) =>
+                      handleChange("lastName", event.target.value.toUpperCase())
+                    }
                     className="mt-1"
                     disabled={isSaving}
                   />
@@ -267,6 +282,12 @@ export const UserCreateForm = () => {
                     value={formData.extension}
                     onChange={(event) =>
                       handleChange("extension", event.target.value)
+                    }
+                    onBlur={(event) =>
+                      handleChange(
+                        "extension",
+                        event.target.value.toUpperCase(),
+                      )
                     }
                     className="mt-1"
                     disabled={isSaving}
@@ -284,6 +305,12 @@ export const UserCreateForm = () => {
                     onChange={(event) =>
                       handleChange("birthDate", event.target.value)
                     }
+                    onBlur={(event) =>
+                      handleChange(
+                        "birthDate",
+                        event.target.value.toUpperCase(),
+                      )
+                    }
                     className="mt-1"
                     disabled={isSaving}
                   />
@@ -300,6 +327,12 @@ export const UserCreateForm = () => {
                     onChange={(event) =>
                       handleChange("contactNumber", event.target.value)
                     }
+                    onBlur={(event) =>
+                      handleChange(
+                        "contactNumber",
+                        event.target.value.toUpperCase(),
+                      )
+                    }
                     className="mt-1"
                     disabled={isSaving}
                   />
@@ -315,6 +348,9 @@ export const UserCreateForm = () => {
                     value={formData.address}
                     onChange={(event) =>
                       handleChange("address", event.target.value)
+                    }
+                    onBlur={(event) =>
+                      handleChange("address", event.target.value.toUpperCase())
                     }
                     className="mt-1"
                     disabled={isSaving}
@@ -341,16 +377,18 @@ export const UserCreateForm = () => {
                   <Label className="text-xs" htmlFor="employmentStatus">
                     Employment Status
                   </Label>
-                  <Input
+                  <select
                     id="employmentStatus"
-                    placeholder="e.g. FULL_TIME, PART_TIME"
                     value={formData.employmentStatus}
                     onChange={(event) =>
                       handleChange("employmentStatus", event.target.value)
                     }
-                    className="mt-1"
+                    className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
                     disabled={isSaving}
-                  />
+                  >
+                    <option value="FULL_TIME">Full Time</option>
+                    <option value="PART_TIME">Part Time</option>
+                  </select>
                 </div>
               </div>
             </div>
