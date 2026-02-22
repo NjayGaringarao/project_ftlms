@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { CampusView } from "@/components/university/campus-view";
-import { getCampusById, getDirectorOptions } from "@/lib/university/campuses";
+import { getCampusById } from "@/lib/university/campuses";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +10,7 @@ type ViewPageProps = {
 
 const ViewPage = async ({ params }: ViewPageProps) => {
   const { id } = await params;
-  const [campus, directors] = await Promise.all([
-    getCampusById(id),
-    getDirectorOptions(),
-  ]);
+  const campus = await getCampusById(id);
 
   if (!campus) {
     redirect("/university/campuses");
@@ -21,7 +18,7 @@ const ViewPage = async ({ params }: ViewPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <CampusView campus={campus} directors={directors} />
+      <CampusView campus={campus} />
     </div>
   );
 };

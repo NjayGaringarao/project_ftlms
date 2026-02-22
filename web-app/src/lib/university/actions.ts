@@ -82,6 +82,11 @@ const revalidateRanksPaths = (id?: string) => {
 type DepartmentInput = {
   code: string;
   name: string;
+  type:
+    | "ACADEMIC"
+    | "ADMINISTRATIVE"
+    | "STUDENT_SERVICES"
+    | "EXTENSION_SERVICES";
   description?: string | null;
 };
 
@@ -100,6 +105,7 @@ export async function createDepartment(
   const payload = {
     code: normalizeCode(input.code),
     name: normalizeName(input.name),
+    type: input.type,
     description: normalizeDescription(input.description),
   };
 
@@ -129,6 +135,7 @@ export async function updateDepartment(
   const payload = {
     code: normalizeCode(input.code),
     name: normalizeName(input.name),
+    type: input.type,
     description: normalizeDescription(input.description),
   };
 
@@ -167,7 +174,6 @@ export async function deleteDepartment(
 
 type CampusInput = {
   name: string;
-  director_id?: string | null;
   address?: string | null;
   zip_code?: string | null;
 };
@@ -178,7 +184,6 @@ type UpdateCampusInput = CampusInput & {
 
 const normalizeCampusInput = (input: CampusInput) => ({
   name: normalizeName(input.name),
-  director_id: input.director_id?.trim() || null,
   address: normalizeDescription(input.address),
   zip_code: normalizeDescription(input.zip_code),
 });
@@ -244,7 +249,8 @@ export async function deleteCampus(
 
 type TermInput = {
   academic_year: string;
-  order: number;
+  term_code: string;
+  sequence: number;
   start: string;
   end: string;
 };
@@ -255,7 +261,8 @@ type UpdateTermInput = TermInput & {
 
 const normalizeTermInput = (input: TermInput) => ({
   academic_year: normalizeName(input.academic_year),
-  order: input.order,
+  term_code: normalizeName(input.term_code),
+  sequence: input.sequence,
   start: input.start,
   end: input.end,
 });
@@ -265,7 +272,9 @@ export async function createTerm(
 ): Promise<{ data?: { id: string }; error?: string }> {
   if (!input.academic_year?.trim())
     return { error: "Academic year is required" };
-  if (!Number.isFinite(input.order)) return { error: "Term order is required" };
+  if (!input.term_code?.trim()) return { error: "Term code is required" };
+  if (!Number.isFinite(input.sequence))
+    return { error: "Term sequence is required" };
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
 
@@ -276,14 +285,14 @@ export async function createTerm(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("term")
+    .from("academic_term")
     .insert(normalizeTermInput(input))
     .select("id")
     .single();
 
   if (error) {
     return {
-      error: mapDuplicateError("Term", "academic year and order", error),
+      error: mapDuplicateError("Term", "academic year and term code", error),
     };
   }
 
@@ -297,7 +306,9 @@ export async function updateTerm(
   if (!input.id?.trim()) return { error: "Term ID is required" };
   if (!input.academic_year?.trim())
     return { error: "Academic year is required" };
-  if (!Number.isFinite(input.order)) return { error: "Term order is required" };
+  if (!input.term_code?.trim()) return { error: "Term code is required" };
+  if (!Number.isFinite(input.sequence))
+    return { error: "Term sequence is required" };
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
 
@@ -308,13 +319,13 @@ export async function updateTerm(
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("term")
+    .from("academic_term")
     .update(normalizeTermInput(input))
     .eq("id", input.id);
 
   if (error) {
     return {
-      error: mapDuplicateError("Term", "academic year and order", error),
+      error: mapDuplicateError("Term", "academic year and term code", error),
     };
   }
 
@@ -332,7 +343,7 @@ export async function deleteTerm(
   const { count, error: countError } = await supabase
     .from("schedule")
     .select("id", { count: "exact", head: true })
-    .eq("semester_id", termId);
+    .eq("academic_term_id", termId);
 
   if (countError) {
     return { error: countError.message };
@@ -345,7 +356,10 @@ export async function deleteTerm(
     };
   }
 
-  const { error } = await supabase.from("term").delete().eq("id", termId);
+  const { error } = await supabase
+    .from("academic_term")
+    .delete()
+    .eq("id", termId);
 
   if (error) {
     return { error: error.message };
@@ -381,7 +395,7 @@ export async function createRank(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("rank")
+    .from("academic_rank")
     .insert(normalizeRankInput(input))
     .select("id")
     .single();
@@ -416,7 +430,7 @@ export async function updateRank(
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("rank")
+    .from("academic_rank")
     .update(normalizeRankInput(input))
     .eq("id", input.id);
 
@@ -446,7 +460,10 @@ export async function deleteRank(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.from("rank").delete().eq("id", rankId);
+  const { error } = await supabase
+    .from("academic_rank")
+    .delete()
+    .eq("id", rankId);
 
   if (error) {
     return { error: error.message };

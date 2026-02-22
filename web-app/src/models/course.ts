@@ -3,8 +3,8 @@ import { Term } from "./term";
 
 export type Course = {
   id: string;
-  campus_id: string | null;
-  semester_id: string | null;
+  campus_id: string;
+  academic_term_id: string;
   title: string;
   lecture_hour: number | null;
   laboratory_hour: number | null;

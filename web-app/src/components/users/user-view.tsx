@@ -187,7 +187,7 @@ export const UserView = ({ user }: UserViewProps) => {
                       key={designation.id}
                       className="p-3 border rounded-lg bg-foreground/5"
                     >
-                      <p className="font-medium">{designation.position}</p>
+                      <p className="font-medium">{designation.job_title}</p>
                       {designation.department?.name && (
                         <p className="text-xs text-foreground/60">
                           Department: {designation.department.name}

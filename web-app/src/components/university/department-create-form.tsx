@@ -13,12 +13,18 @@ import { createDepartment } from "@/lib/university/actions";
 type FormState = {
   code: string;
   name: string;
+  type:
+    | "ACADEMIC"
+    | "ADMINISTRATIVE"
+    | "STUDENT_SERVICES"
+    | "EXTENSION_SERVICES";
   description: string;
 };
 
 const initialFormState: FormState = {
   code: "",
   name: "",
+  type: "ACADEMIC",
   description: "",
 };
 
@@ -58,6 +64,7 @@ export const DepartmentCreateForm = () => {
     const { data, error: createError } = await createDepartment({
       code: formData.code,
       name: formData.name,
+      type: formData.type,
       description: formData.description,
     });
 
@@ -155,6 +162,29 @@ export const DepartmentCreateForm = () => {
                   className="mt-1"
                   disabled={isSaving}
                 />
+              </div>
+
+              <div>
+                <Label className="text-xs" htmlFor="type">
+                  Department Type *
+                </Label>
+                <select
+                  id="type"
+                  value={formData.type}
+                  onChange={(event) =>
+                    handleChange(
+                      "type",
+                      event.target.value as FormState["type"],
+                    )
+                  }
+                  className="mt-1 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
+                  disabled={isSaving}
+                >
+                  <option value="ACADEMIC">Academic</option>
+                  <option value="ADMINISTRATIVE">Administrative</option>
+                  <option value="STUDENT_SERVICES">Student Services</option>
+                  <option value="EXTENSION_SERVICES">Extension Services</option>
+                </select>
               </div>
 
               <div className="md:col-span-2">

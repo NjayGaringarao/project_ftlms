@@ -12,14 +12,16 @@ import { createTerm } from "@/lib/university/actions";
 
 type FormState = {
   academic_year: string;
-  order: string;
+  term_code: string;
+  sequence: string;
   start: string;
   end: string;
 };
 
 const initialFormState: FormState = {
   academic_year: "",
-  order: "",
+  term_code: "",
+  sequence: "",
   start: "",
   end: "",
 };
@@ -48,14 +50,14 @@ export const TermCreateForm = () => {
       return;
     }
 
-    if (!formData.order.trim()) {
-      setError("Term order is required");
+    if (!formData.term_code.trim()) {
+      setError("Term code is required");
       return;
     }
 
-    const parsedOrder = Number(formData.order);
-    if (!Number.isFinite(parsedOrder)) {
-      setError("Term order must be a number");
+    const parsedSequence = Number(formData.sequence);
+    if (!Number.isFinite(parsedSequence)) {
+      setError("Term sequence must be a number");
       return;
     }
 
@@ -75,7 +77,8 @@ export const TermCreateForm = () => {
 
     const { data, error: createError } = await createTerm({
       academic_year: formData.academic_year,
-      order: parsedOrder,
+      term_code: formData.term_code,
+      sequence: parsedSequence,
       start: formData.start,
       end: formData.end,
     });
@@ -157,16 +160,32 @@ export const TermCreateForm = () => {
               </div>
 
               <div>
-                <Label className="text-xs" htmlFor="order">
-                  Term Order *
+                <Label className="text-xs" htmlFor="term_code">
+                  Term Code *
                 </Label>
                 <Input
-                  id="order"
+                  id="term_code"
+                  placeholder="e.g. 1ST"
+                  value={formData.term_code}
+                  onChange={(event) =>
+                    handleChange("term_code", event.target.value)
+                  }
+                  className="mt-1"
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs" htmlFor="sequence">
+                  Sequence *
+                </Label>
+                <Input
+                  id="sequence"
                   type="number"
                   placeholder="e.g. 1"
-                  value={formData.order}
+                  value={formData.sequence}
                   onChange={(event) =>
-                    handleChange("order", event.target.value)
+                    handleChange("sequence", event.target.value)
                   }
                   className="mt-1"
                   disabled={isSaving}

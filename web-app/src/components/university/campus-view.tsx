@@ -10,27 +10,22 @@ import {
   Edit,
   MapPin,
   Trash2,
-  UserCircle,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { deleteCampus } from "@/lib/university/actions";
-import { DirectorOption } from "@/lib/university/campuses";
 
 type CampusViewProps = {
   campus: Campus;
-  directors: DirectorOption[];
 };
 
-export const CampusView = ({ campus, directors }: CampusViewProps) => {
+export const CampusView = ({ campus }: CampusViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-
-  const director = directors.find((item) => item.id === campus.director_id);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -81,16 +76,6 @@ export const CampusView = ({ campus, directors }: CampusViewProps) => {
               <div>
                 <p className="text-xs text-foreground/60">Name</p>
                 <p className="font-medium">{campus.name}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <UserCircle className="w-5 h-5 text-foreground/60 mt-0.5" />
-              <div>
-                <p className="text-xs text-foreground/60">Director</p>
-                <p className="font-medium">
-                  {director?.name || "Not assigned"}
-                </p>
               </div>
             </div>
 

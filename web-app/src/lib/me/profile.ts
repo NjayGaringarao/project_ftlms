@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth/utils";
 import { Identity } from "@/models/identity";
 import { ExtendedDesignation } from "@/models/designation";
 import { Degree } from "@/models/degree";
-import { Rank } from "@/models/rank";
+import { AcademicRank } from "@/models/rank";
 import { User } from "@/models/user";
 
 export type IdentityUpdateInput = {
@@ -91,7 +91,7 @@ export async function upsertIdentityForCurrentUser(
 
 export type ProfessionalInfo = {
   user: User | null;
-  rank: Rank | null;
+  rank: AcademicRank | null;
   designations: ExtendedDesignation[];
 };
 
@@ -103,7 +103,7 @@ export const getProfessionalInfoByUserId = async (
   const { data: userData, error: userError } = await supabase
     .from("user")
     .select(
-      "id, rank_id, employment_status, rank ( id, number, title, description )",
+      "id, academic_rank_id, employment_status, academic_rank ( id, number, title, description )",
     )
     .eq("id", userId)
     .single();
@@ -118,24 +118,24 @@ export const getProfessionalInfoByUserId = async (
   const user: User | null = userData
     ? {
         id: userData.id,
-        rank_id: userData.rank_id,
+        academic_rank_id: userData.academic_rank_id,
         employment_status: userData.employment_status,
       }
     : null;
 
-  const rank: Rank | null = userData?.rank
-    ? Array.isArray(userData.rank)
-      ? (userData.rank[0] as Rank)
-      : (userData.rank as Rank)
+  const rank: AcademicRank | null = userData?.academic_rank
+    ? Array.isArray(userData.academic_rank)
+      ? (userData.academic_rank[0] as AcademicRank)
+      : (userData.academic_rank as AcademicRank)
     : null;
 
   const { data: designationData, error: designationError } = await supabase
     .from("designation")
     .select(
-      "id, user_id, campus_id, position, department_id, load, campus ( id, director_id, name, address, zip_code ), department ( id, code, name , type, description)",
+      "id, user_id, campus_id, department_id, program_id, room_id, job_title, load, is_active, designated_at, campus ( id, name, address, zip_code ), department ( id, code, name , type, description)",
     )
     .eq("user_id", userId)
-    .order("position", { ascending: true });
+    .order("job_title", { ascending: true });
 
   if (designationError) {
     console.error(
@@ -146,6 +146,7 @@ export const getProfessionalInfoByUserId = async (
 
   const designations = (designationData ?? []).map((d: any) => ({
     ...d,
+    position: d.job_title,
     campus: Array.isArray(d.campus) ? (d.campus[0] ?? null) : d.campus,
   })) as ExtendedDesignation[];
 

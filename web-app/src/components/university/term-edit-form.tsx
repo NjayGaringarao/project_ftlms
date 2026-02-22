@@ -16,16 +16,18 @@ type TermEditFormProps = {
 
 type FormState = {
   academic_year: string;
-  order: string;
+  term_code: string;
+  sequence: string;
   start: string;
   end: string;
 };
 
 const termToFormState = (term: Term): FormState => ({
   academic_year: term.academic_year,
-  order: String(term.order),
-  start: term.start,
-  end: term.end,
+  term_code: term.term_code,
+  sequence: String(term.sequence),
+  start: term.start ?? "",
+  end: term.end ?? "",
 });
 
 export const TermEditForm = ({ term }: TermEditFormProps) => {
@@ -56,14 +58,14 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
       return;
     }
 
-    if (!formData.order.trim()) {
-      setError("Term order is required");
+    if (!formData.term_code.trim()) {
+      setError("Term code is required");
       return;
     }
 
-    const parsedOrder = Number(formData.order);
-    if (!Number.isFinite(parsedOrder)) {
-      setError("Term order must be a number");
+    const parsedSequence = Number(formData.sequence);
+    if (!Number.isFinite(parsedSequence)) {
+      setError("Term sequence must be a number");
       return;
     }
 
@@ -84,7 +86,8 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
     const { error: updateError } = await updateTerm({
       id: term.id,
       academic_year: formData.academic_year,
-      order: parsedOrder,
+      term_code: formData.term_code,
+      sequence: parsedSequence,
       start: formData.start,
       end: formData.end,
     });
@@ -98,7 +101,8 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
 
     const newSavedState = {
       academic_year: formData.academic_year.trim(),
-      order: String(parsedOrder),
+      term_code: formData.term_code.trim(),
+      sequence: String(parsedSequence),
       start: formData.start,
       end: formData.end,
     };
@@ -167,15 +171,33 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="order">
-                Term Order *
+              <Label className="text-xs" htmlFor="term_code">
+                Term Code *
               </Label>
               <Input
-                id="order"
+                id="term_code"
+                placeholder="e.g. 1ST"
+                value={formData.term_code}
+                onChange={(event) =>
+                  handleChange("term_code", event.target.value)
+                }
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs" htmlFor="sequence">
+                Sequence *
+              </Label>
+              <Input
+                id="sequence"
                 type="number"
                 placeholder="e.g. 1"
-                value={formData.order}
-                onChange={(event) => handleChange("order", event.target.value)}
+                value={formData.sequence}
+                onChange={(event) =>
+                  handleChange("sequence", event.target.value)
+                }
                 className="mt-1"
                 disabled={isSaving}
               />

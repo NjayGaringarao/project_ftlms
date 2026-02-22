@@ -1,9 +1,9 @@
-import { Evaluator } from "./evaluator";
+import { Designation } from "./designation";
 import { Schedule } from "./schedule";
 
 export type Evaluation = {
   id: string;
-  evaluator_id: string;
+  designation_id: string;
   schedule_id: string;
   evaluation_level: number;
   evaluator_role: string;
@@ -13,6 +13,6 @@ export type Evaluation = {
 };
 
 export type ExtendedEvaluation = Evaluation & {
-  evaluator: Evaluator;
+  designation: Designation;
   schedule: Schedule;
 };

@@ -20,7 +20,8 @@ type TermViewProps = {
   term: Term;
 };
 
-const formatDate = (value: string) => {
+const formatDate = (value: string | null) => {
+  if (!value) return "Not set";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString();
@@ -81,8 +82,12 @@ export const TermView = ({ term }: TermViewProps) => {
               <p className="font-medium">{term.academic_year}</p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Term Order</p>
-              <p className="font-medium">{term.order}</p>
+              <p className="text-xs text-foreground/60">Term Code</p>
+              <p className="font-medium">{term.term_code}</p>
+            </div>
+            <div>
+              <p className="text-xs text-foreground/60">Sequence</p>
+              <p className="font-medium">{term.sequence}</p>
             </div>
             <div>
               <p className="text-xs text-foreground/60">Start Date</p>
@@ -128,7 +133,8 @@ export const TermView = ({ term }: TermViewProps) => {
               <CardContent className="space-y-4">
                 <p className="text-foreground/80">
                   Are you sure you want to delete
-                  <strong>{` ${term.academic_year} - ${term.order}`}</strong>?
+                  <strong>{` ${term.academic_year} - ${term.term_code}`}</strong>
+                  ?
                 </p>
 
                 <p className="text-xs text-foreground/60">

@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { Identity } from "@/models/identity";
-import { Rank } from "@/models/rank";
+import { AcademicRank } from "@/models/rank";
 import { DesignationWithCampus } from "@/models/designation";
 import { Degree } from "@/models/degree";
 
@@ -14,7 +14,7 @@ export type UsersListItem = {
 };
 
 export type UserDetail = UsersListItem & {
-  rank: Rank | null;
+  rank: AcademicRank | null;
   designations: DesignationWithCampus[];
   degrees: Degree[];
 };
@@ -23,10 +23,10 @@ type UsersRpcRow = {
   id: string;
   email: string | null;
   employment_status: string | null;
-  rank_id: string | null;
-  rank_number: number | null;
-  rank_title: string | null;
-  rank_description: string | null;
+  academic_rank_id: string | null;
+  academic_rank_number: number | null;
+  academic_rank_title: string | null;
+  academic_rank_description: string | null;
   identity_user_id: string | null;
   first_name: string | null;
   middle_name: string | null;
@@ -66,12 +66,12 @@ const mapRowToUser = (row: UsersRpcRow): UsersListItem => {
 const mapRowToUserDetail = (row: UsersRpcRow): UserDetail => {
   const baseUser = mapRowToUser(row);
 
-  const rank: Rank | null = row.rank_id
+  const rank: AcademicRank | null = row.academic_rank_id
     ? {
-        id: row.rank_id,
-        number: row.rank_number ?? 0,
-        title: row.rank_title ?? "",
-        description: row.rank_description ?? "",
+        id: row.academic_rank_id,
+        number: row.academic_rank_number ?? 0,
+        title: row.academic_rank_title ?? "",
+        description: row.academic_rank_description ?? "",
       }
     : null;
 
@@ -141,11 +141,11 @@ export const getUserById = async (
   return mapRowToUserDetail(data[0] as UsersRpcRow);
 };
 
-export const getRanks = async (): Promise<Rank[]> => {
+export const getRanks = async (): Promise<AcademicRank[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("rank")
+    .from("academic_rank")
     .select("*")
     .order("number", { ascending: true });
 
@@ -154,5 +154,5 @@ export const getRanks = async (): Promise<Rank[]> => {
     return [];
   }
 
-  return (data ?? []) as Rank[];
+  return (data ?? []) as AcademicRank[];
 };

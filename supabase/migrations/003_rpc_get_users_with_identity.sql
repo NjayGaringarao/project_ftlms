@@ -5,10 +5,10 @@ RETURNS TABLE (
   id uuid,
   email text,
   employment_status text,
-  rank_id text,
-  rank_number integer,
-  rank_title text,
-  rank_description text,
+  academic_rank_id text,
+  academic_rank_number integer,
+  academic_rank_title text,
+  academic_rank_description text,
   identity_user_id uuid,
   first_name text,
   middle_name text,
@@ -29,10 +29,10 @@ AS $$
     u.id,
     au.email,
     u.employment_status,
-    r.id AS rank_id,
-    r.number AS rank_number,
-    r.title AS rank_title,
-    r.description AS rank_description,
+    r.id AS academic_rank_id,
+    r.number AS academic_rank_number,
+    r.title AS academic_rank_title,
+    r.description AS academic_rank_description,
     i.user_id AS identity_user_id,
     i.first_name,
     i.middle_name,
@@ -48,9 +48,13 @@ AS $$
           'id', d.id,
           'user_id', d.user_id,
           'campus_id', d.campus_id,
-          'position', d.position,
+          'job_title', d.job_title,
           'department_id', d.department_id,
+          'program_id', d.program_id,
+          'room_id', d.room_id,
           'load', d.load,
+          'is_active', d.is_active,
+          'designated_at', d.designated_at,
           'campus', json_build_object(
             'id', c.id,
             'name', c.name
@@ -86,7 +90,7 @@ AS $$
   FROM public."user" u
   LEFT JOIN auth.users au ON au.id = u.id
   LEFT JOIN public.identity i ON i.user_id = u.id
-  LEFT JOIN public.rank r ON r.id = u.rank_id
+  LEFT JOIN public.academic_rank r ON r.id = u.academic_rank_id
   LEFT JOIN public.designation d ON d.user_id = u.id
   LEFT JOIN public.campus c ON c.id = d.campus_id
   LEFT JOIN public.department dep ON dep.id = d.department_id

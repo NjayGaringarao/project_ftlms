@@ -9,28 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { updateCampus } from "@/lib/university/actions";
-import { DirectorOption } from "@/lib/university/campuses";
 
 type CampusEditFormProps = {
   campus: Campus;
-  directors: DirectorOption[];
 };
 
 type FormState = {
   name: string;
-  director_id: string;
   address: string;
   zip_code: string;
 };
 
 const campusToFormState = (campus: Campus): FormState => ({
   name: campus.name,
-  director_id: campus.director_id ?? "",
   address: campus.address ?? "",
   zip_code: campus.zip_code ?? "",
 });
 
-export const CampusEditForm = ({ campus, directors }: CampusEditFormProps) => {
+export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
   const [formData, setFormData] = useState<FormState>(() =>
     campusToFormState(campus),
   );
@@ -65,7 +61,6 @@ export const CampusEditForm = ({ campus, directors }: CampusEditFormProps) => {
     const { error: updateError } = await updateCampus({
       id: campus.id,
       name: formData.name,
-      director_id: formData.director_id || null,
       address: formData.address,
       zip_code: formData.zip_code,
     });
@@ -79,7 +74,6 @@ export const CampusEditForm = ({ campus, directors }: CampusEditFormProps) => {
 
     const newSavedState = {
       name: formData.name.trim(),
-      director_id: formData.director_id,
       address: formData.address.trim(),
       zip_code: formData.zip_code.trim(),
     };
@@ -143,29 +137,6 @@ export const CampusEditForm = ({ campus, directors }: CampusEditFormProps) => {
                 className="mt-1"
                 disabled={isSaving}
               />
-            </div>
-
-            <div>
-              <Label className="text-xs" htmlFor="director_id">
-                Director
-              </Label>
-              <select
-                id="director_id"
-                className="mt-1 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-                value={formData.director_id}
-                onChange={(event) =>
-                  handleChange("director_id", event.target.value)
-                }
-                disabled={isSaving}
-              >
-                <option value="">No director assigned</option>
-                {directors.map((director) => (
-                  <option key={director.id} value={director.id}>
-                    {director.name}
-                    {director.email ? ` (${director.email})` : ""}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="md:col-span-2">

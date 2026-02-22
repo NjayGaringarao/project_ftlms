@@ -1,15 +1,12 @@
 import { Campus } from "./campus";
-import { User } from "./user";
 
 export type Room = {
   id: string;
   campus_id: string;
-  custodian_id: string;
   code: string;
-  name: string;
+  name: string | null;
 };
 
 export type ExtendedRoom = Room & {
   campus: Campus;
-  custodian: User;
 };

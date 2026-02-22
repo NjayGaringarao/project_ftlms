@@ -44,14 +44,17 @@ type PersonalFormState = {
 };
 
 type ProfessionalFormState = {
-  rankId: string | null;
+  academicRankId: string | null;
   employmentStatus: string;
   designations: Array<{
     id?: string;
     campus_id?: string | null;
-    position: string;
+    job_title: string;
     department_id?: string | null;
+    program_id?: string | null;
+    room_id?: string | null;
     load?: number | null;
+    is_active?: boolean;
   }>;
 };
 
@@ -75,15 +78,18 @@ const userToPersonalFormState = (user: UserDetail): PersonalFormState => ({
 const userToProfessionalFormState = (
   user: UserDetail,
 ): ProfessionalFormState => ({
-  rankId: user.rank?.id ?? null,
+  academicRankId: user.rank?.id ?? null,
   employmentStatus: user.employment_status ?? "",
   designations:
     user.designations?.map((d) => ({
       id: d.id,
       campus_id: d.campus_id,
-      position: d.position,
+      job_title: d.job_title,
       department_id: d.department_id,
+      program_id: d.program_id,
+      room_id: d.room_id,
       load: d.load,
+      is_active: d.is_active,
     })) ?? [],
 });
 
@@ -125,7 +131,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
   const [isSecuritySaving, setIsSecuritySaving] = useState(false);
 
   const [newDesignation, setNewDesignation] = useState({
-    position: "",
+    job_title: "",
     department_id: "",
     load: "",
   });
@@ -150,8 +156,8 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
 
   // Handle Designation Addition
   const handleAddDesignation = () => {
-    if (!newDesignation.position.trim()) {
-      setProfessionalError("Position is required");
+    if (!newDesignation.job_title.trim()) {
+      setProfessionalError("Job title is required");
       return;
     }
 
@@ -160,14 +166,14 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
       designations: [
         ...prev.designations,
         {
-          position: newDesignation.position.trim(),
+          job_title: newDesignation.job_title.trim(),
           department_id: newDesignation.department_id.trim() || null,
           load: newDesignation.load ? parseInt(newDesignation.load) : null,
         },
       ],
     }));
 
-    setNewDesignation({ position: "", department_id: "", load: "" });
+    setNewDesignation({ job_title: "", department_id: "", load: "" });
     setProfessionalError("");
   };
 
@@ -234,7 +240,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
   // PROFESSIONAL INFORMATION HANDLERS
   const handleResetProfessional = () => {
     setProfessionalData(savedProfessionalData);
-    setNewDesignation({ position: "", department_id: "", load: "" });
+    setNewDesignation({ job_title: "", department_id: "", load: "" });
     setProfessionalError("");
     setProfessionalSuccess(false);
   };
@@ -247,7 +253,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     try {
       const { error } = await updateUserProfessional({
         user_id: user.id,
-        rank_id: professionalData.rankId,
+        academic_rank_id: professionalData.academicRankId,
         employment_status: professionalData.employmentStatus.trim() || null,
         designations: professionalData.designations,
       });
@@ -258,7 +264,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
       }
 
       setSavedProfessionalData({ ...professionalData });
-      setNewDesignation({ position: "", department_id: "", load: "" });
+      setNewDesignation({ job_title: "", department_id: "", load: "" });
       setProfessionalSuccess(true);
       setTimeout(() => setProfessionalSuccess(false), 3000);
     } finally {
@@ -570,14 +576,17 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
             {/* Rank and Employment Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="rank" className="text-xs">
+                <Label htmlFor="academicRank" className="text-xs">
                   Academic Rank
                 </Label>
                 <select
-                  id="rank"
-                  value={professionalData.rankId ?? ""}
+                  id="academicRank"
+                  value={professionalData.academicRankId ?? ""}
                   onChange={(e) =>
-                    handleProfessionalChange("rankId", e.target.value || null)
+                    handleProfessionalChange(
+                      "academicRankId",
+                      e.target.value || null,
+                    )
                   }
                   disabled={isProfessionalSaving}
                   className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
@@ -595,14 +604,13 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                 <Label htmlFor="employmentStatus" className="text-xs">
                   Employment Status
                 </Label>
-                <Input
+                <select
                   id="employmentStatus"
-                  placeholder="e.g. FULL_TIME, PART_TIME"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
                   value={professionalData.employmentStatus}
                   onChange={(e) =>
                     handleProfessionalChange("employmentStatus", e.target.value)
                   }
-                  className="mt-1"
                   disabled={isProfessionalSaving}
                   onBlur={(e) => {
                     handleProfessionalChange(
@@ -610,7 +618,10 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                       e.target.value.trim().toUpperCase(),
                     );
                   }}
-                />
+                >
+                  <option value="FULL_TIME">Full Time</option>
+                  <option value="PART_TIME">Part Time</option>
+                </select>
               </div>
             </div>
 
@@ -627,7 +638,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                       className="p-3 border rounded-lg bg-foreground/5 flex items-start justify-between"
                     >
                       <div>
-                        <p className="font-medium">{designation.position}</p>
+                        <p className="font-medium">{designation.job_title}</p>
                         {designation.department_id && (
                           <p className="text-xs text-foreground/60">
                             Department ID: {designation.department_id}
@@ -656,17 +667,17 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
               <div className="border rounded-lg p-4 space-y-3 bg-foreground/2">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="position" className="text-xs">
-                      Position *
+                    <Label htmlFor="job_title" className="text-xs">
+                      Job Title *
                     </Label>
                     <Input
-                      id="position"
-                      placeholder="Enter position"
-                      value={newDesignation.position}
+                      id="job_title"
+                      placeholder="Enter job title"
+                      value={newDesignation.job_title}
                       onChange={(e) =>
                         setNewDesignation((prev) => ({
                           ...prev,
-                          position: e.target.value,
+                          job_title: e.target.value,
                         }))
                       }
                       className="mt-1"

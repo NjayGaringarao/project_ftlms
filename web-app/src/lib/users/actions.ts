@@ -19,6 +19,13 @@ type CreateUserInput = {
   employment_status?: string | null;
 };
 
+const normalizeEmploymentStatus = (value?: string | null) => {
+  const normalized = value?.trim().toUpperCase();
+  return normalized === "PART_TIME" || normalized === "FULL_TIME"
+    ? normalized
+    : "PART_TIME";
+};
+
 type UpdateUserInput = {
   user_id: string;
   first_name: string;
@@ -89,7 +96,9 @@ export async function createUser(
   if (input.employment_status?.trim()) {
     const { error: userError } = await supabase
       .from("user")
-      .update({ employment_status: input.employment_status.trim() })
+      .update({
+        employment_status: normalizeEmploymentStatus(input.employment_status),
+      })
       .eq("id", userId);
 
     if (userError) {
@@ -188,7 +197,9 @@ export async function updateUserProfile(
   // Update user employment status
   const { error: userError } = await supabase
     .from("user")
-    .update({ employment_status: input.employment_status?.trim() || null })
+    .update({
+      employment_status: normalizeEmploymentStatus(input.employment_status),
+    })
     .eq("id", input.user_id);
 
   if (userError) {
@@ -201,14 +212,17 @@ export async function updateUserProfile(
 }
 type UpdateUserProfessionalInput = {
   user_id: string;
-  rank_id?: string | null;
+  academic_rank_id?: string | null;
   employment_status?: string | null;
   designations?: Array<{
     id?: string;
     campus_id?: string | null;
-    position: string;
+    job_title: string;
     department_id?: string | null;
+    program_id?: string | null;
+    room_id?: string | null;
     load?: number | null;
+    is_active?: boolean;
   }>;
 };
 
@@ -219,13 +233,15 @@ export async function updateUserProfessional(
 
   const supabase = await createClient();
 
-  // Update rank and employment status
+  // Update academic rank and employment status
   const updatePayload: Record<string, unknown> = {};
-  if (input.rank_id !== undefined) {
-    updatePayload.rank_id = input.rank_id || null;
+  if (input.academic_rank_id !== undefined) {
+    updatePayload.academic_rank_id = input.academic_rank_id || null;
   }
   if (input.employment_status !== undefined) {
-    updatePayload.employment_status = input.employment_status?.trim() || null;
+    updatePayload.employment_status = normalizeEmploymentStatus(
+      input.employment_status,
+    );
   }
 
   if (Object.keys(updatePayload).length > 0) {
@@ -253,12 +269,30 @@ export async function updateUserProfessional(
 
     // Insert new designations
     if (input.designations.length > 0) {
+      const invalidDesignation = input.designations.find(
+        (d) =>
+          !d.campus_id?.trim() &&
+          !d.department_id?.trim() &&
+          !d.program_id?.trim() &&
+          !d.room_id?.trim(),
+      );
+
+      if (invalidDesignation) {
+        return {
+          error:
+            "Each designation must include at least one context: campus, department, program, or room.",
+        };
+      }
+
       const designationsToInsert = input.designations.map((d) => ({
         user_id: input.user_id,
         campus_id: d.campus_id || null,
-        position: d.position.trim(),
+        job_title: d.job_title.trim(),
         department_id: d.department_id?.trim() || null,
+        program_id: d.program_id?.trim() || null,
+        room_id: d.room_id?.trim() || null,
         load: d.load || null,
+        is_active: d.is_active ?? true,
       }));
 
       const { error: insertError } = await supabase
@@ -301,18 +335,6 @@ export async function changeUserEmail(
 
   if (authError) {
     return { error: authError.message };
-  }
-
-  // Sync email to user table
-  const supabase = await createClient();
-  const { error: userError } = await supabase
-    .from("user")
-    .update({ email: input.new_email.trim() })
-    .eq("id", input.user_id);
-
-  if (userError) {
-    console.error("lib.users.actions.changeUserEmail.userSync ::", userError);
-    // Don't fail the whole operation since auth was already updated
   }
 
   revalidatePath("/users");

@@ -106,8 +106,8 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
           </div>
 
           <p className="text-xs text-foreground/60">
-            Deleting this department detaches linked colleges by setting their
-            department reference to empty.
+            Deleting this department deletes all the programs under it
+            trancending campuses.
           </p>
 
           <Button
@@ -138,8 +138,8 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
                 </p>
 
                 <p className="text-xs text-foreground/60">
-                  Colleges assigned to this department will remain but their
-                  department assignment will be removed.
+                  All Programs and its blocks under this department will also be
+                  deleted, transcending all campuses.
                 </p>
 
                 {deleteError && (

@@ -4,7 +4,7 @@ import { User } from "./user";
 export type Schedule = {
   id: string;
   user_id: string;
-  semester_id: string;
+  academic_term_id: string;
   updated_at: string | null;
 };
 

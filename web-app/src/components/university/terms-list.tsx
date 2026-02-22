@@ -13,7 +13,8 @@ type TermsListProps = {
   terms: TermListItem[];
 };
 
-const formatDate = (value: string) => {
+const formatDate = (value: string | null) => {
+  if (!value) return "Not set";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString();
@@ -34,8 +35,11 @@ export const TermsList = ({ terms }: TermsListProps) => {
 
     return terms.filter((term) => {
       const academicYear = term.academic_year.toLowerCase();
-      const order = String(term.order);
-      return academicYear.includes(q) || order.includes(q);
+      const termCode = term.term_code.toLowerCase();
+      const sequence = String(term.sequence);
+      return (
+        academicYear.includes(q) || termCode.includes(q) || sequence.includes(q)
+      );
     });
   }, [query, terms]);
 
@@ -44,7 +48,7 @@ export const TermsList = ({ terms }: TermsListProps) => {
       <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
         <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Input
-            placeholder="Search by academic year or term order"
+            placeholder="Search by academic year, term code, or sequence"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -80,7 +84,9 @@ export const TermsList = ({ terms }: TermsListProps) => {
                 )}
               >
                 <p className="text-base font-semibold">{term.academic_year}</p>
-                <p className="text-sm text-foreground/70">Term {term.order}</p>
+                <p className="text-sm text-foreground/70">
+                  {term.term_code} • Sequence {term.sequence}
+                </p>
                 <p className="text-xs text-foreground/60">
                   {formatDate(term.start)} - {formatDate(term.end)}
                 </p>

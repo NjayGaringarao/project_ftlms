@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 
 export type DepartmentListItem = Pick<
   Department,
-  "id" | "dean_id" | "code" | "name" | "type" | "description"
+  "id" | "code" | "name" | "type" | "description"
 >;
 
 export const getDepartmentsList = async (): Promise<DepartmentListItem[]> => {
@@ -13,7 +13,7 @@ export const getDepartmentsList = async (): Promise<DepartmentListItem[]> => {
 
   const { data, error } = await supabase
     .from("department")
-    .select("id, dean_id, code, name, type, description")
+    .select("id, code, name, type, description")
     .order("name", { ascending: true });
 
   if (error) {
@@ -31,7 +31,7 @@ export const getDepartmentById = async (
 
   const { data, error } = await supabase
     .from("department")
-    .select("id, dean_id, code, name, type, description")
+    .select("id, code, name, type, description")
     .eq("id", departmentId)
     .maybeSingle();
 

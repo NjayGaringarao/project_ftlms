@@ -14,10 +14,10 @@ begin
   if not exists (
     select 1
     from pg_constraint
-    where conname = 'rank_number_unique'
+    where conname = 'academic_rank_number_unique'
   ) then
-    alter table rank
-      add constraint rank_number_unique unique (number);
+    alter table academic_rank
+      add constraint academic_rank_number_unique unique (number);
   end if;
 end $$;
 
@@ -26,9 +26,9 @@ begin
   if not exists (
     select 1
     from pg_indexes
-    where indexname = 'rank_title_ci_unique'
+    where indexname = 'academic_rank_title_ci_unique'
   ) then
-    create unique index rank_title_ci_unique on rank ((lower(title)));
+    create unique index academic_rank_title_ci_unique on academic_rank ((lower(title)));
   end if;
 end $$;
 
@@ -37,9 +37,9 @@ begin
   if not exists (
     select 1
     from pg_indexes
-    where indexname = 'semester_academic_year_term_ci_unique'
+    where indexname = 'academic_term_academic_year_term_code_ci_unique'
   ) then
-    create unique index semester_academic_year_term_ci_unique
-      on semester ((lower(academic_year)), (lower(term)));
+    create unique index academic_term_academic_year_term_code_ci_unique
+      on academic_term ((lower(academic_year)), (lower(term_code)));
   end if;
 end $$;

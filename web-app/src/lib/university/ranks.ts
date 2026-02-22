@@ -12,7 +12,7 @@ export const getUniversityRanksList = async (): Promise<RankListItem[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("rank")
+    .from("academic_rank")
     .select("id, number, title, description")
     .order("number", { ascending: true });
 
@@ -28,7 +28,7 @@ export const getRankById = async (rankId: string): Promise<Rank | null> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("rank")
+    .from("academic_rank")
     .select("id, number, title, description")
     .eq("id", rankId)
     .maybeSingle();

@@ -5,15 +5,15 @@ import { createClient } from "@/utils/supabase/server";
 
 export type TermListItem = Pick<
   Term,
-  "id" | "academic_year" | "order" | "start" | "end"
+  "id" | "academic_year" | "term_code" | "sequence" | "start" | "end"
 >;
 
 export const getTermsList = async (): Promise<TermListItem[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("term")
-    .select('id, academic_year, "order", start, "end"')
+    .from("academic_term")
+    .select("id, academic_year, term_code, sequence, start, end")
     .order("start", { ascending: false });
 
   if (error) {
@@ -28,8 +28,8 @@ export const getTermById = async (termId: string): Promise<Term | null> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("term")
-    .select('id, academic_year, "order", start, "end"')
+    .from("academic_term")
+    .select("id, academic_year, term_code, sequence, start, end")
     .eq("id", termId)
     .maybeSingle();
 

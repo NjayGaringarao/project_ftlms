@@ -6,9 +6,14 @@ export type Designation = {
   id: string;
   user_id: string;
   campus_id: string | null;
-  position: string;
   department_id: string | null;
+  program_id: string | null;
+  room_id: string | null;
+  job_title: string;
+  position?: string;
   load: number | null;
+  is_active: boolean;
+  designated_at: string;
 };
 
 export type ExtendedDesignation = Designation & {
