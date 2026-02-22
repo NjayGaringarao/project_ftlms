@@ -207,7 +207,7 @@ type UpdateUserProfessionalInput = {
     id?: string;
     campus_id?: string | null;
     position: string;
-    department?: string | null;
+    department_id?: string | null;
     load?: number | null;
   }>;
 };
@@ -257,7 +257,7 @@ export async function updateUserProfessional(
         user_id: input.user_id,
         campus_id: d.campus_id || null,
         position: d.position.trim(),
-        department: d.department?.trim() || null,
+        department_id: d.department_id?.trim() || null,
         load: d.load || null,
       }));
 

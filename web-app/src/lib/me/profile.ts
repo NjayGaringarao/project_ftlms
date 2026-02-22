@@ -132,7 +132,7 @@ export const getProfessionalInfoByUserId = async (
   const { data: designationData, error: designationError } = await supabase
     .from("designation")
     .select(
-      "id, user_id, campus_id, position, department, load, campus ( id, director_id, name, address, zip_code )",
+      "id, user_id, campus_id, position, department_id, load, campus ( id, director_id, name, address, zip_code ), department ( id, code, name , type, description)",
     )
     .eq("user_id", userId)
     .order("position", { ascending: true });

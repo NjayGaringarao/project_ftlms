@@ -1,4 +1,4 @@
-import { Semester } from "./semester";
+import { Term } from "./term";
 import { User } from "./user";
 
 export type Schedule = {
@@ -10,5 +10,5 @@ export type Schedule = {
 
 export type ExtendedSchedule = Schedule & {
   user: User;
-  semester: Semester;
+  term: Term;
 };

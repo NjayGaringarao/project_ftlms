@@ -55,9 +55,9 @@ const ProfessionalInformation = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium">{designation.position}</p>
-                    {designation.department && (
+                    {designation.department?.name && (
                       <p className="text-sm text-foreground/60">
-                        {designation.department}
+                        {designation.department.name}
                       </p>
                     )}
                     {designation.campus?.name && (

@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/utils/style";
-import { SemesterListItem } from "@/lib/university/semesters";
+import { TermListItem } from "@/lib/university/terms";
 
-type SemestersListProps = {
-  semesters: SemesterListItem[];
+type TermsListProps = {
+  terms: TermListItem[];
 };
 
 const formatDate = (value: string) => {
@@ -19,37 +19,37 @@ const formatDate = (value: string) => {
   return date.toLocaleDateString();
 };
 
-export const SemestersList = ({ semesters }: SemestersListProps) => {
+export const TermsList = ({ terms }: TermsListProps) => {
   const pathname = usePathname();
   const [query, setQuery] = useState("");
 
-  const selectedSemesterId = useMemo(() => {
-    const match = pathname.match(/\/university\/semesters\/([^\/]+)/);
+  const selectedTermId = useMemo(() => {
+    const match = pathname.match(/\/university\/terms\/([^\/]+)/);
     return match ? match[1] : null;
   }, [pathname]);
 
-  const filteredSemesters = useMemo(() => {
+  const filteredTerms = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return semesters;
+    if (!q) return terms;
 
-    return semesters.filter((semester) => {
-      const academicYear = semester.academic_year.toLowerCase();
-      const term = semester.term.toLowerCase();
-      return academicYear.includes(q) || term.includes(q);
+    return terms.filter((term) => {
+      const academicYear = term.academic_year.toLowerCase();
+      const order = String(term.order);
+      return academicYear.includes(q) || order.includes(q);
     });
-  }, [query, semesters]);
+  }, [query, terms]);
 
   return (
     <div className="relative h-full flex flex-col">
       <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
         <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Input
-            placeholder="Search by academic year or term"
+            placeholder="Search by academic year or term order"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/university/semesters/create">Create Semester</Link>
+            <Link href="/university/terms/create">Create Term</Link>
           </Button>
         </div>
       </CardHeader>
@@ -57,34 +57,32 @@ export const SemestersList = ({ semesters }: SemestersListProps) => {
         <div
           className={cn(
             "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedSemesterId && "flex flex-col gap-4",
+            !!selectedTermId && "flex flex-col gap-4",
           )}
         >
-          {filteredSemesters.length === 0 && (
+          {filteredTerms.length === 0 && (
             <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No semesters match your search.
+              No terms match your search.
             </div>
           )}
 
-          {filteredSemesters.map((semester) => {
-            const isSelected = selectedSemesterId === semester.id;
+          {filteredTerms.map((term) => {
+            const isSelected = selectedTermId === term.id;
 
             return (
               <Link
-                key={semester.id}
-                href={`/university/semesters/${semester.id}`}
+                key={term.id}
+                href={`/university/terms/${term.id}`}
                 className={cn(
                   "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
                   isSelected &&
                     "bg-foreground/10 border-foreground/40 font-semibold",
                 )}
               >
-                <p className="text-base font-semibold">
-                  {semester.academic_year}
-                </p>
-                <p className="text-sm text-foreground/70">{semester.term}</p>
+                <p className="text-base font-semibold">{term.academic_year}</p>
+                <p className="text-sm text-foreground/70">Term {term.order}</p>
                 <p className="text-xs text-foreground/60">
-                  {formatDate(semester.start)} - {formatDate(semester.end)}
+                  {formatDate(term.start)} - {formatDate(term.end)}
                 </p>
               </Link>
             );

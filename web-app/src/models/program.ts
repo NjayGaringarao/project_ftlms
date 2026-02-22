@@ -1,15 +1,19 @@
-import { College } from "./college";
+import { Campus } from "./campus";
+import { Department } from "./department";
 import { User } from "./user";
 
 export type Program = {
   id: string;
-  college_id: string | null;
+  department_id: string | null;
+  campus_id: string | null;
   chair_id: string | null;
   name: string;
+  code: string;
   description: string | null;
 };
 
 export type ExtendedProgram = Program & {
-  college: College | null;
+  department: Department | null;
+  campus: Campus | null;
   chair: User | null;
 };

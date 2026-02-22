@@ -188,11 +188,17 @@ export const UserView = ({ user }: UserViewProps) => {
                       className="p-3 border rounded-lg bg-foreground/5"
                     >
                       <p className="font-medium">{designation.position}</p>
-                      {designation.department && (
+                      {designation.department?.name && (
                         <p className="text-xs text-foreground/60">
-                          Department: {designation.department}
+                          Department: {designation.department.name}
                         </p>
                       )}
+                      {!designation.department?.name &&
+                        designation.department_id && (
+                          <p className="text-xs text-foreground/60">
+                            Department ID: {designation.department_id}
+                          </p>
+                        )}
                       {designation.campus && (
                         <p className="text-xs text-foreground/60">
                           Campus: {designation.campus.name}

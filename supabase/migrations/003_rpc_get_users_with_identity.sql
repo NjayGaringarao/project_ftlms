@@ -49,13 +49,22 @@ AS $$
           'user_id', d.user_id,
           'campus_id', d.campus_id,
           'position', d.position,
-          'department', d.department,
+          'department_id', d.department_id,
           'load', d.load,
           'campus', json_build_object(
             'id', c.id,
             'name', c.name
-          )
-        ) ORDER BY d.created_at DESC
+          ),
+          'department', CASE
+            WHEN dep.id IS NULL THEN NULL
+            ELSE json_build_object(
+              'id', dep.id,
+              'code', dep.code,
+              'name', dep.name,
+              'type', dep.type
+            )
+          END
+        ) ORDER BY d.id DESC
       ) FILTER (WHERE d.id IS NOT NULL),
       '[]'::json
     ) AS designations,
@@ -80,6 +89,7 @@ AS $$
   LEFT JOIN public.rank r ON r.id = u.rank_id
   LEFT JOIN public.designation d ON d.user_id = u.id
   LEFT JOIN public.campus c ON c.id = d.campus_id
+  LEFT JOIN public.department dep ON dep.id = d.department_id
   LEFT JOIN public.degree deg ON deg.user_id = u.id
   WHERE filter_user_id IS NULL OR u.id = filter_user_id
   GROUP BY

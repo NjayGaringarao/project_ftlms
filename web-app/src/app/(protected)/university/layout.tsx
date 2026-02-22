@@ -10,7 +10,7 @@ const UniversityLayout = ({ children }: { children: React.ReactNode }) => {
           { label: "Overview", href: "/university" },
           { label: "Departments", href: "/university/departments" },
           { label: "Campuses", href: "/university/campuses" },
-          { label: "Semesters", href: "/university/semesters" },
+          { label: "Terms", href: "/university/terms" },
           { label: "Academic Ranks", href: "/university/ranks" },
         ]}
         icon="landmark"

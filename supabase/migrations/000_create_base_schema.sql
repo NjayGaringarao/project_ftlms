@@ -1,181 +1,210 @@
--- Enable UUID generation
-create extension if not exists "pgcrypto";
+-- Enable pgcrypto for UUID generation
+create extension if not exists pgcrypto;
 
---------------------------------------------------
--- CORE REFERENCE TABLES
---------------------------------------------------
+-------------------------------------------------
+-- RANK
+-------------------------------------------------
+create table rank (
+    id uuid primary key default gen_random_uuid(),
+    number integer unique not null,
+    title text unique not null,
+    description text
+);
 
-
-
+-------------------------------------------------
+-- DEPARTMENT
+-------------------------------------------------
 create table department (
-  id uuid primary key default gen_random_uuid(),
-  code text not null,
-  name text not null,
-  description text
+    id uuid primary key default gen_random_uuid(),
+    dean_id uuid,
+    code text unique not null,
+    name text not null,
+    type text,
+    description text
 );
 
-create table campus (
-  id uuid primary key default gen_random_uuid(),
-  director_id uuid,
-  name text not null,
-  address text,
-  zip_code text
-);
-
-create table semester (
-  id uuid primary key default gen_random_uuid(),
-  academic_year text not null,
-  term text not null,
-  start date not null,
-  "end" date not null
-);
-
---------------------------------------------------
--- USER DOMAIN
---------------------------------------------------
-
+-------------------------------------------------
+-- USER (extends auth.users)
+-------------------------------------------------
 create table "user" (
-  id uuid primary key references auth.users(id) on delete cascade,
-  rank_id uuid references rank(id) on delete set null,
-  employment_status text 
+    id uuid primary key references auth.users(id) on delete cascade,
+    rank_id uuid references rank(id) on delete set null,
+    employment_status text
 );
 
-create table identity (
-  user_id uuid primary key references "user"(id) on delete cascade,
-  first_name text not null,
-  middle_name text,
-  last_name text not null,
-  extension text,
-  birth_date date not null,
-  address text,
-  zip_code text,
-  contact_number text 
-)
+alter table department
+    add constraint department_dean_id_fkey
+    foreign key (dean_id) references "user"(id) on delete set null;
 
+-------------------------------------------------
+-- IDENTITY (1:1 with user)
+-------------------------------------------------
+create table identity (
+    user_id uuid primary key references "user"(id) on delete cascade,
+    first_name text not null,
+    middle_name text,
+    last_name text not null,
+    extension text,
+    birth_date date not null,
+    address text,
+    zip_code text,
+    contact_number text
+);
+
+-------------------------------------------------
+-- CAMPUS
+-------------------------------------------------
+create table campus (
+    id uuid primary key default gen_random_uuid(),
+    director_id uuid,
+    name text unique not null,
+    address text,
+    zip_code text
+);
+
+alter table campus
+    add constraint campus_director_id_fkey
+    foreign key (director_id) references "user"(id) on delete set null;
+
+-------------------------------------------------
+-- DEGREE
+-------------------------------------------------
 create table degree (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references "user"(id) on delete cascade,
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references "user"(id) on delete cascade,
   academic_level text not null,
   degree_type text not null,
   field_of_study text not null,
   year_graduated int,
   institution text not null,
   country_code text not null,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+    created_at timestamptz default now(), 
+    updated_at timestamptz default now()
 );
 
-create table rank (
-  id uuid primary key default gen_random_uuid(),
-  number int not null,
-  title text not null,
-  description text
-);
-
+-------------------------------------------------
+-- DESIGNATION
+-------------------------------------------------
 create table designation (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references "user"(id) on delete cascade,
-  campus_id uuid references campus(id) on delete cascade,
-  position text not null,
-  department text,
-  load int
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references "user"(id) on delete cascade,
+    campus_id uuid references campus(id) on delete cascade,
+    position text not null,
+    department_id uuid references department(id) on delete set null,
+    load int
 );
 
---------------------------------------------------
--- PROGRAM STRUCTURE
---------------------------------------------------
-
+-------------------------------------------------
+-- PROGRAM
+-------------------------------------------------
 create table program (
-  id uuid primary key default gen_random_uuid(),
-  campus_id uuid references campus(id) on delete set null,
-  department_id uuid references department(id) on delete set null,
-  chair_id uuid references "user"(id) on delete set null,
-  name text not null,
-  description text
+    id uuid primary key default gen_random_uuid(),
+    department_id uuid references department(id) on delete set null,
+    campus_id uuid references campus(id) on delete set null,
+    chair_id uuid references "user"(id) on delete set null,
+    name text not null,
+    code text unique not null,
+    description text
 );
 
-create table block (
-  id uuid primary key default gen_random_uuid(),
-  program_id uuid not null references program(id) on delete cascade,
-  year_level int not null,
-  section text not null
+-------------------------------------------------
+-- TERM
+-------------------------------------------------
+create table term (
+    id uuid primary key default gen_random_uuid(),
+    academic_year text not null,
+    "order" integer not null,
+    start date,
+    "end" date
 );
 
---------------------------------------------------
--- ACADEMIC SCHEDULING
---------------------------------------------------
-
+-------------------------------------------------
+-- SCHEDULE
+-------------------------------------------------
 create table schedule (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references "user"(id) on delete cascade,
-  semester_id uuid not null references semester(id) on delete cascade,
-  updated_at timestamptz default now()
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references "user"(id) on delete cascade,
+    semester_id uuid not null references term(id) on delete cascade,
+    updated_at timestamptz default now()
 );
 
-create table schedule_college (
-  id uuid primary key default gen_random_uuid(),
-  schedule_id uuid not null references schedule(id) on delete cascade,
-  college_id uuid not null references college(id) on delete cascade,
-  unique (schedule_id, college_id)
-);
-
+-------------------------------------------------
+-- COURSE
+-------------------------------------------------
 create table course (
-  id uuid primary key default gen_random_uuid(),
-  campus_id uuid references campus(id) on delete set null,
-  semester_id uuid references semester(id) on delete set null,
-  code text not null,
-  title text not null,
-  lecture_hour int default 0,
-  laboratory_hour int default 0
+    id uuid primary key default gen_random_uuid(),
+    campus_id uuid references campus(id) on delete set null,
+    semester_id uuid references term(id) on delete set null,
+    title text not null,
+    lecture_hour numeric(4,2),
+    laboratory_hour numeric(4,2)
 );
 
+-------------------------------------------------
+-- BLOCK
+-------------------------------------------------
+create table block (
+    id uuid primary key default gen_random_uuid(),
+    program_id uuid not null references program(id) on delete cascade,
+    year_level integer not null,
+    section text not null
+);
+
+-------------------------------------------------
+-- CLASS
+-------------------------------------------------
 create table class (
-  id uuid primary key default gen_random_uuid(),
-  schedule_id uuid not null references schedule(id) on delete cascade,
-  course_id uuid not null references course(id) on delete cascade,
-  block_id uuid references block(id) on delete set null,
-  student_count int default 0
+    id uuid primary key default gen_random_uuid(),
+    schedule_id uuid not null references schedule(id) on delete cascade,
+    course_id uuid not null references course(id) on delete cascade,
+    block_id uuid references block(id) on delete set null,
+    student_count integer
 );
 
---------------------------------------------------
--- ROOMS & SESSIONS
---------------------------------------------------
-
+-------------------------------------------------
+-- ROOM
+-------------------------------------------------
 create table room (
-  id uuid primary key default gen_random_uuid(),
-  campus_id uuid references campus(id) on delete set null,
-  custodian_id uuid references "user"(id) on delete set null,
-  code text not null,
-  name text not null
+    id uuid primary key default gen_random_uuid(),
+    campus_id uuid references campus(id) on delete set null,
+    custodian_id uuid references "user"(id) on delete set null,
+    code text unique not null,
+    name text
 );
 
+-------------------------------------------------
+-- SESSION
+-------------------------------------------------
 create table session (
-  id uuid primary key default gen_random_uuid(),
-  class_id uuid not null references class(id) on delete cascade,
-  room_id uuid references room(id) on delete set null,
-  day text not null,
-  start_time time not null,
-  end_time time not null
+    id uuid primary key default gen_random_uuid(),
+    class_id uuid not null references class(id) on delete cascade,
+    room_id uuid references room(id) on delete set null,
+    day integer not null, -- 1 = Monday (your app decides convention)
+    start_time time not null,
+    end_time time not null,
+    check (end_time > start_time)
 );
 
---------------------------------------------------
--- EVALUATION SYSTEM
---------------------------------------------------
-
+-------------------------------------------------
+-- EVALUATOR
+-------------------------------------------------
 create table evaluator (
-  user_id uuid primary key references "user"(id) on delete cascade,
-  role text not null,
-  evaluation_level int not null,
-  designated_at timestamptz default now()
+    user_id uuid primary key references "user"(id) on delete cascade,
+    role text,
+    evaluation_level integer,
+    designated_at timestamptz default now()
 );
 
+-------------------------------------------------
+-- EVALUATION
+-------------------------------------------------
 create table evaluation (
-  id uuid primary key default gen_random_uuid(),
-  evaluator_id uuid not null references evaluator(user_id) on delete cascade,
-  schedule_id uuid not null references schedule(id) on delete cascade,
-  evaluation_level int not null,
-  evaluator_role text not null,
-  status text not null,
-  comment text,
-  created_at timestamptz default now()
+    id uuid primary key default gen_random_uuid(),
+    evaluator_id uuid not null references evaluator(user_id) on delete cascade,
+    schedule_id uuid not null references schedule(id) on delete cascade,
+    evaluation_level integer,
+    evaluator_role text,
+    status text,
+    comment text,
+    created_at timestamptz default now()
 );

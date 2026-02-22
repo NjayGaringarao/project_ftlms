@@ -50,7 +50,7 @@ type ProfessionalFormState = {
     id?: string;
     campus_id?: string | null;
     position: string;
-    department?: string | null;
+    department_id?: string | null;
     load?: number | null;
   }>;
 };
@@ -82,7 +82,7 @@ const userToProfessionalFormState = (
       id: d.id,
       campus_id: d.campus_id,
       position: d.position,
-      department: d.department,
+      department_id: d.department_id,
       load: d.load,
     })) ?? [],
 });
@@ -126,7 +126,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
 
   const [newDesignation, setNewDesignation] = useState({
     position: "",
-    department: "",
+    department_id: "",
     load: "",
   });
 
@@ -161,13 +161,13 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
         ...prev.designations,
         {
           position: newDesignation.position.trim(),
-          department: newDesignation.department.trim() || null,
+          department_id: newDesignation.department_id.trim() || null,
           load: newDesignation.load ? parseInt(newDesignation.load) : null,
         },
       ],
     }));
 
-    setNewDesignation({ position: "", department: "", load: "" });
+    setNewDesignation({ position: "", department_id: "", load: "" });
     setProfessionalError("");
   };
 
@@ -234,7 +234,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
   // PROFESSIONAL INFORMATION HANDLERS
   const handleResetProfessional = () => {
     setProfessionalData(savedProfessionalData);
-    setNewDesignation({ position: "", department: "", load: "" });
+    setNewDesignation({ position: "", department_id: "", load: "" });
     setProfessionalError("");
     setProfessionalSuccess(false);
   };
@@ -258,7 +258,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
       }
 
       setSavedProfessionalData({ ...professionalData });
-      setNewDesignation({ position: "", department: "", load: "" });
+      setNewDesignation({ position: "", department_id: "", load: "" });
       setProfessionalSuccess(true);
       setTimeout(() => setProfessionalSuccess(false), 3000);
     } finally {
@@ -628,9 +628,9 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                     >
                       <div>
                         <p className="font-medium">{designation.position}</p>
-                        {designation.department && (
+                        {designation.department_id && (
                           <p className="text-xs text-foreground/60">
-                            {designation.department}
+                            Department ID: {designation.department_id}
                           </p>
                         )}
                         {designation.load && (
@@ -675,17 +675,17 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                   </div>
 
                   <div>
-                    <Label htmlFor="department" className="text-xs">
-                      Department
+                    <Label htmlFor="department_id" className="text-xs">
+                      Department ID
                     </Label>
                     <Input
-                      id="department"
-                      placeholder="Enter department"
-                      value={newDesignation.department}
+                      id="department_id"
+                      placeholder="Enter department UUID"
+                      value={newDesignation.department_id}
                       onChange={(e) =>
                         setNewDesignation((prev) => ({
                           ...prev,
-                          department: e.target.value,
+                          department_id: e.target.value,
                         }))
                       }
                       className="mt-1"

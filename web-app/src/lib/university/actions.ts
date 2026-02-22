@@ -59,13 +59,13 @@ const revalidateCampusesPaths = (id?: string) => {
   }
 };
 
-const revalidateSemestersPaths = (id?: string) => {
-  revalidatePath("/university/semesters");
-  revalidatePath("/university/semesters/create");
+const revalidateTermsPaths = (id?: string) => {
+  revalidatePath("/university/terms");
+  revalidatePath("/university/terms/create");
 
   if (id) {
-    revalidatePath(`/university/semesters/${id}`);
-    revalidatePath(`/university/semesters/${id}/edit`);
+    revalidatePath(`/university/terms/${id}`);
+    revalidatePath(`/university/terms/${id}/edit`);
   }
 };
 
@@ -242,30 +242,30 @@ export async function deleteCampus(
   return { data: true };
 }
 
-type SemesterInput = {
+type TermInput = {
   academic_year: string;
-  term: string;
+  order: number;
   start: string;
   end: string;
 };
 
-type UpdateSemesterInput = SemesterInput & {
+type UpdateTermInput = TermInput & {
   id: string;
 };
 
-const normalizeSemesterInput = (input: SemesterInput) => ({
+const normalizeTermInput = (input: TermInput) => ({
   academic_year: normalizeName(input.academic_year),
-  term: normalizeName(input.term),
+  order: input.order,
   start: input.start,
   end: input.end,
 });
 
-export async function createSemester(
-  input: SemesterInput,
+export async function createTerm(
+  input: TermInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
   if (!input.academic_year?.trim())
     return { error: "Academic year is required" };
-  if (!input.term?.trim()) return { error: "Term is required" };
+  if (!Number.isFinite(input.order)) return { error: "Term order is required" };
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
 
@@ -276,28 +276,28 @@ export async function createSemester(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("semester")
-    .insert(normalizeSemesterInput(input))
+    .from("term")
+    .insert(normalizeTermInput(input))
     .select("id")
     .single();
 
   if (error) {
     return {
-      error: mapDuplicateError("Semester", "academic year and term", error),
+      error: mapDuplicateError("Term", "academic year and order", error),
     };
   }
 
-  revalidateSemestersPaths(data.id);
+  revalidateTermsPaths(data.id);
   return { data: { id: data.id } };
 }
 
-export async function updateSemester(
-  input: UpdateSemesterInput,
+export async function updateTerm(
+  input: UpdateTermInput,
 ): Promise<{ data?: boolean; error?: string }> {
-  if (!input.id?.trim()) return { error: "Semester ID is required" };
+  if (!input.id?.trim()) return { error: "Term ID is required" };
   if (!input.academic_year?.trim())
     return { error: "Academic year is required" };
-  if (!input.term?.trim()) return { error: "Term is required" };
+  if (!Number.isFinite(input.order)) return { error: "Term order is required" };
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
 
@@ -308,31 +308,31 @@ export async function updateSemester(
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("semester")
-    .update(normalizeSemesterInput(input))
+    .from("term")
+    .update(normalizeTermInput(input))
     .eq("id", input.id);
 
   if (error) {
     return {
-      error: mapDuplicateError("Semester", "academic year and term", error),
+      error: mapDuplicateError("Term", "academic year and order", error),
     };
   }
 
-  revalidateSemestersPaths(input.id);
+  revalidateTermsPaths(input.id);
   return { data: true };
 }
 
-export async function deleteSemester(
-  semesterId: string,
+export async function deleteTerm(
+  termId: string,
 ): Promise<{ data?: boolean; error?: string }> {
-  if (!semesterId?.trim()) return { error: "Semester ID is required" };
+  if (!termId?.trim()) return { error: "Term ID is required" };
 
   const supabase = await createClient();
 
   const { count, error: countError } = await supabase
     .from("schedule")
     .select("id", { count: "exact", head: true })
-    .eq("semester_id", semesterId);
+    .eq("semester_id", termId);
 
   if (countError) {
     return { error: countError.message };
@@ -341,20 +341,17 @@ export async function deleteSemester(
   if ((count ?? 0) > 0) {
     return {
       error:
-        "Cannot delete semester while schedules are attached. Remove or reassign schedules first.",
+        "Cannot delete term while schedules are attached. Remove or reassign schedules first.",
     };
   }
 
-  const { error } = await supabase
-    .from("semester")
-    .delete()
-    .eq("id", semesterId);
+  const { error } = await supabase.from("term").delete().eq("id", termId);
 
   if (error) {
     return { error: error.message };
   }
 
-  revalidateSemestersPaths();
+  revalidateTermsPaths();
   return { data: true };
 }
 

@@ -7,33 +7,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Semester } from "@/models/semester";
-import { updateSemester } from "@/lib/university/actions";
+import { Term } from "@/models/term";
+import { updateTerm } from "@/lib/university/actions";
 
-type SemesterEditFormProps = {
-  semester: Semester;
+type TermEditFormProps = {
+  term: Term;
 };
 
 type FormState = {
   academic_year: string;
-  term: string;
+  order: string;
   start: string;
   end: string;
 };
 
-const semesterToFormState = (semester: Semester): FormState => ({
-  academic_year: semester.academic_year,
-  term: semester.term,
-  start: semester.start,
-  end: semester.end,
+const termToFormState = (term: Term): FormState => ({
+  academic_year: term.academic_year,
+  order: String(term.order),
+  start: term.start,
+  end: term.end,
 });
 
-export const SemesterEditForm = ({ semester }: SemesterEditFormProps) => {
+export const TermEditForm = ({ term }: TermEditFormProps) => {
   const [formData, setFormData] = useState<FormState>(() =>
-    semesterToFormState(semester),
+    termToFormState(term),
   );
   const [savedFormData, setSavedFormData] = useState<FormState>(() =>
-    semesterToFormState(semester),
+    termToFormState(term),
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -56,8 +56,14 @@ export const SemesterEditForm = ({ semester }: SemesterEditFormProps) => {
       return;
     }
 
-    if (!formData.term.trim()) {
-      setError("Term is required");
+    if (!formData.order.trim()) {
+      setError("Term order is required");
+      return;
+    }
+
+    const parsedOrder = Number(formData.order);
+    if (!Number.isFinite(parsedOrder)) {
+      setError("Term order must be a number");
       return;
     }
 
@@ -75,9 +81,12 @@ export const SemesterEditForm = ({ semester }: SemesterEditFormProps) => {
     setError("");
     setSuccess(false);
 
-    const { error: updateError } = await updateSemester({
-      id: semester.id,
-      ...formData,
+    const { error: updateError } = await updateTerm({
+      id: term.id,
+      academic_year: formData.academic_year,
+      order: parsedOrder,
+      start: formData.start,
+      end: formData.end,
     });
 
     setIsSaving(false);
@@ -89,7 +98,7 @@ export const SemesterEditForm = ({ semester }: SemesterEditFormProps) => {
 
     const newSavedState = {
       academic_year: formData.academic_year.trim(),
-      term: formData.term.trim(),
+      order: String(parsedOrder),
       start: formData.start,
       end: formData.end,
     };
@@ -105,11 +114,11 @@ export const SemesterEditForm = ({ semester }: SemesterEditFormProps) => {
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Save className="w-5 h-5" />
-          Edit Semester
+          Edit Term
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/university/semesters/${semester.id}`}
+            href={`/university/terms/${term.id}`}
             className="text-foreground"
           >
             <X />
@@ -121,14 +130,14 @@ export const SemesterEditForm = ({ semester }: SemesterEditFormProps) => {
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Calendar className="w-5 h-5" />
-            <h3 className="font-semibold">Semester Profile</h3>
+            <h3 className="font-semibold">Term Profile</h3>
           </div>
 
           {success && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
               <p className="text-xs text-green-900">
-                Semester updated successfully
+                Term updated successfully
               </p>
             </div>
           )}
@@ -158,14 +167,15 @@ export const SemesterEditForm = ({ semester }: SemesterEditFormProps) => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="term">
-                Term *
+              <Label className="text-xs" htmlFor="order">
+                Term Order *
               </Label>
               <Input
-                id="term"
-                placeholder="e.g. First Semester"
-                value={formData.term}
-                onChange={(event) => handleChange("term", event.target.value)}
+                id="order"
+                type="number"
+                placeholder="e.g. 1"
+                value={formData.order}
+                onChange={(event) => handleChange("order", event.target.value)}
                 className="mt-1"
                 disabled={isSaving}
               />

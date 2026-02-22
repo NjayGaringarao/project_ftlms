@@ -1,8 +1,7 @@
 export * from "./rank";
 export * from "./department";
 export * from "./campus";
-export * from "./college";
-export * from "./semester";
+export * from "./term";
 export * from "./user";
 export * from "./identity";
 export * from "./degree";
@@ -10,7 +9,6 @@ export * from "./designation";
 export * from "./program";
 export * from "./block";
 export * from "./schedule";
-export * from "./schedule-college";
 export * from "./course";
 export * from "./class";
 export * from "./room";

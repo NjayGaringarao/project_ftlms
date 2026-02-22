@@ -8,23 +8,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { createSemester } from "@/lib/university/actions";
+import { createTerm } from "@/lib/university/actions";
 
 type FormState = {
   academic_year: string;
-  term: string;
+  order: string;
   start: string;
   end: string;
 };
 
 const initialFormState: FormState = {
   academic_year: "",
-  term: "",
+  order: "",
   start: "",
   end: "",
 };
 
-export const SemesterCreateForm = () => {
+export const TermCreateForm = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,8 +48,14 @@ export const SemesterCreateForm = () => {
       return;
     }
 
-    if (!formData.term.trim()) {
-      setError("Term is required");
+    if (!formData.order.trim()) {
+      setError("Term order is required");
+      return;
+    }
+
+    const parsedOrder = Number(formData.order);
+    if (!Number.isFinite(parsedOrder)) {
+      setError("Term order must be a number");
       return;
     }
 
@@ -67,7 +73,12 @@ export const SemesterCreateForm = () => {
     setError("");
     setShowSuccess(false);
 
-    const { data, error: createError } = await createSemester(formData);
+    const { data, error: createError } = await createTerm({
+      academic_year: formData.academic_year,
+      order: parsedOrder,
+      start: formData.start,
+      end: formData.end,
+    });
 
     setIsSaving(false);
 
@@ -80,9 +91,9 @@ export const SemesterCreateForm = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/university/semesters/${data.id}`);
+        router.push(`/university/terms/${data.id}`);
       } else {
-        router.push("/university/semesters");
+        router.push("/university/terms");
       }
     }, 1200);
   };
@@ -92,10 +103,10 @@ export const SemesterCreateForm = () => {
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Plus className="w-5 h-5" />
-          Semester Information
+          Term Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link href="/university/semesters" className="text-foreground">
+          <Link href="/university/terms" className="text-foreground">
             <X />
           </Link>
         </div>
@@ -107,7 +118,7 @@ export const SemesterCreateForm = () => {
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-green-900">Semester Created</p>
+                <p className="font-semibold text-green-900">Term Created</p>
                 <p className="text-sm text-green-800">
                   Record created successfully. Redirecting...
                 </p>
@@ -125,7 +136,7 @@ export const SemesterCreateForm = () => {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 pb-2 border-b">
               <Calendar className="w-5 h-5" />
-              <h3 className="font-semibold">Semester Profile</h3>
+              <h3 className="font-semibold">Term Profile</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -146,14 +157,17 @@ export const SemesterCreateForm = () => {
               </div>
 
               <div>
-                <Label className="text-xs" htmlFor="term">
-                  Term *
+                <Label className="text-xs" htmlFor="order">
+                  Term Order *
                 </Label>
                 <Input
-                  id="term"
-                  placeholder="e.g. First Semester"
-                  value={formData.term}
-                  onChange={(event) => handleChange("term", event.target.value)}
+                  id="order"
+                  type="number"
+                  placeholder="e.g. 1"
+                  value={formData.order}
+                  onChange={(event) =>
+                    handleChange("order", event.target.value)
+                  }
                   className="mt-1"
                   disabled={isSaving}
                 />
@@ -196,7 +210,7 @@ export const SemesterCreateForm = () => {
               Reset
             </Button>
             <Button onClick={handleCreate} disabled={isSaving}>
-              {isSaving ? "Creating..." : "Create Semester"}
+              {isSaving ? "Creating..." : "Create Term"}
             </Button>
           </div>
         </div>

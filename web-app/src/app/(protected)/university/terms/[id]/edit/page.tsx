@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { SemesterEditForm } from "@/components/university/semester-edit-form";
-import { getSemesterById } from "@/lib/university/semesters";
+import { TermEditForm } from "@/components/university/term-edit-form";
+import { getTermById } from "@/lib/university/terms";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +10,15 @@ type EditPageProps = {
 
 const EditPage = async ({ params }: EditPageProps) => {
   const { id } = await params;
-  const semester = await getSemesterById(id);
+  const term = await getTermById(id);
 
-  if (!semester) {
-    redirect("/university/semesters");
+  if (!term) {
+    redirect("/university/terms");
   }
 
   return (
     <div className="flex w-2/3 flex-col">
-      <SemesterEditForm semester={semester} />
+      <TermEditForm term={term} />
     </div>
   );
 };

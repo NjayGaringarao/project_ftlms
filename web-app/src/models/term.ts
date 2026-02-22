@@ -1,7 +1,7 @@
-export type Semester = {
+export type Term = {
   id: string;
   academic_year: string;
-  term: string;
+  order: number;
   start: string;
   end: string;
 };

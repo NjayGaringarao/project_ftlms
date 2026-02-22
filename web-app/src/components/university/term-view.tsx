@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Semester } from "@/models/semester";
-import { deleteSemester } from "@/lib/university/actions";
+import { Term } from "@/models/term";
+import { deleteTerm } from "@/lib/university/actions";
 
-type SemesterViewProps = {
-  semester: Semester;
+type TermViewProps = {
+  term: Term;
 };
 
 const formatDate = (value: string) => {
@@ -26,7 +26,7 @@ const formatDate = (value: string) => {
   return date.toLocaleDateString();
 };
 
-export const SemesterView = ({ semester }: SemesterViewProps) => {
+export const TermView = ({ term }: TermViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -36,7 +36,7 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
     setIsDeleting(true);
     setDeleteError("");
 
-    const { error } = await deleteSemester(semester.id);
+    const { error } = await deleteTerm(term.id);
 
     if (error) {
       setDeleteError(error);
@@ -45,7 +45,7 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/university/semesters");
+    router.push("/university/terms");
   };
 
   return (
@@ -53,16 +53,16 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Calendar className="w-5 h-5" />
-          Semester Information
+          Term Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/university/semesters/${semester.id}/edit`}
+            href={`/university/terms/${term.id}/edit`}
             className="text-foreground"
           >
             <Edit />
           </Link>
-          <Link href="/university/semesters" className="text-foreground">
+          <Link href="/university/terms" className="text-foreground">
             <X />
           </Link>
         </div>
@@ -72,25 +72,25 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Calendar className="w-5 h-5" />
-            <h3 className="text-base font-semibold">Semester Profile</h3>
+            <h3 className="text-base font-semibold">Term Profile</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-foreground/60">Academic Year</p>
-              <p className="font-medium">{semester.academic_year}</p>
+              <p className="font-medium">{term.academic_year}</p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Term</p>
-              <p className="font-medium">{semester.term}</p>
+              <p className="text-xs text-foreground/60">Term Order</p>
+              <p className="font-medium">{term.order}</p>
             </div>
             <div>
               <p className="text-xs text-foreground/60">Start Date</p>
-              <p className="font-medium">{formatDate(semester.start)}</p>
+              <p className="font-medium">{formatDate(term.start)}</p>
             </div>
             <div>
               <p className="text-xs text-foreground/60">End Date</p>
-              <p className="font-medium">{formatDate(semester.end)}</p>
+              <p className="font-medium">{formatDate(term.end)}</p>
             </div>
           </div>
         </div>
@@ -102,7 +102,7 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
           </div>
 
           <p className="text-xs text-foreground/60">
-            Semester deletion is blocked when schedules are still attached.
+            Term deletion is blocked when schedules are still attached.
           </p>
 
           <Button
@@ -112,7 +112,7 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
             className="self-end"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete Semester
+            Delete Term
           </Button>
         </div>
 
@@ -122,14 +122,13 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-600">
                   <AlertCircle className="w-5 h-5" />
-                  Delete Semester
+                  Delete Term
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-foreground/80">
                   Are you sure you want to delete
-                  <strong>{` ${semester.academic_year} - ${semester.term}`}</strong>
-                  ?
+                  <strong>{` ${term.academic_year} - ${term.order}`}</strong>?
                 </p>
 
                 <p className="text-xs text-foreground/60">
@@ -156,7 +155,7 @@ export const SemesterView = ({ semester }: SemesterViewProps) => {
                     onClick={handleDelete}
                     disabled={isDeleting}
                   >
-                    {isDeleting ? "Deleting..." : "Delete Semester"}
+                    {isDeleting ? "Deleting..." : "Delete Term"}
                   </Button>
                 </div>
               </CardContent>

@@ -1,9 +1,9 @@
-import { SemesterCreateForm } from "@/components/university/semester-create-form";
+import { TermCreateForm } from "@/components/university/term-create-form";
 
 const CreatePage = () => {
   return (
     <div className="flex w-2/3 flex-col">
-      <SemesterCreateForm />
+      <TermCreateForm />
     </div>
   );
 };

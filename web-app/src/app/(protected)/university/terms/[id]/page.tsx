@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { SemesterView } from "@/components/university/semester-view";
-import { getSemesterById } from "@/lib/university/semesters";
+import { TermView } from "@/components/university/term-view";
+import { getTermById } from "@/lib/university/terms";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +10,15 @@ type ViewPageProps = {
 
 const ViewPage = async ({ params }: ViewPageProps) => {
   const { id } = await params;
-  const semester = await getSemesterById(id);
+  const term = await getTermById(id);
 
-  if (!semester) {
-    redirect("/university/semesters");
+  if (!term) {
+    redirect("/university/terms");
   }
 
   return (
     <div className="flex w-2/3 flex-col">
-      <SemesterView semester={semester} />
+      <TermView term={term} />
     </div>
   );
 };
