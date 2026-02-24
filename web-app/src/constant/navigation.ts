@@ -8,10 +8,28 @@ export const NAV_ITEMS: NavigationItem[] = [
     requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
   },
   {
-    label: "University",
-    href: "/university",
+    label: "Campuses",
+    href: "/campuses",
     icon: "landmark",
-    requiredRoles: ["ADMIN", "CHAIR", "FACULTY", "DIRECTOR", "EVALUATOR"],
+    requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Departments",
+    href: "/departments",
+    icon: "landmark",
+    requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Academic Ranks",
+    href: "/academic-ranks",
+    icon: "landmark",
+    requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Academic Terms",
+    href: "/academic-terms",
+    icon: "landmark",
+    requiredRoles: ["ADMIN"],
   },
   {
     label: "FTL",
