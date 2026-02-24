@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Building2, CheckCircle, Plus, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, Building2, CheckCircle, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createDepartment } from "@/lib/admin/actions";
+import AdminPanel from "./admin-panel";
 
 type FormState = {
   code: string;
@@ -87,20 +86,12 @@ export const DepartmentCreateForm = () => {
   };
 
   return (
-    <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
-        <CardTitle className="flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Department Information
-        </CardTitle>
-        <div className="flex flex-row items-center gap-4">
-          <Link href="/departments" className="text-foreground">
-            <X />
-          </Link>
-        </div>
-      </CardHeader>
-
-      <CardContent className="overflow-y-auto flex flex-col gap-8 py-6">
+    <AdminPanel
+      title="Department Information"
+      icon={Plus}
+      onClose={() => router.push("/departments")}
+    >
+      <>
         <div className="space-y-4">
           {showSuccess && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
@@ -214,7 +205,7 @@ export const DepartmentCreateForm = () => {
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </>
+    </AdminPanel>
   );
 };

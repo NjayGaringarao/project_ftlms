@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/utils/style";
 import { DepartmentListItem } from "@/lib/admin/departments";
+import ListItem from "./list-item";
+import { GraduationCap, ToolCase } from "lucide-react";
 
 type DepartmentsListProps = {
   departments: DepartmentListItem[];
@@ -15,6 +17,7 @@ type DepartmentsListProps = {
 
 export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [query, setQuery] = useState("");
 
   const selectedDepartmentId = useMemo(() => {
@@ -64,27 +67,25 @@ export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
 
           {filteredDepartments.map((department) => {
             const isSelected = selectedDepartmentId === department.id;
+            const Icon =
+              department.type === "ACADEMIC" ? GraduationCap : ToolCase;
 
             return (
-              <Link
+              <ListItem
                 key={department.id}
-                href={`/departments/${department.id}`}
-                className={cn(
-                  "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
-                  isSelected &&
-                    "bg-foreground/10 border-foreground/40 font-semibold",
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-base font-semibold">{department.name}</p>
+                onClick={() => router.push(`/departments/${department.id}`)}
+                title={department.name}
+                subtitle={[
+                  department.description || "No description available",
+                ]}
+                isSelected={isSelected}
+                icon={<Icon className="h-14 w-14 text-background" />}
+                annotations={
                   <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
                     {department.code}
                   </span>
-                </div>
-                <p className="text-sm text-foreground/70 line-clamp-2">
-                  {department.description || "No description available"}
-                </p>
-              </Link>
+                }
+              />
             );
           })}
         </div>

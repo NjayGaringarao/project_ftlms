@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/utils/style";
 import { CampusListItem } from "@/lib/admin/campuses";
+import ListItem from "./list-item";
+import { Landmark } from "lucide-react";
 
 type CampusesListProps = {
   campuses: CampusListItem[];
@@ -16,6 +18,7 @@ type CampusesListProps = {
 export const CampusesList = ({ campuses }: CampusesListProps) => {
   const pathname = usePathname();
   const [query, setQuery] = useState("");
+  const router = useRouter();
 
   const selectedCampusId = useMemo(() => {
     const match = pathname.match(/\/campuses\/([^\/]+)/);
@@ -65,25 +68,14 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
             const isSelected = selectedCampusId === campus.id;
 
             return (
-              <Link
+              <ListItem
                 key={campus.id}
-                href={`/campuses/${campus.id}`}
-                className={cn(
-                  "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
-                  isSelected &&
-                    "bg-foreground/10 border-foreground/40 font-semibold",
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-base font-semibold">{campus.name}</p>
-                </div>
-                <p className="text-sm text-foreground/70 line-clamp-2">
-                  {campus.address || "No address available"}
-                </p>
-                <p className="text-xs text-foreground/60">
-                  {campus.zip_code ? `ZIP ${campus.zip_code}` : "ZIP not set"}
-                </p>
-              </Link>
+                onClick={() => router.push(`/campuses/${campus.id}`)}
+                title={campus.name}
+                subtitle={[`${campus.address} | ${campus.zip_code}`]}
+                isSelected={isSelected}
+                icon={<Landmark className="h-14 w-14 text-background" />}
+              />
             );
           })}
         </div>

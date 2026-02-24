@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle, Plus, Trophy, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, CheckCircle, Plus, Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createRank } from "@/lib/admin/actions";
+import AdminPanel from "./admin-panel";
 
 type FormState = {
   number: string;
@@ -82,20 +81,12 @@ export const RankCreateForm = () => {
   };
 
   return (
-    <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
-        <CardTitle className="flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Rank Information
-        </CardTitle>
-        <div className="flex flex-row items-center gap-4">
-          <Link href="/academic-ranks" className="text-foreground">
-            <X />
-          </Link>
-        </div>
-      </CardHeader>
-
-      <CardContent className="overflow-y-auto flex flex-col gap-8 py-6">
+    <AdminPanel
+      title="Rank Information"
+      icon={Plus}
+      onClose={() => router.push("/academic-ranks")}
+    >
+      <>
         <div className="space-y-4">
           {showSuccess && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
@@ -183,7 +174,7 @@ export const RankCreateForm = () => {
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </>
+    </AdminPanel>
   );
 };

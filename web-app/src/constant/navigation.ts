@@ -16,7 +16,7 @@ export const NAV_ITEMS: NavigationItem[] = [
   {
     label: "Departments",
     href: "/departments",
-    icon: "landmark",
+    icon: "shapes",
     requiredRoles: ["ADMIN"],
   },
   {

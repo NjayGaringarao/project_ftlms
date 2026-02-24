@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { AlertCircle, Building2, CheckCircle, Save, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { AlertCircle, Building2, CheckCircle, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { updateCampus } from "@/lib/admin/actions";
+import AdminPanel from "./admin-panel";
 
 type CampusEditFormProps = {
   campus: Campus;
@@ -27,6 +27,7 @@ const campusToFormState = (campus: Campus): FormState => ({
 });
 
 export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormState>(() =>
     campusToFormState(campus),
   );
@@ -85,20 +86,12 @@ export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
   };
 
   return (
-    <Card className="mt-4 mr-4 mb-4 overflow-hidden gap-0 py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
-        <CardTitle className="flex items-center gap-2">
-          <Save className="w-5 h-5" />
-          Edit Campus
-        </CardTitle>
-        <div className="flex flex-row items-center gap-4">
-          <Link href={`/campuses/${campus.id}`} className="text-foreground">
-            <X />
-          </Link>
-        </div>
-      </CardHeader>
-
-      <CardContent className="overflow-y-auto h-full flex flex-col gap-6 py-4">
+    <AdminPanel
+      title="Edit Campus"
+      icon={Save}
+      onClose={() => router.push(`/campuses/${campus.id}`)}
+    >
+      <>
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Building2 className="w-5 h-5" />
@@ -178,7 +171,7 @@ export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </>
+    </AdminPanel>
   );
 };

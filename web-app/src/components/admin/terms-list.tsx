@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/utils/style";
 import { TermListItem } from "@/lib/admin/terms";
+import ListItem from "./list-item";
+import { CalendarDays } from "lucide-react";
 
 type TermsListProps = {
   terms: TermListItem[];
@@ -22,6 +24,7 @@ const formatDate = (value: string | null) => {
 
 export const TermsList = ({ terms }: TermsListProps) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [query, setQuery] = useState("");
 
   const selectedTermId = useMemo(() => {
@@ -74,23 +77,17 @@ export const TermsList = ({ terms }: TermsListProps) => {
             const isSelected = selectedTermId === term.id;
 
             return (
-              <Link
+              <ListItem
                 key={term.id}
-                href={`/academic-terms/${term.id}`}
-                className={cn(
-                  "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
-                  isSelected &&
-                    "bg-foreground/10 border-foreground/40 font-semibold",
-                )}
-              >
-                <p className="text-base font-semibold">{term.academic_year}</p>
-                <p className="text-sm text-foreground/70">
-                  {term.term_code} • Sequence {term.sequence}
-                </p>
-                <p className="text-xs text-foreground/60">
-                  {formatDate(term.start)} - {formatDate(term.end)}
-                </p>
-              </Link>
+                onClick={() => router.push(`/academic-terms/${term.id}`)}
+                title={term.academic_year}
+                subtitle={[
+                  `${term.term_code} • Sequence ${term.sequence}`,
+                  `${formatDate(term.start)} - ${formatDate(term.end)}`,
+                ]}
+                isSelected={isSelected}
+                icon={<CalendarDays className="h-14 w-14 text-background" />}
+              />
             );
           })}
         </div>

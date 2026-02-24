@@ -1,20 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Calendar,
-  Edit,
-  Trash2,
-  X,
-} from "lucide-react";
+import { AlertCircle, AlertTriangle, Calendar, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Term } from "@/models/term";
 import { deleteTerm } from "@/lib/admin/actions";
+import AdminPanel from "./admin-panel";
 
 type TermViewProps = {
   term: Term;
@@ -50,26 +43,13 @@ export const TermView = ({ term }: TermViewProps) => {
   };
 
   return (
-    <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          Term Information
-        </CardTitle>
-        <div className="flex flex-row items-center gap-4">
-          <Link
-            href={`/academic-terms/${term.id}/edit`}
-            className="text-foreground"
-          >
-            <Edit />
-          </Link>
-          <Link href="/academic-terms" className="text-foreground">
-            <X />
-          </Link>
-        </div>
-      </CardHeader>
-
-      <CardContent className="overflow-y-auto flex flex-col gap-8 py-6">
+    <AdminPanel
+      title="Term Information"
+      icon={Calendar}
+      onClose={() => router.push("/academic-terms")}
+      onEdit={() => router.push(`/academic-terms/${term.id}/edit`)}
+    >
+      <>
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Calendar className="w-5 h-5" />
@@ -168,7 +148,7 @@ export const TermView = ({ term }: TermViewProps) => {
             </Card>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </>
+    </AdminPanel>
   );
 };

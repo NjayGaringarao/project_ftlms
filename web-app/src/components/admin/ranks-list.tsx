@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/utils/style";
 import { RankListItem } from "@/lib/admin/ranks";
+import ListItem from "./list-item";
+import { Award } from "lucide-react";
 
 type RanksListProps = {
   ranks: RankListItem[];
@@ -15,6 +17,7 @@ type RanksListProps = {
 
 export const RanksList = ({ ranks }: RanksListProps) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [query, setQuery] = useState("");
 
   const selectedRankId = useMemo(() => {
@@ -65,25 +68,19 @@ export const RanksList = ({ ranks }: RanksListProps) => {
             const isSelected = selectedRankId === rank.id;
 
             return (
-              <Link
+              <ListItem
                 key={rank.id}
-                href={`/academic-ranks/${rank.id}`}
-                className={cn(
-                  "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
-                  isSelected &&
-                    "bg-foreground/10 border-foreground/40 font-semibold",
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-base font-semibold">{rank.title}</p>
+                onClick={() => router.push(`/academic-ranks/${rank.id}`)}
+                title={rank.title}
+                subtitle={[rank.description || "No description available"]}
+                isSelected={isSelected}
+                icon={<Award className="h-14 w-14 text-background" />}
+                annotations={
                   <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
                     #{rank.number}
                   </span>
-                </div>
-                <p className="text-sm text-foreground/70 line-clamp-2">
-                  {rank.description || "No description available"}
-                </p>
-              </Link>
+                }
+              />
             );
           })}
         </div>

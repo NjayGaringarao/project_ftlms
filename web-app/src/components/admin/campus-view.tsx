@@ -1,21 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
   Building2,
-  Edit,
   MapPin,
   Trash2,
-  X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { deleteCampus } from "@/lib/admin/actions";
+import AdminPanel from "./admin-panel";
 
 type CampusViewProps = {
   campus: Campus;
@@ -44,26 +42,13 @@ export const CampusView = ({ campus }: CampusViewProps) => {
   };
 
   return (
-    <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="w-5 h-5" />
-          Campus Information
-        </CardTitle>
-        <div className="flex flex-row items-center gap-4">
-          <Link
-            href={`/campuses/${campus.id}/edit`}
-            className="text-foreground"
-          >
-            <Edit />
-          </Link>
-          <Link href="/campuses" className="text-foreground">
-            <X />
-          </Link>
-        </div>
-      </CardHeader>
-
-      <CardContent className="overflow-y-auto flex flex-col gap-8 py-6">
+    <AdminPanel
+      title="Campus Information"
+      icon={Building2}
+      onClose={() => router.push("/campuses")}
+      onEdit={() => router.push(`/campuses/${campus.id}/edit`)}
+    >
+      <>
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Building2 className="w-5 h-5" />
@@ -165,7 +150,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
             </Card>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </>
+    </AdminPanel>
   );
 };

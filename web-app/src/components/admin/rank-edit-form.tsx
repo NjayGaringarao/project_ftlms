@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { AlertCircle, CheckCircle, Save, Trophy, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { AlertCircle, CheckCircle, Save, Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Rank } from "@/models/rank";
 import { updateRank } from "@/lib/admin/actions";
+import AdminPanel from "./admin-panel";
 
 type RankEditFormProps = {
   rank: Rank;
@@ -27,6 +27,7 @@ const rankToFormState = (rank: Rank): FormState => ({
 });
 
 export const RankEditForm = ({ rank }: RankEditFormProps) => {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormState>(() =>
     rankToFormState(rank),
   );
@@ -92,20 +93,12 @@ export const RankEditForm = ({ rank }: RankEditFormProps) => {
   };
 
   return (
-    <Card className="mt-4 mr-4 mb-4 overflow-hidden gap-0 py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
-        <CardTitle className="flex items-center gap-2">
-          <Save className="w-5 h-5" />
-          Edit Rank
-        </CardTitle>
-        <div className="flex flex-row items-center gap-4">
-          <Link href={`/academic-ranks/${rank.id}`} className="text-foreground">
-            <X />
-          </Link>
-        </div>
-      </CardHeader>
-
-      <CardContent className="overflow-y-auto h-full flex flex-col gap-6 py-4">
+    <AdminPanel
+      title="Edit Rank"
+      icon={Save}
+      onClose={() => router.push(`/academic-ranks/${rank.id}`)}
+    >
+      <>
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Trophy className="w-5 h-5" />
@@ -184,7 +177,7 @@ export const RankEditForm = ({ rank }: RankEditFormProps) => {
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </>
+    </AdminPanel>
   );
 };

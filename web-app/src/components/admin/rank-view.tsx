@@ -1,20 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Edit,
-  Trash2,
-  Trophy,
-  X,
-} from "lucide-react";
+import { AlertCircle, AlertTriangle, Trash2, Trophy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Rank } from "@/models/rank";
 import { deleteRank } from "@/lib/admin/actions";
+import AdminPanel from "./admin-panel";
 
 type RankViewProps = {
   rank: Rank;
@@ -43,26 +36,13 @@ export const RankView = ({ rank }: RankViewProps) => {
   };
 
   return (
-    <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
-      <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
-        <CardTitle className="flex items-center gap-2">
-          <Trophy className="w-5 h-5" />
-          Rank Information
-        </CardTitle>
-        <div className="flex flex-row items-center gap-4">
-          <Link
-            href={`/academic-ranks/${rank.id}/edit`}
-            className="text-foreground"
-          >
-            <Edit />
-          </Link>
-          <Link href="/academic-ranks" className="text-foreground">
-            <X />
-          </Link>
-        </div>
-      </CardHeader>
-
-      <CardContent className="overflow-y-auto flex flex-col gap-8 py-6">
+    <AdminPanel
+      title="Rank Information"
+      icon={Trophy}
+      onClose={() => router.push("/academic-ranks")}
+      onEdit={() => router.push(`/academic-ranks/${rank.id}/edit`)}
+    >
+      <>
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Trophy className="w-5 h-5" />
@@ -150,7 +130,7 @@ export const RankView = ({ rank }: RankViewProps) => {
             </Card>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </>
+    </AdminPanel>
   );
 };
