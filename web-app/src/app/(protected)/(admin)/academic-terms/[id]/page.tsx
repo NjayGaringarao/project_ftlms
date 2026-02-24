@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { TermView } from "@/components/university/term-view";
-import { getTermById } from "@/lib/university/terms";
+import { TermView } from "@/components/admin/term-view";
+import { getTermById } from "@/lib/admin/terms";
 
 export const dynamic = "force-dynamic";
 

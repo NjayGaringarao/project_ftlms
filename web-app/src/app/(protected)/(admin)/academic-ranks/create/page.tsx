@@ -1,4 +1,4 @@
-import { RankCreateForm } from "@/components/university/rank-create-form";
+import { RankCreateForm } from "@/components/admin/rank-create-form";
 
 const CreatePage = () => {
   return (

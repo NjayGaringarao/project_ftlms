@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { TermEditForm } from "@/components/university/term-edit-form";
-import { getTermById } from "@/lib/university/terms";
+import { TermEditForm } from "@/components/admin/term-edit-form";
+import { getTermById } from "@/lib/admin/terms";
 
 export const dynamic = "force-dynamic";
 

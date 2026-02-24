@@ -8,20 +8,20 @@ import {
   AlertTriangle,
   Building2,
   Edit,
-  MapPin,
+  FileText,
   Trash2,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Campus } from "@/models/campus";
-import { deleteCampus } from "@/lib/university/actions";
+import { Department } from "@/models/department";
+import { deleteDepartment } from "@/lib/admin/actions";
 
-type CampusViewProps = {
-  campus: Campus;
+type DepartmentViewProps = {
+  department: Department;
 };
 
-export const CampusView = ({ campus }: CampusViewProps) => {
+export const DepartmentView = ({ department }: DepartmentViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -31,7 +31,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
     setIsDeleting(true);
     setDeleteError("");
 
-    const { error } = await deleteCampus(campus.id);
+    const { error } = await deleteDepartment(department.id);
 
     if (error) {
       setDeleteError(error);
@@ -40,7 +40,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/campuses");
+    router.push("/departments");
   };
 
   return (
@@ -48,16 +48,16 @@ export const CampusView = ({ campus }: CampusViewProps) => {
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Building2 className="w-5 h-5" />
-          Campus Information
+          Department Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/campuses/${campus.id}/edit`}
+            href={`/departments/${department.id}/edit`}
             className="text-foreground"
           >
             <Edit />
           </Link>
-          <Link href="/campuses" className="text-foreground">
+          <Link href="/departments" className="text-foreground">
             <X />
           </Link>
         </div>
@@ -67,34 +67,32 @@ export const CampusView = ({ campus }: CampusViewProps) => {
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
             <Building2 className="w-5 h-5" />
-            <h3 className="text-base font-semibold">Campus Profile</h3>
+            <h3 className="text-base font-semibold">Department Profile</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start gap-3">
               <Building2 className="w-5 h-5 text-foreground/60 mt-0.5" />
               <div>
-                <p className="text-xs text-foreground/60">Name</p>
-                <p className="font-medium">{campus.name}</p>
-              </div>
-            </div>
-
-            <div className="md:col-span-2 flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-foreground/60 mt-0.5" />
-              <div>
-                <p className="text-xs text-foreground/60">Address</p>
-                <p className="font-medium">
-                  {campus.address || "Not provided"}
-                </p>
+                <p className="text-xs text-foreground/60">Code</p>
+                <p className="font-medium">{department.code}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-foreground/60 mt-0.5" />
+              <Building2 className="w-5 h-5 text-foreground/60 mt-0.5" />
               <div>
-                <p className="text-xs text-foreground/60">ZIP Code</p>
+                <p className="text-xs text-foreground/60">Name</p>
+                <p className="font-medium">{department.name}</p>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 flex items-start gap-3">
+              <FileText className="w-5 h-5 text-foreground/60 mt-0.5" />
+              <div>
+                <p className="text-xs text-foreground/60">Description</p>
                 <p className="font-medium">
-                  {campus.zip_code || "Not provided"}
+                  {department.description || "No description provided"}
                 </p>
               </div>
             </div>
@@ -108,8 +106,8 @@ export const CampusView = ({ campus }: CampusViewProps) => {
           </div>
 
           <p className="text-xs text-foreground/60">
-            Deleting this campus removes related designations and detaches
-            campus links from colleges, courses, and rooms.
+            Deleting this department deletes all the programs under it
+            trancending campuses.
           </p>
 
           <Button
@@ -119,7 +117,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
             className="self-end"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete Campus
+            Delete Department
           </Button>
         </div>
 
@@ -129,13 +127,19 @@ export const CampusView = ({ campus }: CampusViewProps) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-600">
                   <AlertCircle className="w-5 h-5" />
-                  Delete Campus
+                  Delete Department
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-foreground/80">
-                  Are you sure you want to delete <strong>{campus.name}</strong>
-                  ? This action cannot be undone.
+                  Are you sure you want to delete{" "}
+                  <strong>{department.name}</strong>? This action cannot be
+                  undone.
+                </p>
+
+                <p className="text-xs text-foreground/60">
+                  All Programs and its blocks under this department will also be
+                  deleted, transcending all campuses.
                 </p>
 
                 {deleteError && (
@@ -158,7 +162,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
                     onClick={handleDelete}
                     disabled={isDeleting}
                   >
-                    {isDeleting ? "Deleting..." : "Delete Campus"}
+                    {isDeleting ? "Deleting..." : "Delete Department"}
                   </Button>
                 </div>
               </CardContent>

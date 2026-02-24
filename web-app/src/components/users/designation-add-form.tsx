@@ -13,10 +13,10 @@ import {
   getDesignationRequirements,
   validateDesignation,
 } from "@/constant/designations";
-import { getDepartmentsList } from "@/lib/university/departments";
-import { getPrograms } from "@/lib/university/programs";
-import { getCampusesList } from "@/lib/university/campuses";
-import { DepartmentListItem } from "@/lib/university/departments";
+import { getDepartmentsList } from "@/lib/admin/departments";
+import { getPrograms } from "@/lib/admin/programs";
+import { getCampusesList } from "@/lib/admin/campuses";
+import { DepartmentListItem } from "@/lib/admin/departments";
 import { ExtendedProgram } from "@/models/program";
 import { Campus } from "@/models/campus";
 

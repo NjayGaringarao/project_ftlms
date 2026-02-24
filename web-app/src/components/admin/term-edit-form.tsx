@@ -2,44 +2,41 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertCircle, Building2, CheckCircle, Save, X } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Department } from "@/models/department";
-import { updateDepartment } from "@/lib/university/actions";
+import { Term } from "@/models/term";
+import { updateTerm } from "@/lib/admin/actions";
 
-type DepartmentEditFormProps = {
-  department: Department;
+type TermEditFormProps = {
+  term: Term;
 };
 
 type FormState = {
-  code: string;
-  name: string;
-  type:
-    | "ACADEMIC"
-    | "ADMINISTRATIVE"
-    | "STUDENT_SERVICES"
-    | "EXTENSION_SERVICES";
-  description: string;
+  academic_year: string;
+  term_code: string;
+  sequence: string;
+  start: string;
+  end: string;
 };
 
-const departmentToFormState = (department: Department): FormState => ({
-  code: department.code,
-  name: department.name,
-  type: (department.type as FormState["type"]) ?? "ACADEMIC",
-  description: department.description ?? "",
+const termToFormState = (term: Term): FormState => ({
+  academic_year: term.academic_year,
+  term_code: term.term_code,
+  sequence: String(term.sequence),
+  start: term.start ?? "",
+  end: term.end ?? "",
 });
 
-export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
+export const TermEditForm = ({ term }: TermEditFormProps) => {
   const [formData, setFormData] = useState<FormState>(() =>
-    departmentToFormState(department),
+    termToFormState(term),
   );
   const [savedFormData, setSavedFormData] = useState<FormState>(() =>
-    departmentToFormState(department),
+    termToFormState(term),
   );
-
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -56,13 +53,29 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
   };
 
   const handleSave = async () => {
-    if (!formData.code.trim()) {
-      setError("Department code is required");
+    if (!formData.academic_year.trim()) {
+      setError("Academic year is required");
       return;
     }
 
-    if (!formData.name.trim()) {
-      setError("Department name is required");
+    if (!formData.term_code.trim()) {
+      setError("Term code is required");
+      return;
+    }
+
+    const parsedSequence = Number(formData.sequence);
+    if (!Number.isFinite(parsedSequence)) {
+      setError("Term sequence must be a number");
+      return;
+    }
+
+    if (!formData.start.trim()) {
+      setError("Start date is required");
+      return;
+    }
+
+    if (!formData.end.trim()) {
+      setError("End date is required");
       return;
     }
 
@@ -70,12 +83,13 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
     setError("");
     setSuccess(false);
 
-    const { error: updateError } = await updateDepartment({
-      id: department.id,
-      code: formData.code,
-      name: formData.name,
-      type: formData.type,
-      description: formData.description,
+    const { error: updateError } = await updateTerm({
+      id: term.id,
+      academic_year: formData.academic_year,
+      term_code: formData.term_code,
+      sequence: parsedSequence,
+      start: formData.start,
+      end: formData.end,
     });
 
     setIsSaving(false);
@@ -86,10 +100,11 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
     }
 
     const newSavedState = {
-      code: formData.code.trim().toUpperCase(),
-      name: formData.name.trim(),
-      type: formData.type,
-      description: formData.description.trim(),
+      academic_year: formData.academic_year.trim(),
+      term_code: formData.term_code.trim(),
+      sequence: String(parsedSequence),
+      start: formData.start,
+      end: formData.end,
     };
 
     setSavedFormData(newSavedState);
@@ -103,13 +118,10 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Save className="w-5 h-5" />
-          Edit Department
+          Edit Term
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link
-            href={`/departments/${department.id}`}
-            className="text-foreground"
-          >
+          <Link href={`/academic-terms/${term.id}`} className="text-foreground">
             <X />
           </Link>
         </div>
@@ -118,15 +130,15 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
       <CardContent className="overflow-y-auto h-full flex flex-col gap-6 py-4">
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
-            <Building2 className="w-5 h-5" />
-            <h3 className="font-semibold">Department Profile</h3>
+            <Calendar className="w-5 h-5" />
+            <h3 className="font-semibold">Term Profile</h3>
           </div>
 
           {success && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
               <p className="text-xs text-green-900">
-                Department updated successfully
+                Term updated successfully
               </p>
             </div>
           )}
@@ -140,16 +152,15 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs" htmlFor="code">
-                Department Code *
+              <Label className="text-xs" htmlFor="academic_year">
+                Academic Year *
               </Label>
               <Input
-                id="code"
-                placeholder="e.g. CCS"
-                value={formData.code}
-                onChange={(event) => handleChange("code", event.target.value)}
-                onBlur={(event) =>
-                  handleChange("code", event.target.value.trim().toUpperCase())
+                id="academic_year"
+                placeholder="e.g. 2025-2026"
+                value={formData.academic_year}
+                onChange={(event) =>
+                  handleChange("academic_year", event.target.value)
                 }
                 className="mt-1"
                 disabled={isSaving}
@@ -157,50 +168,61 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="name">
-                Department Name *
+              <Label className="text-xs" htmlFor="term_code">
+                Term Code *
               </Label>
               <Input
-                id="name"
-                placeholder="e.g. College of Computer Studies"
-                value={formData.name}
-                onChange={(event) => handleChange("name", event.target.value)}
+                id="term_code"
+                placeholder="e.g. 1ST"
+                value={formData.term_code}
+                onChange={(event) =>
+                  handleChange("term_code", event.target.value)
+                }
                 className="mt-1"
                 disabled={isSaving}
               />
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="type">
-                Department Type *
-              </Label>
-              <select
-                id="type"
-                value={formData.type}
-                onChange={(event) =>
-                  handleChange("type", event.target.value as FormState["type"])
-                }
-                className="mt-1 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-                disabled={isSaving}
-              >
-                <option value="ACADEMIC">Academic</option>
-                <option value="ADMINISTRATIVE">Administrative</option>
-                <option value="STUDENT_SERVICES">Student Services</option>
-                <option value="EXTENSION_SERVICES">Extension Services</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <Label className="text-xs" htmlFor="description">
-                Description
+              <Label className="text-xs" htmlFor="sequence">
+                Sequence *
               </Label>
               <Input
-                id="description"
-                placeholder="Enter department description"
-                value={formData.description}
+                id="sequence"
+                type="number"
+                placeholder="e.g. 1"
+                value={formData.sequence}
                 onChange={(event) =>
-                  handleChange("description", event.target.value)
+                  handleChange("sequence", event.target.value)
                 }
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs" htmlFor="start">
+                Start Date *
+              </Label>
+              <Input
+                id="start"
+                type="date"
+                value={formData.start}
+                onChange={(event) => handleChange("start", event.target.value)}
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs" htmlFor="end">
+                End Date *
+              </Label>
+              <Input
+                id="end"
+                type="date"
+                value={formData.end}
+                onChange={(event) => handleChange("end", event.target.value)}
                 className="mt-1"
                 disabled={isSaving}
               />

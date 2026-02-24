@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Rank } from "@/models/rank";
-import { updateRank } from "@/lib/university/actions";
+import { updateRank } from "@/lib/admin/actions";
 
 type RankEditFormProps = {
   rank: Rank;

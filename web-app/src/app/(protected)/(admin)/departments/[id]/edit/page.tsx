@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { DepartmentEditForm } from "@/components/university/department-edit-form";
-import { getDepartmentById } from "@/lib/university/departments";
+import { DepartmentEditForm } from "@/components/admin/department-edit-form";
+import { getDepartmentById } from "@/lib/admin/departments";
 
 export const dynamic = "force-dynamic";
 

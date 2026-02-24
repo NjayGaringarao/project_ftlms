@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { RankEditForm } from "@/components/university/rank-edit-form";
-import { getRankById } from "@/lib/university/ranks";
+import { RankEditForm } from "@/components/admin/rank-edit-form";
+import { getRankById } from "@/lib/admin/ranks";
 
 export const dynamic = "force-dynamic";
 

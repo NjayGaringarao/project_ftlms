@@ -3,26 +3,26 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Building2, CheckCircle, Plus, X } from "lucide-react";
+import { AlertCircle, CheckCircle, Plus, Trophy, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { createCampus } from "@/lib/university/actions";
+import { createRank } from "@/lib/admin/actions";
 
 type FormState = {
-  name: string;
-  address: string;
-  zip_code: string;
+  number: string;
+  title: string;
+  description: string;
 };
 
 const initialFormState: FormState = {
-  name: "",
-  address: "",
-  zip_code: "",
+  number: "",
+  title: "",
+  description: "",
 };
 
-export const CampusCreateForm = () => {
+export const RankCreateForm = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,8 +41,15 @@ export const CampusCreateForm = () => {
   };
 
   const handleCreate = async () => {
-    if (!formData.name.trim()) {
-      setError("Campus name is required");
+    const parsedNumber = Number(formData.number);
+
+    if (!Number.isFinite(parsedNumber)) {
+      setError("Rank number is required");
+      return;
+    }
+
+    if (!formData.title.trim()) {
+      setError("Rank title is required");
       return;
     }
 
@@ -50,10 +57,10 @@ export const CampusCreateForm = () => {
     setError("");
     setShowSuccess(false);
 
-    const { data, error: createError } = await createCampus({
-      name: formData.name,
-      address: formData.address,
-      zip_code: formData.zip_code,
+    const { data, error: createError } = await createRank({
+      number: parsedNumber,
+      title: formData.title,
+      description: formData.description,
     });
 
     setIsSaving(false);
@@ -67,9 +74,9 @@ export const CampusCreateForm = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/campuses/${data.id}`);
+        router.push(`/academic-ranks/${data.id}`);
       } else {
-        router.push("/campuses");
+        router.push("/academic-ranks");
       }
     }, 1200);
   };
@@ -79,10 +86,10 @@ export const CampusCreateForm = () => {
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Plus className="w-5 h-5" />
-          Campus Information
+          Rank Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link href="/campuses" className="text-foreground">
+          <Link href="/academic-ranks" className="text-foreground">
             <X />
           </Link>
         </div>
@@ -94,7 +101,7 @@ export const CampusCreateForm = () => {
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-green-900">Campus Created</p>
+                <p className="font-semibold text-green-900">Rank Created</p>
                 <p className="text-sm text-green-800">
                   Record created successfully. Redirecting...
                 </p>
@@ -111,35 +118,22 @@ export const CampusCreateForm = () => {
 
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 pb-2 border-b">
-              <Building2 className="w-5 h-5" />
-              <h3 className="font-semibold">Campus Profile</h3>
+              <Trophy className="w-5 h-5" />
+              <h3 className="font-semibold">Rank Profile</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs" htmlFor="name">
-                  Campus Name *
+                <Label className="text-xs" htmlFor="number">
+                  Rank Number *
                 </Label>
                 <Input
-                  id="name"
-                  placeholder="e.g. Main Campus"
-                  value={formData.name}
-                  onChange={(event) => handleChange("name", event.target.value)}
-                  className="mt-1"
-                  disabled={isSaving}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <Label className="text-xs" htmlFor="address">
-                  Address
-                </Label>
-                <Input
-                  id="address"
-                  placeholder="Enter campus address"
-                  value={formData.address}
+                  id="number"
+                  type="number"
+                  placeholder="e.g. 1"
+                  value={formData.number}
                   onChange={(event) =>
-                    handleChange("address", event.target.value)
+                    handleChange("number", event.target.value)
                   }
                   className="mt-1"
                   disabled={isSaving}
@@ -147,15 +141,31 @@ export const CampusCreateForm = () => {
               </div>
 
               <div>
-                <Label className="text-xs" htmlFor="zip_code">
-                  ZIP Code
+                <Label className="text-xs" htmlFor="title">
+                  Rank Title *
                 </Label>
                 <Input
-                  id="zip_code"
-                  placeholder="Enter ZIP code"
-                  value={formData.zip_code}
+                  id="title"
+                  placeholder="e.g. Assistant Professor"
+                  value={formData.title}
                   onChange={(event) =>
-                    handleChange("zip_code", event.target.value)
+                    handleChange("title", event.target.value)
+                  }
+                  className="mt-1"
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label className="text-xs" htmlFor="description">
+                  Description
+                </Label>
+                <Input
+                  id="description"
+                  placeholder="Enter rank description"
+                  value={formData.description}
+                  onChange={(event) =>
+                    handleChange("description", event.target.value)
                   }
                   className="mt-1"
                   disabled={isSaving}
@@ -169,7 +179,7 @@ export const CampusCreateForm = () => {
               Reset
             </Button>
             <Button onClick={handleCreate} disabled={isSaving}>
-              {isSaving ? "Creating..." : "Create Campus"}
+              {isSaving ? "Creating..." : "Create Rank"}
             </Button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React from "react";
-import { TermsList } from "@/components/university/terms-list";
-import { getTermsList } from "@/lib/university/terms";
+import { TermsList } from "@/components/admin/terms-list";
+import { getTermsList } from "@/lib/admin/terms";
 
 const TermsLayout = async ({ children }: { children: React.ReactNode }) => {
   const terms = await getTermsList();

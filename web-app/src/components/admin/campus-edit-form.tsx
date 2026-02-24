@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
-import { updateCampus } from "@/lib/university/actions";
+import { updateCampus } from "@/lib/admin/actions";
 
 type CampusEditFormProps = {
   campus: Campus;

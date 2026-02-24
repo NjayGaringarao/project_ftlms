@@ -2,41 +2,44 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertCircle, Calendar, CheckCircle, Save, X } from "lucide-react";
+import { AlertCircle, Building2, CheckCircle, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Term } from "@/models/term";
-import { updateTerm } from "@/lib/university/actions";
+import { Department } from "@/models/department";
+import { updateDepartment } from "@/lib/admin/actions";
 
-type TermEditFormProps = {
-  term: Term;
+type DepartmentEditFormProps = {
+  department: Department;
 };
 
 type FormState = {
-  academic_year: string;
-  term_code: string;
-  sequence: string;
-  start: string;
-  end: string;
+  code: string;
+  name: string;
+  type:
+    | "ACADEMIC"
+    | "ADMINISTRATIVE"
+    | "STUDENT_SERVICES"
+    | "EXTENSION_SERVICES";
+  description: string;
 };
 
-const termToFormState = (term: Term): FormState => ({
-  academic_year: term.academic_year,
-  term_code: term.term_code,
-  sequence: String(term.sequence),
-  start: term.start ?? "",
-  end: term.end ?? "",
+const departmentToFormState = (department: Department): FormState => ({
+  code: department.code,
+  name: department.name,
+  type: (department.type as FormState["type"]) ?? "ACADEMIC",
+  description: department.description ?? "",
 });
 
-export const TermEditForm = ({ term }: TermEditFormProps) => {
+export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
   const [formData, setFormData] = useState<FormState>(() =>
-    termToFormState(term),
+    departmentToFormState(department),
   );
   const [savedFormData, setSavedFormData] = useState<FormState>(() =>
-    termToFormState(term),
+    departmentToFormState(department),
   );
+
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -53,29 +56,13 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
   };
 
   const handleSave = async () => {
-    if (!formData.academic_year.trim()) {
-      setError("Academic year is required");
+    if (!formData.code.trim()) {
+      setError("Department code is required");
       return;
     }
 
-    if (!formData.term_code.trim()) {
-      setError("Term code is required");
-      return;
-    }
-
-    const parsedSequence = Number(formData.sequence);
-    if (!Number.isFinite(parsedSequence)) {
-      setError("Term sequence must be a number");
-      return;
-    }
-
-    if (!formData.start.trim()) {
-      setError("Start date is required");
-      return;
-    }
-
-    if (!formData.end.trim()) {
-      setError("End date is required");
+    if (!formData.name.trim()) {
+      setError("Department name is required");
       return;
     }
 
@@ -83,13 +70,12 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
     setError("");
     setSuccess(false);
 
-    const { error: updateError } = await updateTerm({
-      id: term.id,
-      academic_year: formData.academic_year,
-      term_code: formData.term_code,
-      sequence: parsedSequence,
-      start: formData.start,
-      end: formData.end,
+    const { error: updateError } = await updateDepartment({
+      id: department.id,
+      code: formData.code,
+      name: formData.name,
+      type: formData.type,
+      description: formData.description,
     });
 
     setIsSaving(false);
@@ -100,11 +86,10 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
     }
 
     const newSavedState = {
-      academic_year: formData.academic_year.trim(),
-      term_code: formData.term_code.trim(),
-      sequence: String(parsedSequence),
-      start: formData.start,
-      end: formData.end,
+      code: formData.code.trim().toUpperCase(),
+      name: formData.name.trim(),
+      type: formData.type,
+      description: formData.description.trim(),
     };
 
     setSavedFormData(newSavedState);
@@ -118,10 +103,13 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Save className="w-5 h-5" />
-          Edit Term
+          Edit Department
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link href={`/academic-terms/${term.id}`} className="text-foreground">
+          <Link
+            href={`/departments/${department.id}`}
+            className="text-foreground"
+          >
             <X />
           </Link>
         </div>
@@ -130,15 +118,15 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
       <CardContent className="overflow-y-auto h-full flex flex-col gap-6 py-4">
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
-            <Calendar className="w-5 h-5" />
-            <h3 className="font-semibold">Term Profile</h3>
+            <Building2 className="w-5 h-5" />
+            <h3 className="font-semibold">Department Profile</h3>
           </div>
 
           {success && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
               <p className="text-xs text-green-900">
-                Term updated successfully
+                Department updated successfully
               </p>
             </div>
           )}
@@ -152,15 +140,16 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs" htmlFor="academic_year">
-                Academic Year *
+              <Label className="text-xs" htmlFor="code">
+                Department Code *
               </Label>
               <Input
-                id="academic_year"
-                placeholder="e.g. 2025-2026"
-                value={formData.academic_year}
-                onChange={(event) =>
-                  handleChange("academic_year", event.target.value)
+                id="code"
+                placeholder="e.g. CCS"
+                value={formData.code}
+                onChange={(event) => handleChange("code", event.target.value)}
+                onBlur={(event) =>
+                  handleChange("code", event.target.value.trim().toUpperCase())
                 }
                 className="mt-1"
                 disabled={isSaving}
@@ -168,61 +157,50 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="term_code">
-                Term Code *
+              <Label className="text-xs" htmlFor="name">
+                Department Name *
               </Label>
               <Input
-                id="term_code"
-                placeholder="e.g. 1ST"
-                value={formData.term_code}
+                id="name"
+                placeholder="e.g. College of Computer Studies"
+                value={formData.name}
+                onChange={(event) => handleChange("name", event.target.value)}
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs" htmlFor="type">
+                Department Type *
+              </Label>
+              <select
+                id="type"
+                value={formData.type}
                 onChange={(event) =>
-                  handleChange("term_code", event.target.value)
+                  handleChange("type", event.target.value as FormState["type"])
                 }
-                className="mt-1"
+                className="mt-1 h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
                 disabled={isSaving}
-              />
+              >
+                <option value="ACADEMIC">Academic</option>
+                <option value="ADMINISTRATIVE">Administrative</option>
+                <option value="STUDENT_SERVICES">Student Services</option>
+                <option value="EXTENSION_SERVICES">Extension Services</option>
+              </select>
             </div>
 
-            <div>
-              <Label className="text-xs" htmlFor="sequence">
-                Sequence *
+            <div className="md:col-span-2">
+              <Label className="text-xs" htmlFor="description">
+                Description
               </Label>
               <Input
-                id="sequence"
-                type="number"
-                placeholder="e.g. 1"
-                value={formData.sequence}
+                id="description"
+                placeholder="Enter department description"
+                value={formData.description}
                 onChange={(event) =>
-                  handleChange("sequence", event.target.value)
+                  handleChange("description", event.target.value)
                 }
-                className="mt-1"
-                disabled={isSaving}
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs" htmlFor="start">
-                Start Date *
-              </Label>
-              <Input
-                id="start"
-                type="date"
-                value={formData.start}
-                onChange={(event) => handleChange("start", event.target.value)}
-                className="mt-1"
-                disabled={isSaving}
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs" htmlFor="end">
-                End Date *
-              </Label>
-              <Input
-                id="end"
-                type="date"
-                value={formData.end}
-                onChange={(event) => handleChange("end", event.target.value)}
                 className="mt-1"
                 disabled={isSaving}
               />

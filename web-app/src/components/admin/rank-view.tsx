@@ -6,22 +6,21 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
-  Building2,
   Edit,
-  FileText,
   Trash2,
+  Trophy,
   X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Department } from "@/models/department";
-import { deleteDepartment } from "@/lib/university/actions";
+import { Rank } from "@/models/rank";
+import { deleteRank } from "@/lib/admin/actions";
 
-type DepartmentViewProps = {
-  department: Department;
+type RankViewProps = {
+  rank: Rank;
 };
 
-export const DepartmentView = ({ department }: DepartmentViewProps) => {
+export const RankView = ({ rank }: RankViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -31,7 +30,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
     setIsDeleting(true);
     setDeleteError("");
 
-    const { error } = await deleteDepartment(department.id);
+    const { error } = await deleteRank(rank.id);
 
     if (error) {
       setDeleteError(error);
@@ -40,24 +39,24 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/departments");
+    router.push("/academic-ranks");
   };
 
   return (
     <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
-          <Building2 className="w-5 h-5" />
-          Department Information
+          <Trophy className="w-5 h-5" />
+          Rank Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/departments/${department.id}/edit`}
+            href={`/academic-ranks/${rank.id}/edit`}
             className="text-foreground"
           >
             <Edit />
           </Link>
-          <Link href="/departments" className="text-foreground">
+          <Link href="/academic-ranks" className="text-foreground">
             <X />
           </Link>
         </div>
@@ -66,35 +65,24 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
       <CardContent className="overflow-y-auto flex flex-col gap-8 py-6">
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b">
-            <Building2 className="w-5 h-5" />
-            <h3 className="text-base font-semibold">Department Profile</h3>
+            <Trophy className="w-5 h-5" />
+            <h3 className="text-base font-semibold">Rank Profile</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start gap-3">
-              <Building2 className="w-5 h-5 text-foreground/60 mt-0.5" />
-              <div>
-                <p className="text-xs text-foreground/60">Code</p>
-                <p className="font-medium">{department.code}</p>
-              </div>
+            <div>
+              <p className="text-xs text-foreground/60">Rank Number</p>
+              <p className="font-medium">{rank.number}</p>
             </div>
-
-            <div className="flex items-start gap-3">
-              <Building2 className="w-5 h-5 text-foreground/60 mt-0.5" />
-              <div>
-                <p className="text-xs text-foreground/60">Name</p>
-                <p className="font-medium">{department.name}</p>
-              </div>
+            <div>
+              <p className="text-xs text-foreground/60">Title</p>
+              <p className="font-medium">{rank.title}</p>
             </div>
-
-            <div className="md:col-span-2 flex items-start gap-3">
-              <FileText className="w-5 h-5 text-foreground/60 mt-0.5" />
-              <div>
-                <p className="text-xs text-foreground/60">Description</p>
-                <p className="font-medium">
-                  {department.description || "No description provided"}
-                </p>
-              </div>
+            <div className="md:col-span-2">
+              <p className="text-xs text-foreground/60">Description</p>
+              <p className="font-medium">
+                {rank.description || "Not provided"}
+              </p>
             </div>
           </div>
         </div>
@@ -106,8 +94,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
           </div>
 
           <p className="text-xs text-foreground/60">
-            Deleting this department deletes all the programs under it
-            trancending campuses.
+            Deleting this rank unassigns it from linked users.
           </p>
 
           <Button
@@ -117,7 +104,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
             className="self-end"
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete Department
+            Delete Rank
           </Button>
         </div>
 
@@ -127,19 +114,13 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-red-600">
                   <AlertCircle className="w-5 h-5" />
-                  Delete Department
+                  Delete Rank
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-foreground/80">
-                  Are you sure you want to delete{" "}
-                  <strong>{department.name}</strong>? This action cannot be
-                  undone.
-                </p>
-
-                <p className="text-xs text-foreground/60">
-                  All Programs and its blocks under this department will also be
-                  deleted, transcending all campuses.
+                  Are you sure you want to delete <strong>{rank.title}</strong>?
+                  This action cannot be undone.
                 </p>
 
                 {deleteError && (
@@ -162,7 +143,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
                     onClick={handleDelete}
                     disabled={isDeleting}
                   >
-                    {isDeleting ? "Deleting..." : "Delete Department"}
+                    {isDeleting ? "Deleting..." : "Delete Rank"}
                   </Button>
                 </div>
               </CardContent>

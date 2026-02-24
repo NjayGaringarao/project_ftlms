@@ -7,44 +7,44 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/utils/style";
-import { CampusListItem } from "@/lib/university/campuses";
+import { RankListItem } from "@/lib/admin/ranks";
 
-type CampusesListProps = {
-  campuses: CampusListItem[];
+type RanksListProps = {
+  ranks: RankListItem[];
 };
 
-export const CampusesList = ({ campuses }: CampusesListProps) => {
+export const RanksList = ({ ranks }: RanksListProps) => {
   const pathname = usePathname();
   const [query, setQuery] = useState("");
 
-  const selectedCampusId = useMemo(() => {
-    const match = pathname.match(/\/campuses\/([^\/]+)/);
+  const selectedRankId = useMemo(() => {
+    const match = pathname.match(/\/academic-ranks\/([^\/]+)/);
     return match ? match[1] : null;
   }, [pathname]);
 
-  const filteredCampuses = useMemo(() => {
+  const filteredRanks = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return campuses;
+    if (!q) return ranks;
 
-    return campuses.filter((campus) => {
-      const name = campus.name.toLowerCase();
-      const address = campus.address?.toLowerCase() ?? "";
-      const zipCode = campus.zip_code?.toLowerCase() ?? "";
-      return name.includes(q) || address.includes(q) || zipCode.includes(q);
+    return ranks.filter((rank) => {
+      const number = rank.number.toString().toLowerCase();
+      const title = rank.title.toLowerCase();
+      const description = rank.description?.toLowerCase() ?? "";
+      return number.includes(q) || title.includes(q) || description.includes(q);
     });
-  }, [campuses, query]);
+  }, [query, ranks]);
 
   return (
     <div className="relative h-full flex flex-col">
       <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
         <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Input
-            placeholder="Search by name, address, or ZIP"
+            placeholder="Search by number, title, or description"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/campuses/create">Create Campus</Link>
+            <Link href="/academic-ranks/create">Create Rank</Link>
           </Button>
         </div>
       </CardHeader>
@@ -52,22 +52,22 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
         <div
           className={cn(
             "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedCampusId && "flex flex-col gap-4",
+            !!selectedRankId && "flex flex-col gap-4",
           )}
         >
-          {filteredCampuses.length === 0 && (
+          {filteredRanks.length === 0 && (
             <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No campuses match your search.
+              No ranks match your search.
             </div>
           )}
 
-          {filteredCampuses.map((campus) => {
-            const isSelected = selectedCampusId === campus.id;
+          {filteredRanks.map((rank) => {
+            const isSelected = selectedRankId === rank.id;
 
             return (
               <Link
-                key={campus.id}
-                href={`/campuses/${campus.id}`}
+                key={rank.id}
+                href={`/academic-ranks/${rank.id}`}
                 className={cn(
                   "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
                   isSelected &&
@@ -75,13 +75,13 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-base font-semibold">{campus.name}</p>
+                  <p className="text-base font-semibold">{rank.title}</p>
+                  <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
+                    #{rank.number}
+                  </span>
                 </div>
                 <p className="text-sm text-foreground/70 line-clamp-2">
-                  {campus.address || "No address available"}
-                </p>
-                <p className="text-xs text-foreground/60">
-                  {campus.zip_code ? `ZIP ${campus.zip_code}` : "ZIP not set"}
+                  {rank.description || "No description available"}
                 </p>
               </Link>
             );

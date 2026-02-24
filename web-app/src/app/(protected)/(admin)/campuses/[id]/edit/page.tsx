@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { CampusEditForm } from "@/components/university/campus-edit-form";
-import { getCampusById } from "@/lib/university/campuses";
+import { CampusEditForm } from "@/components/admin/campus-edit-form";
+import { getCampusById } from "@/lib/admin/campuses";
 
 export const dynamic = "force-dynamic";
 

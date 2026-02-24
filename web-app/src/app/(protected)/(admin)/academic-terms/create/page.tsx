@@ -1,4 +1,4 @@
-import { TermCreateForm } from "@/components/university/term-create-form";
+import { TermCreateForm } from "@/components/admin/term-create-form";
 
 const CreatePage = () => {
   return (

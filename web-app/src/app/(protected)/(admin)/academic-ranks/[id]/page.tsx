@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { RankView } from "@/components/university/rank-view";
-import { getRankById } from "@/lib/university/ranks";
+import { RankView } from "@/components/admin/rank-view";
+import { getRankById } from "@/lib/admin/ranks";
 
 export const dynamic = "force-dynamic";
 

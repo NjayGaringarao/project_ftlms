@@ -1,4 +1,4 @@
-import { DepartmentCreateForm } from "@/components/university/department-create-form";
+import { DepartmentCreateForm } from "@/components/admin/department-create-form";
 
 const CreatePage = () => {
   return (

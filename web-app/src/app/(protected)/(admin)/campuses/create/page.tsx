@@ -1,4 +1,4 @@
-import { CampusCreateForm } from "@/components/university/campus-create-form";
+import { CampusCreateForm } from "@/components/admin/campus-create-form";
 
 const CreatePage = async () => {
   return (

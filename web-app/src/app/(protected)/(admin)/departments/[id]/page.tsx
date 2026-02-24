@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { DepartmentView } from "@/components/university/department-view";
-import { getDepartmentById } from "@/lib/university/departments";
+import { DepartmentView } from "@/components/admin/department-view";
+import { getDepartmentById } from "@/lib/admin/departments";
 
 export const dynamic = "force-dynamic";
 
