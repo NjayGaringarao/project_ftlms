@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Calendar, CheckCircle, Plus } from "lucide-react";
+import { Calendar, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createTerm } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
 
 type FormState = {
   academic_year: string;
@@ -108,24 +109,17 @@ export const TermCreateForm = () => {
     >
       <>
         <div className="space-y-4">
-          {showSuccess && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-green-900">Term Created</p>
-                <p className="text-sm text-green-800">
-                  Record created successfully. Redirecting...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-red-900">{error}</p>
-            </div>
-          )}
+          <FormStatusBanner
+            success={
+              showSuccess
+                ? {
+                    title: "Term Created",
+                    message: "Record created successfully. Redirecting...",
+                  }
+                : undefined
+            }
+            error={error}
+          />
 
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 pb-2 border-b">
@@ -145,6 +139,9 @@ export const TermCreateForm = () => {
                   onChange={(event) =>
                     handleChange("academic_year", event.target.value)
                   }
+                  onBlur={(e) =>
+                    handleChange("academic_year", e.target.value.trim())
+                  }
                   className="mt-1"
                   disabled={isSaving}
                 />
@@ -156,12 +153,17 @@ export const TermCreateForm = () => {
                 </Label>
                 <Input
                   id="term_code"
-                  placeholder="e.g. 1ST"
+                  placeholder="e.g. FIRST"
                   value={formData.term_code}
                   onChange={(event) =>
                     handleChange("term_code", event.target.value)
                   }
-                  className="mt-1"
+                  onBlur={(e) =>
+                    handleChange(
+                      "term_code",
+                      e.target.value.trim().toUpperCase(),
+                    )
+                  }
                   disabled={isSaving}
                 />
               </div>
@@ -177,6 +179,9 @@ export const TermCreateForm = () => {
                   value={formData.sequence}
                   onChange={(event) =>
                     handleChange("sequence", event.target.value)
+                  }
+                  onBlur={(e) =>
+                    handleChange("sequence", e.target.value.trim())
                   }
                   className="mt-1"
                   disabled={isSaving}

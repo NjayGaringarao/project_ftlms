@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle, Plus, Trophy } from "lucide-react";
+import { Plus, Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createRank } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
 
 type FormState = {
   number: string;
@@ -88,24 +89,17 @@ export const RankCreateForm = () => {
     >
       <>
         <div className="space-y-4">
-          {showSuccess && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-green-900">Rank Created</p>
-                <p className="text-sm text-green-800">
-                  Record created successfully. Redirecting...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-red-900">{error}</p>
-            </div>
-          )}
+          <FormStatusBanner
+            success={
+              showSuccess
+                ? {
+                    title: "Rank Created",
+                    message: "Record created successfully. Redirecting...",
+                  }
+                : undefined
+            }
+            error={error}
+          />
 
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 pb-2 border-b">
@@ -144,6 +138,7 @@ export const RankCreateForm = () => {
                   }
                   className="mt-1"
                   disabled={isSaving}
+                  onBlur={(e) => handleChange("title", e.target.value.trim())}
                 />
               </div>
 
@@ -157,6 +152,9 @@ export const RankCreateForm = () => {
                   value={formData.description}
                   onChange={(event) =>
                     handleChange("description", event.target.value)
+                  }
+                  onBlur={(e) =>
+                    handleChange("description", e.target.value.trim())
                   }
                   className="mt-1"
                   disabled={isSaving}

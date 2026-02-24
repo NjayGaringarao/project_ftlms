@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Building2, CheckCircle, Save } from "lucide-react";
+import { Building2, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { updateCampus } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
 
 type CampusEditFormProps = {
   campus: Campus;
@@ -98,21 +99,17 @@ export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
             <h3 className="font-semibold">Campus Profile</h3>
           </div>
 
-          {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-green-900">
-                Campus updated successfully
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-red-900">{error}</p>
-            </div>
-          )}
+          <FormStatusBanner
+            variant="compact"
+            success={
+              success
+                ? {
+                    title: "Campus updated successfully",
+                  }
+                : undefined
+            }
+            error={error}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -126,6 +123,7 @@ export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
                 onChange={(event) => handleChange("name", event.target.value)}
                 className="mt-1"
                 disabled={isSaving}
+                onBlur={(e) => handleChange("name", e.target.value.trim())}
               />
             </div>
 
@@ -142,6 +140,7 @@ export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
                 }
                 className="mt-1"
                 disabled={isSaving}
+                onBlur={(e) => handleChange("address", e.target.value.trim())}
               />
             </div>
 

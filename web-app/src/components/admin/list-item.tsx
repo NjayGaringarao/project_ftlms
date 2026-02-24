@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/utils/style";
-import { LucideIcon } from "lucide-react";
 import React from "react";
 
 type ListItemProps = {

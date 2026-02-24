@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { cn } from "@/utils/style";
 import { TermListItem } from "@/lib/admin/terms";
 import ListItem from "./list-item";
 import { CalendarDays } from "lucide-react";
+import { useListState } from "../../hooks/useListState";
 
 type TermsListProps = {
   terms: TermListItem[];
@@ -23,28 +23,26 @@ const formatDate = (value: string | null) => {
 };
 
 export const TermsList = ({ terms }: TermsListProps) => {
-  const pathname = usePathname();
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const { query, setQuery, selectedId, filteredItems } = useListState({
+    items: terms,
+    match: /\/academic-terms\/([^\/]+)/,
+    filter: (items, rawQuery) => {
+      const q = rawQuery.trim().toLowerCase();
+      if (!q) return items;
 
-  const selectedTermId = useMemo(() => {
-    const match = pathname.match(/\/academic-terms\/([^\/]+)/);
-    return match ? match[1] : null;
-  }, [pathname]);
-
-  const filteredTerms = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return terms;
-
-    return terms.filter((term) => {
-      const academicYear = term.academic_year.toLowerCase();
-      const termCode = term.term_code.toLowerCase();
-      const sequence = String(term.sequence);
-      return (
-        academicYear.includes(q) || termCode.includes(q) || sequence.includes(q)
-      );
-    });
-  }, [query, terms]);
+      return items.filter((term) => {
+        const academicYear = term.academic_year.toLowerCase();
+        const termCode = term.term_code.toLowerCase();
+        const sequence = String(term.sequence);
+        return (
+          academicYear.includes(q) ||
+          termCode.includes(q) ||
+          sequence.includes(q)
+        );
+      });
+    },
+  });
 
   return (
     <div className="relative h-full flex flex-col">
@@ -64,17 +62,17 @@ export const TermsList = ({ terms }: TermsListProps) => {
         <div
           className={cn(
             "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedTermId && "flex flex-col gap-4",
+            !!selectedId && "flex flex-col gap-4",
           )}
         >
-          {filteredTerms.length === 0 && (
+          {filteredItems.length === 0 && (
             <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
               No terms match your search.
             </div>
           )}
 
-          {filteredTerms.map((term) => {
-            const isSelected = selectedTermId === term.id;
+          {filteredItems.map((term) => {
+            const isSelected = selectedId === term.id;
 
             return (
               <ListItem

@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Calendar, CheckCircle, Save } from "lucide-react";
+import { Calendar, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Term } from "@/models/term";
 import { updateTerm } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
 
 type TermEditFormProps = {
   term: Term;
@@ -127,21 +128,17 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
             <h3 className="font-semibold">Term Profile</h3>
           </div>
 
-          {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-green-900">
-                Term updated successfully
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-red-900">{error}</p>
-            </div>
-          )}
+          <FormStatusBanner
+            variant="compact"
+            success={
+              success
+                ? {
+                    title: "Term updated successfully",
+                  }
+                : undefined
+            }
+            error={error}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -154,6 +151,9 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
                 value={formData.academic_year}
                 onChange={(event) =>
                   handleChange("academic_year", event.target.value)
+                }
+                onBlur={(e) =>
+                  handleChange("academic_year", e.target.value.trim())
                 }
                 className="mt-1"
                 disabled={isSaving}
@@ -170,6 +170,9 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
                 value={formData.term_code}
                 onChange={(event) =>
                   handleChange("term_code", event.target.value)
+                }
+                onBlur={(e) =>
+                  handleChange("term_code", e.target.value.trim().toUpperCase())
                 }
                 className="mt-1"
                 disabled={isSaving}

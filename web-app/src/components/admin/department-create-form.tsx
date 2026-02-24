@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Building2, CheckCircle, Plus } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createDepartment } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
 
 type FormState = {
   code: string;
@@ -93,26 +94,17 @@ export const DepartmentCreateForm = () => {
     >
       <>
         <div className="space-y-4">
-          {showSuccess && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-green-900">
-                  Department Created
-                </p>
-                <p className="text-sm text-green-800">
-                  Record created successfully. Redirecting...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-red-900">{error}</p>
-            </div>
-          )}
+          <FormStatusBanner
+            success={
+              showSuccess
+                ? {
+                    title: "Department Created",
+                    message: "Record created successfully. Redirecting...",
+                  }
+                : undefined
+            }
+            error={error}
+          />
 
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 pb-2 border-b">
@@ -130,11 +122,8 @@ export const DepartmentCreateForm = () => {
                   placeholder="e.g. CCS"
                   value={formData.code}
                   onChange={(event) => handleChange("code", event.target.value)}
-                  onBlur={(event) =>
-                    handleChange(
-                      "code",
-                      event.target.value.trim().toUpperCase(),
-                    )
+                  onBlur={(e) =>
+                    handleChange("code", e.target.value.toUpperCase().trim())
                   }
                   className="mt-1"
                   disabled={isSaving}
@@ -150,6 +139,7 @@ export const DepartmentCreateForm = () => {
                   placeholder="e.g. College of Computer Studies"
                   value={formData.name}
                   onChange={(event) => handleChange("name", event.target.value)}
+                  onBlur={(e) => handleChange("name", e.target.value.trim())}
                   className="mt-1"
                   disabled={isSaving}
                 />
@@ -188,6 +178,9 @@ export const DepartmentCreateForm = () => {
                   value={formData.description}
                   onChange={(event) =>
                     handleChange("description", event.target.value)
+                  }
+                  onBlur={(e) =>
+                    handleChange("description", e.target.value.trim())
                   }
                   className="mt-1"
                   disabled={isSaving}

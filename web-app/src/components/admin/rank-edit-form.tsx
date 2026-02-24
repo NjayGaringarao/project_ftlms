@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle, Save, Trophy } from "lucide-react";
+import { Save, Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Rank } from "@/models/rank";
 import { updateRank } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
 
 type RankEditFormProps = {
   rank: Rank;
@@ -105,21 +106,17 @@ export const RankEditForm = ({ rank }: RankEditFormProps) => {
             <h3 className="font-semibold">Rank Profile</h3>
           </div>
 
-          {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-green-900">
-                Rank updated successfully
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-red-900">{error}</p>
-            </div>
-          )}
+          <FormStatusBanner
+            variant="compact"
+            success={
+              success
+                ? {
+                    title: "Rank updated successfully",
+                  }
+                : undefined
+            }
+            error={error}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -146,6 +143,7 @@ export const RankEditForm = ({ rank }: RankEditFormProps) => {
                 placeholder="e.g. Assistant Professor"
                 value={formData.title}
                 onChange={(event) => handleChange("title", event.target.value)}
+                onBlur={(e) => handleChange("title", e.target.value.trim())}
                 className="mt-1"
                 disabled={isSaving}
               />
@@ -161,6 +159,9 @@ export const RankEditForm = ({ rank }: RankEditFormProps) => {
                 value={formData.description}
                 onChange={(event) =>
                   handleChange("description", event.target.value)
+                }
+                onBlur={(e) =>
+                  handleChange("description", e.target.value.trim())
                 }
                 className="mt-1"
                 disabled={isSaving}

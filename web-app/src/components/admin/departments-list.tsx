@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
@@ -10,33 +9,30 @@ import { cn } from "@/utils/style";
 import { DepartmentListItem } from "@/lib/admin/departments";
 import ListItem from "./list-item";
 import { GraduationCap, ToolCase } from "lucide-react";
+import { useListState } from "../../hooks/useListState";
 
 type DepartmentsListProps = {
   departments: DepartmentListItem[];
 };
 
 export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
-  const pathname = usePathname();
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const { query, setQuery, selectedId, filteredItems } = useListState({
+    items: departments,
+    match: /\/departments\/([^\/]+)/,
+    filter: (items, rawQuery) => {
+      const q = rawQuery.trim().toLowerCase();
+      if (!q) return items;
 
-  const selectedDepartmentId = useMemo(() => {
-    const match = pathname.match(/\/departments\/([^\/]+)/);
-    return match ? match[1] : null;
-  }, [pathname]);
+      return items.filter((department) => {
+        const code = department.code.toLowerCase();
+        const name = department.name.toLowerCase();
+        const description = department.description?.toLowerCase() ?? "";
 
-  const filteredDepartments = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return departments;
-
-    return departments.filter((department) => {
-      const code = department.code.toLowerCase();
-      const name = department.name.toLowerCase();
-      const description = department.description?.toLowerCase() ?? "";
-
-      return code.includes(q) || name.includes(q) || description.includes(q);
-    });
-  }, [departments, query]);
+        return code.includes(q) || name.includes(q) || description.includes(q);
+      });
+    },
+  });
 
   return (
     <div className="relative h-full flex flex-col">
@@ -56,17 +52,17 @@ export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
         <div
           className={cn(
             "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedDepartmentId && "flex flex-col gap-4",
+            !!selectedId && "flex flex-col gap-4",
           )}
         >
-          {filteredDepartments.length === 0 && (
+          {filteredItems.length === 0 && (
             <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
               No departments match your search.
             </div>
           )}
 
-          {filteredDepartments.map((department) => {
-            const isSelected = selectedDepartmentId === department.id;
+          {filteredItems.map((department) => {
+            const isSelected = selectedId === department.id;
             const Icon =
               department.type === "ACADEMIC" ? GraduationCap : ToolCase;
 

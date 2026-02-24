@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Building2, CheckCircle, Save } from "lucide-react";
+import { Building2, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Department } from "@/models/department";
 import { updateDepartment } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
 
 type DepartmentEditFormProps = {
   department: Department;
@@ -112,21 +113,17 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
             <h3 className="font-semibold">Department Profile</h3>
           </div>
 
-          {success && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-green-900">
-                Department updated successfully
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-red-900">{error}</p>
-            </div>
-          )}
+          <FormStatusBanner
+            variant="compact"
+            success={
+              success
+                ? {
+                    title: "Department updated successfully",
+                  }
+                : undefined
+            }
+            error={error}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -138,8 +135,8 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
                 placeholder="e.g. CCS"
                 value={formData.code}
                 onChange={(event) => handleChange("code", event.target.value)}
-                onBlur={(event) =>
-                  handleChange("code", event.target.value.trim().toUpperCase())
+                onBlur={(e) =>
+                  handleChange("code", e.target.value.trim().toUpperCase())
                 }
                 className="mt-1"
                 disabled={isSaving}
@@ -155,6 +152,7 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
                 placeholder="e.g. College of Computer Studies"
                 value={formData.name}
                 onChange={(event) => handleChange("name", event.target.value)}
+                onBlur={(e) => handleChange("name", e.target.value.trim())}
                 className="mt-1"
                 disabled={isSaving}
               />
@@ -190,6 +188,9 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
                 value={formData.description}
                 onChange={(event) =>
                   handleChange("description", event.target.value)
+                }
+                onBlur={(e) =>
+                  handleChange("description", e.target.value.trim())
                 }
                 className="mt-1"
                 disabled={isSaving}
