@@ -17,7 +17,7 @@ export const getTermsList = async (): Promise<TermListItem[]> => {
     .order("start", { ascending: false });
 
   if (error) {
-    console.error("lib.university.terms.getTermsList ::", error);
+    console.error("lib.admin.terms.getTermsList ::", error);
     return [];
   }
 
@@ -34,7 +34,7 @@ export const getTermById = async (termId: string): Promise<Term | null> => {
     .maybeSingle();
 
   if (error) {
-    console.error("lib.university.terms.getTermById ::", error);
+    console.error("lib.admin.terms.getTermById ::", error);
     return null;
   }
 

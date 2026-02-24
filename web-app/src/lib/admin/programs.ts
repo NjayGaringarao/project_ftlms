@@ -31,7 +31,7 @@ export const getPrograms = async (): Promise<ExtendedProgram[]> => {
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("lib.university.programs.getPrograms ::", error);
+    console.error("lib.admin.programs.getPrograms ::", error);
     return [];
   }
 
@@ -67,7 +67,7 @@ export const getProgramsByDepartment = async (
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("lib.university.programs.getProgramsByDepartment ::", error);
+    console.error("lib.admin.programs.getProgramsByDepartment ::", error);
     return [];
   }
 
@@ -106,7 +106,7 @@ export const getProgramsByDepartmentAndCampus = async (
 
   if (error) {
     console.error(
-      "lib.university.programs.getProgramsByDepartmentAndCampus ::",
+      "lib.admin.programs.getProgramsByDepartmentAndCampus ::",
       error,
     );
     return [];
@@ -144,7 +144,7 @@ export const getProgramById = async (
     .maybeSingle();
 
   if (error) {
-    console.error("lib.university.programs.getProgramById ::", error);
+    console.error("lib.admin.programs.getProgramById ::", error);
     return null;
   }
 

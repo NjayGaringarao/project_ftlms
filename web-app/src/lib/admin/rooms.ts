@@ -20,7 +20,7 @@ export const getRooms = async (): Promise<ExtendedRoom[]> => {
     .order("code", { ascending: true });
 
   if (error) {
-    console.error("lib.university.rooms.getRooms ::", error);
+    console.error("lib.admin.rooms.getRooms ::", error);
     return [];
   }
 
@@ -52,7 +52,7 @@ export const getRoomsByCampus = async (
     .order("code", { ascending: true });
 
   if (error) {
-    console.error("lib.university.rooms.getRoomsByCampus ::", error);
+    console.error("lib.admin.rooms.getRoomsByCampus ::", error);
     return [];
   }
 
@@ -84,7 +84,7 @@ export const getRoomById = async (
     .maybeSingle();
 
   if (error) {
-    console.error("lib.university.rooms.getRoomById ::", error);
+    console.error("lib.admin.rooms.getRoomById ::", error);
     return null;
   }
 

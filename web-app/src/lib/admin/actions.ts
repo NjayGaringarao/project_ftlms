@@ -40,42 +40,42 @@ const mapDepartmentMutationError = (error: MutationError) => {
 };
 
 const revalidateDepartmentsPaths = (id?: string) => {
-  revalidatePath("/university/departments");
-  revalidatePath("/university/departments/create");
+  revalidatePath("/departments");
+  revalidatePath("/departments/create");
 
   if (id) {
-    revalidatePath(`/university/departments/${id}`);
-    revalidatePath(`/university/departments/${id}/edit`);
+    revalidatePath(`/departments/${id}`);
+    revalidatePath(`/departments/${id}/edit`);
   }
 };
 
 const revalidateCampusesPaths = (id?: string) => {
-  revalidatePath("/university/campuses");
-  revalidatePath("/university/campuses/create");
+  revalidatePath("/campuses");
+  revalidatePath("/campuses/create");
 
   if (id) {
-    revalidatePath(`/university/campuses/${id}`);
-    revalidatePath(`/university/campuses/${id}/edit`);
+    revalidatePath(`/campuses/${id}`);
+    revalidatePath(`/campuses/${id}/edit`);
   }
 };
 
 const revalidateTermsPaths = (id?: string) => {
-  revalidatePath("/university/terms");
-  revalidatePath("/university/terms/create");
+  revalidatePath("/academic-terms");
+  revalidatePath("/academic-terms/create");
 
   if (id) {
-    revalidatePath(`/university/terms/${id}`);
-    revalidatePath(`/university/terms/${id}/edit`);
+    revalidatePath(`/academic-terms/${id}`);
+    revalidatePath(`/academic-terms/${id}/edit`);
   }
 };
 
 const revalidateRanksPaths = (id?: string) => {
-  revalidatePath("/university/ranks");
-  revalidatePath("/university/ranks/create");
+  revalidatePath("/academic-ranks");
+  revalidatePath("/academic-ranks/create");
 
   if (id) {
-    revalidatePath(`/university/ranks/${id}`);
-    revalidatePath(`/university/ranks/${id}/edit`);
+    revalidatePath(`/academic-ranks/${id}`);
+    revalidatePath(`/academic-ranks/${id}/edit`);
   }
 };
 

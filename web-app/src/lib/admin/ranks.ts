@@ -17,7 +17,7 @@ export const getUniversityRanksList = async (): Promise<RankListItem[]> => {
     .order("number", { ascending: true });
 
   if (error) {
-    console.error("lib.university.ranks.getUniversityRanksList ::", error);
+    console.error("lib.admin.ranks.getUniversityRanksList ::", error);
     return [];
   }
 
@@ -34,7 +34,7 @@ export const getRankById = async (rankId: string): Promise<Rank | null> => {
     .maybeSingle();
 
   if (error) {
-    console.error("lib.university.ranks.getRankById ::", error);
+    console.error("lib.admin.ranks.getRankById ::", error);
     return null;
   }
 

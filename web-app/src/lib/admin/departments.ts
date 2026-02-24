@@ -17,7 +17,7 @@ export const getDepartmentsList = async (): Promise<DepartmentListItem[]> => {
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("lib.university.departments.getDepartmentsList ::", error);
+    console.error("lib.admin.departments.getDepartmentsList ::", error);
     return [];
   }
 
@@ -36,7 +36,7 @@ export const getDepartmentById = async (
     .maybeSingle();
 
   if (error) {
-    console.error("lib.university.departments.getDepartmentById ::", error);
+    console.error("lib.admin.departments.getDepartmentById ::", error);
     return null;
   }
 
