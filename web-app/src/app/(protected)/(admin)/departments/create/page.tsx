@@ -1,9 +1,9 @@
-import { DepartmentCreateForm } from "@/components/admin/department-create-form";
+import { DepartmentCreate } from "@/components/admin/department-create";
 
 const CreatePage = () => {
   return (
     <div className="flex w-2/3 flex-col">
-      <DepartmentCreateForm />
+      <DepartmentCreate />
     </div>
   );
 };

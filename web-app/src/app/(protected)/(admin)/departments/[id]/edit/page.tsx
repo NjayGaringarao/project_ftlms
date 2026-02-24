@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { DepartmentEditForm } from "@/components/admin/department-edit-form";
+import { DepartmentEdit } from "@/components/admin/department-edit";
 import { getDepartmentById } from "@/lib/admin/departments";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const EditPage = async ({ params }: EditPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <DepartmentEditForm department={department} />
+      <DepartmentEdit department={department} />
     </div>
   );
 };

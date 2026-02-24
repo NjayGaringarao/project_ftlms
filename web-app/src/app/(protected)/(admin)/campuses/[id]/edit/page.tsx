@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CampusEditForm } from "@/components/admin/campus-edit-form";
+import { CampusEdit } from "@/components/admin/campus-edit";
 import { getCampusById } from "@/lib/admin/campuses";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const EditPage = async ({ params }: EditPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <CampusEditForm campus={campus} />
+      <CampusEdit campus={campus} />
     </div>
   );
 };

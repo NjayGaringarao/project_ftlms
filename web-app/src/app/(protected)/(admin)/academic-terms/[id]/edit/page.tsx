@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { TermEditForm } from "@/components/admin/term-edit-form";
+import { TermEdit } from "@/components/admin/term-edit";
 import { getTermById } from "@/lib/admin/terms";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const EditPage = async ({ params }: EditPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <TermEditForm term={term} />
+      <TermEdit term={term} />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { RankEditForm } from "@/components/admin/rank-edit-form";
+import { RankEdit } from "@/components/admin/rank-edit";
 import { getRankById } from "@/lib/admin/ranks";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ const EditPage = async ({ params }: EditPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <RankEditForm rank={rank} />
+      <RankEdit rank={rank} />
     </div>
   );
 };

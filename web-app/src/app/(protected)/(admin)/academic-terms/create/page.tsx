@@ -1,9 +1,9 @@
-import { TermCreateForm } from "@/components/admin/term-create-form";
+import { TermCreate } from "@/components/admin/term-create";
 
 const CreatePage = () => {
   return (
     <div className="flex w-2/3 flex-col">
-      <TermCreateForm />
+      <TermCreate />
     </div>
   );
 };
