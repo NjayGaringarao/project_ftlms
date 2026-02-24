@@ -92,10 +92,7 @@ export const CampusEditForm = ({ campus }: CampusEditFormProps) => {
           Edit Campus
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link
-            href={`/university/campuses/${campus.id}`}
-            className="text-foreground"
-          >
+          <Link href={`/campuses/${campus.id}`} className="text-foreground">
             <X />
           </Link>
         </div>

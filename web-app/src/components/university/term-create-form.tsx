@@ -94,9 +94,9 @@ export const TermCreateForm = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/university/terms/${data.id}`);
+        router.push(`/academic-terms/${data.id}`);
       } else {
-        router.push("/university/terms");
+        router.push("/academic-terms");
       }
     }, 1200);
   };
@@ -109,7 +109,7 @@ export const TermCreateForm = () => {
           Term Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link href="/university/terms" className="text-foreground">
+          <Link href="/academic-terms" className="text-foreground">
             <X />
           </Link>
         </div>

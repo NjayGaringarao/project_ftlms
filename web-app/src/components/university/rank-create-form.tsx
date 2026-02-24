@@ -74,9 +74,9 @@ export const RankCreateForm = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/university/ranks/${data.id}`);
+        router.push(`/academic-ranks/${data.id}`);
       } else {
-        router.push("/university/ranks");
+        router.push("/academic-ranks");
       }
     }, 1200);
   };
@@ -89,7 +89,7 @@ export const RankCreateForm = () => {
           Rank Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link href="/university/ranks" className="text-foreground">
+          <Link href="/academic-ranks" className="text-foreground">
             <X />
           </Link>
         </div>

@@ -40,7 +40,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/university/departments");
+    router.push("/departments");
   };
 
   return (
@@ -52,12 +52,12 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/university/departments/${department.id}/edit`}
+            href={`/departments/${department.id}/edit`}
             className="text-foreground"
           >
             <Edit />
           </Link>
-          <Link href="/university/departments" className="text-foreground">
+          <Link href="/departments" className="text-foreground">
             <X />
           </Link>
         </div>

@@ -39,7 +39,7 @@ export const RankView = ({ rank }: RankViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/university/ranks");
+    router.push("/academic-ranks");
   };
 
   return (
@@ -51,12 +51,12 @@ export const RankView = ({ rank }: RankViewProps) => {
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/university/ranks/${rank.id}/edit`}
+            href={`/academic-ranks/${rank.id}/edit`}
             className="text-foreground"
           >
             <Edit />
           </Link>
-          <Link href="/university/ranks" className="text-foreground">
+          <Link href="/academic-ranks" className="text-foreground">
             <X />
           </Link>
         </div>

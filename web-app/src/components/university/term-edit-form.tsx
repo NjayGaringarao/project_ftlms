@@ -121,10 +121,7 @@ export const TermEditForm = ({ term }: TermEditFormProps) => {
           Edit Term
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link
-            href={`/university/terms/${term.id}`}
-            className="text-foreground"
-          >
+          <Link href={`/academic-terms/${term.id}`} className="text-foreground">
             <X />
           </Link>
         </div>

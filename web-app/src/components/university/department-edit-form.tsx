@@ -107,7 +107,7 @@ export const DepartmentEditForm = ({ department }: DepartmentEditFormProps) => {
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/university/departments/${department.id}`}
+            href={`/departments/${department.id}`}
             className="text-foreground"
           >
             <X />

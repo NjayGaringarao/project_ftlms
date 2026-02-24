@@ -18,7 +18,7 @@ export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
   const [query, setQuery] = useState("");
 
   const selectedDepartmentId = useMemo(() => {
-    const match = pathname.match(/\/university\/departments\/([^\/]+)/);
+    const match = pathname.match(/\/departments\/([^\/]+)/);
     return match ? match[1] : null;
   }, [pathname]);
 
@@ -45,7 +45,7 @@ export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/university/departments/create">Create Department</Link>
+            <Link href="/departments/create">Create Department</Link>
           </Button>
         </div>
       </CardHeader>
@@ -68,7 +68,7 @@ export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
             return (
               <Link
                 key={department.id}
-                href={`/university/departments/${department.id}`}
+                href={`/departments/${department.id}`}
                 className={cn(
                   "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
                   isSelected &&

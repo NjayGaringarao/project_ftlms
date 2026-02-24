@@ -79,9 +79,9 @@ export const DepartmentCreateForm = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/university/departments/${data.id}`);
+        router.push(`/departments/${data.id}`);
       } else {
-        router.push("/university/departments");
+        router.push("/departments");
       }
     }, 1200);
   };
@@ -94,7 +94,7 @@ export const DepartmentCreateForm = () => {
           Department Information
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link href="/university/departments" className="text-foreground">
+          <Link href="/departments" className="text-foreground">
             <X />
           </Link>
         </div>

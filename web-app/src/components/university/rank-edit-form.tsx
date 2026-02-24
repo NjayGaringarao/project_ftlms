@@ -99,10 +99,7 @@ export const RankEditForm = ({ rank }: RankEditFormProps) => {
           Edit Rank
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
-          <Link
-            href={`/university/ranks/${rank.id}`}
-            className="text-foreground"
-          >
+          <Link href={`/academic-ranks/${rank.id}`} className="text-foreground">
             <X />
           </Link>
         </div>

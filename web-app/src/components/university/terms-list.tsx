@@ -25,7 +25,7 @@ export const TermsList = ({ terms }: TermsListProps) => {
   const [query, setQuery] = useState("");
 
   const selectedTermId = useMemo(() => {
-    const match = pathname.match(/\/university\/terms\/([^\/]+)/);
+    const match = pathname.match(/\/academic-terms\/([^\/]+)/);
     return match ? match[1] : null;
   }, [pathname]);
 
@@ -53,7 +53,7 @@ export const TermsList = ({ terms }: TermsListProps) => {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/university/terms/create">Create Term</Link>
+            <Link href="/academic-terms/create">Create Term</Link>
           </Button>
         </div>
       </CardHeader>
@@ -76,7 +76,7 @@ export const TermsList = ({ terms }: TermsListProps) => {
             return (
               <Link
                 key={term.id}
-                href={`/university/terms/${term.id}`}
+                href={`/academic-terms/${term.id}`}
                 className={cn(
                   "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
                   isSelected &&

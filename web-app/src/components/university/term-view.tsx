@@ -46,7 +46,7 @@ export const TermView = ({ term }: TermViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/university/terms");
+    router.push("/academic-terms");
   };
 
   return (
@@ -58,12 +58,12 @@ export const TermView = ({ term }: TermViewProps) => {
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/university/terms/${term.id}/edit`}
+            href={`/academic-terms/${term.id}/edit`}
             className="text-foreground"
           >
             <Edit />
           </Link>
-          <Link href="/university/terms" className="text-foreground">
+          <Link href="/academic-terms" className="text-foreground">
             <X />
           </Link>
         </div>

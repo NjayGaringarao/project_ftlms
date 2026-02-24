@@ -40,7 +40,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/university/campuses");
+    router.push("/campuses");
   };
 
   return (
@@ -52,12 +52,12 @@ export const CampusView = ({ campus }: CampusViewProps) => {
         </CardTitle>
         <div className="flex flex-row items-center gap-4">
           <Link
-            href={`/university/campuses/${campus.id}/edit`}
+            href={`/campuses/${campus.id}/edit`}
             className="text-foreground"
           >
             <Edit />
           </Link>
-          <Link href="/university/campuses" className="text-foreground">
+          <Link href="/campuses" className="text-foreground">
             <X />
           </Link>
         </div>

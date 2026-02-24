@@ -18,7 +18,7 @@ export const RanksList = ({ ranks }: RanksListProps) => {
   const [query, setQuery] = useState("");
 
   const selectedRankId = useMemo(() => {
-    const match = pathname.match(/\/university\/ranks\/([^\/]+)/);
+    const match = pathname.match(/\/academic-ranks\/([^\/]+)/);
     return match ? match[1] : null;
   }, [pathname]);
 
@@ -44,7 +44,7 @@ export const RanksList = ({ ranks }: RanksListProps) => {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/university/ranks/create">Create Rank</Link>
+            <Link href="/academic-ranks/create">Create Rank</Link>
           </Button>
         </div>
       </CardHeader>
@@ -67,7 +67,7 @@ export const RanksList = ({ ranks }: RanksListProps) => {
             return (
               <Link
                 key={rank.id}
-                href={`/university/ranks/${rank.id}`}
+                href={`/academic-ranks/${rank.id}`}
                 className={cn(
                   "flex flex-col gap-2 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30",
                   isSelected &&
