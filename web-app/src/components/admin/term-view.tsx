@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar } from "lucide-react";
+import { Calendar, Info } from "lucide-react";
 import { Term } from "@/models/term";
 import { deleteTerm } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
 import DangerZone from "./danger-zone";
 import DeleteConfirmModal from "./delete-confirm-modal";
+import {
+  getAcademicTermDisplayLabel,
+  getAcademicYearLabel,
+  getTermOrderLabel,
+  getTermTypeLabel,
+} from "@/lib/admin/academic-terms";
 
 type TermViewProps = {
   term: Term;
@@ -45,7 +51,7 @@ export const TermView = ({ term }: TermViewProps) => {
   return (
     <AdminPanel
       title="Term Information"
-      icon={Calendar}
+      icon={Info}
       onClose={() => router.push("/academic-terms")}
       onEdit={() => router.push(`/academic-terms/${term.id}/edit`)}
     >
@@ -59,15 +65,26 @@ export const TermView = ({ term }: TermViewProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-foreground/60">Academic Year</p>
-              <p className="font-medium">{term.academic_year}</p>
+              <p className="font-medium">
+                {getAcademicYearLabel(
+                  term.academic_year_start,
+                  term.academic_year_end,
+                )}
+              </p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Term Code</p>
-              <p className="font-medium">{term.term_code}</p>
+              <p className="text-xs text-foreground/60">Term Type</p>
+              <p className="font-medium">{getTermTypeLabel(term.type)}</p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Sequence</p>
-              <p className="font-medium">{term.sequence}</p>
+              <p className="text-xs text-foreground/60">Term Order</p>
+              <p className="font-medium">
+                {getTermOrderLabel(term.term_order)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-foreground/60">Code</p>
+              <p className="font-medium">{term.code}</p>
             </div>
             <div>
               <p className="text-xs text-foreground/60">Start Date</p>
@@ -93,7 +110,7 @@ export const TermView = ({ term }: TermViewProps) => {
           description={
             <p>
               Are you sure you want to delete
-              <strong>{` ${term.academic_year} - ${term.term_code}`}</strong>?
+              <strong>{` ${getAcademicTermDisplayLabel(term)}`}</strong>?
             </p>
           }
           warning="If dependent schedules exist, this operation will be rejected."

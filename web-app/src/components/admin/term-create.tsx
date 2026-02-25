@@ -2,16 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { CirclePlus } from "lucide-react";
 import { createTerm } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
 import FormStatusBanner from "./form-status-banner";
 import { TermInitialForm, type TermFormState } from "./term-initial-form";
+import {
+  generateAcademicTermCode,
+  TERM_ORDERS_BY_TYPE,
+} from "@/lib/admin/academic-terms";
 
 const initialFormState: TermFormState = {
-  academic_year: "",
-  term_code: "",
-  sequence: "",
+  academic_year_start: "",
+  academic_year_end: "",
+  type: "SEMESTER",
+  term_order: "FIRST",
   start: "",
   end: "",
 };
@@ -24,7 +29,24 @@ export const TermCreate = () => {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleChange = (field: keyof TermFormState, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      if (field === "type") {
+        const nextType = value as TermFormState["type"];
+        const allowedOrders = TERM_ORDERS_BY_TYPE[nextType];
+        const nextOrder = allowedOrders.includes(prev.term_order)
+          ? prev.term_order
+          : allowedOrders[0];
+
+        return {
+          ...prev,
+          type: nextType,
+          term_order: nextOrder,
+        };
+      }
+
+      return { ...prev, [field]: value };
+    });
+
     setError("");
   };
 
@@ -35,19 +57,25 @@ export const TermCreate = () => {
   };
 
   const handleCreate = async () => {
-    if (!formData.academic_year.trim()) {
-      setError("Academic year is required");
+    const parsedYearStart = Number(formData.academic_year_start);
+    if (!Number.isInteger(parsedYearStart)) {
+      setError("Academic year start is required");
       return;
     }
 
-    if (!formData.term_code.trim()) {
-      setError("Term code is required");
+    const parsedYearEnd = Number(formData.academic_year_end);
+    if (!Number.isInteger(parsedYearEnd)) {
+      setError("Academic year end is required");
       return;
     }
 
-    const parsedSequence = Number(formData.sequence);
-    if (!Number.isFinite(parsedSequence)) {
-      setError("Term sequence must be a number");
+    if (parsedYearStart < 2000) {
+      setError("Academic year start must be 2000 or later");
+      return;
+    }
+
+    if (parsedYearEnd < parsedYearStart) {
+      setError("Academic year end must be greater than or equal to start year");
       return;
     }
 
@@ -66,9 +94,10 @@ export const TermCreate = () => {
     setShowSuccess(false);
 
     const { data, error: createError } = await createTerm({
-      academic_year: formData.academic_year,
-      term_code: formData.term_code,
-      sequence: parsedSequence,
+      academic_year_start: parsedYearStart,
+      academic_year_end: parsedYearEnd,
+      type: formData.type,
+      term_order: formData.term_order,
       start: formData.start,
       end: formData.end,
     });
@@ -93,8 +122,8 @@ export const TermCreate = () => {
 
   return (
     <AdminPanel
-      title="Term Information"
-      icon={Plus}
+      title="Create Term"
+      icon={CirclePlus}
       onClose={() => router.push("/academic-terms")}
     >
       <>
@@ -119,7 +148,17 @@ export const TermCreate = () => {
             isSaving={isSaving}
             submitLabel="Create Term"
             submitLoadingLabel="Creating..."
-            termCodePlaceholder="e.g. FIRST"
+            generatedCode={
+              Number.isInteger(Number(formData.academic_year_start)) &&
+              Number.isInteger(Number(formData.academic_year_end))
+                ? generateAcademicTermCode({
+                    academic_year_start: Number(formData.academic_year_start),
+                    academic_year_end: Number(formData.academic_year_end),
+                    type: formData.type,
+                    term_order: formData.term_order,
+                  })
+                : "Requires year range, type, and order"
+            }
           />
         </div>
       </>

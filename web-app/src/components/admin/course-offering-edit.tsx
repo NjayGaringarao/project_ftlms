@@ -13,6 +13,7 @@ import { getTermsList } from "@/lib/admin/terms";
 import { updateCourseOffering } from "@/lib/admin/actions";
 import { Campus, Course, Term } from "@/models";
 import { CourseOfferingListItem } from "@/lib/admin/course-offerings";
+import { getAcademicTermDisplayLabel } from "@/lib/admin/academic-terms";
 
 type CourseOfferingEditProps = {
   offering: CourseOfferingListItem;
@@ -179,7 +180,7 @@ export const CourseOfferingEdit = ({
                 <option value="">Select term...</option>
                 {terms.map((term) => (
                   <option key={term.id} value={term.id}>
-                    {term.academic_year} - {term.term_code}
+                    {getAcademicTermDisplayLabel(term)}
                   </option>
                 ))}
               </select>

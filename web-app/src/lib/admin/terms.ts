@@ -5,7 +5,14 @@ import { createClient } from "@/utils/supabase/server";
 
 export type TermListItem = Pick<
   Term,
-  "id" | "academic_year" | "term_code" | "sequence" | "start" | "end"
+  | "id"
+  | "academic_year_start"
+  | "academic_year_end"
+  | "code"
+  | "term_order"
+  | "type"
+  | "start"
+  | "end"
 >;
 
 export const getTermsList = async (): Promise<TermListItem[]> => {
@@ -13,8 +20,13 @@ export const getTermsList = async (): Promise<TermListItem[]> => {
 
   const { data, error } = await supabase
     .from("academic_term")
-    .select("id, academic_year, term_code, sequence, start, end")
-    .order("start", { ascending: false });
+    .select(
+      "id, academic_year_start, academic_year_end, code, term_order, type, start, end",
+    )
+    .order("academic_year_start", { ascending: false })
+    .order("academic_year_end", { ascending: false })
+    .order("type", { ascending: true })
+    .order("term_order", { ascending: true });
 
   if (error) {
     console.error("lib.admin.terms.getTermsList ::", error);
@@ -29,7 +41,9 @@ export const getTermById = async (termId: string): Promise<Term | null> => {
 
   const { data, error } = await supabase
     .from("academic_term")
-    .select("id, academic_year, term_code, sequence, start, end")
+    .select(
+      "id, academic_year_start, academic_year_end, code, term_order, type, start, end",
+    )
     .eq("id", termId)
     .maybeSingle();
 

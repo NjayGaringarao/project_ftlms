@@ -12,6 +12,7 @@ import { getCoursesList } from "@/lib/admin/courses";
 import { getTermsList } from "@/lib/admin/terms";
 import { createCourseOffering } from "@/lib/admin/actions";
 import { Campus, Course, Term } from "@/models";
+import { getAcademicTermDisplayLabel } from "@/lib/admin/academic-terms";
 
 type CourseOfferingCreateProps = {
   basePath?: string;
@@ -174,7 +175,7 @@ export const CourseOfferingCreate = ({
                 <option value="">Select term...</option>
                 {terms.map((term) => (
                   <option key={term.id} value={term.id}>
-                    {term.academic_year} - {term.term_code}
+                    {getAcademicTermDisplayLabel(term)}
                   </option>
                 ))}
               </select>

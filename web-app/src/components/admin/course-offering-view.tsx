@@ -8,6 +8,7 @@ import DangerZone from "./danger-zone";
 import DeleteConfirmModal from "./delete-confirm-modal";
 import { CourseOfferingListItem } from "@/lib/admin/course-offerings";
 import { deleteCourseOffering } from "@/lib/admin/actions";
+import { getAcademicTermDisplayLabel } from "@/lib/admin/academic-terms";
 
 type CourseOfferingViewProps = {
   offering: CourseOfferingListItem;
@@ -67,14 +68,16 @@ export const CourseOfferingView = ({
               </p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Academic Year</p>
+              <p className="text-xs text-foreground/60">Academic Term</p>
               <p className="font-medium">
-                {offering.term?.academic_year ?? "N/A"}
+                {offering.term
+                  ? getAcademicTermDisplayLabel(offering.term)
+                  : "N/A"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Term</p>
-              <p className="font-medium">{offering.term?.term_code ?? "N/A"}</p>
+              <p className="text-xs text-foreground/60">Term Code</p>
+              <p className="font-medium">{offering.term?.code ?? "N/A"}</p>
             </div>
           </div>
         </div>

@@ -5,11 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ReactNode } from "react";
+import { AcademicTermOrder, AcademicTermType } from "@/models";
+import {
+  ACADEMIC_TERM_TYPES,
+  TERM_ORDERS_BY_TYPE,
+  getTermOrderLabel,
+  getTermTypeLabel,
+} from "@/lib/admin/academic-terms";
 
 type TermFormState = {
-  academic_year: string;
-  term_code: string;
-  sequence: string;
+  academic_year_start: string;
+  academic_year_end: string;
+  type: AcademicTermType;
+  term_order: AcademicTermOrder;
   start: string;
   end: string;
 };
@@ -22,8 +30,7 @@ type TermInitialFormProps = {
   isSaving: boolean;
   submitLabel: string;
   submitLoadingLabel: string;
-  termCodePlaceholder?: string;
-  normalizeSequenceOnBlur?: boolean;
+  generatedCode: string;
   statusSlot?: ReactNode;
   extraFields?: ReactNode;
 };
@@ -36,11 +43,12 @@ export const TermInitialForm = ({
   isSaving,
   submitLabel,
   submitLoadingLabel,
-  termCodePlaceholder = "e.g. 1ST",
-  normalizeSequenceOnBlur = true,
+  generatedCode,
   statusSlot,
   extraFields,
 }: TermInitialFormProps) => {
+  const validTermOrders = TERM_ORDERS_BY_TYPE[formData.type];
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
@@ -51,60 +59,99 @@ export const TermInitialForm = ({
 
         {statusSlot}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <Label className="text-xs" htmlFor="academic_year">
-              Academic Year *
+            <Label className="text-xs" htmlFor="academic_year_start">
+              Academic Year Start *
             </Label>
             <Input
-              id="academic_year"
-              placeholder="e.g. 2025-2026"
-              value={formData.academic_year}
-              onChange={(event) =>
-                onChange("academic_year", event.target.value)
-              }
-              onBlur={(event) =>
-                onChange("academic_year", event.target.value.trim())
-              }
-              className="mt-1"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs" htmlFor="term_code">
-              Term Code *
-            </Label>
-            <Input
-              id="term_code"
-              placeholder={termCodePlaceholder}
-              value={formData.term_code}
-              onChange={(event) => onChange("term_code", event.target.value)}
-              onBlur={(event) =>
-                onChange("term_code", event.target.value.trim().toUpperCase())
-              }
-              className="mt-1"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs" htmlFor="sequence">
-              Sequence *
-            </Label>
-            <Input
-              id="sequence"
+              id="academic_year_start"
               type="number"
-              placeholder="e.g. 1"
-              value={formData.sequence}
-              onChange={(event) => onChange("sequence", event.target.value)}
-              onBlur={(event) => {
-                if (normalizeSequenceOnBlur) {
-                  onChange("sequence", event.target.value.trim());
-                }
-              }}
+              placeholder="e.g. 2025"
+              value={formData.academic_year_start}
+              onChange={(event) =>
+                onChange("academic_year_start", event.target.value)
+              }
+              onBlur={(event) =>
+                onChange("academic_year_start", event.target.value.trim())
+              }
               className="mt-1"
               disabled={isSaving}
+            />
+          </div>
+
+          <div>
+            <Label className="text-xs" htmlFor="academic_year_end">
+              Academic Year End *
+            </Label>
+            <Input
+              id="academic_year_end"
+              type="number"
+              placeholder="e.g. 2026"
+              value={formData.academic_year_end}
+              onChange={(event) =>
+                onChange("academic_year_end", event.target.value)
+              }
+              onBlur={(event) =>
+                onChange("academic_year_end", event.target.value.trim())
+              }
+              className="mt-1"
+              disabled={isSaving}
+            />
+          </div>
+
+          <div>
+            <Label className="text-xs" htmlFor="term-type">
+              Term Type *
+            </Label>
+            <select
+              id="term-type"
+              className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+              value={formData.type}
+              onChange={(event) =>
+                onChange("type", event.target.value as AcademicTermType)
+              }
+              disabled={isSaving}
+            >
+              {ACADEMIC_TERM_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {getTermTypeLabel(type)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label className="text-xs" htmlFor="term-order">
+              Term Order *
+            </Label>
+            <select
+              id="term-order"
+              className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+              value={formData.term_order}
+              onChange={(event) =>
+                onChange("term_order", event.target.value as AcademicTermOrder)
+              }
+              disabled={isSaving}
+            >
+              {validTermOrders.map((termOrder) => (
+                <option key={termOrder} value={termOrder}>
+                  {getTermOrderLabel(termOrder)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="md:col-span-2">
+            <Label className="text-xs" htmlFor="term-code">
+              Generated Code
+            </Label>
+            <Input
+              id="term-code"
+              value={generatedCode}
+              readOnly
+              className="mt-1"
+              disabled
             />
           </div>
 

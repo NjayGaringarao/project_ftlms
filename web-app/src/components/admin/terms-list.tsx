@@ -10,6 +10,12 @@ import { TermListItem } from "@/lib/admin/terms";
 import ListItem from "./list-item";
 import { CalendarDays } from "lucide-react";
 import { useListState } from "../../hooks/useListState";
+import {
+  getAcademicTermDisplayLabel,
+  getAcademicYearLabel,
+  getTermOrderLabel,
+  getTermTypeLabel,
+} from "@/lib/admin/academic-terms";
 
 type TermsListProps = {
   terms: TermListItem[];
@@ -32,13 +38,21 @@ export const TermsList = ({ terms }: TermsListProps) => {
       if (!q) return items;
 
       return items.filter((term) => {
-        const academicYear = term.academic_year.toLowerCase();
-        const termCode = term.term_code.toLowerCase();
-        const sequence = String(term.sequence);
+        const academicYear = getAcademicYearLabel(
+          term.academic_year_start,
+          term.academic_year_end,
+        ).toLowerCase();
+        const type = getTermTypeLabel(term.type).toLowerCase();
+        const termOrder = getTermOrderLabel(term.term_order).toLowerCase();
+        const code = term.code.toLowerCase();
+        const display = getAcademicTermDisplayLabel(term).toLowerCase();
+
         return (
           academicYear.includes(q) ||
-          termCode.includes(q) ||
-          sequence.includes(q)
+          type.includes(q) ||
+          termOrder.includes(q) ||
+          code.includes(q) ||
+          display.includes(q)
         );
       });
     },
@@ -49,7 +63,7 @@ export const TermsList = ({ terms }: TermsListProps) => {
       <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
         <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Input
-            placeholder="Search by academic year, term code, or sequence"
+            placeholder="Search by year, type, order, or code"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -62,7 +76,7 @@ export const TermsList = ({ terms }: TermsListProps) => {
         <div
           className={cn(
             "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedId && "flex flex-col gap-4",
+            !!selectedId && "grid-cols-1 lg:grid-cols-2 gap-4",
           )}
         >
           {filteredItems.length === 0 && (
@@ -78,8 +92,9 @@ export const TermsList = ({ terms }: TermsListProps) => {
               <ListItem
                 key={term.id}
                 onClick={() => router.push(`/academic-terms/${term.id}`)}
-                title={`${term.term_code} SEM, A.Y. ${term.academic_year} `}
+                title={getAcademicTermDisplayLabel(term)}
                 subtitle={[
+                  `Code: ${term.code}`,
                   `${formatDate(term.start)} - ${formatDate(term.end)}`,
                 ]}
                 isSelected={isSelected}

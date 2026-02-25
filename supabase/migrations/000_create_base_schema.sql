@@ -16,6 +16,7 @@ begin
 end $$;
 
 create extension if not exists pgcrypto;
+create extension if not exists btree_gist;
 
 -- =========================================================
 -- ENUMS
@@ -38,6 +39,21 @@ create type department_type_enum as enum (
     'ADMINISTRATIVE',
     'STUDENT_SERVICES',
     'EXTENSION_SERVICES'
+);
+
+DROP TYPE IF EXISTS academic_terms_type_enum CASCADE;
+create type academic_terms_type_enum as enum (
+    'SEMESTER',
+    'TRIMESTER',
+    'QUARTER'
+);
+
+DROP TYPE IF EXISTS academic_terms_term_order CASCADE;
+create type academic_terms_term_order as enum (
+    'FIRST',
+    'SECOND',
+    'THIRD',
+    'FOURTH'
 );
 
 -- =========================================================
@@ -104,14 +120,38 @@ create table major_p_c (
 
 create table academic_term (
     id uuid primary key default gen_random_uuid(),
-    academic_year text not null,
-    term_code text not null,
-    sequence integer not null,
-    start date,
-    "end" date,
-    check ("end" is null or "end" >= start),
-    unique(academic_year, term_code)
+    academic_year_start integer not null check (academic_year_start >= 2000),
+    academic_year_end integer not null check (academic_year_end >= academic_year_start),
+    code text not null,
+    term_order academic_terms_term_order not null,
+    "start" date not null,
+    "end" date not null,
+    "type" academic_terms_type_enum not null,
+
+    check ("end" is null or "end" >= "start"),
+
+    -- allow multiple FIRST if type differs
+    unique(academic_year_start, academic_year_end, type, term_order, code),
+
+    check (
+        (type = 'SEMESTER'  AND term_order IN ('FIRST', 'SECOND')) OR
+        (type = 'TRIMESTER' AND term_order IN ('FIRST', 'SECOND', 'THIRD')) OR
+        (type = 'QUARTER'   AND term_order IN ('FIRST', 'SECOND', 'THIRD', 'FOURTH'))
+    ),
+
+    constraint academic_year_no_overlap
+    exclude using gist (
+        academic_year_start with =,
+        academic_year_end   with =,
+        type                with =,
+        term_order          with =,
+        daterange("start","end",'[)') with &&
+    )
+    where ("start" is not null and "end" is not null)
 );
+
+
+
 
 create table course_campus_at (
     id uuid primary key default gen_random_uuid(),

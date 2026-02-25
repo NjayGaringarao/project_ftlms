@@ -11,6 +11,7 @@ import ListItem from "./list-item";
 import { CalendarCheck2 } from "lucide-react";
 import { useListState } from "@/hooks/useListState";
 import { CourseOfferingListItem } from "@/lib/admin/course-offerings";
+import { getAcademicTermDisplayLabel } from "@/lib/admin/academic-terms";
 
 type CourseOfferingsListProps = {
   offerings: CourseOfferingListItem[];
@@ -41,8 +42,9 @@ export const CourseOfferingsList = ({
       return items.filter((offering) => {
         const courseTitle = offering.course?.title?.toLowerCase() ?? "";
         const campusName = offering.campus?.name?.toLowerCase() ?? "";
-        const term =
-          `${offering.term?.academic_year ?? ""} ${offering.term?.term_code ?? ""}`.toLowerCase();
+        const term = offering.term
+          ? getAcademicTermDisplayLabel(offering.term).toLowerCase()
+          : "";
 
         return (
           courseTitle.includes(q) || campusName.includes(q) || term.includes(q)
@@ -85,7 +87,9 @@ export const CourseOfferingsList = ({
               title={offering.course?.title ?? "Unknown Course"}
               subtitle={[
                 `Campus: ${offering.campus?.name ?? "Unknown"}`,
-                `${offering.term?.academic_year ?? "N/A"} • ${offering.term?.term_code ?? "N/A"}`,
+                offering.term
+                  ? getAcademicTermDisplayLabel(offering.term)
+                  : "N/A",
               ]}
               isSelected={selectedId === offering.id}
               icon={<CalendarCheck2 className="h-14 w-14 text-background" />}

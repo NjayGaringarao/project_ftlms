@@ -8,15 +8,20 @@ import { updateTerm } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
 import FormStatusBanner from "./form-status-banner";
 import { TermInitialForm, type TermFormState } from "./term-initial-form";
+import {
+  generateAcademicTermCode,
+  TERM_ORDERS_BY_TYPE,
+} from "@/lib/admin/academic-terms";
 
 type TermEditFormProps = {
   term: Term;
 };
 
 const termToFormState = (term: Term): TermFormState => ({
-  academic_year: term.academic_year,
-  term_code: term.term_code,
-  sequence: String(term.sequence),
+  academic_year_start: String(term.academic_year_start),
+  academic_year_end: String(term.academic_year_end),
+  type: term.type,
+  term_order: term.term_order,
   start: term.start ?? "",
   end: term.end ?? "",
 });
@@ -34,7 +39,24 @@ export const TermEdit = ({ term }: TermEditFormProps) => {
   const [success, setSuccess] = useState(false);
 
   const handleChange = (field: keyof TermFormState, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      if (field === "type") {
+        const nextType = value as TermFormState["type"];
+        const allowedOrders = TERM_ORDERS_BY_TYPE[nextType];
+        const nextOrder = allowedOrders.includes(prev.term_order)
+          ? prev.term_order
+          : allowedOrders[0];
+
+        return {
+          ...prev,
+          type: nextType,
+          term_order: nextOrder,
+        };
+      }
+
+      return { ...prev, [field]: value };
+    });
+
     setError("");
   };
 
@@ -45,19 +67,25 @@ export const TermEdit = ({ term }: TermEditFormProps) => {
   };
 
   const handleSave = async () => {
-    if (!formData.academic_year.trim()) {
-      setError("Academic year is required");
+    const parsedYearStart = Number(formData.academic_year_start);
+    if (!Number.isInteger(parsedYearStart)) {
+      setError("Academic year start is required");
       return;
     }
 
-    if (!formData.term_code.trim()) {
-      setError("Term code is required");
+    const parsedYearEnd = Number(formData.academic_year_end);
+    if (!Number.isInteger(parsedYearEnd)) {
+      setError("Academic year end is required");
       return;
     }
 
-    const parsedSequence = Number(formData.sequence);
-    if (!Number.isFinite(parsedSequence)) {
-      setError("Term sequence must be a number");
+    if (parsedYearStart < 2000) {
+      setError("Academic year start must be 2000 or later");
+      return;
+    }
+
+    if (parsedYearEnd < parsedYearStart) {
+      setError("Academic year end must be greater than or equal to start year");
       return;
     }
 
@@ -77,9 +105,10 @@ export const TermEdit = ({ term }: TermEditFormProps) => {
 
     const { error: updateError } = await updateTerm({
       id: term.id,
-      academic_year: formData.academic_year,
-      term_code: formData.term_code,
-      sequence: parsedSequence,
+      academic_year_start: parsedYearStart,
+      academic_year_end: parsedYearEnd,
+      type: formData.type,
+      term_order: formData.term_order,
       start: formData.start,
       end: formData.end,
     });
@@ -92,9 +121,10 @@ export const TermEdit = ({ term }: TermEditFormProps) => {
     }
 
     const newSavedState = {
-      academic_year: formData.academic_year.trim(),
-      term_code: formData.term_code.trim(),
-      sequence: String(parsedSequence),
+      academic_year_start: String(parsedYearStart),
+      academic_year_end: String(parsedYearEnd),
+      type: formData.type,
+      term_order: formData.term_order,
       start: formData.start,
       end: formData.end,
     };
@@ -121,7 +151,17 @@ export const TermEdit = ({ term }: TermEditFormProps) => {
             isSaving={isSaving}
             submitLabel="Save Changes"
             submitLoadingLabel="Saving..."
-            normalizeSequenceOnBlur={false}
+            generatedCode={
+              Number.isInteger(Number(formData.academic_year_start)) &&
+              Number.isInteger(Number(formData.academic_year_end))
+                ? generateAcademicTermCode({
+                    academic_year_start: Number(formData.academic_year_start),
+                    academic_year_end: Number(formData.academic_year_end),
+                    type: formData.type,
+                    term_order: formData.term_order,
+                  })
+                : "Requires year range, type, and order"
+            }
             statusSlot={
               <FormStatusBanner
                 variant="compact"

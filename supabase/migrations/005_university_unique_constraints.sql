@@ -37,9 +37,14 @@ begin
   if not exists (
     select 1
     from pg_indexes
-    where indexname = 'academic_term_academic_year_term_code_ci_unique'
+    where indexname = 'academic_term_year_code_term_order_ci_unique'
   ) then
-    create unique index academic_term_academic_year_term_code_ci_unique
-      on academic_term ((lower(academic_year)), (lower(term_code)));
+    create unique index academic_term_year_code_term_order_ci_unique
+      on academic_term (
+        academic_year_start,
+        academic_year_end,
+        (lower(code)),
+        term_order
+      );
   end if;
 end $$;
