@@ -80,7 +80,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
 
         <DangerZone
           description={
-            "Deleting this department deletes all the programs under it trancending campuses."
+            "Deleting this department removes its programs, majors, and related offerings across campuses."
           }
           buttonLabel="Delete Department"
           onDeleteClick={() => setShowDeleteConfirm(true)}
@@ -97,7 +97,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
             </p>
           }
           warning={
-            "All Programs and its blocks under this department will also be deleted, transcending all campuses."
+            "All related program definitions, majors, and offering links under this department will also be deleted."
           }
           confirmLabel="Delete Department"
           isDeleting={isDeleting}

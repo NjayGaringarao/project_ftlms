@@ -1,5 +1,5 @@
 import { Major } from "./major";
-import { ProgramCampus } from "./program-campus";
+import { ExtendedProgramCampus, ProgramCampus } from "./program-campus";
 
 export type MajorPC = {
   id: string;
@@ -8,6 +8,6 @@ export type MajorPC = {
 };
 
 export type ExtendedMajorPC = MajorPC & {
-  program_campus: ProgramCampus;
+  program_campus: ExtendedProgramCampus;
   major: Major;
 };

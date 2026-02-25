@@ -1,0 +1,203 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Save } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import AdminPanel from "./admin-panel";
+import FormStatusBanner from "./form-status-banner";
+import { getCampusesList } from "@/lib/admin/campuses";
+import { getCoursesList } from "@/lib/admin/courses";
+import { getTermsList } from "@/lib/admin/terms";
+import { updateCourseOffering } from "@/lib/admin/actions";
+import { Campus, Course, Term } from "@/models";
+import { CourseOfferingListItem } from "@/lib/admin/course-offerings";
+
+type CourseOfferingEditProps = {
+  offering: CourseOfferingListItem;
+};
+
+export const CourseOfferingEdit = ({ offering }: CourseOfferingEditProps) => {
+  const router = useRouter();
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [terms, setTerms] = useState<Term[]>([]);
+  const [campusId, setCampusId] = useState(offering.campus_id);
+  const [courseId, setCourseId] = useState(offering.course_id);
+  const [termId, setTermId] = useState(offering.academic_term_id);
+  const [savedState, setSavedState] = useState({
+    campusId: offering.campus_id,
+    courseId: offering.course_id,
+    termId: offering.academic_term_id,
+  });
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      setIsLoadingData(true);
+      const [campusList, courseList, termList] = await Promise.all([
+        getCampusesList(),
+        getCoursesList(),
+        getTermsList(),
+      ]);
+      setCampuses(campusList);
+      setCourses(courseList);
+      setTerms(termList);
+      setIsLoadingData(false);
+    };
+
+    load();
+  }, []);
+
+  const handleSave = async () => {
+    if (!campusId) return setError("Campus is required");
+    if (!courseId) return setError("Course is required");
+    if (!termId) return setError("Academic term is required");
+
+    setIsSaving(true);
+    setError("");
+    setSuccess(false);
+
+    const { error: updateError } = await updateCourseOffering({
+      id: offering.id,
+      campus_id: campusId,
+      course_id: courseId,
+      academic_term_id: termId,
+    });
+
+    setIsSaving(false);
+
+    if (updateError) {
+      setError(updateError);
+      return;
+    }
+
+    setSavedState({
+      campusId,
+      courseId,
+      termId,
+    });
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 3000);
+  };
+
+  return (
+    <AdminPanel
+      title="Edit Course Offering"
+      icon={Save}
+      onClose={() => router.push(`/course-offerings/${offering.id}`)}
+    >
+      <div className="space-y-4">
+        <FormStatusBanner
+          variant="compact"
+          success={
+            success
+              ? { title: "Course offering updated successfully" }
+              : undefined
+          }
+          error={error}
+        />
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <h3 className="font-semibold">Course Offering Profile</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs" htmlFor="campus-id">
+                Campus *
+              </Label>
+              <select
+                id="campus-id"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                value={campusId}
+                onChange={(event) => {
+                  setCampusId(event.target.value);
+                  setError("");
+                }}
+                disabled={isSaving || isLoadingData}
+              >
+                <option value="">Select campus...</option>
+                {campuses.map((campus) => (
+                  <option key={campus.id} value={campus.id}>
+                    {campus.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-xs" htmlFor="course-id">
+                Course *
+              </Label>
+              <select
+                id="course-id"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                value={courseId}
+                onChange={(event) => {
+                  setCourseId(event.target.value);
+                  setError("");
+                }}
+                disabled={isSaving || isLoadingData}
+              >
+                <option value="">Select course...</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-xs" htmlFor="term-id">
+                Academic Term *
+              </Label>
+              <select
+                id="term-id"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                value={termId}
+                onChange={(event) => {
+                  setTermId(event.target.value);
+                  setError("");
+                }}
+                disabled={isSaving || isLoadingData}
+              >
+                <option value="">Select term...</option>
+                {terms.map((term) => (
+                  <option key={term.id} value={term.id}>
+                    {term.academic_year} - {term.term_code}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCampusId(savedState.campusId);
+                setCourseId(savedState.courseId);
+                setTermId(savedState.termId);
+                setError("");
+                setSuccess(false);
+              }}
+              disabled={isSaving}
+            >
+              Reset
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving || isLoadingData}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </AdminPanel>
+  );
+};

@@ -79,6 +79,56 @@ const revalidateRanksPaths = (id?: string) => {
   }
 };
 
+const revalidateProgramsPaths = (id?: string) => {
+  revalidatePath("/programs");
+  revalidatePath("/programs/create");
+
+  if (id) {
+    revalidatePath(`/programs/${id}`);
+    revalidatePath(`/programs/${id}/edit`);
+  }
+};
+
+const revalidateProgramOfferingsPaths = (id?: string) => {
+  revalidatePath("/program-offerings");
+  revalidatePath("/program-offerings/create");
+
+  if (id) {
+    revalidatePath(`/program-offerings/${id}`);
+    revalidatePath(`/program-offerings/${id}/edit`);
+  }
+};
+
+const revalidateMajorsPaths = (id?: string) => {
+  revalidatePath("/majors");
+  revalidatePath("/majors/create");
+
+  if (id) {
+    revalidatePath(`/majors/${id}`);
+    revalidatePath(`/majors/${id}/edit`);
+  }
+};
+
+const revalidateMajorOfferingsPaths = (id?: string) => {
+  revalidatePath("/major-offerings");
+  revalidatePath("/major-offerings/create");
+
+  if (id) {
+    revalidatePath(`/major-offerings/${id}`);
+    revalidatePath(`/major-offerings/${id}/edit`);
+  }
+};
+
+const revalidateCourseOfferingsPaths = (id?: string) => {
+  revalidatePath("/course-offerings");
+  revalidatePath("/course-offerings/create");
+
+  if (id) {
+    revalidatePath(`/course-offerings/${id}`);
+    revalidatePath(`/course-offerings/${id}/edit`);
+  }
+};
+
 type DepartmentInput = {
   code: string;
   name: string;
@@ -470,5 +520,457 @@ export async function deleteRank(
   }
 
   revalidateRanksPaths();
+  return { data: true };
+}
+
+type ProgramInput = {
+  department_id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+};
+
+type UpdateProgramInput = ProgramInput & {
+  id: string;
+};
+
+const normalizeProgramInput = (input: ProgramInput) => ({
+  department_id: input.department_id.trim(),
+  code: normalizeCode(input.code),
+  name: normalizeName(input.name),
+  description: normalizeDescription(input.description),
+});
+
+export async function createProgram(
+  input: ProgramInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.department_id?.trim()) return { error: "Department is required" };
+  if (!input.code?.trim()) return { error: "Program code is required" };
+  if (!input.name?.trim()) return { error: "Program name is required" };
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("program")
+    .insert(normalizeProgramInput(input))
+    .select("id")
+    .single();
+
+  if (error) {
+    return { error: mapDuplicateError("Program", "code", error) };
+  }
+
+  revalidateProgramsPaths(data.id);
+  return { data: { id: data.id } };
+}
+
+export async function updateProgram(
+  input: UpdateProgramInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Program ID is required" };
+  if (!input.department_id?.trim()) return { error: "Department is required" };
+  if (!input.code?.trim()) return { error: "Program code is required" };
+  if (!input.name?.trim()) return { error: "Program name is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("program")
+    .update(normalizeProgramInput(input))
+    .eq("id", input.id);
+
+  if (error) {
+    return { error: mapDuplicateError("Program", "code", error) };
+  }
+
+  revalidateProgramsPaths(input.id);
+  return { data: true };
+}
+
+export async function deleteProgram(
+  programId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!programId?.trim()) return { error: "Program ID is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("program").delete().eq("id", programId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateProgramsPaths();
+  revalidateMajorsPaths();
+  revalidateProgramOfferingsPaths();
+  return { data: true };
+}
+
+type ProgramOfferingInput = {
+  campus_id: string;
+  program_id: string;
+};
+
+type UpdateProgramOfferingInput = ProgramOfferingInput & {
+  id: string;
+};
+
+export async function createProgramOffering(
+  input: ProgramOfferingInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.campus_id?.trim()) return { error: "Campus is required" };
+  if (!input.program_id?.trim()) return { error: "Program is required" };
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("program_campus")
+    .insert({
+      campus_id: input.campus_id.trim(),
+      program_id: input.program_id.trim(),
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Program offering",
+        "for this campus and program",
+        error,
+      ),
+    };
+  }
+
+  revalidateProgramOfferingsPaths(data.id);
+  return { data: { id: data.id } };
+}
+
+export async function updateProgramOffering(
+  input: UpdateProgramOfferingInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Program offering ID is required" };
+  if (!input.campus_id?.trim()) return { error: "Campus is required" };
+  if (!input.program_id?.trim()) return { error: "Program is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("program_campus")
+    .update({
+      campus_id: input.campus_id.trim(),
+      program_id: input.program_id.trim(),
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Program offering",
+        "for this campus and program",
+        error,
+      ),
+    };
+  }
+
+  revalidateProgramOfferingsPaths(input.id);
+  return { data: true };
+}
+
+export async function deleteProgramOffering(
+  offeringId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!offeringId?.trim()) return { error: "Program offering ID is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("program_campus")
+    .delete()
+    .eq("id", offeringId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateProgramOfferingsPaths();
+  revalidateMajorOfferingsPaths();
+  return { data: true };
+}
+
+type MajorInput = {
+  program_id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+};
+
+type UpdateMajorInput = MajorInput & {
+  id: string;
+};
+
+const normalizeMajorInput = (input: MajorInput) => ({
+  program_id: input.program_id.trim(),
+  code: normalizeCode(input.code),
+  name: normalizeName(input.name),
+  description: normalizeDescription(input.description),
+});
+
+export async function createMajor(
+  input: MajorInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.program_id?.trim()) return { error: "Program is required" };
+  if (!input.code?.trim()) return { error: "Major code is required" };
+  if (!input.name?.trim()) return { error: "Major name is required" };
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("major")
+    .insert(normalizeMajorInput(input))
+    .select("id")
+    .single();
+
+  if (error) {
+    return { error: mapDuplicateError("Major", "code in this program", error) };
+  }
+
+  revalidateMajorsPaths(data.id);
+  return { data: { id: data.id } };
+}
+
+export async function updateMajor(
+  input: UpdateMajorInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Major ID is required" };
+  if (!input.program_id?.trim()) return { error: "Program is required" };
+  if (!input.code?.trim()) return { error: "Major code is required" };
+  if (!input.name?.trim()) return { error: "Major name is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("major")
+    .update(normalizeMajorInput(input))
+    .eq("id", input.id);
+
+  if (error) {
+    return { error: mapDuplicateError("Major", "code in this program", error) };
+  }
+
+  revalidateMajorsPaths(input.id);
+  return { data: true };
+}
+
+export async function deleteMajor(
+  majorId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!majorId?.trim()) return { error: "Major ID is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("major").delete().eq("id", majorId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateMajorsPaths();
+  revalidateMajorOfferingsPaths();
+  return { data: true };
+}
+
+type MajorOfferingInput = {
+  program_campus_id: string;
+  major_id: string;
+};
+
+type UpdateMajorOfferingInput = MajorOfferingInput & {
+  id: string;
+};
+
+export async function createMajorOffering(
+  input: MajorOfferingInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.program_campus_id?.trim()) {
+    return { error: "Program offering is required" };
+  }
+  if (!input.major_id?.trim()) return { error: "Major is required" };
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("major_p_c")
+    .insert({
+      program_campus_id: input.program_campus_id.trim(),
+      major_id: input.major_id.trim(),
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Major offering",
+        "for this program offering and major",
+        error,
+      ),
+    };
+  }
+
+  revalidateMajorOfferingsPaths(data.id);
+  return { data: { id: data.id } };
+}
+
+export async function updateMajorOffering(
+  input: UpdateMajorOfferingInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Major offering ID is required" };
+  if (!input.program_campus_id?.trim()) {
+    return { error: "Program offering is required" };
+  }
+  if (!input.major_id?.trim()) return { error: "Major is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("major_p_c")
+    .update({
+      program_campus_id: input.program_campus_id.trim(),
+      major_id: input.major_id.trim(),
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Major offering",
+        "for this program offering and major",
+        error,
+      ),
+    };
+  }
+
+  revalidateMajorOfferingsPaths(input.id);
+  return { data: true };
+}
+
+export async function deleteMajorOffering(
+  majorOfferingId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!majorOfferingId?.trim())
+    return { error: "Major offering ID is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("major_p_c")
+    .delete()
+    .eq("id", majorOfferingId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateMajorOfferingsPaths();
+  return { data: true };
+}
+
+type CourseOfferingInput = {
+  campus_id: string;
+  course_id: string;
+  academic_term_id: string;
+};
+
+type UpdateCourseOfferingInput = CourseOfferingInput & {
+  id: string;
+};
+
+export async function createCourseOffering(
+  input: CourseOfferingInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.campus_id?.trim()) return { error: "Campus is required" };
+  if (!input.course_id?.trim()) return { error: "Course is required" };
+  if (!input.academic_term_id?.trim())
+    return { error: "Academic term is required" };
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("course_campus_at")
+    .insert({
+      campus_id: input.campus_id.trim(),
+      course_id: input.course_id.trim(),
+      academic_term_id: input.academic_term_id.trim(),
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Course offering",
+        "for this campus, course, and term",
+        error,
+      ),
+    };
+  }
+
+  revalidateCourseOfferingsPaths(data.id);
+  return { data: { id: data.id } };
+}
+
+export async function updateCourseOffering(
+  input: UpdateCourseOfferingInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Course offering ID is required" };
+  if (!input.campus_id?.trim()) return { error: "Campus is required" };
+  if (!input.course_id?.trim()) return { error: "Course is required" };
+  if (!input.academic_term_id?.trim())
+    return { error: "Academic term is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("course_campus_at")
+    .update({
+      campus_id: input.campus_id.trim(),
+      course_id: input.course_id.trim(),
+      academic_term_id: input.academic_term_id.trim(),
+    })
+    .eq("id", input.id);
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Course offering",
+        "for this campus, course, and term",
+        error,
+      ),
+    };
+  }
+
+  revalidateCourseOfferingsPaths(input.id);
+  return { data: true };
+}
+
+export async function deleteCourseOffering(
+  courseOfferingId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!courseOfferingId?.trim())
+    return { error: "Course offering ID is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("course_campus_at")
+    .delete()
+    .eq("id", courseOfferingId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateCourseOfferingsPaths();
   return { data: true };
 }

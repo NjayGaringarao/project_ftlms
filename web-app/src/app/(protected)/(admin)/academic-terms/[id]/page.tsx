@@ -13,7 +13,7 @@ const ViewPage = async ({ params }: ViewPageProps) => {
   const term = await getTermById(id);
 
   if (!term) {
-    redirect("/university/terms");
+    redirect("/academic-terms");
   }
 
   return (

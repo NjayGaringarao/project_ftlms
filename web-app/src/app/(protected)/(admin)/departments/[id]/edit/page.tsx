@@ -13,7 +13,7 @@ const EditPage = async ({ params }: EditPageProps) => {
   const department = await getDepartmentById(id);
 
   if (!department) {
-    redirect("/university/departments");
+    redirect("/departments");
   }
 
   return (

@@ -1,4 +1,4 @@
-import { Program } from "./program";
+import { ExtendedProgram, Program } from "./program";
 
 export type Major = {
   id: string;
@@ -9,5 +9,5 @@ export type Major = {
 };
 
 export type ExtendedMajor = Major & {
-  program: Program;
+  program: ExtendedProgram;
 };

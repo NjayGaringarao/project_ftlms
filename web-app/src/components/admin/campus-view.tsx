@@ -82,7 +82,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
 
         <DangerZone
           description={
-            "Deleting this campus removes related designations and detaches campus links from colleges, courses, and rooms."
+            "Deleting this campus removes related rooms, program offerings, course offerings, and linked designations."
           }
           buttonLabel="Delete Campus"
           onDeleteClick={() => setShowDeleteConfirm(true)}

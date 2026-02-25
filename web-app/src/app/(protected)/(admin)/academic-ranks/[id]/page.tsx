@@ -13,7 +13,7 @@ const ViewPage = async ({ params }: ViewPageProps) => {
   const rank = await getRankById(id);
 
   if (!rank) {
-    redirect("/university/ranks");
+    redirect("/academic-ranks");
   }
 
   return (

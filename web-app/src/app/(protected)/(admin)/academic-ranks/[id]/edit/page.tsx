@@ -13,7 +13,7 @@ const EditPage = async ({ params }: EditPageProps) => {
   const rank = await getRankById(id);
 
   if (!rank) {
-    redirect("/university/ranks");
+    redirect("/academic-ranks");
   }
 
   return (

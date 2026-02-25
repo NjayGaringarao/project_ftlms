@@ -32,6 +32,36 @@ export const NAV_ITEMS: NavigationItem[] = [
     requiredRoles: ["ADMIN"],
   },
   {
+    label: "Programs",
+    href: "/programs",
+    icon: "building-2",
+    requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Program Offerings",
+    href: "/program-offerings",
+    icon: "shapes",
+    requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Majors",
+    href: "/majors",
+    icon: "award",
+    requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Major Offerings",
+    href: "/major-offerings",
+    icon: "file-text",
+    requiredRoles: ["ADMIN"],
+  },
+  {
+    label: "Course Offerings",
+    href: "/course-offerings",
+    icon: "calendar-days",
+    requiredRoles: ["ADMIN"],
+  },
+  {
     label: "FTL",
     href: "/ftl",
     icon: "file-text",
