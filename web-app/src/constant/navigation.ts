@@ -62,6 +62,12 @@ export const NAV_ITEMS: NavigationItem[] = [
     requiredRoles: ["ADMIN"],
   },
   {
+    label: "Blocks",
+    href: "/blocks",
+    icon: "file-text",
+    requiredRoles: ["ADMIN"],
+  },
+  {
     label: "FTL",
     href: "/ftl",
     icon: "file-text",

@@ -129,6 +129,16 @@ const revalidateCourseOfferingsPaths = (id?: string) => {
   }
 };
 
+const revalidateBlocksPaths = (id?: string) => {
+  revalidatePath("/blocks");
+  revalidatePath("/blocks/create");
+
+  if (id) {
+    revalidatePath(`/blocks/${id}`);
+    revalidatePath(`/blocks/${id}/edit`);
+  }
+};
+
 type DepartmentInput = {
   code: string;
   name: string;
@@ -972,5 +982,118 @@ export async function deleteCourseOffering(
   }
 
   revalidateCourseOfferingsPaths();
+  return { data: true };
+}
+
+type BlockInput = {
+  major_p_c_id: string;
+  year_level: number;
+  section: string;
+  student_count?: number | null;
+};
+
+type UpdateBlockInput = BlockInput & {
+  id: string;
+};
+
+const normalizeBlockInput = (input: BlockInput) => ({
+  major_p_c_id: input.major_p_c_id.trim(),
+  year_level: input.year_level,
+  section: normalizeCode(input.section),
+  student_count: input.student_count ?? null,
+});
+
+export async function createBlock(
+  input: BlockInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.major_p_c_id?.trim())
+    return { error: "Major offering is required" };
+  if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
+    return { error: "Year level must be greater than zero" };
+  }
+  if (!input.section?.trim()) return { error: "Section is required" };
+  if (
+    input.student_count !== undefined &&
+    input.student_count !== null &&
+    (!Number.isFinite(input.student_count) || input.student_count < 0)
+  ) {
+    return { error: "Student count must be zero or greater" };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("block")
+    .insert(normalizeBlockInput(input))
+    .select("id")
+    .single();
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Block",
+        "for this major offering, year level, and section",
+        error,
+      ),
+    };
+  }
+
+  revalidateBlocksPaths(data.id);
+  return { data: { id: data.id } };
+}
+
+export async function updateBlock(
+  input: UpdateBlockInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Block ID is required" };
+  if (!input.major_p_c_id?.trim())
+    return { error: "Major offering is required" };
+  if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
+    return { error: "Year level must be greater than zero" };
+  }
+  if (!input.section?.trim()) return { error: "Section is required" };
+  if (
+    input.student_count !== undefined &&
+    input.student_count !== null &&
+    (!Number.isFinite(input.student_count) || input.student_count < 0)
+  ) {
+    return { error: "Student count must be zero or greater" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("block")
+    .update(normalizeBlockInput(input))
+    .eq("id", input.id);
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Block",
+        "for this major offering, year level, and section",
+        error,
+      ),
+    };
+  }
+
+  revalidateBlocksPaths(input.id);
+  return { data: true };
+}
+
+export async function deleteBlock(
+  blockId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!blockId?.trim()) return { error: "Block ID is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("block").delete().eq("id", blockId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateBlocksPaths();
   return { data: true };
 }
