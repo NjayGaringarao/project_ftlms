@@ -15,12 +15,20 @@ import { MajorListItem } from "@/lib/admin/majors";
 
 type MajorEditProps = {
   major: MajorListItem;
+  basePath?: string;
+  fixedProgramId?: string;
 };
 
-export const MajorEdit = ({ major }: MajorEditProps) => {
+export const MajorEdit = ({
+  major,
+  basePath = "/majors",
+  fixedProgramId,
+}: MajorEditProps) => {
   const router = useRouter();
   const [programs, setPrograms] = useState<ExtendedProgram[]>([]);
-  const [programId, setProgramId] = useState(major.program_id);
+  const [programId, setProgramId] = useState(
+    fixedProgramId ?? major.program_id,
+  );
   const [code, setCode] = useState(major.code);
   const [name, setName] = useState(major.name);
   const [description, setDescription] = useState(major.description ?? "");
@@ -93,7 +101,7 @@ export const MajorEdit = ({ major }: MajorEditProps) => {
     <AdminPanel
       title="Edit Major"
       icon={Save}
-      onClose={() => router.push(`/majors/${major.id}`)}
+      onClose={() => router.push(`${basePath}/${major.id}`)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -110,28 +118,30 @@ export const MajorEdit = ({ major }: MajorEditProps) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="program-id">
-                Program *
-              </Label>
-              <select
-                id="program-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={programId}
-                onChange={(event) => {
-                  setProgramId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select program...</option>
-                {programs.map((program) => (
-                  <option key={program.id} value={program.id}>
-                    {program.name} ({program.code})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedProgramId && (
+              <div>
+                <Label className="text-xs" htmlFor="program-id">
+                  Program *
+                </Label>
+                <select
+                  id="program-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={programId}
+                  onChange={(event) => {
+                    setProgramId(event.target.value);
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select program...</option>
+                  {programs.map((program) => (
+                    <option key={program.id} value={program.id}>
+                      {program.name} ({program.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="code">
@@ -188,7 +198,7 @@ export const MajorEdit = ({ major }: MajorEditProps) => {
             <Button
               variant="outline"
               onClick={() => {
-                setProgramId(savedState.programId);
+                setProgramId(fixedProgramId ?? savedState.programId);
                 setCode(savedState.code);
                 setName(savedState.name);
                 setDescription(savedState.description);

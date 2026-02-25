@@ -1,0 +1,18 @@
+import React from "react";
+import { CoursesList } from "@/components/admin/courses-list";
+import { getCoursesList } from "@/lib/admin/courses";
+
+const CoursesLayout = async ({ children }: { children: React.ReactNode }) => {
+  const courses = await getCoursesList();
+
+  return (
+    <div className="flex h-full overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
+        <CoursesList courses={courses} />
+      </div>
+      {children}
+    </div>
+  );
+};
+
+export default CoursesLayout;

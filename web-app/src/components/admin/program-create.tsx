@@ -14,10 +14,18 @@ import {
 } from "@/lib/admin/departments";
 import { createProgram } from "@/lib/admin/actions";
 
-export const ProgramCreate = () => {
+type ProgramCreateProps = {
+  basePath?: string;
+  fixedDepartmentId?: string;
+};
+
+export const ProgramCreate = ({
+  basePath = "/programs",
+  fixedDepartmentId,
+}: ProgramCreateProps) => {
   const router = useRouter();
   const [departments, setDepartments] = useState<DepartmentListItem[]>([]);
-  const [departmentId, setDepartmentId] = useState("");
+  const [departmentId, setDepartmentId] = useState(fixedDepartmentId ?? "");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -64,9 +72,9 @@ export const ProgramCreate = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/programs/${data.id}`);
+        router.push(`${basePath}/${data.id}`);
       } else {
-        router.push("/programs");
+        router.push(basePath);
       }
     }, 1200);
   };
@@ -75,7 +83,7 @@ export const ProgramCreate = () => {
     <AdminPanel
       title="Program Information"
       icon={Plus}
-      onClose={() => router.push("/programs")}
+      onClose={() => router.push(basePath)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -96,28 +104,30 @@ export const ProgramCreate = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="department-id">
-                Department *
-              </Label>
-              <select
-                id="department-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={departmentId}
-                onChange={(event) => {
-                  setDepartmentId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select department...</option>
-                {departments.map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.name} ({department.code})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedDepartmentId && (
+              <div>
+                <Label className="text-xs" htmlFor="department-id">
+                  Department *
+                </Label>
+                <select
+                  id="department-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={departmentId}
+                  onChange={(event) => {
+                    setDepartmentId(event.target.value);
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select department...</option>
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name} ({department.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="code">
@@ -174,7 +184,7 @@ export const ProgramCreate = () => {
             <Button
               variant="outline"
               onClick={() => {
-                setDepartmentId("");
+                setDepartmentId(fixedDepartmentId ?? "");
                 setCode("");
                 setName("");
                 setDescription("");

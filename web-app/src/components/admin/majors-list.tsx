@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,26 @@ import { MajorListItem } from "@/lib/admin/majors";
 
 type MajorsListProps = {
   majors: MajorListItem[];
+  basePath?: string;
+  createPath?: string;
 };
 
-export const MajorsList = ({ majors }: MajorsListProps) => {
+export const MajorsList = ({
+  majors,
+  basePath = "/majors",
+  createPath = "/majors/create",
+}: MajorsListProps) => {
   const router = useRouter();
+  const idMatchPattern = useMemo(
+    () =>
+      new RegExp(
+        `^${basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([^/]+)(?:/|$)`,
+      ),
+    [basePath],
+  );
   const { query, setQuery, selectedId, filteredItems } = useListState({
     items: majors,
-    match: /\/majors\/([^\/]+)/,
+    match: idMatchPattern,
     filter: (items, rawQuery) => {
       const q = rawQuery.trim().toLowerCase();
       if (!q) return items;
@@ -44,7 +58,7 @@ export const MajorsList = ({ majors }: MajorsListProps) => {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/majors/create">Create Major</Link>
+            <Link href={createPath}>Create Major</Link>
           </Button>
         </div>
       </CardHeader>
@@ -64,7 +78,7 @@ export const MajorsList = ({ majors }: MajorsListProps) => {
           {filteredItems.map((major) => (
             <ListItem
               key={major.id}
-              onClick={() => router.push(`/majors/${major.id}`)}
+              onClick={() => router.push(`${basePath}/${major.id}`)}
               title={major.name}
               subtitle={[
                 `Program: ${major.program?.name ?? "Unknown"}`,

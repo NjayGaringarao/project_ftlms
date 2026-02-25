@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,15 +14,26 @@ import { ProgramOfferingListItem } from "@/lib/admin/program-offerings";
 
 type ProgramOfferingsListProps = {
   offerings: ProgramOfferingListItem[];
+  basePath?: string;
+  createPath?: string;
 };
 
 export const ProgramOfferingsList = ({
   offerings,
+  basePath = "/program-offerings",
+  createPath = "/program-offerings/create",
 }: ProgramOfferingsListProps) => {
   const router = useRouter();
+  const idMatchPattern = useMemo(
+    () =>
+      new RegExp(
+        `^${basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([^/]+)(?:/|$)`,
+      ),
+    [basePath],
+  );
   const { query, setQuery, selectedId, filteredItems } = useListState({
     items: offerings,
-    match: /\/program-offerings\/([^\/]+)/,
+    match: idMatchPattern,
     filter: (items, rawQuery) => {
       const q = rawQuery.trim().toLowerCase();
       if (!q) return items;
@@ -50,9 +62,7 @@ export const ProgramOfferingsList = ({
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/program-offerings/create">
-              Create Program Offering
-            </Link>
+            <Link href={createPath}>Create Program Offering</Link>
           </Button>
         </div>
       </CardHeader>
@@ -73,7 +83,7 @@ export const ProgramOfferingsList = ({
           {filteredItems.map((offering) => (
             <ListItem
               key={offering.id}
-              onClick={() => router.push(`/program-offerings/${offering.id}`)}
+              onClick={() => router.push(`${basePath}/${offering.id}`)}
               title={offering.program?.name ?? "Unknown Program"}
               subtitle={[
                 `Campus: ${offering.campus?.name ?? "Unknown Campus"}`,

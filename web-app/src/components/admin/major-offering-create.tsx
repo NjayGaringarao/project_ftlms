@@ -13,13 +13,23 @@ import { createMajorOffering } from "@/lib/admin/actions";
 import { MajorListItem } from "@/lib/admin/majors";
 import { ProgramOfferingListItem } from "@/lib/admin/program-offerings";
 
-export const MajorOfferingCreate = () => {
+type MajorOfferingCreateProps = {
+  basePath?: string;
+  fixedProgramOfferingId?: string;
+};
+
+export const MajorOfferingCreate = ({
+  basePath = "/major-offerings",
+  fixedProgramOfferingId,
+}: MajorOfferingCreateProps) => {
   const router = useRouter();
   const [programOfferings, setProgramOfferings] = useState<
     ProgramOfferingListItem[]
   >([]);
   const [majors, setMajors] = useState<MajorListItem[]>([]);
-  const [programOfferingId, setProgramOfferingId] = useState("");
+  const [programOfferingId, setProgramOfferingId] = useState(
+    fixedProgramOfferingId ?? "",
+  );
   const [majorId, setMajorId] = useState("");
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -83,9 +93,9 @@ export const MajorOfferingCreate = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/major-offerings/${data.id}`);
+        router.push(`${basePath}/${data.id}`);
       } else {
-        router.push("/major-offerings");
+        router.push(basePath);
       }
     }, 1200);
   };
@@ -94,7 +104,7 @@ export const MajorOfferingCreate = () => {
     <AdminPanel
       title="Major Offering"
       icon={Plus}
-      onClose={() => router.push("/major-offerings")}
+      onClose={() => router.push(basePath)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -115,29 +125,31 @@ export const MajorOfferingCreate = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="program-offering-id">
-                Program Offering *
-              </Label>
-              <select
-                id="program-offering-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={programOfferingId}
-                onChange={(event) => {
-                  setProgramOfferingId(event.target.value);
-                  setMajorId("");
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select program offering...</option>
-                {programOfferings.map((offering) => (
-                  <option key={offering.id} value={offering.id}>
-                    {offering.program?.name} - {offering.campus?.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedProgramOfferingId && (
+              <div>
+                <Label className="text-xs" htmlFor="program-offering-id">
+                  Program Offering *
+                </Label>
+                <select
+                  id="program-offering-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={programOfferingId}
+                  onChange={(event) => {
+                    setProgramOfferingId(event.target.value);
+                    setMajorId("");
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select program offering...</option>
+                  {programOfferings.map((offering) => (
+                    <option key={offering.id} value={offering.id}>
+                      {offering.program?.name} - {offering.campus?.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="major-id">
@@ -167,7 +179,7 @@ export const MajorOfferingCreate = () => {
             <Button
               variant="outline"
               onClick={() => {
-                setProgramOfferingId("");
+                setProgramOfferingId(fixedProgramOfferingId ?? "");
                 setMajorId("");
                 setError("");
                 setShowSuccess(false);

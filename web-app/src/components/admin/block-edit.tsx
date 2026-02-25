@@ -17,9 +17,15 @@ import { BlockListItem } from "@/lib/admin/blocks";
 
 type BlockEditProps = {
   block: BlockListItem;
+  basePath?: string;
+  fixedCampusId?: string;
 };
 
-export const BlockEdit = ({ block }: BlockEditProps) => {
+export const BlockEdit = ({
+  block,
+  basePath = "/blocks",
+  fixedCampusId,
+}: BlockEditProps) => {
   const router = useRouter();
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
@@ -57,6 +63,12 @@ export const BlockEdit = ({ block }: BlockEditProps) => {
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
+  const scopedOfferings = useMemo(() => {
+    if (!fixedCampusId) return majorOfferings;
+    return majorOfferings.filter(
+      (offering) => offering.program_campus?.campus_id === fixedCampusId,
+    );
+  }, [fixedCampusId, majorOfferings]);
 
   const handleSave = async () => {
     const parsedYearLevel = Number(yearLevel);
@@ -110,7 +122,7 @@ export const BlockEdit = ({ block }: BlockEditProps) => {
     <AdminPanel
       title="Edit Block"
       icon={Save}
-      onClose={() => router.push(`/blocks/${block.id}`)}
+      onClose={() => router.push(`${basePath}/${block.id}`)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -142,7 +154,7 @@ export const BlockEdit = ({ block }: BlockEditProps) => {
                 disabled={isSaving || isLoadingData}
               >
                 <option value="">Select major offering...</option>
-                {majorOfferings.map((offering) => (
+                {scopedOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
                     {offering.major?.name} -{" "}
                     {offering.program_campus?.program?.name} -{" "}

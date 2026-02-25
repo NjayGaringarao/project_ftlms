@@ -97,3 +97,10 @@ export const getMajorById = async (
     },
   } as MajorListItem;
 };
+
+export const getMajorsByProgram = async (
+  programId: string,
+): Promise<MajorListItem[]> => {
+  const majors = await getMajorsList();
+  return majors.filter((major) => major.program_id === programId);
+};

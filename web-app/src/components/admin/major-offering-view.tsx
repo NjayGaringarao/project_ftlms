@@ -11,9 +11,13 @@ import { deleteMajorOffering } from "@/lib/admin/actions";
 
 type MajorOfferingViewProps = {
   offering: MajorOfferingListItem;
+  basePath?: string;
 };
 
-export const MajorOfferingView = ({ offering }: MajorOfferingViewProps) => {
+export const MajorOfferingView = ({
+  offering,
+  basePath = "/major-offerings",
+}: MajorOfferingViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -32,15 +36,15 @@ export const MajorOfferingView = ({ offering }: MajorOfferingViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/major-offerings");
+    router.push(basePath);
   };
 
   return (
     <AdminPanel
       title="Major Offering Information"
       icon={Link2}
-      onClose={() => router.push("/major-offerings")}
-      onEdit={() => router.push(`/major-offerings/${offering.id}/edit`)}
+      onClose={() => router.push(basePath)}
+      onEdit={() => router.push(`${basePath}/${offering.id}/edit`)}
     >
       <>
         <div className="space-y-4">

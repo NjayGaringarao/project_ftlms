@@ -12,10 +12,18 @@ import { getPrograms } from "@/lib/admin/programs";
 import { createMajor } from "@/lib/admin/actions";
 import { ExtendedProgram } from "@/models";
 
-export const MajorCreate = () => {
+type MajorCreateProps = {
+  basePath?: string;
+  fixedProgramId?: string;
+};
+
+export const MajorCreate = ({
+  basePath = "/majors",
+  fixedProgramId,
+}: MajorCreateProps) => {
   const router = useRouter();
   const [programs, setPrograms] = useState<ExtendedProgram[]>([]);
-  const [programId, setProgramId] = useState("");
+  const [programId, setProgramId] = useState(fixedProgramId ?? "");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -71,9 +79,9 @@ export const MajorCreate = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/majors/${data.id}`);
+        router.push(`${basePath}/${data.id}`);
       } else {
-        router.push("/majors");
+        router.push(basePath);
       }
     }, 1200);
   };
@@ -82,7 +90,7 @@ export const MajorCreate = () => {
     <AdminPanel
       title="Major Information"
       icon={Plus}
-      onClose={() => router.push("/majors")}
+      onClose={() => router.push(basePath)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -103,28 +111,30 @@ export const MajorCreate = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="program-id">
-                Program *
-              </Label>
-              <select
-                id="program-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={programId}
-                onChange={(event) => {
-                  setProgramId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select program...</option>
-                {programs.map((program) => (
-                  <option key={program.id} value={program.id}>
-                    {program.name} ({program.code})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedProgramId && (
+              <div>
+                <Label className="text-xs" htmlFor="program-id">
+                  Program *
+                </Label>
+                <select
+                  id="program-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={programId}
+                  onChange={(event) => {
+                    setProgramId(event.target.value);
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select program...</option>
+                  {programs.map((program) => (
+                    <option key={program.id} value={program.id}>
+                      {program.name} ({program.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="code">
@@ -181,7 +191,7 @@ export const MajorCreate = () => {
             <Button
               variant="outline"
               onClick={() => {
-                setProgramId("");
+                setProgramId(fixedProgramId ?? "");
                 setCode("");
                 setName("");
                 setDescription("");

@@ -11,9 +11,10 @@ import { deleteMajor } from "@/lib/admin/actions";
 
 type MajorViewProps = {
   major: MajorListItem;
+  basePath?: string;
 };
 
-export const MajorView = ({ major }: MajorViewProps) => {
+export const MajorView = ({ major, basePath = "/majors" }: MajorViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -32,15 +33,15 @@ export const MajorView = ({ major }: MajorViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/majors");
+    router.push(basePath);
   };
 
   return (
     <AdminPanel
       title="Major Information"
       icon={Layers}
-      onClose={() => router.push("/majors")}
-      onEdit={() => router.push(`/majors/${major.id}/edit`)}
+      onClose={() => router.push(basePath)}
+      onEdit={() => router.push(`${basePath}/${major.id}/edit`)}
     >
       <>
         <div className="space-y-4">

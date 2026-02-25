@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,26 @@ import { ExtendedProgram } from "@/models";
 
 type ProgramsListProps = {
   programs: ExtendedProgram[];
+  basePath?: string;
+  createPath?: string;
 };
 
-export const ProgramsList = ({ programs }: ProgramsListProps) => {
+export const ProgramsList = ({
+  programs,
+  basePath = "/programs",
+  createPath = "/programs/create",
+}: ProgramsListProps) => {
   const router = useRouter();
+  const idMatchPattern = useMemo(
+    () =>
+      new RegExp(
+        `^${basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([^/]+)(?:/|$)`,
+      ),
+    [basePath],
+  );
   const { query, setQuery, selectedId, filteredItems } = useListState({
     items: programs,
-    match: /\/programs\/([^\/]+)/,
+    match: idMatchPattern,
     filter: (items, rawQuery) => {
       const q = rawQuery.trim().toLowerCase();
       if (!q) return items;
@@ -44,7 +58,7 @@ export const ProgramsList = ({ programs }: ProgramsListProps) => {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/programs/create">Create Program</Link>
+            <Link href={createPath}>Create Program</Link>
           </Button>
         </div>
       </CardHeader>
@@ -64,7 +78,7 @@ export const ProgramsList = ({ programs }: ProgramsListProps) => {
           {filteredItems.map((program) => (
             <ListItem
               key={program.id}
-              onClick={() => router.push(`/programs/${program.id}`)}
+              onClick={() => router.push(`${basePath}/${program.id}`)}
               title={program.name}
               subtitle={[
                 `Department: ${program.department?.name ?? "Unknown"}`,

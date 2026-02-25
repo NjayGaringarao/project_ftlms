@@ -176,3 +176,12 @@ export const getBlockById = async (
     },
   } as BlockListItem;
 };
+
+export const getBlocksByCampus = async (
+  campusId: string,
+): Promise<BlockListItem[]> => {
+  const blocks = await getBlocksList();
+  return blocks.filter(
+    (block) => block.major_p_c?.program_campus?.campus_id === campusId,
+  );
+};

@@ -11,9 +11,13 @@ import { deleteCourseOffering } from "@/lib/admin/actions";
 
 type CourseOfferingViewProps = {
   offering: CourseOfferingListItem;
+  basePath?: string;
 };
 
-export const CourseOfferingView = ({ offering }: CourseOfferingViewProps) => {
+export const CourseOfferingView = ({
+  offering,
+  basePath = "/course-offerings",
+}: CourseOfferingViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -32,15 +36,15 @@ export const CourseOfferingView = ({ offering }: CourseOfferingViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/course-offerings");
+    router.push(basePath);
   };
 
   return (
     <AdminPanel
       title="Course Offering Information"
       icon={CalendarCheck2}
-      onClose={() => router.push("/course-offerings")}
-      onEdit={() => router.push(`/course-offerings/${offering.id}/edit`)}
+      onClose={() => router.push(basePath)}
+      onEdit={() => router.push(`${basePath}/${offering.id}/edit`)}
     >
       <>
         <div className="space-y-4">

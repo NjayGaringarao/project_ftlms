@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 type UseListStateOptions<T> = {
   items: T[];
-  match: RegExp;
+  match: RegExp | ((pathname: string) => string | null);
   filter: (items: T[], query: string) => T[];
 };
 
@@ -25,6 +25,10 @@ export const useListState = <T>({
   const [query, setQuery] = useState("");
 
   const selectedId = useMemo(() => {
+    if (typeof match === "function") {
+      return match(pathname);
+    }
+
     const matchResult = pathname.match(match);
     return matchResult ? matchResult[1] : null;
   }, [pathname, match]);

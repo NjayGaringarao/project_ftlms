@@ -10,7 +10,7 @@ export const getCoursesList = async (): Promise<CourseListItem[]> => {
 
   const { data, error } = await supabase
     .from("course")
-    .select("id, title, lecture_hour, laboratory_hour")
+    .select("id, code, title, lecture_hour, laboratory_hour")
     .order("title", { ascending: true });
 
   if (error) {
@@ -19,4 +19,23 @@ export const getCoursesList = async (): Promise<CourseListItem[]> => {
   }
 
   return (data ?? []) as CourseListItem[];
+};
+
+export const getCourseById = async (
+  courseId: string,
+): Promise<Course | null> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("course")
+    .select("id, code, title, lecture_hour, laboratory_hour")
+    .eq("id", courseId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("lib.admin.courses.getCourseById ::", error);
+    return null;
+  }
+
+  return (data ?? null) as Course | null;
 };

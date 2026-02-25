@@ -12,11 +12,19 @@ import { getPrograms } from "@/lib/admin/programs";
 import { createProgramOffering } from "@/lib/admin/actions";
 import { Campus, ExtendedProgram } from "@/models";
 
-export const ProgramOfferingCreate = () => {
+type ProgramOfferingCreateProps = {
+  basePath?: string;
+  fixedCampusId?: string;
+};
+
+export const ProgramOfferingCreate = ({
+  basePath = "/program-offerings",
+  fixedCampusId,
+}: ProgramOfferingCreateProps) => {
   const router = useRouter();
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [programs, setPrograms] = useState<ExtendedProgram[]>([]);
-  const [campusId, setCampusId] = useState("");
+  const [campusId, setCampusId] = useState(fixedCampusId ?? "");
   const [programId, setProgramId] = useState("");
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -68,9 +76,9 @@ export const ProgramOfferingCreate = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/program-offerings/${data.id}`);
+        router.push(`${basePath}/${data.id}`);
       } else {
-        router.push("/program-offerings");
+        router.push(basePath);
       }
     }, 1200);
   };
@@ -79,7 +87,7 @@ export const ProgramOfferingCreate = () => {
     <AdminPanel
       title="Program Offering"
       icon={Plus}
-      onClose={() => router.push("/program-offerings")}
+      onClose={() => router.push(basePath)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -100,28 +108,30 @@ export const ProgramOfferingCreate = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="campus-id">
-                Campus *
-              </Label>
-              <select
-                id="campus-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={campusId}
-                onChange={(event) => {
-                  setCampusId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select campus...</option>
-                {campuses.map((campus) => (
-                  <option key={campus.id} value={campus.id}>
-                    {campus.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedCampusId && (
+              <div>
+                <Label className="text-xs" htmlFor="campus-id">
+                  Campus *
+                </Label>
+                <select
+                  id="campus-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={campusId}
+                  onChange={(event) => {
+                    setCampusId(event.target.value);
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select campus...</option>
+                  {campuses.map((campus) => (
+                    <option key={campus.id} value={campus.id}>
+                      {campus.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="program-id">
@@ -151,7 +161,7 @@ export const ProgramOfferingCreate = () => {
             <Button
               variant="outline"
               onClick={() => {
-                setCampusId("");
+                setCampusId(fixedCampusId ?? "");
                 setProgramId("");
                 setError("");
                 setShowSuccess(false);

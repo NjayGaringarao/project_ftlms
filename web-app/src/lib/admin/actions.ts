@@ -79,6 +79,16 @@ const revalidateRanksPaths = (id?: string) => {
   }
 };
 
+const revalidateCoursesPaths = (id?: string) => {
+  revalidatePath("/courses");
+  revalidatePath("/courses/create");
+
+  if (id) {
+    revalidatePath(`/courses/${id}`);
+    revalidatePath(`/courses/${id}/edit`);
+  }
+};
+
 const revalidateProgramsPaths = (id?: string) => {
   revalidatePath("/programs");
   revalidatePath("/programs/create");
@@ -136,6 +146,52 @@ const revalidateBlocksPaths = (id?: string) => {
   if (id) {
     revalidatePath(`/blocks/${id}`);
     revalidatePath(`/blocks/${id}/edit`);
+  }
+};
+
+const revalidateDepartmentProgramsPaths = (
+  departmentId: string,
+  programId?: string,
+) => {
+  const basePath = `/departments/${departmentId}/programs`;
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/create`);
+
+  if (programId) {
+    revalidatePath(`${basePath}/${programId}`);
+    revalidatePath(`${basePath}/${programId}/edit`);
+    revalidatePath(`${basePath}/${programId}/majors`);
+    revalidatePath(`${basePath}/${programId}/majors/create`);
+  }
+};
+
+const revalidateProgramMajorsPaths = (
+  departmentId: string,
+  programId: string,
+  majorId?: string,
+) => {
+  const basePath = `/departments/${departmentId}/programs/${programId}/majors`;
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/create`);
+
+  if (majorId) {
+    revalidatePath(`${basePath}/${majorId}`);
+    revalidatePath(`${basePath}/${majorId}/edit`);
+  }
+};
+
+const revalidateCampusProgramMajorOfferingsPaths = (
+  campusId: string,
+  programOfferingId: string,
+  majorOfferingId?: string,
+) => {
+  const basePath = `/campuses/${campusId}/program-offerings/${programOfferingId}/major-offerings`;
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/create`);
+
+  if (majorOfferingId) {
+    revalidatePath(`${basePath}/${majorOfferingId}`);
+    revalidatePath(`${basePath}/${majorOfferingId}/edit`);
   }
 };
 
@@ -533,6 +589,128 @@ export async function deleteRank(
   return { data: true };
 }
 
+type CourseInput = {
+  code: string;
+  title: string;
+  lecture_hour?: number | null;
+  laboratory_hour?: number | null;
+};
+
+type UpdateCourseInput = CourseInput & {
+  id: string;
+};
+
+const normalizeCourseInput = (input: CourseInput) => ({
+  code: normalizeCode(input.code),
+  title: normalizeName(input.title),
+  lecture_hour: input.lecture_hour ?? 0,
+  laboratory_hour: input.laboratory_hour ?? 0,
+});
+
+const mapCourseMutationError = (error: MutationError) => {
+  if (error.code === "23505") {
+    const message = error.message?.toLowerCase() ?? "";
+    if (message.includes("code")) {
+      return "Course code already exists";
+    }
+    return "Course already exists";
+  }
+
+  return error.message ?? "Unexpected error";
+};
+
+export async function createCourse(
+  input: CourseInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.code?.trim()) return { error: "Course code is required" };
+  if (!input.title?.trim()) return { error: "Course title is required" };
+  if (
+    input.lecture_hour !== undefined &&
+    input.lecture_hour !== null &&
+    (!Number.isFinite(input.lecture_hour) || input.lecture_hour < 0)
+  ) {
+    return { error: "Lecture hour must be zero or greater" };
+  }
+  if (
+    input.laboratory_hour !== undefined &&
+    input.laboratory_hour !== null &&
+    (!Number.isFinite(input.laboratory_hour) || input.laboratory_hour < 0)
+  ) {
+    return { error: "Laboratory hour must be zero or greater" };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("course")
+    .insert(normalizeCourseInput(input))
+    .select("id")
+    .single();
+
+  if (error) {
+    return { error: mapCourseMutationError(error) };
+  }
+
+  revalidateCoursesPaths(data.id);
+  revalidateCourseOfferingsPaths();
+  return { data: { id: data.id } };
+}
+
+export async function updateCourse(
+  input: UpdateCourseInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Course ID is required" };
+  if (!input.code?.trim()) return { error: "Course code is required" };
+  if (!input.title?.trim()) return { error: "Course title is required" };
+  if (
+    input.lecture_hour !== undefined &&
+    input.lecture_hour !== null &&
+    (!Number.isFinite(input.lecture_hour) || input.lecture_hour < 0)
+  ) {
+    return { error: "Lecture hour must be zero or greater" };
+  }
+  if (
+    input.laboratory_hour !== undefined &&
+    input.laboratory_hour !== null &&
+    (!Number.isFinite(input.laboratory_hour) || input.laboratory_hour < 0)
+  ) {
+    return { error: "Laboratory hour must be zero or greater" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("course")
+    .update(normalizeCourseInput(input))
+    .eq("id", input.id);
+
+  if (error) {
+    return { error: mapCourseMutationError(error) };
+  }
+
+  revalidateCoursesPaths(input.id);
+  revalidateCourseOfferingsPaths();
+  return { data: true };
+}
+
+export async function deleteCourse(
+  courseId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!courseId?.trim()) return { error: "Course ID is required" };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("course").delete().eq("id", courseId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateCoursesPaths();
+  revalidateCourseOfferingsPaths();
+  return { data: true };
+}
+
 type ProgramInput = {
   department_id: string;
   code: string;
@@ -571,6 +749,7 @@ export async function createProgram(
   }
 
   revalidateProgramsPaths(data.id);
+  revalidateDepartmentProgramsPaths(input.department_id, data.id);
   return { data: { id: data.id } };
 }
 
@@ -594,6 +773,7 @@ export async function updateProgram(
   }
 
   revalidateProgramsPaths(input.id);
+  revalidateDepartmentProgramsPaths(input.department_id, input.id);
   return { data: true };
 }
 
@@ -604,6 +784,12 @@ export async function deleteProgram(
 
   const supabase = await createClient();
 
+  const { data: existingProgram } = await supabase
+    .from("program")
+    .select("id, department_id")
+    .eq("id", programId)
+    .maybeSingle();
+
   const { error } = await supabase.from("program").delete().eq("id", programId);
 
   if (error) {
@@ -611,6 +797,9 @@ export async function deleteProgram(
   }
 
   revalidateProgramsPaths();
+  if (existingProgram?.department_id) {
+    revalidateDepartmentProgramsPaths(existingProgram.department_id);
+  }
   revalidateMajorsPaths();
   revalidateProgramOfferingsPaths();
   return { data: true };
@@ -746,6 +935,18 @@ export async function createMajor(
   }
 
   revalidateMajorsPaths(data.id);
+  const { data: parentProgram } = await supabase
+    .from("program")
+    .select("id, department_id")
+    .eq("id", input.program_id)
+    .maybeSingle();
+  if (parentProgram?.department_id) {
+    revalidateProgramMajorsPaths(
+      parentProgram.department_id,
+      input.program_id,
+      data.id,
+    );
+  }
   return { data: { id: data.id } };
 }
 
@@ -769,6 +970,18 @@ export async function updateMajor(
   }
 
   revalidateMajorsPaths(input.id);
+  const { data: parentProgram } = await supabase
+    .from("program")
+    .select("id, department_id")
+    .eq("id", input.program_id)
+    .maybeSingle();
+  if (parentProgram?.department_id) {
+    revalidateProgramMajorsPaths(
+      parentProgram.department_id,
+      input.program_id,
+      input.id,
+    );
+  }
   return { data: true };
 }
 
@@ -779,6 +992,22 @@ export async function deleteMajor(
 
   const supabase = await createClient();
 
+  const { data: existingMajor } = await supabase
+    .from("major")
+    .select("id, program_id")
+    .eq("id", majorId)
+    .maybeSingle();
+
+  let departmentId: string | undefined;
+  if (existingMajor?.program_id) {
+    const { data: parentProgram } = await supabase
+      .from("program")
+      .select("department_id")
+      .eq("id", existingMajor.program_id)
+      .maybeSingle();
+    departmentId = parentProgram?.department_id;
+  }
+
   const { error } = await supabase.from("major").delete().eq("id", majorId);
 
   if (error) {
@@ -786,6 +1015,9 @@ export async function deleteMajor(
   }
 
   revalidateMajorsPaths();
+  if (departmentId && existingMajor?.program_id) {
+    revalidateProgramMajorsPaths(departmentId, existingMajor.program_id);
+  }
   revalidateMajorOfferingsPaths();
   return { data: true };
 }
@@ -828,7 +1060,20 @@ export async function createMajorOffering(
     };
   }
 
+  const { data: parentOffering } = await supabase
+    .from("program_campus")
+    .select("id, campus_id")
+    .eq("id", input.program_campus_id)
+    .maybeSingle();
+
   revalidateMajorOfferingsPaths(data.id);
+  if (parentOffering?.campus_id) {
+    revalidateCampusProgramMajorOfferingsPaths(
+      parentOffering.campus_id,
+      input.program_campus_id,
+      data.id,
+    );
+  }
   return { data: { id: data.id } };
 }
 
@@ -861,7 +1106,20 @@ export async function updateMajorOffering(
     };
   }
 
+  const { data: parentOffering } = await supabase
+    .from("program_campus")
+    .select("id, campus_id")
+    .eq("id", input.program_campus_id)
+    .maybeSingle();
+
   revalidateMajorOfferingsPaths(input.id);
+  if (parentOffering?.campus_id) {
+    revalidateCampusProgramMajorOfferingsPaths(
+      parentOffering.campus_id,
+      input.program_campus_id,
+      input.id,
+    );
+  }
   return { data: true };
 }
 
@@ -873,6 +1131,22 @@ export async function deleteMajorOffering(
 
   const supabase = await createClient();
 
+  const { data: existingMajorOffering } = await supabase
+    .from("major_p_c")
+    .select("id, program_campus_id")
+    .eq("id", majorOfferingId)
+    .maybeSingle();
+
+  let campusId: string | undefined;
+  if (existingMajorOffering?.program_campus_id) {
+    const { data: parentOffering } = await supabase
+      .from("program_campus")
+      .select("campus_id")
+      .eq("id", existingMajorOffering.program_campus_id)
+      .maybeSingle();
+    campusId = parentOffering?.campus_id;
+  }
+
   const { error } = await supabase
     .from("major_p_c")
     .delete()
@@ -883,6 +1157,12 @@ export async function deleteMajorOffering(
   }
 
   revalidateMajorOfferingsPaths();
+  if (campusId && existingMajorOffering?.program_campus_id) {
+    revalidateCampusProgramMajorOfferingsPaths(
+      campusId,
+      existingMajorOffering.program_campus_id,
+    );
+  }
   return { data: true };
 }
 

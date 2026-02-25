@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { deleteCampus } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
@@ -76,6 +77,34 @@ export const CampusView = ({ campus }: CampusViewProps) => {
                   {campus.zip_code || "Not provided"}
                 </p>
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2 border-t">
+            <h4 className="text-sm font-semibold">Campus Entities</h4>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(`/campuses/${campus.id}/program-offerings`)
+                }
+              >
+                Program Offerings
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(`/campuses/${campus.id}/course-offerings`)
+                }
+              >
+                Course Offerings
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/campuses/${campus.id}/blocks`)}
+              >
+                Blocks
+              </Button>
             </div>
           </div>
         </div>

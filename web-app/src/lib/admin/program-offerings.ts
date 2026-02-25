@@ -105,3 +105,10 @@ export const getProgramOfferingById = async (
     },
   } as ProgramOfferingListItem;
 };
+
+export const getProgramOfferingsByCampus = async (
+  campusId: string,
+): Promise<ProgramOfferingListItem[]> => {
+  const offerings = await getProgramOfferingsList();
+  return offerings.filter((offering) => offering.campus_id === campusId);
+};

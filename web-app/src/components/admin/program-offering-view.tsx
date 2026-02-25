@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Network } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import AdminPanel from "./admin-panel";
 import DangerZone from "./danger-zone";
 import DeleteConfirmModal from "./delete-confirm-modal";
@@ -11,9 +12,15 @@ import { deleteProgramOffering } from "@/lib/admin/actions";
 
 type ProgramOfferingViewProps = {
   offering: ProgramOfferingListItem;
+  basePath?: string;
+  majorOfferingsPath?: string;
 };
 
-export const ProgramOfferingView = ({ offering }: ProgramOfferingViewProps) => {
+export const ProgramOfferingView = ({
+  offering,
+  basePath = "/program-offerings",
+  majorOfferingsPath,
+}: ProgramOfferingViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -32,15 +39,15 @@ export const ProgramOfferingView = ({ offering }: ProgramOfferingViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/program-offerings");
+    router.push(basePath);
   };
 
   return (
     <AdminPanel
       title="Program Offering Information"
       icon={Network}
-      onClose={() => router.push("/program-offerings")}
-      onEdit={() => router.push(`/program-offerings/${offering.id}/edit`)}
+      onClose={() => router.push(basePath)}
+      onEdit={() => router.push(`${basePath}/${offering.id}/edit`)}
     >
       <>
         <div className="space-y-4">
@@ -75,6 +82,22 @@ export const ProgramOfferingView = ({ offering }: ProgramOfferingViewProps) => {
               </p>
             </div>
           </div>
+
+          {majorOfferingsPath && (
+            <div className="space-y-3 pt-2 border-t">
+              <h4 className="text-sm font-semibold">
+                Program Offering Entities
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push(majorOfferingsPath)}
+                >
+                  Major Offerings
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <DangerZone

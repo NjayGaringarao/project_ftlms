@@ -11,9 +11,10 @@ import { BlockListItem } from "@/lib/admin/blocks";
 
 type BlockViewProps = {
   block: BlockListItem;
+  basePath?: string;
 };
 
-export const BlockView = ({ block }: BlockViewProps) => {
+export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -32,15 +33,15 @@ export const BlockView = ({ block }: BlockViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/blocks");
+    router.push(basePath);
   };
 
   return (
     <AdminPanel
       title="Block Information"
       icon={Blocks}
-      onClose={() => router.push("/blocks")}
-      onEdit={() => router.push(`/blocks/${block.id}/edit`)}
+      onClose={() => router.push(basePath)}
+      onEdit={() => router.push(`${basePath}/${block.id}/edit`)}
     >
       <>
         <div className="space-y-4">

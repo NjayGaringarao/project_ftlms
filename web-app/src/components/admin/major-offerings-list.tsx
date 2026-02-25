@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,26 @@ import { MajorOfferingListItem } from "@/lib/admin/major-offerings";
 
 type MajorOfferingsListProps = {
   offerings: MajorOfferingListItem[];
+  basePath?: string;
+  createPath?: string;
 };
 
-export const MajorOfferingsList = ({ offerings }: MajorOfferingsListProps) => {
+export const MajorOfferingsList = ({
+  offerings,
+  basePath = "/major-offerings",
+  createPath = "/major-offerings/create",
+}: MajorOfferingsListProps) => {
   const router = useRouter();
+  const idMatchPattern = useMemo(
+    () =>
+      new RegExp(
+        `^${basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([^/]+)(?:/|$)`,
+      ),
+    [basePath],
+  );
   const { query, setQuery, selectedId, filteredItems } = useListState({
     items: offerings,
-    match: /\/major-offerings\/([^\/]+)/,
+    match: idMatchPattern,
     filter: (items, rawQuery) => {
       const q = rawQuery.trim().toLowerCase();
       if (!q) return items;
@@ -27,8 +41,10 @@ export const MajorOfferingsList = ({ offerings }: MajorOfferingsListProps) => {
       return items.filter((offering) => {
         const majorName = offering.major?.name?.toLowerCase() ?? "";
         const majorCode = offering.major?.code?.toLowerCase() ?? "";
-        const programName = offering.program_campus?.program?.name?.toLowerCase() ?? "";
-        const campusName = offering.program_campus?.campus?.name?.toLowerCase() ?? "";
+        const programName =
+          offering.program_campus?.program?.name?.toLowerCase() ?? "";
+        const campusName =
+          offering.program_campus?.campus?.name?.toLowerCase() ?? "";
 
         return (
           majorName.includes(q) ||
@@ -50,7 +66,7 @@ export const MajorOfferingsList = ({ offerings }: MajorOfferingsListProps) => {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/major-offerings/create">Create Major Offering</Link>
+            <Link href={createPath}>Create Major Offering</Link>
           </Button>
         </div>
       </CardHeader>
@@ -70,7 +86,7 @@ export const MajorOfferingsList = ({ offerings }: MajorOfferingsListProps) => {
           {filteredItems.map((offering) => (
             <ListItem
               key={offering.id}
-              onClick={() => router.push(`/major-offerings/${offering.id}`)}
+              onClick={() => router.push(`${basePath}/${offering.id}`)}
               title={offering.major?.name ?? "Unknown Major"}
               subtitle={[
                 `Program: ${offering.program_campus?.program?.name ?? "Unknown"}`,

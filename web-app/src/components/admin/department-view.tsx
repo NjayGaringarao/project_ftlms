@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Department } from "@/models/department";
 import { deleteDepartment } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
@@ -74,6 +75,20 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
                   {department.description || "No description provided"}
                 </p>
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2 border-t">
+            <h4 className="text-sm font-semibold">Department Entities</h4>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(`/departments/${department.id}/programs`)
+                }
+              >
+                Programs
+              </Button>
             </div>
           </div>
         </div>

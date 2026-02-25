@@ -76,3 +76,10 @@ export const getCourseOfferingById = async (
     term: Array.isArray(data.term) ? data.term[0] : data.term,
   } as CourseOfferingListItem;
 };
+
+export const getCourseOfferingsByCampus = async (
+  campusId: string,
+): Promise<CourseOfferingListItem[]> => {
+  const offerings = await getCourseOfferingsList();
+  return offerings.filter((offering) => offering.campus_id === campusId);
+};

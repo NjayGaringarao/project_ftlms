@@ -15,13 +15,19 @@ import { ProgramOfferingListItem } from "@/lib/admin/program-offerings";
 
 type ProgramOfferingEditProps = {
   offering: ProgramOfferingListItem;
+  basePath?: string;
+  fixedCampusId?: string;
 };
 
-export const ProgramOfferingEdit = ({ offering }: ProgramOfferingEditProps) => {
+export const ProgramOfferingEdit = ({
+  offering,
+  basePath = "/program-offerings",
+  fixedCampusId,
+}: ProgramOfferingEditProps) => {
   const router = useRouter();
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [programs, setPrograms] = useState<ExtendedProgram[]>([]);
-  const [campusId, setCampusId] = useState(offering.campus_id);
+  const [campusId, setCampusId] = useState(fixedCampusId ?? offering.campus_id);
   const [programId, setProgramId] = useState(offering.program_id);
   const [savedCampusId, setSavedCampusId] = useState(offering.campus_id);
   const [savedProgramId, setSavedProgramId] = useState(offering.program_id);
@@ -82,7 +88,7 @@ export const ProgramOfferingEdit = ({ offering }: ProgramOfferingEditProps) => {
     <AdminPanel
       title="Edit Program Offering"
       icon={Save}
-      onClose={() => router.push(`/program-offerings/${offering.id}`)}
+      onClose={() => router.push(`${basePath}/${offering.id}`)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -101,28 +107,30 @@ export const ProgramOfferingEdit = ({ offering }: ProgramOfferingEditProps) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="campus-id">
-                Campus *
-              </Label>
-              <select
-                id="campus-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={campusId}
-                onChange={(event) => {
-                  setCampusId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select campus...</option>
-                {campuses.map((campus) => (
-                  <option key={campus.id} value={campus.id}>
-                    {campus.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedCampusId && (
+              <div>
+                <Label className="text-xs" htmlFor="campus-id">
+                  Campus *
+                </Label>
+                <select
+                  id="campus-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={campusId}
+                  onChange={(event) => {
+                    setCampusId(event.target.value);
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select campus...</option>
+                  {campuses.map((campus) => (
+                    <option key={campus.id} value={campus.id}>
+                      {campus.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="program-id">
@@ -152,7 +160,7 @@ export const ProgramOfferingEdit = ({ offering }: ProgramOfferingEditProps) => {
             <Button
               variant="outline"
               onClick={() => {
-                setCampusId(savedCampusId);
+                setCampusId(fixedCampusId ?? savedCampusId);
                 setProgramId(savedProgramId);
                 setError("");
                 setSuccess(false);

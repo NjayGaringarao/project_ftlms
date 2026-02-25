@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,26 @@ import { BlockListItem } from "@/lib/admin/blocks";
 
 type BlocksListProps = {
   blocks: BlockListItem[];
+  basePath?: string;
+  createPath?: string;
 };
 
-export const BlocksList = ({ blocks }: BlocksListProps) => {
+export const BlocksList = ({
+  blocks,
+  basePath = "/blocks",
+  createPath = "/blocks/create",
+}: BlocksListProps) => {
   const router = useRouter();
+  const idMatchPattern = useMemo(
+    () =>
+      new RegExp(
+        `^${basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([^/]+)(?:/|$)`,
+      ),
+    [basePath],
+  );
   const { query, setQuery, selectedId, filteredItems } = useListState({
     items: blocks,
-    match: /\/blocks\/([^\/]+)/,
+    match: idMatchPattern,
     filter: (items, rawQuery) => {
       const q = rawQuery.trim().toLowerCase();
       if (!q) return items;
@@ -54,7 +68,7 @@ export const BlocksList = ({ blocks }: BlocksListProps) => {
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
-            <Link href="/blocks/create">Create Block</Link>
+            <Link href={createPath}>Create Block</Link>
           </Button>
         </div>
       </CardHeader>
@@ -74,7 +88,7 @@ export const BlocksList = ({ blocks }: BlocksListProps) => {
           {filteredItems.map((block) => (
             <ListItem
               key={block.id}
-              onClick={() => router.push(`/blocks/${block.id}`)}
+              onClick={() => router.push(`${basePath}/${block.id}`)}
               title={`Year ${block.year_level} - ${block.section}`}
               subtitle={[
                 `Major: ${block.major_p_c?.major?.name ?? "Unknown"}`,

@@ -16,16 +16,22 @@ import { MajorOfferingListItem } from "@/lib/admin/major-offerings";
 
 type MajorOfferingEditProps = {
   offering: MajorOfferingListItem;
+  basePath?: string;
+  fixedProgramOfferingId?: string;
 };
 
-export const MajorOfferingEdit = ({ offering }: MajorOfferingEditProps) => {
+export const MajorOfferingEdit = ({
+  offering,
+  basePath = "/major-offerings",
+  fixedProgramOfferingId,
+}: MajorOfferingEditProps) => {
   const router = useRouter();
   const [programOfferings, setProgramOfferings] = useState<
     ProgramOfferingListItem[]
   >([]);
   const [majors, setMajors] = useState<MajorListItem[]>([]);
   const [programOfferingId, setProgramOfferingId] = useState(
-    offering.program_campus_id,
+    fixedProgramOfferingId ?? offering.program_campus_id,
   );
   const [majorId, setMajorId] = useState(offering.major_id);
   const [savedState, setSavedState] = useState({
@@ -102,7 +108,7 @@ export const MajorOfferingEdit = ({ offering }: MajorOfferingEditProps) => {
     <AdminPanel
       title="Edit Major Offering"
       icon={Save}
-      onClose={() => router.push(`/major-offerings/${offering.id}`)}
+      onClose={() => router.push(`${basePath}/${offering.id}`)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -121,29 +127,31 @@ export const MajorOfferingEdit = ({ offering }: MajorOfferingEditProps) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="program-offering-id">
-                Program Offering *
-              </Label>
-              <select
-                id="program-offering-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={programOfferingId}
-                onChange={(event) => {
-                  setProgramOfferingId(event.target.value);
-                  setMajorId("");
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select program offering...</option>
-                {programOfferings.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.program?.name} - {item.campus?.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedProgramOfferingId && (
+              <div>
+                <Label className="text-xs" htmlFor="program-offering-id">
+                  Program Offering *
+                </Label>
+                <select
+                  id="program-offering-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={programOfferingId}
+                  onChange={(event) => {
+                    setProgramOfferingId(event.target.value);
+                    setMajorId("");
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select program offering...</option>
+                  {programOfferings.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.program?.name} - {item.campus?.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="major-id">
@@ -173,7 +181,9 @@ export const MajorOfferingEdit = ({ offering }: MajorOfferingEditProps) => {
             <Button
               variant="outline"
               onClick={() => {
-                setProgramOfferingId(savedState.programOfferingId);
+                setProgramOfferingId(
+                  fixedProgramOfferingId ?? savedState.programOfferingId,
+                );
                 setMajorId(savedState.majorId);
                 setError("");
                 setSuccess(false);

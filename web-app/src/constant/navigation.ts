@@ -20,6 +20,12 @@ export const NAV_ITEMS: NavigationItem[] = [
     requiredRoles: ["ADMIN"],
   },
   {
+    label: "Courses",
+    href: "/courses",
+    icon: "notebook-tabs",
+    requiredRoles: ["ADMIN"],
+  },
+  {
     label: "Academic Ranks",
     href: "/academic-ranks",
     icon: "award",
@@ -29,42 +35,6 @@ export const NAV_ITEMS: NavigationItem[] = [
     label: "Academic Terms",
     href: "/academic-terms",
     icon: "calendar-days",
-    requiredRoles: ["ADMIN"],
-  },
-  {
-    label: "Programs",
-    href: "/programs",
-    icon: "building-2",
-    requiredRoles: ["ADMIN"],
-  },
-  {
-    label: "Program Offerings",
-    href: "/program-offerings",
-    icon: "shapes",
-    requiredRoles: ["ADMIN"],
-  },
-  {
-    label: "Majors",
-    href: "/majors",
-    icon: "award",
-    requiredRoles: ["ADMIN"],
-  },
-  {
-    label: "Major Offerings",
-    href: "/major-offerings",
-    icon: "file-text",
-    requiredRoles: ["ADMIN"],
-  },
-  {
-    label: "Course Offerings",
-    href: "/course-offerings",
-    icon: "calendar-days",
-    requiredRoles: ["ADMIN"],
-  },
-  {
-    label: "Blocks",
-    href: "/blocks",
-    icon: "file-text",
     requiredRoles: ["ADMIN"],
   },
   {

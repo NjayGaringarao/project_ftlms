@@ -78,6 +78,7 @@ create table major (
 
 create table course (
     id uuid primary key default gen_random_uuid(),
+    code text unique not null,
     title text not null,
     lecture_hour numeric(4,2) default 0 check (lecture_hour >= 0),
     laboratory_hour numeric(4,2) default 0 check (laboratory_hour >= 0)

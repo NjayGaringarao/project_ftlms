@@ -14,7 +14,15 @@ import {
 } from "@/lib/admin/major-offerings";
 import { createBlock } from "@/lib/admin/actions";
 
-export const BlockCreate = () => {
+type BlockCreateProps = {
+  basePath?: string;
+  fixedCampusId?: string;
+};
+
+export const BlockCreate = ({
+  basePath = "/blocks",
+  fixedCampusId,
+}: BlockCreateProps) => {
   const router = useRouter();
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
@@ -43,6 +51,12 @@ export const BlockCreate = () => {
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
+  const scopedOfferings = useMemo(() => {
+    if (!fixedCampusId) return majorOfferings;
+    return majorOfferings.filter(
+      (offering) => offering.program_campus?.campus_id === fixedCampusId,
+    );
+  }, [fixedCampusId, majorOfferings]);
 
   const handleCreate = async () => {
     const parsedYearLevel = Number(yearLevel);
@@ -84,9 +98,9 @@ export const BlockCreate = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/blocks/${data.id}`);
+        router.push(`${basePath}/${data.id}`);
       } else {
-        router.push("/blocks");
+        router.push(basePath);
       }
     }, 1200);
   };
@@ -95,7 +109,7 @@ export const BlockCreate = () => {
     <AdminPanel
       title="Block Information"
       icon={Plus}
-      onClose={() => router.push("/blocks")}
+      onClose={() => router.push(basePath)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -131,7 +145,7 @@ export const BlockCreate = () => {
                 disabled={isSaving || isLoadingData}
               >
                 <option value="">Select major offering...</option>
-                {majorOfferings.map((offering) => (
+                {scopedOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
                     {offering.major?.name} -{" "}
                     {offering.program_campus?.program?.name} -{" "}

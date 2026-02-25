@@ -17,12 +17,20 @@ import { ExtendedProgram } from "@/models";
 
 type ProgramEditProps = {
   program: ExtendedProgram;
+  basePath?: string;
+  fixedDepartmentId?: string;
 };
 
-export const ProgramEdit = ({ program }: ProgramEditProps) => {
+export const ProgramEdit = ({
+  program,
+  basePath = "/programs",
+  fixedDepartmentId,
+}: ProgramEditProps) => {
   const router = useRouter();
   const [departments, setDepartments] = useState<DepartmentListItem[]>([]);
-  const [departmentId, setDepartmentId] = useState(program.department_id);
+  const [departmentId, setDepartmentId] = useState(
+    fixedDepartmentId ?? program.department_id,
+  );
   const [code, setCode] = useState(program.code);
   const [name, setName] = useState(program.name);
   const [description, setDescription] = useState(program.description ?? "");
@@ -86,7 +94,7 @@ export const ProgramEdit = ({ program }: ProgramEditProps) => {
     <AdminPanel
       title="Edit Program"
       icon={Save}
-      onClose={() => router.push(`/programs/${program.id}`)}
+      onClose={() => router.push(`${basePath}/${program.id}`)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -103,28 +111,30 @@ export const ProgramEdit = ({ program }: ProgramEditProps) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="department-id">
-                Department *
-              </Label>
-              <select
-                id="department-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={departmentId}
-                onChange={(event) => {
-                  setDepartmentId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select department...</option>
-                {departments.map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.name} ({department.code})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedDepartmentId && (
+              <div>
+                <Label className="text-xs" htmlFor="department-id">
+                  Department *
+                </Label>
+                <select
+                  id="department-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={departmentId}
+                  onChange={(event) => {
+                    setDepartmentId(event.target.value);
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select department...</option>
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name} ({department.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="code">
@@ -181,7 +191,7 @@ export const ProgramEdit = ({ program }: ProgramEditProps) => {
             <Button
               variant="outline"
               onClick={() => {
-                setDepartmentId(savedState.departmentId);
+                setDepartmentId(fixedDepartmentId ?? savedState.departmentId);
                 setCode(savedState.code);
                 setName(savedState.name);
                 setDescription(savedState.description);

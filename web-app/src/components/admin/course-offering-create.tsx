@@ -13,12 +13,20 @@ import { getTermsList } from "@/lib/admin/terms";
 import { createCourseOffering } from "@/lib/admin/actions";
 import { Campus, Course, Term } from "@/models";
 
-export const CourseOfferingCreate = () => {
+type CourseOfferingCreateProps = {
+  basePath?: string;
+  fixedCampusId?: string;
+};
+
+export const CourseOfferingCreate = ({
+  basePath = "/course-offerings",
+  fixedCampusId,
+}: CourseOfferingCreateProps) => {
   const router = useRouter();
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
-  const [campusId, setCampusId] = useState("");
+  const [campusId, setCampusId] = useState(fixedCampusId ?? "");
   const [courseId, setCourseId] = useState("");
   const [termId, setTermId] = useState("");
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -69,9 +77,9 @@ export const CourseOfferingCreate = () => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/course-offerings/${data.id}`);
+        router.push(`${basePath}/${data.id}`);
       } else {
-        router.push("/course-offerings");
+        router.push(basePath);
       }
     }, 1200);
   };
@@ -80,7 +88,7 @@ export const CourseOfferingCreate = () => {
     <AdminPanel
       title="Course Offering"
       icon={Plus}
-      onClose={() => router.push("/course-offerings")}
+      onClose={() => router.push(basePath)}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -101,28 +109,30 @@ export const CourseOfferingCreate = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="campus-id">
-                Campus *
-              </Label>
-              <select
-                id="campus-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={campusId}
-                onChange={(event) => {
-                  setCampusId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select campus...</option>
-                {campuses.map((campus) => (
-                  <option key={campus.id} value={campus.id}>
-                    {campus.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!fixedCampusId && (
+              <div>
+                <Label className="text-xs" htmlFor="campus-id">
+                  Campus *
+                </Label>
+                <select
+                  id="campus-id"
+                  className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                  value={campusId}
+                  onChange={(event) => {
+                    setCampusId(event.target.value);
+                    setError("");
+                  }}
+                  disabled={isSaving || isLoadingData}
+                >
+                  <option value="">Select campus...</option>
+                  {campuses.map((campus) => (
+                    <option key={campus.id} value={campus.id}>
+                      {campus.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <Label className="text-xs" htmlFor="course-id">
@@ -175,7 +185,7 @@ export const CourseOfferingCreate = () => {
             <Button
               variant="outline"
               onClick={() => {
-                setCampusId("");
+                setCampusId(fixedCampusId ?? "");
                 setCourseId("");
                 setTermId("");
                 setError("");
