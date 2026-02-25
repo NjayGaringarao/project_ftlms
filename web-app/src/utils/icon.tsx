@@ -7,6 +7,8 @@ import {
   LucideIcon,
   Landmark,
   Shapes,
+  Award,
+  CalendarDays,
 } from "lucide-react";
 
 export type IconName =
@@ -16,7 +18,9 @@ export type IconName =
   | "users"
   | "user"
   | "landmark"
-  | "shapes";
+  | "shapes"
+  | "award"
+  | "calendar-days";
 
 export const iconMap: Record<string, LucideIcon> = {
   home: Home,
@@ -26,6 +30,8 @@ export const iconMap: Record<string, LucideIcon> = {
   user: User,
   landmark: Landmark,
   shapes: Shapes,
+  award: Award,
+  "calendar-days": CalendarDays,
 };
 
 export const mapIcon = (name?: IconName) => {

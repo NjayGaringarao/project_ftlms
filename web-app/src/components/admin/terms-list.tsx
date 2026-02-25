@@ -78,9 +78,8 @@ export const TermsList = ({ terms }: TermsListProps) => {
               <ListItem
                 key={term.id}
                 onClick={() => router.push(`/academic-terms/${term.id}`)}
-                title={term.academic_year}
+                title={`${term.term_code} SEM, A.Y. ${term.academic_year} `}
                 subtitle={[
-                  `${term.term_code} • Sequence ${term.sequence}`,
                   `${formatDate(term.start)} - ${formatDate(term.end)}`,
                 ]}
                 isSelected={isSelected}

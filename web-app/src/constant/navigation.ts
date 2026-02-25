@@ -22,13 +22,13 @@ export const NAV_ITEMS: NavigationItem[] = [
   {
     label: "Academic Ranks",
     href: "/academic-ranks",
-    icon: "landmark",
+    icon: "award",
     requiredRoles: ["ADMIN"],
   },
   {
     label: "Academic Terms",
     href: "/academic-terms",
-    icon: "landmark",
+    icon: "calendar-days",
     requiredRoles: ["ADMIN"],
   },
   {
