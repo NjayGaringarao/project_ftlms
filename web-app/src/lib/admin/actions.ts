@@ -195,6 +195,16 @@ const revalidateCampusProgramMajorOfferingsPaths = (
   }
 };
 
+const revalidateCampusProgramOfferingDetailPath = (
+  campusId: string,
+  programOfferingId: string,
+) => {
+  const basePath = `/campuses/${campusId}/program-offerings`;
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/${programOfferingId}`);
+  revalidatePath(`${basePath}/${programOfferingId}/edit`);
+};
+
 type DepartmentInput = {
   code: string;
   name: string;
@@ -1068,6 +1078,10 @@ export async function createMajorOffering(
 
   revalidateMajorOfferingsPaths(data.id);
   if (parentOffering?.campus_id) {
+    revalidateCampusProgramOfferingDetailPath(
+      parentOffering.campus_id,
+      input.program_campus_id,
+    );
     revalidateCampusProgramMajorOfferingsPaths(
       parentOffering.campus_id,
       input.program_campus_id,
@@ -1114,6 +1128,10 @@ export async function updateMajorOffering(
 
   revalidateMajorOfferingsPaths(input.id);
   if (parentOffering?.campus_id) {
+    revalidateCampusProgramOfferingDetailPath(
+      parentOffering.campus_id,
+      input.program_campus_id,
+    );
     revalidateCampusProgramMajorOfferingsPaths(
       parentOffering.campus_id,
       input.program_campus_id,
@@ -1158,6 +1176,10 @@ export async function deleteMajorOffering(
 
   revalidateMajorOfferingsPaths();
   if (campusId && existingMajorOffering?.program_campus_id) {
+    revalidateCampusProgramOfferingDetailPath(
+      campusId,
+      existingMajorOffering.program_campus_id,
+    );
     revalidateCampusProgramMajorOfferingsPaths(
       campusId,
       existingMajorOffering.program_campus_id,

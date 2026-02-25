@@ -13,7 +13,6 @@ const ViewCampusProgramOfferingPage = async ({
 }: ViewCampusProgramOfferingPageProps) => {
   const { id, offeringId } = await params;
   const basePath = `/campuses/${id}/program-offerings`;
-  const majorOfferingsPath = `${basePath}/${offeringId}/major-offerings`;
   const offering = await getProgramOfferingById(offeringId);
 
   if (!offering || offering.campus_id !== id) {
@@ -22,11 +21,7 @@ const ViewCampusProgramOfferingPage = async ({
 
   return (
     <div className="flex w-2/3 flex-col">
-      <ProgramOfferingView
-        offering={offering}
-        basePath={basePath}
-        majorOfferingsPath={majorOfferingsPath}
-      />
+      <ProgramOfferingView offering={offering} basePath={basePath} />
     </div>
   );
 };
