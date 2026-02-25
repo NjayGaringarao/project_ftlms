@@ -1,15 +1,14 @@
 import { Block } from "./block";
-import { Course } from "./course";
+import { CourseCampusAt } from "./course-campus-at";
 
 export type Class = {
   id: string;
   schedule_id: string;
-  course_id: string;
-  block_id: string;
-  student_count: number;
+  campus_course_at_id: string;
+  block_id: string | null;
 };
 
 export type ExtendedClass = Class & {
-  course: Course;
-  block: Block;
+  course_campus_at: CourseCampusAt;
+  block: Block | null;
 };

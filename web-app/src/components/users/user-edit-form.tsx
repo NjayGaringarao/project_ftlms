@@ -52,10 +52,9 @@ type ProfessionalFormState = {
     campus_id?: string | null;
     job_title: string;
     department_id?: string | null;
-    program_id?: string | null;
+    program_campus_id?: string | null;
     room_id?: string | null;
     load?: number | null;
-    is_active?: boolean;
   }>;
 };
 
@@ -87,10 +86,9 @@ const userToProfessionalFormState = (
       campus_id: d.campus_id,
       job_title: d.job_title,
       department_id: d.department_id,
-      program_id: d.program_id,
+      program_campus_id: d.program_campus_id,
       room_id: d.room_id,
       load: d.load,
-      is_active: d.is_active,
     })) ?? [],
 });
 
@@ -158,11 +156,10 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
         {
           job_title: designation.job_title,
           department_id: designation.department_id || null,
-          program_id: designation.program_id || null,
+          program_campus_id: designation.program_campus_id || null,
           campus_id: designation.campus_id || null,
           room_id: designation.room_id || null,
           load: designation.load,
-          is_active: designation.is_active,
         },
       ],
     }));
@@ -630,11 +627,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{designation.job_title}</p>
-                          {designation.is_active === false && (
-                            <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
-                              Inactive
-                            </span>
-                          )}
                         </div>
                         <div className="space-y-1 mt-1">
                           {designation.department_id && (
@@ -642,9 +634,9 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                               Department: {designation.department_id}
                             </p>
                           )}
-                          {designation.program_id && (
+                          {designation.program_campus_id && (
                             <p className="text-xs text-foreground/60">
-                              Program: {designation.program_id}
+                              Program Offering: {designation.program_campus_id}
                             </p>
                           )}
                           {designation.campus_id && (

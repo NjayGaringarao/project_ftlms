@@ -14,10 +14,12 @@ import {
   validateDesignation,
 } from "@/constant/designations";
 import { getDepartmentsList } from "@/lib/admin/departments";
-import { getPrograms } from "@/lib/admin/programs";
+import {
+  getProgramCampusOfferings,
+  ProgramCampusOffering,
+} from "@/lib/admin/programs";
 import { getCampusesList } from "@/lib/admin/campuses";
 import { DepartmentListItem } from "@/lib/admin/departments";
-import { ExtendedProgram } from "@/models/program";
 import { Campus } from "@/models/campus";
 
 type DesignationFormProps = {
@@ -32,7 +34,9 @@ export const DesignationAddForm = ({
   error,
 }: DesignationFormProps) => {
   const [departments, setDepartments] = useState<DepartmentListItem[]>([]);
-  const [programs, setPrograms] = useState<ExtendedProgram[]>([]);
+  const [programOfferings, setProgramOfferings] = useState<
+    ProgramCampusOffering[]
+  >([]);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -41,10 +45,9 @@ export const DesignationAddForm = ({
   const [subType, setSubType] = useState<string>("");
   const [campusId, setCampusId] = useState<string>("");
   const [departmentId, setDepartmentId] = useState<string>("");
-  const [programId, setProgramId] = useState<string>("");
+  const [programCampusId, setProgramCampusId] = useState<string>("");
   const [jobTitle, setJobTitle] = useState<string>("");
   const [load, setLoad] = useState<string>("");
-  const [isActive, setIsActive] = useState<boolean>(true);
 
   // Fetch initial data
   useEffect(() => {
@@ -54,11 +57,11 @@ export const DesignationAddForm = ({
         const [deptsData, campusesData, programsData] = await Promise.all([
           getDepartmentsList(),
           getCampusesList(),
-          getPrograms(),
+          getProgramCampusOfferings(),
         ]);
         setDepartments(deptsData);
         setCampuses(campusesData);
-        setPrograms(programsData);
+        setProgramOfferings(programsData);
       } catch (err) {
         console.error("Error fetching designation form data:", err);
       } finally {
@@ -74,7 +77,7 @@ export const DesignationAddForm = ({
     setSubType("");
     setCampusId("");
     setDepartmentId("");
-    setProgramId("");
+    setProgramCampusId("");
     setJobTitle("");
   };
 
@@ -91,12 +94,25 @@ export const DesignationAddForm = ({
     }
   };
 
-  // When program changes, auto-fill department from program
-  const handleProgramChange = (progId: string) => {
-    setProgramId(progId);
-    const prog = programs.find((p) => p.id === progId);
-    if (prog) {
-      setDepartmentId(prog.department_id);
+  // When program offering changes, auto-fill related campus/department context
+  const handleProgramOfferingChange = (offeringId: string) => {
+    setProgramCampusId(offeringId);
+    const offering = programOfferings.find((p) => p.id === offeringId);
+    if (offering) {
+      setCampusId(offering.campus_id);
+      setDepartmentId(offering.program.department_id);
+    }
+  };
+
+  const handleCampusChange = (nextCampusId: string) => {
+    setCampusId(nextCampusId);
+    if (programCampusId) {
+      const selected = programOfferings.find(
+        (offering) => offering.id === programCampusId,
+      );
+      if (selected && selected.campus_id !== nextCampusId) {
+        setProgramCampusId("");
+      }
     }
   };
 
@@ -105,7 +121,7 @@ export const DesignationAddForm = ({
     const validation = validateDesignation(designationType, subType, {
       campus_id: campusId,
       department_id: departmentId,
-      program_id: programId,
+      program_campus_id: programCampusId,
       job_title: jobTitle,
     });
 
@@ -122,12 +138,11 @@ export const DesignationAddForm = ({
     // Build designation object
     const designation = {
       department_id: departmentId || null,
-      program_id: programId || null,
+      program_campus_id: programCampusId || null,
       campus_id: campusId || null,
       room_id: null,
       job_title: jobTitle.trim(),
       load: parseInt(load),
-      is_active: isActive,
     };
 
     onAdd(designation);
@@ -137,10 +152,9 @@ export const DesignationAddForm = ({
     setSubType("");
     setCampusId("");
     setDepartmentId("");
-    setProgramId("");
+    setProgramCampusId("");
     setJobTitle("");
     setLoad("");
-    setIsActive(true);
   };
 
   if (isLoadingData) {
@@ -154,10 +168,10 @@ export const DesignationAddForm = ({
     ? departments.filter((d) => d.type === requirements.departmentTypeFilter)
     : departments;
 
-  // Filter programs by campus if campus is selected
-  const filteredPrograms = campusId
-    ? programs.filter((p) => p.campus_id === campusId)
-    : programs;
+  // Filter program offerings by campus if campus is selected
+  const filteredProgramOfferings = campusId
+    ? programOfferings.filter((p) => p.campus_id === campusId)
+    : programOfferings;
 
   return (
     <div className="border rounded-lg p-4 bg-foreground/2 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -215,7 +229,7 @@ export const DesignationAddForm = ({
                 <select
                   id="campus"
                   value={campusId}
-                  onChange={(e) => setCampusId(e.target.value)}
+                  onChange={(e) => handleCampusChange(e.target.value)}
                   disabled={isLoading}
                   className="mt-1 w-full px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground text-sm"
                 >
@@ -231,19 +245,21 @@ export const DesignationAddForm = ({
               {campusId && (
                 <div>
                   <Label htmlFor="program" className="text-xs">
-                    Program *
+                    Program Offering *
                   </Label>
                   <select
                     id="program"
-                    value={programId}
-                    onChange={(e) => handleProgramChange(e.target.value)}
+                    value={programCampusId}
+                    onChange={(e) =>
+                      handleProgramOfferingChange(e.target.value)
+                    }
                     disabled={isLoading}
                     className="mt-1 w-full px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground text-sm"
                   >
-                    <option value="">Select program...</option>
-                    {filteredPrograms.map((prog) => (
-                      <option key={prog.id} value={prog.id}>
-                        {prog.name}
+                    <option value="">Select program offering...</option>
+                    {filteredProgramOfferings.map((offering) => (
+                      <option key={offering.id} value={offering.id}>
+                        {offering.program.name}
                       </option>
                     ))}
                   </select>
@@ -326,6 +342,26 @@ export const DesignationAddForm = ({
                   </option>
                 ))}
               </select>
+
+              <div className="mt-3">
+                <Label htmlFor="campus-higher-ups" className="text-xs">
+                  Campus *
+                </Label>
+                <select
+                  id="campus-higher-ups"
+                  value={campusId}
+                  onChange={(e) => handleCampusChange(e.target.value)}
+                  disabled={isLoading}
+                  className="mt-1 w-full px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground text-sm"
+                >
+                  <option value="">Select campus...</option>
+                  {campuses.map((campus) => (
+                    <option key={campus.id} value={campus.id}>
+                      {campus.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -338,7 +374,7 @@ export const DesignationAddForm = ({
               <select
                 id="campus-director"
                 value={campusId}
-                onChange={(e) => setCampusId(e.target.value)}
+                onChange={(e) => handleCampusChange(e.target.value)}
                 disabled={isLoading}
                 className="mt-1 w-full px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground text-sm"
               >
@@ -365,7 +401,7 @@ export const DesignationAddForm = ({
                 <select
                   id="campus-other"
                   value={campusId}
-                  onChange={(e) => setCampusId(e.target.value)}
+                  onChange={(e) => handleCampusChange(e.target.value)}
                   disabled={isLoading}
                   className="mt-1 w-full px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground text-sm"
                 >
@@ -426,7 +462,7 @@ export const DesignationAddForm = ({
             <select
               id="campus-ss"
               value={campusId}
-              onChange={(e) => setCampusId(e.target.value)}
+              onChange={(e) => handleCampusChange(e.target.value)}
               disabled={isLoading}
               className="mt-1 w-full px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground text-sm"
             >
@@ -485,7 +521,7 @@ export const DesignationAddForm = ({
             <select
               id="campus-ext"
               value={campusId}
-              onChange={(e) => setCampusId(e.target.value)}
+              onChange={(e) => handleCampusChange(e.target.value)}
               disabled={isLoading}
               className="mt-1 w-full px-3 py-2 border border-foreground/20 rounded-md bg-background text-foreground text-sm"
             >
@@ -554,23 +590,6 @@ export const DesignationAddForm = ({
               className="mt-1"
             />
           </div>
-        )}
-
-      {/* is_active checkbox */}
-      {designationType &&
-        (subType ||
-          designationType === "student_services" ||
-          designationType === "extension_services") && (
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              disabled={isLoading}
-              className="w-4 h-4"
-            />
-            <span className="text-xs">Active</span>
-          </label>
         )}
 
       {/* Add Button */}

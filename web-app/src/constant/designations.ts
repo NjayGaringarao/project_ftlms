@@ -79,7 +79,7 @@ export const getDesignationRequirements = (
   if (designationType === "administrative") {
     if (subType === "higher_ups") {
       return {
-        requiresCampus: false,
+        requiresCampus: true,
         requiresDepartment: false,
         requiresProgram: false,
         requiresJobTitle: true,
@@ -152,7 +152,7 @@ export const validateDesignation = (
   context: {
     campus_id?: string | null;
     department_id?: string | null;
-    program_id?: string | null;
+    program_campus_id?: string | null;
     job_title?: string | null;
   },
 ): { valid: boolean; missing: string[] } => {
@@ -182,8 +182,8 @@ export const validateDesignation = (
     missing.push("department");
   }
 
-  if (requirements.requiresProgram && !context.program_id?.trim()) {
-    missing.push("program");
+  if (requirements.requiresProgram && !context.program_campus_id?.trim()) {
+    missing.push("program offering");
   }
 
   if (requirements.requiresJobTitle && !context.job_title?.trim()) {

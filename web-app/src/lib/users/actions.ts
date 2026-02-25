@@ -219,10 +219,9 @@ type UpdateUserProfessionalInput = {
     campus_id?: string | null;
     job_title: string;
     department_id?: string | null;
-    program_id?: string | null;
+    program_campus_id?: string | null;
     room_id?: string | null;
     load?: number | null;
-    is_active?: boolean;
   }>;
 };
 
@@ -269,28 +268,19 @@ export async function updateUserProfessional(
 
     // Insert new designations
     if (input.designations.length > 0) {
-      // Allow context-less roles (Higher-ups: University President, Director for Instruction)
-      const contextLessJobTitles = [
-        "University President",
-        "Director for Instruction",
-      ];
-
       const invalidDesignation = input.designations.find((d) => {
         const hasContext =
           d.campus_id?.trim() ||
           d.department_id?.trim() ||
-          d.program_id?.trim() ||
+          d.program_campus_id?.trim() ||
           d.room_id?.trim();
-        const isContextLessRole = contextLessJobTitles.includes(d.job_title);
-
-        // Invalid if no context AND not a context-less role
-        return !hasContext && !isContextLessRole;
+        return !hasContext;
       });
 
       if (invalidDesignation) {
         return {
           error:
-            "Each designation must include at least one context: campus, department, program, or room.",
+            "Each designation must include at least one context: campus, department, program offering, or room.",
         };
       }
 
@@ -299,10 +289,9 @@ export async function updateUserProfessional(
         campus_id: d.campus_id || null,
         job_title: d.job_title.trim(),
         department_id: d.department_id?.trim() || null,
-        program_id: d.program_id?.trim() || null,
+        program_campus_id: d.program_campus_id?.trim() || null,
         room_id: d.room_id?.trim() || null,
         load: d.load || null,
-        is_active: d.is_active ?? true,
       }));
 
       const { error: insertError } = await supabase

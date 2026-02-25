@@ -37,10 +37,9 @@ AS $$
             'campus_id', d.campus_id,
             'job_title', d.job_title,
             'department_id', d.department_id,
-            'program_id', d.program_id,
+            'program_campus_id', d.program_campus_id,
             'room_id', d.room_id,
             'load', d.load,
-            'is_active', d.is_active,
             'designated_at', d.designated_at,
             'user', json_build_object(
               'id', u.id,
@@ -48,10 +47,10 @@ AS $$
               'employment_status', u.employment_status
             ),
             'campus', CASE
-              WHEN c.id IS NULL THEN NULL
+              WHEN COALESCE(c.id, pc_c.id) IS NULL THEN NULL
               ELSE json_build_object(
-                'id', c.id,
-                'name', c.name
+                'id', COALESCE(c.id, pc_c.id),
+                'name', COALESCE(c.name, pc_c.name)
               )
             END,
             'department', CASE
@@ -70,6 +69,14 @@ AS $$
                 'code', prog.code,
                 'name', prog.name
               )
+            END,
+            'program_campus', CASE
+              WHEN pc.id IS NULL THEN NULL
+              ELSE json_build_object(
+                'id', pc.id,
+                'campus_id', pc.campus_id,
+                'program_id', pc.program_id
+              )
             END
           ) ORDER BY d.id DESC
         ) FILTER (WHERE d.id IS NOT NULL),
@@ -80,7 +87,9 @@ AS $$
     LEFT JOIN auth.users au ON au.id = d.user_id
     LEFT JOIN public.campus c ON c.id = d.campus_id
     LEFT JOIN public.department dep ON dep.id = d.department_id
-    LEFT JOIN public.program prog ON prog.id = d.program_id
+    LEFT JOIN public.program_campus pc ON pc.id = d.program_campus_id
+    LEFT JOIN public.campus pc_c ON pc_c.id = pc.campus_id
+    LEFT JOIN public.program prog ON prog.id = pc.program_id
     GROUP BY d.user_id
   ),
   user_degrees AS (

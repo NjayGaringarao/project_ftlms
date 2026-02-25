@@ -1,5 +1,6 @@
 import { Campus } from "./campus";
 import { Department } from "./department";
+import { ProgramCampus } from "./program-campus";
 import { Program } from "./program";
 import { User } from "./user";
 
@@ -37,12 +38,11 @@ export type Designation = {
   user_id: string;
   campus_id: string | null;
   department_id: string | null;
-  program_id: string | null;
+  program_campus_id: string | null;
   room_id: string | null;
   job_title: string;
   position?: string;
   load: number | null;
-  is_active: boolean;
   designated_at: string;
 };
 
@@ -51,4 +51,5 @@ export type ExtendedDesignation = Designation & {
   campus: Campus | null;
   department: Department | null;
   program: Program | null;
+  program_campus: ProgramCampus | null;
 };
