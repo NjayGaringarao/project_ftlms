@@ -5,6 +5,7 @@ export type Room = {
   campus_id: string;
   code: string;
   name: string | null;
+  capacity: number | null;
 };
 
 export type ExtendedRoom = Room & {

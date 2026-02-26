@@ -234,8 +234,10 @@ create table class (
 create table room (
     id uuid primary key default gen_random_uuid(),
     campus_id uuid not null references campus(id) on delete cascade,
-    code text unique not null,
-    name text
+    code text not null,
+    name text,
+    capacity integer check (capacity >= 0),
+    unique(campus_id, code)
 );
 
 create table session (

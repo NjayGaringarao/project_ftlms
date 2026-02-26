@@ -105,6 +105,12 @@ export const CampusView = ({ campus }: CampusViewProps) => {
               >
                 Blocks
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/campuses/${campus.id}/rooms`)}
+              >
+                Rooms
+              </Button>
             </div>
           </div>
         </div>

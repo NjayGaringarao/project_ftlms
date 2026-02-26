@@ -13,6 +13,7 @@ export const getRooms = async (): Promise<ExtendedRoom[]> => {
       id,
       code,
       name,
+      capacity,
       campus_id,
       campus:campus_id (id, name, address, zip_code)
       `,
@@ -44,6 +45,7 @@ export const getRoomsByCampus = async (
       id,
       code,
       name,
+      capacity,
       campus_id,
       campus:campus_id (id, name, address, zip_code)
       `,
@@ -76,6 +78,7 @@ export const getRoomById = async (
       id,
       code,
       name,
+      capacity,
       campus_id,
       campus:campus_id (id, name, address, zip_code)
       `,
