@@ -15,10 +15,8 @@ export default async function ProtectedLayout({
   return (
     <div className="h-screen flex flex-col-reverse md:flex-row">
       <SidebarNav />
-      <div className="flex-1 flex flex-col">
-        <TopBarNav />
-        <div className="flex-1 overflow-hidden">{children}</div>
-      </div>
+
+      <div className="flex-1 overflow-hidden">{children}</div>
     </div>
   );
 }
