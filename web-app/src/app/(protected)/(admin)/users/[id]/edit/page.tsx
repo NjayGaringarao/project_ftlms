@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserById, getRanks } from "@/lib/users/users";
-import { UserEditForm } from "@/components/users/user-edit-form";
+import { UserEditForm } from "@/components/admin/users/user-edit-form";
 
 export const dynamic = "force-dynamic";
 

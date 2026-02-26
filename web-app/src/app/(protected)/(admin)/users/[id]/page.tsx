@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserById } from "@/lib/users/users";
-import { UserView } from "@/components/users/user-view";
+import { UserView } from "@/components/admin/users/user-view";
 
 export const dynamic = "force-dynamic";
 

@@ -25,7 +25,7 @@ import {
   changeUserEmail,
   changeUserPassword,
 } from "@/lib/users/actions";
-import { DesignationAddForm } from "@/components/users/designation-add-form";
+import { DesignationAddForm } from "@/components/admin/users/designation-add-form";
 import Link from "next/link";
 
 type UserEditFormProps = {

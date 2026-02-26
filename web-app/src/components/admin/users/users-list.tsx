@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { UsersListItem } from "@/lib/users/users";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/utils/style";
+import AdminListContainer from "../admin-list-container";
+import ListItem from "../list-item";
+import { User } from "lucide-react";
 
 const getFullName = (user: UsersListItem) => {
   const identity = user.identity;
@@ -45,6 +46,7 @@ export const UsersList = ({ users }: UsersListProps) => {
   const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const router = useRouter();
 
   // Extract user ID from pathname like /users/[id] or /users/[id]/edit
   const selectedUserId = useMemo(() => {
@@ -68,9 +70,9 @@ export const UsersList = ({ users }: UsersListProps) => {
   }, [query, statusFilter, users]);
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0 ">
-        <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <AdminListContainer
+      header={
+        <>
           <div className="flex flex-1 flex-col gap-3 sm:flex-row">
             <Input
               placeholder="Search by name or email"
@@ -93,52 +95,30 @@ export const UsersList = ({ users }: UsersListProps) => {
           <Button asChild>
             <Link href="/users/create">Create User</Link>
           </Button>
+        </>
+      }
+      isItemSelected={!!selectedUserId}
+    >
+      {filteredUsers.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
+          No users match your search.
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedUserId && "flex flex-col gap-4",
-          )}
-        >
-          {filteredUsers.length === 0 && (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No users match your search.
-            </div>
-          )}
-          {filteredUsers.map((user) => {
-            const name = getFullName(user);
-            const status = formatStatus(user.employment_status);
-            const isSelected = selectedUserId === user.id;
-            return (
-              <Link
-                href={`/users/${user.id}`}
-                passHref
-                key={user.id}
-                className={cn(
-                  "flex flex-col gap-3 rounded-lg border p-4 transition hover:bg-foreground/5 hover:border-foreground/30 sm:flex-row sm:items-center sm:justify-between",
-                  isSelected &&
-                    "bg-foreground/10 border-foreground/40 font-semibold",
-                )}
-              >
-                <div>
-                  <div className="flex flex-row gap-4">
-                    <p className="text-base font-semibold">{name}</p>{" "}
-                    <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-                      {status}
-                    </span>
-                  </div>
-
-                  <p className="text-sm text-foreground/70">
-                    {user.email ?? "Email not available"}
-                  </p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </CardContent>
-    </div>
+      )}
+      {filteredUsers.map((user) => {
+        const name = getFullName(user);
+        const status = formatStatus(user.employment_status);
+        const isSelected = selectedUserId === user.id;
+        return (
+          <ListItem
+            key={user.id}
+            onClick={() => router.push(`/users/${user.id}`)}
+            title={name}
+            subtitle={[`${user.email ?? "Email not available"} | ${status}`]}
+            isSelected={isSelected}
+            icon={<User className="h-14 w-14 text-background" />}
+          />
+        );
+      })}
+    </AdminListContainer>
   );
 };
