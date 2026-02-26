@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Edit } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -93,7 +93,7 @@ export const ProgramEdit = ({
   return (
     <AdminPanel
       title="Edit Program"
-      icon={Save}
+      icon={Edit}
       onClose={() => router.push(`${basePath}/${program.id}`)}
     >
       <div className="space-y-4">
@@ -110,7 +110,7 @@ export const ProgramEdit = ({
             <h3 className="font-semibold">Program Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             {!fixedDepartmentId && (
               <div>
                 <Label className="text-xs" htmlFor="department-id">

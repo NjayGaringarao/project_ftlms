@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, FileText } from "lucide-react";
+import { Building2, FileText, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Department } from "@/models/department";
 import { deleteDepartment } from "@/lib/admin/actions";
@@ -39,7 +39,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
   return (
     <AdminPanel
       title="Department Information"
-      icon={Building2}
+      icon={Info}
       onClose={() => router.push("/departments")}
       onEdit={() => router.push(`/departments/${department.id}/edit`)}
     >
@@ -50,7 +50,7 @@ export const DepartmentView = ({ department }: DepartmentViewProps) => {
             <h3 className="text-base font-semibold">Department Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex items-start gap-3">
               <Building2 className="w-5 h-5 text-foreground/60 mt-0.5" />
               <div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { NotebookTabs } from "lucide-react";
+import { Info, NotebookTabs } from "lucide-react";
 import { Course } from "@/models";
 import { deleteCourse } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
@@ -38,7 +38,7 @@ export const CourseView = ({ course }: CourseViewProps) => {
   return (
     <AdminPanel
       title="Course Information"
-      icon={NotebookTabs}
+      icon={Info}
       onClose={() => router.push("/courses")}
       onEdit={() => router.push(`/courses/${course.id}/edit`)}
     >
@@ -49,12 +49,12 @@ export const CourseView = ({ course }: CourseViewProps) => {
             <h3 className="text-base font-semibold">Course Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-foreground/60">Code</p>
               <p className="font-medium">{course.code}</p>
             </div>
-            <div>
+            <div className="col-span-2">
               <p className="text-xs text-foreground/60">Title</p>
               <p className="font-medium">{course.title}</p>
             </div>

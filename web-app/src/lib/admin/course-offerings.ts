@@ -19,7 +19,7 @@ export const getCourseOfferingsList = async (): Promise<
       course_id,
       academic_term_id,
       campus:campus_id (id, name, address, zip_code),
-      course:course_id (id, title, lecture_hour, laboratory_hour),
+      course:course_id (id, title, lecture_hour, laboratory_hour, code),
       term:academic_term_id (id, academic_year_start, academic_year_end, code, term_order, type, start, end)
       `,
     )
@@ -55,7 +55,7 @@ export const getCourseOfferingById = async (
       course_id,
       academic_term_id,
       campus:campus_id (id, name, address, zip_code),
-      course:course_id (id, title, lecture_hour, laboratory_hour),
+      course:course_id (id, title, lecture_hour, laboratory_hour, code),
       term:academic_term_id (id, academic_year_start, academic_year_end, code, term_order, type, start, end)
       `,
     )

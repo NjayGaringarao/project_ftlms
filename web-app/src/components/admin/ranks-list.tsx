@@ -10,6 +10,7 @@ import { RankListItem } from "@/lib/admin/ranks";
 import ListItem from "./list-item";
 import { Award } from "lucide-react";
 import { useListState } from "../../hooks/useListState";
+import AdminListContainer from "./admin-list-container";
 
 type RanksListProps = {
   ranks: RankListItem[];
@@ -36,9 +37,9 @@ export const RanksList = ({ ranks }: RanksListProps) => {
   });
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
-        <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <AdminListContainer
+      header={
+        <>
           <Input
             placeholder="Search by number, title, or description"
             value={query}
@@ -47,42 +48,35 @@ export const RanksList = ({ ranks }: RanksListProps) => {
           <Button asChild>
             <Link href="/academic-ranks/create">Create Rank</Link>
           </Button>
+        </>
+      }
+      isItemSelected={!!selectedId}
+    >
+      {filteredItems.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
+          No ranks match your search.
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedId && "flex flex-col gap-4",
-          )}
-        >
-          {filteredItems.length === 0 && (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No ranks match your search.
-            </div>
-          )}
+      )}
 
-          {filteredItems.map((rank) => {
-            const isSelected = selectedId === rank.id;
+      {filteredItems.map((rank) => {
+        const isSelected = selectedId === rank.id;
 
-            return (
-              <ListItem
-                key={rank.id}
-                onClick={() => router.push(`/academic-ranks/${rank.id}`)}
-                title={rank.title}
-                subtitle={[rank.description || "No description available"]}
-                isSelected={isSelected}
-                icon={<Award className="h-14 w-14 text-background" />}
-                annotations={
-                  <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-                    #{rank.number}
-                  </span>
-                }
-              />
-            );
-          })}
-        </div>
-      </CardContent>
-    </div>
+        return (
+          <ListItem
+            key={rank.id}
+            onClick={() => router.push(`/academic-ranks/${rank.id}`)}
+            title={rank.title}
+            subtitle={[rank.description || "No description available"]}
+            isSelected={isSelected}
+            icon={<Award className="h-14 w-14 text-background" />}
+            annotations={
+              <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
+                #{rank.number}
+              </span>
+            }
+          />
+        );
+      })}
+    </AdminListContainer>
   );
 };

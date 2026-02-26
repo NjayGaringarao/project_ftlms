@@ -56,7 +56,7 @@ export const ProgramView = ({
             <h3 className="text-base font-semibold">Program Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             <div>
               <p className="text-xs text-foreground/60">Code</p>
               <p className="font-medium">{program.code}</p>

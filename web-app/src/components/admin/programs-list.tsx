@@ -11,6 +11,7 @@ import { useListState } from "@/hooks/useListState";
 import ListItem from "./list-item";
 import { BookOpen } from "lucide-react";
 import { ExtendedProgram } from "@/models";
+import AdminListContainer from "./admin-list-container";
 
 type ProgramsListProps = {
   programs: ExtendedProgram[];
@@ -49,52 +50,43 @@ export const ProgramsList = ({
   });
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
-        <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <AdminListContainer
+      header={
+        <>
           <Input
-            placeholder="Search by code, program, or department"
+            placeholder="Search Programs by code or name"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
             <Link href={createPath}>Create Program</Link>
           </Button>
+        </>
+      }
+      isItemSelected={!!selectedId}
+      directoryLevel="SECOND"
+    >
+      {filteredItems.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
+          No programs match your search.
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedId && "flex flex-col gap-4",
-          )}
-        >
-          {filteredItems.length === 0 && (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No programs match your search.
-            </div>
-          )}
+      )}
 
-          {filteredItems.map((program) => (
-            <ListItem
-              key={program.id}
-              onClick={() => router.push(`${basePath}/${program.id}`)}
-              title={program.name}
-              subtitle={[
-                `Department: ${program.department?.name ?? "Unknown"}`,
-                program.description || "No description",
-              ]}
-              isSelected={selectedId === program.id}
-              icon={<BookOpen className="h-14 w-14 text-background" />}
-              annotations={
-                <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-                  {program.code}
-                </span>
-              }
-            />
-          ))}
-        </div>
-      </CardContent>
-    </div>
+      {filteredItems.map((program) => (
+        <ListItem
+          key={program.id}
+          onClick={() => router.push(`${basePath}/${program.id}`)}
+          title={program.name}
+          subtitle={[program.description || "No description"]}
+          isSelected={selectedId === program.id}
+          icon={<BookOpen className="h-14 w-14 text-background" />}
+          annotations={
+            <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
+              {program.code}
+            </span>
+          }
+        />
+      ))}
+    </AdminListContainer>
   );
 };

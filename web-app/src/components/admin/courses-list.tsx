@@ -10,6 +10,7 @@ import { cn } from "@/utils/style";
 import { useListState } from "@/hooks/useListState";
 import ListItem from "./list-item";
 import { CourseListItem } from "@/lib/admin/courses";
+import AdminListContainer from "./admin-list-container";
 
 type CoursesListProps = {
   courses: CourseListItem[];
@@ -41,9 +42,9 @@ export const CoursesList = ({ courses }: CoursesListProps) => {
   });
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
-        <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <AdminListContainer
+      header={
+        <>
           <Input
             placeholder="Search by code, title, lecture hour, or laboratory hour"
             value={query}
@@ -52,41 +53,33 @@ export const CoursesList = ({ courses }: CoursesListProps) => {
           <Button asChild>
             <Link href="/courses/create">Create Course</Link>
           </Button>
+        </>
+      }
+      isItemSelected={!!selectedId}
+    >
+      {filteredItems.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
+          No courses match your search.
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedId && "flex flex-col gap-4",
-          )}
-        >
-          {filteredItems.length === 0 && (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No courses match your search.
-            </div>
-          )}
+      )}
 
-          {filteredItems.map((course) => (
-            <ListItem
-              key={course.id}
-              onClick={() => router.push(`/courses/${course.id}`)}
-              title={course.title}
-              subtitle={[
-                `Lecture: ${course.lecture_hour ?? 0}`,
-                `Laboratory: ${course.laboratory_hour ?? 0}`,
-              ]}
-              isSelected={selectedId === course.id}
-              icon={<NotebookTabs className="h-14 w-14 text-background" />}
-              annotations={
-                <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-                  {course.code}
-                </span>
-              }
-            />
-          ))}
-        </div>
-      </CardContent>
-    </div>
+      {filteredItems.map((course) => (
+        <ListItem
+          key={course.id}
+          onClick={() => router.push(`/courses/${course.id}`)}
+          title={course.title}
+          subtitle={[
+            `Lecture: ${course.lecture_hour ?? 0}h | Laboratory: ${course.laboratory_hour ?? 0}h`,
+          ]}
+          isSelected={selectedId === course.id}
+          icon={<NotebookTabs className="h-14 w-14 text-background" />}
+          annotations={
+            <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
+              {course.code}
+            </span>
+          }
+        />
+      ))}
+    </AdminListContainer>
   );
 };

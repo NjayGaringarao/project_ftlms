@@ -10,6 +10,7 @@ import { CampusListItem } from "@/lib/admin/campuses";
 import ListItem from "./list-item";
 import { Landmark } from "lucide-react";
 import { useListState } from "../../hooks/useListState";
+import AdminListContainer from "./admin-list-container";
 
 type CampusesListProps = {
   campuses: CampusListItem[];
@@ -34,9 +35,9 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
   });
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
-        <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <AdminListContainer
+      header={
+        <>
           <Input
             placeholder="Search by name, address, or ZIP"
             value={query}
@@ -45,37 +46,30 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
           <Button asChild>
             <Link href="/campuses/create">Create Campus</Link>
           </Button>
+        </>
+      }
+      isItemSelected={!!selectedId}
+    >
+      {filteredItems.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
+          No campuses match your search.
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedId && "flex flex-col gap-4",
-          )}
-        >
-          {filteredItems.length === 0 && (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No campuses match your search.
-            </div>
-          )}
+      )}
 
-          {filteredItems.map((campus) => {
-            const isSelected = selectedId === campus.id;
+      {filteredItems.map((campus) => {
+        const isSelected = selectedId === campus.id;
 
-            return (
-              <ListItem
-                key={campus.id}
-                onClick={() => router.push(`/campuses/${campus.id}`)}
-                title={campus.name.concat(" Campus")}
-                subtitle={[`${campus.address} | ${campus.zip_code}`]}
-                isSelected={isSelected}
-                icon={<Landmark className="h-14 w-14 text-background" />}
-              />
-            );
-          })}
-        </div>
-      </CardContent>
-    </div>
+        return (
+          <ListItem
+            key={campus.id}
+            onClick={() => router.push(`/campuses/${campus.id}`)}
+            title={campus.name.concat(" Campus")}
+            subtitle={[`${campus.address} | ${campus.zip_code}`]}
+            isSelected={isSelected}
+            icon={<Landmark className="h-14 w-14 text-background" />}
+          />
+        );
+      })}
+    </AdminListContainer>
   );
 };

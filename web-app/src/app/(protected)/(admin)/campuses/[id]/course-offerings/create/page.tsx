@@ -11,7 +11,7 @@ const CreateCampusCourseOfferingPage = async ({
   const basePath = `/campuses/${id}/course-offerings`;
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/2 flex-col">
       <CourseOfferingCreate basePath={basePath} fixedCampusId={id} />
     </div>
   );

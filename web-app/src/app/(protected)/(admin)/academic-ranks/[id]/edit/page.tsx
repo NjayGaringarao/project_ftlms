@@ -17,7 +17,7 @@ const EditPage = async ({ params }: EditPageProps) => {
   }
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/3 flex-col">
       <RankEdit rank={rank} />
     </div>
   );

@@ -20,7 +20,7 @@ const ViewCampusProgramOfferingPage = async ({
   }
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/2 flex-col">
       <ProgramOfferingView offering={offering} basePath={basePath} />
     </div>
   );

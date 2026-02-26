@@ -11,7 +11,7 @@ const CreateDepartmentProgramPage = async ({
   const basePath = `/departments/${id}/programs`;
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/2 flex-col">
       <ProgramCreate basePath={basePath} fixedDepartmentId={id} />
     </div>
   );

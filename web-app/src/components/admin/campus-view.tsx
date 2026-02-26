@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, MapPin } from "lucide-react";
+import { Building2, Info, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { deleteCampus } from "@/lib/admin/actions";
@@ -39,7 +39,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
   return (
     <AdminPanel
       title="Campus Information"
-      icon={Building2}
+      icon={Info}
       onClose={() => router.push("/campuses")}
       onEdit={() => router.push(`/campuses/${campus.id}/edit`)}
     >

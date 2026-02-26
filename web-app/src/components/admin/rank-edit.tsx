@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Edit } from "lucide-react";
 import { Rank } from "@/models/rank";
 import { updateRank } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
@@ -88,7 +88,7 @@ export const RankEdit = ({ rank }: RankEditFormProps) => {
   return (
     <AdminPanel
       title="Edit Rank"
-      icon={Save}
+      icon={Edit}
       onClose={() => router.push(`/academic-ranks/${rank.id}`)}
     >
       <>

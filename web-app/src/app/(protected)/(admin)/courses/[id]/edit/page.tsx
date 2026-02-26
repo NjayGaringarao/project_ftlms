@@ -17,7 +17,7 @@ const EditCoursePage = async ({ params }: EditCoursePageProps) => {
   }
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/3 flex-col">
       <CourseEdit course={course} />
     </div>
   );

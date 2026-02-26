@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Network } from "lucide-react";
+import { Info, Network } from "lucide-react";
 import AdminPanel from "./admin-panel";
 import DangerZone from "./danger-zone";
 import DeleteConfirmModal from "./delete-confirm-modal";
@@ -43,7 +43,7 @@ export const ProgramOfferingView = ({
   return (
     <AdminPanel
       title="Program Offering Information"
-      icon={Network}
+      icon={Info}
       onClose={() => router.push(basePath)}
       onEdit={() => router.push(`${basePath}/${offering.id}/edit`)}
     >
@@ -56,7 +56,7 @@ export const ProgramOfferingView = ({
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-foreground/60">Program</p>
               <p className="font-medium">

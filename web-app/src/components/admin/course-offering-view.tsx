@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarCheck2 } from "lucide-react";
+import { CalendarCheck2, Info } from "lucide-react";
 import AdminPanel from "./admin-panel";
 import DangerZone from "./danger-zone";
 import DeleteConfirmModal from "./delete-confirm-modal";
@@ -43,7 +43,7 @@ export const CourseOfferingView = ({
   return (
     <AdminPanel
       title="Course Offering Information"
-      icon={CalendarCheck2}
+      icon={Info}
       onClose={() => router.push(basePath)}
       onEdit={() => router.push(`${basePath}/${offering.id}/edit`)}
     >
@@ -62,10 +62,8 @@ export const CourseOfferingView = ({
               </p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Campus</p>
-              <p className="font-medium">
-                {offering.campus?.name ?? "Unknown"}
-              </p>
+              <p className="text-xs text-foreground/60">Code</p>
+              <p className="font-medium">{offering.course.code ?? "Unknown"}</p>
             </div>
             <div>
               <p className="text-xs text-foreground/60">Academic Term</p>

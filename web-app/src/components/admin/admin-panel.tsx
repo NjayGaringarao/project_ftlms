@@ -18,7 +18,7 @@ const AdminPanel = ({
   children,
 }: AdminPanelProps) => {
   return (
-    <Card className="mt-4 mr-4 overflow-hidden gap-0 py-0">
+    <Card className="overflow-hidden gap-0 m-0 p-0 h-full">
       <CardHeader className="flex flex-row items-center justify-between border-b bg-foreground/10 py-6">
         <CardTitle className="flex items-center gap-2">
           <Icon className="w-5 h-5" />

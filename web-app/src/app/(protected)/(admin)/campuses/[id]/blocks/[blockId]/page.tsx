@@ -18,7 +18,7 @@ const ViewCampusBlockPage = async ({ params }: ViewCampusBlockPageProps) => {
   }
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/2 flex-col">
       <BlockView block={block} basePath={basePath} />
     </div>
   );

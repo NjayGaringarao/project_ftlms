@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Edit } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -80,7 +80,7 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
   return (
     <AdminPanel
       title="Edit Course"
-      icon={Save}
+      icon={Edit}
       onClose={() => router.push(`/courses/${course.id}`)}
     >
       <div className="space-y-4">
@@ -97,7 +97,7 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
             <h3 className="font-semibold">Course Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <Label className="text-xs" htmlFor="code">
                 Course Code *

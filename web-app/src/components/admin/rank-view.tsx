@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { Info, Trophy } from "lucide-react";
 import { Rank } from "@/models/rank";
 import { deleteRank } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
@@ -38,7 +38,7 @@ export const RankView = ({ rank }: RankViewProps) => {
   return (
     <AdminPanel
       title="Rank Information"
-      icon={Trophy}
+      icon={Info}
       onClose={() => router.push("/academic-ranks")}
       onEdit={() => router.push(`/academic-ranks/${rank.id}/edit`)}
     >

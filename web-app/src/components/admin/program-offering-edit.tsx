@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Edit } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import AdminPanel from "./admin-panel";
@@ -87,7 +87,7 @@ export const ProgramOfferingEdit = ({
   return (
     <AdminPanel
       title="Edit Program Offering"
-      icon={Save}
+      icon={Edit}
       onClose={() => router.push(`${basePath}/${offering.id}`)}
     >
       <div className="space-y-4">

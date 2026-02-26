@@ -16,6 +16,7 @@ import {
   getTermOrderLabel,
   getTermTypeLabel,
 } from "@/lib/admin/academic-terms";
+import AdminListContainer from "./admin-list-container";
 
 type TermsListProps = {
   terms: TermListItem[];
@@ -59,9 +60,9 @@ export const TermsList = ({ terms }: TermsListProps) => {
   });
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
-        <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <AdminListContainer
+      header={
+        <>
           <Input
             placeholder="Search by year, type, order, or code"
             value={query}
@@ -70,40 +71,32 @@ export const TermsList = ({ terms }: TermsListProps) => {
           <Button asChild>
             <Link href="/academic-terms/create">Create Term</Link>
           </Button>
+        </>
+      }
+      isItemSelected={!!selectedId}
+    >
+      {filteredItems.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
+          No terms match your search.
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedId && "grid-cols-1 lg:grid-cols-2 gap-4",
-          )}
-        >
-          {filteredItems.length === 0 && (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No terms match your search.
-            </div>
-          )}
+      )}
 
-          {filteredItems.map((term) => {
-            const isSelected = selectedId === term.id;
+      {filteredItems.map((term) => {
+        const isSelected = selectedId === term.id;
 
-            return (
-              <ListItem
-                key={term.id}
-                onClick={() => router.push(`/academic-terms/${term.id}`)}
-                title={getAcademicTermDisplayLabel(term)}
-                subtitle={[
-                  `Code: ${term.code}`,
-                  `${formatDate(term.start)} - ${formatDate(term.end)}`,
-                ]}
-                isSelected={isSelected}
-                icon={<CalendarDays className="h-14 w-14 text-background" />}
-              />
-            );
-          })}
-        </div>
-      </CardContent>
-    </div>
+        return (
+          <ListItem
+            key={term.id}
+            onClick={() => router.push(`/academic-terms/${term.id}`)}
+            title={getAcademicTermDisplayLabel(term)}
+            subtitle={[
+              `Start: ${formatDate(term.start)} | End: ${formatDate(term.end)}`,
+            ]}
+            isSelected={isSelected}
+            icon={<CalendarDays className="h-14 w-14 text-background" />}
+          />
+        );
+      })}
+    </AdminListContainer>
   );
 };

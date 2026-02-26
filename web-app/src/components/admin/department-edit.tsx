@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Edit, Save } from "lucide-react";
 import { Department } from "@/models/department";
 import { updateDepartment } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
@@ -38,10 +38,7 @@ export const DepartmentEdit = ({ department }: DepartmentEditFormProps) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleChange = (
-    field: keyof DepartmentFormState,
-    value: string,
-  ) => {
+  const handleChange = (field: keyof DepartmentFormState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError("");
   };
@@ -98,7 +95,7 @@ export const DepartmentEdit = ({ department }: DepartmentEditFormProps) => {
   return (
     <AdminPanel
       title="Edit Department"
-      icon={Save}
+      icon={Edit}
       onClose={() => router.push(`/departments/${department.id}`)}
     >
       <>

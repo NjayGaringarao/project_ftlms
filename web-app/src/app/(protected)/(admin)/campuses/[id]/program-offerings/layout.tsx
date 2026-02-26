@@ -24,7 +24,7 @@ const CampusProgramOfferingsLayout = async ({
   const basePath = `/campuses/${id}/program-offerings`;
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full w-2/3 overflow-hidden gap-4">
       <div className="flex-1 overflow-y-auto">
         <ProgramOfferingsList
           offerings={offerings}

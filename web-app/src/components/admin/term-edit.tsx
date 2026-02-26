@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
+import { Edit } from "lucide-react";
 import { Term } from "@/models/term";
 import { updateTerm } from "@/lib/admin/actions";
 import AdminPanel from "./admin-panel";
@@ -138,7 +138,7 @@ export const TermEdit = ({ term }: TermEditFormProps) => {
   return (
     <AdminPanel
       title="Edit Term"
-      icon={Save}
+      icon={Edit}
       onClose={() => router.push(`/academic-terms/${term.id}`)}
     >
       <>

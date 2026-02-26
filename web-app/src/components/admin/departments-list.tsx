@@ -10,6 +10,7 @@ import { DepartmentListItem } from "@/lib/admin/departments";
 import ListItem from "./list-item";
 import { GraduationCap, ToolCase } from "lucide-react";
 import { useListState } from "../../hooks/useListState";
+import AdminListContainer from "./admin-list-container";
 
 type DepartmentsListProps = {
   departments: DepartmentListItem[];
@@ -35,57 +36,47 @@ export const DepartmentsList = ({ departments }: DepartmentsListProps) => {
   });
 
   return (
-    <div className="relative h-full flex flex-col">
-      <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm py-4 z-50 top-0">
-        <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <AdminListContainer
+      header={
+        <>
           <Input
-            placeholder="Search by code, name, or description"
+            placeholder="Search Departments by code or name"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
           <Button asChild>
             <Link href="/departments/create">Create Department</Link>
           </Button>
+        </>
+      }
+      isItemSelected={!!selectedId}
+    >
+      {filteredItems.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
+          No departments match your search.
         </div>
-      </CardHeader>
-      <CardContent>
-        <div
-          className={cn(
-            "grid grid-cols-1 lg:grid-cols-3 gap-4",
-            !!selectedId && "flex flex-col gap-4",
-          )}
-        >
-          {filteredItems.length === 0 && (
-            <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
-              No departments match your search.
-            </div>
-          )}
+      )}
 
-          {filteredItems.map((department) => {
-            const isSelected = selectedId === department.id;
-            const Icon =
-              department.type === "ACADEMIC" ? GraduationCap : ToolCase;
+      {filteredItems.map((department) => {
+        const isSelected = selectedId === department.id;
+        const Icon = department.type === "ACADEMIC" ? GraduationCap : ToolCase;
 
-            return (
-              <ListItem
-                key={department.id}
-                onClick={() => router.push(`/departments/${department.id}`)}
-                title={department.name}
-                subtitle={[
-                  department.description || "No description available",
-                ]}
-                isSelected={isSelected}
-                icon={<Icon className="h-14 w-14 text-background" />}
-                annotations={
-                  <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-                    {department.code}
-                  </span>
-                }
-              />
-            );
-          })}
-        </div>
-      </CardContent>
-    </div>
+        return (
+          <ListItem
+            key={department.id}
+            onClick={() => router.push(`/departments/${department.id}`)}
+            title={department.name}
+            subtitle={[department.description || "No description available"]}
+            isSelected={isSelected}
+            icon={<Icon className="h-14 w-14 text-background" />}
+            annotations={
+              <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
+                {department.code}
+              </span>
+            }
+          />
+        );
+      })}
+    </AdminListContainer>
   );
 };
