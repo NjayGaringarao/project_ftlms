@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/style";
+import { ChevronRight } from "lucide-react";
 import React from "react";
 
 type ListItemProps = {
@@ -67,6 +68,8 @@ const ListItem = ({
         )}
         {isSubtitleAnElement && subtitle}
       </div>
+
+      {isSelected && <ChevronRight className="h-10 w-10 text-foreground/70" />}
     </button>
   );
 };

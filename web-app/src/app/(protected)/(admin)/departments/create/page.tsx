@@ -2,7 +2,7 @@ import { DepartmentCreate } from "@/components/admin/department-create";
 
 const CreatePage = () => {
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/3 flex-col">
       <DepartmentCreate />
     </div>
   );
