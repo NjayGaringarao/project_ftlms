@@ -185,6 +185,16 @@ const revalidateProgramMajorsPaths = (
   }
 };
 
+const revalidateDepartmentProgramDetailPath = (
+  departmentId: string,
+  programId: string,
+) => {
+  const basePath = `/departments/${departmentId}/programs`;
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/${programId}`);
+  revalidatePath(`${basePath}/${programId}/edit`);
+};
+
 const revalidateCampusProgramMajorOfferingsPaths = (
   campusId: string,
   programOfferingId: string,
@@ -1003,6 +1013,10 @@ export async function createMajor(
     .eq("id", input.program_id)
     .maybeSingle();
   if (parentProgram?.department_id) {
+    revalidateDepartmentProgramDetailPath(
+      parentProgram.department_id,
+      input.program_id,
+    );
     revalidateProgramMajorsPaths(
       parentProgram.department_id,
       input.program_id,
@@ -1038,6 +1052,10 @@ export async function updateMajor(
     .eq("id", input.program_id)
     .maybeSingle();
   if (parentProgram?.department_id) {
+    revalidateDepartmentProgramDetailPath(
+      parentProgram.department_id,
+      input.program_id,
+    );
     revalidateProgramMajorsPaths(
       parentProgram.department_id,
       input.program_id,
@@ -1078,6 +1096,10 @@ export async function deleteMajor(
 
   revalidateMajorsPaths();
   if (departmentId && existingMajor?.program_id) {
+    revalidateDepartmentProgramDetailPath(
+      departmentId,
+      existingMajor.program_id,
+    );
     revalidateProgramMajorsPaths(departmentId, existingMajor.program_id);
   }
   revalidateMajorOfferingsPaths();

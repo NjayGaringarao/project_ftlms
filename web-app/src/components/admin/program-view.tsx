@@ -3,23 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import AdminPanel from "./admin-panel";
 import DangerZone from "./danger-zone";
 import DeleteConfirmModal from "./delete-confirm-modal";
+import { ProgramMajorsInline } from "./program-majors-inline";
 import { deleteProgram } from "@/lib/admin/actions";
 import { ExtendedProgram } from "@/models";
 
 type ProgramViewProps = {
   program: ExtendedProgram;
   basePath?: string;
-  majorsPath?: string;
 };
 
 export const ProgramView = ({
   program,
   basePath = "/programs",
-  majorsPath,
 }: ProgramViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -79,19 +77,7 @@ export const ProgramView = ({
             </div>
           </div>
 
-          {majorsPath && (
-            <div className="space-y-3 pt-2 border-t">
-              <h4 className="text-sm font-semibold">Program Entities</h4>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push(majorsPath)}
-                >
-                  Majors
-                </Button>
-              </div>
-            </div>
-          )}
+          <ProgramMajorsInline program={program} />
         </div>
 
         <DangerZone
