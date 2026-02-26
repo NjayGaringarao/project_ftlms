@@ -70,7 +70,7 @@ export const CourseView = ({ course }: CourseViewProps) => {
         </div>
 
         <DangerZone
-          description="Deleting this course removes dependent course offerings and scheduled class links."
+          description="Deleting this course removes dependent curriculum-course links and scheduled class links."
           buttonLabel="Delete Course"
           onDeleteClick={() => setShowDeleteConfirm(true)}
           disabled={isDeleting}

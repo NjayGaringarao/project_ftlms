@@ -75,6 +75,14 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
                 {block.major_p_c?.program_campus?.program?.name ?? "Unknown"}
               </p>
             </div>
+            <div className="md:col-span-2">
+              <p className="text-xs text-foreground/60">Curriculum</p>
+              <p className="font-medium">
+                {block.curriculum
+                  ? `${block.curriculum.title} (${block.curriculum.series_year})`
+                  : "Unknown"}
+              </p>
+            </div>
             <div>
               <p className="text-xs text-foreground/60">Campus</p>
               <p className="font-medium">

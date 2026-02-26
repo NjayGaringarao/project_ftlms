@@ -90,6 +90,9 @@ export const BlocksList = ({
           subtitle={[
             `${block.major_p_c?.program_campus?.program?.name ?? "Unknown"}`,
             `${block.major_p_c?.major?.name ?? "Unknown Major"}`,
+            block.curriculum
+              ? `Curriculum: ${block.curriculum.title} (${block.curriculum.series_year})`
+              : "Curriculum: Unknown",
           ]}
           isSelected={selectedId === block.id}
           icon={<Blocks className="h-14 w-14 text-background" />}

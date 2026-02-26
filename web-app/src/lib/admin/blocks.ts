@@ -4,6 +4,13 @@ import { createClient } from "@/utils/supabase/server";
 import { ExtendedBlock } from "@/models";
 
 export type BlockListItem = ExtendedBlock & {
+  curriculum: {
+    id: string;
+    major_id: string;
+    title: string;
+    series_year: number;
+    revised_year: number | null;
+  } | null;
   major_p_c: ExtendedBlock["major_p_c"] & {
     major: {
       id: string;
@@ -42,9 +49,17 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
       `
       id,
       major_p_c_id,
+      curriculum_id,
       year_level,
       section,
       student_count,
+      curriculum:curriculum_id (
+        id,
+        major_id,
+        title,
+        series_year,
+        revised_year
+      ),
       major_p_c:major_p_c_id (
         id,
         program_campus_id,
@@ -75,6 +90,9 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
   }
 
   return (data ?? []).map((item: any) => {
+    const curriculum = Array.isArray(item.curriculum)
+      ? item.curriculum[0]
+      : item.curriculum;
     const majorPC = Array.isArray(item.major_p_c)
       ? item.major_p_c[0]
       : item.major_p_c;
@@ -87,6 +105,7 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
 
     return {
       ...item,
+      curriculum,
       major_p_c: {
         ...majorPC,
         major,
@@ -115,9 +134,17 @@ export const getBlockById = async (
       `
       id,
       major_p_c_id,
+      curriculum_id,
       year_level,
       section,
       student_count,
+      curriculum:curriculum_id (
+        id,
+        major_id,
+        title,
+        series_year,
+        revised_year
+      ),
       major_p_c:major_p_c_id (
         id,
         program_campus_id,
@@ -152,6 +179,9 @@ export const getBlockById = async (
   const majorPC = Array.isArray(data.major_p_c)
     ? data.major_p_c[0]
     : data.major_p_c;
+  const curriculum = Array.isArray(data.curriculum)
+    ? data.curriculum[0]
+    : data.curriculum;
   const major = Array.isArray(majorPC?.major)
     ? majorPC.major[0]
     : majorPC?.major;
@@ -161,6 +191,7 @@ export const getBlockById = async (
 
   return {
     ...data,
+    curriculum,
     major_p_c: {
       ...majorPC,
       major,

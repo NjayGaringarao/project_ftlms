@@ -26,6 +26,12 @@ export const NAV_ITEMS: NavigationItem[] = [
     requiredRoles: ["ADMIN"],
   },
   {
+    label: "Curriculums",
+    href: "/curriculums",
+    icon: "book-copy",
+    requiredRoles: ["ADMIN"],
+  },
+  {
     label: "Academic Ranks",
     href: "/academic-ranks",
     icon: "award",

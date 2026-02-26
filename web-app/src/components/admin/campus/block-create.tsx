@@ -12,6 +12,10 @@ import {
   getMajorOfferingsList,
   MajorOfferingListItem,
 } from "@/lib/admin/major-offerings";
+import {
+  CurriculumListItem,
+  getCurriculumsByMajor,
+} from "@/lib/admin/curriculums";
 import { createBlock } from "@/lib/admin/actions";
 
 type BlockCreateProps = {
@@ -27,7 +31,9 @@ export const BlockCreate = ({
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
   );
+  const [curriculums, setCurriculums] = useState<CurriculumListItem[]>([]);
   const [majorOfferingId, setMajorOfferingId] = useState("");
+  const [curriculumId, setCurriculumId] = useState("");
   const [yearLevel, setYearLevel] = useState("");
   const [section, setSection] = useState("");
   const [studentCount, setStudentCount] = useState("");
@@ -41,6 +47,13 @@ export const BlockCreate = ({
       setIsLoadingData(true);
       const offerings = await getMajorOfferingsList();
       setMajorOfferings(offerings);
+      const uniqueMajorIds = Array.from(
+        new Set(offerings.map((offering) => offering.major_id).filter(Boolean)),
+      );
+      const curriculumGroups = await Promise.all(
+        uniqueMajorIds.map((majorId) => getCurriculumsByMajor(majorId)),
+      );
+      setCurriculums(curriculumGroups.flat());
       setIsLoadingData(false);
     };
 
@@ -51,6 +64,11 @@ export const BlockCreate = ({
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
+  const availableCurriculums = useMemo(() => {
+    const majorId = selectedOffering?.major_id;
+    if (!majorId) return [];
+    return curriculums.filter((curriculum) => curriculum.major_id === majorId);
+  }, [curriculums, selectedOffering]);
   const scopedOfferings = useMemo(() => {
     if (!fixedCampusId) return majorOfferings;
     return majorOfferings.filter(
@@ -65,6 +83,7 @@ export const BlockCreate = ({
       : null;
 
     if (!majorOfferingId) return setError("Major offering is required");
+    if (!curriculumId) return setError("Curriculum is required");
     if (!Number.isFinite(parsedYearLevel) || parsedYearLevel <= 0) {
       return setError("Year level must be a positive number");
     }
@@ -82,6 +101,7 @@ export const BlockCreate = ({
 
     const { data, error: createError } = await createBlock({
       major_p_c_id: majorOfferingId,
+      curriculum_id: curriculumId,
       year_level: parsedYearLevel,
       section,
       student_count: parsedStudentCount,
@@ -140,6 +160,7 @@ export const BlockCreate = ({
                 value={majorOfferingId}
                 onChange={(event) => {
                   setMajorOfferingId(event.target.value);
+                  setCurriculumId("");
                   setError("");
                 }}
                 disabled={isSaving || isLoadingData}
@@ -159,6 +180,29 @@ export const BlockCreate = ({
                   {selectedOffering.program_campus?.program?.code})
                 </p>
               )}
+            </div>
+
+            <div className="md:col-span-2">
+              <Label className="text-xs" htmlFor="curriculum-id">
+                Curriculum *
+              </Label>
+              <select
+                id="curriculum-id"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                value={curriculumId}
+                onChange={(event) => {
+                  setCurriculumId(event.target.value);
+                  setError("");
+                }}
+                disabled={isSaving || isLoadingData || !selectedOffering}
+              >
+                <option value="">Select curriculum...</option>
+                {availableCurriculums.map((curriculum) => (
+                  <option key={curriculum.id} value={curriculum.id}>
+                    {curriculum.title} ({curriculum.series_year})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -222,6 +266,7 @@ export const BlockCreate = ({
               variant="outline"
               onClick={() => {
                 setMajorOfferingId("");
+                setCurriculumId("");
                 setYearLevel("");
                 setSection("");
                 setStudentCount("");

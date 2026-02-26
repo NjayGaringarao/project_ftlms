@@ -124,6 +124,19 @@ const revalidateMajorsPaths = (id?: string) => {
   }
 };
 
+const revalidateCurriculumsPaths = (majorId: string, curriculumId?: string) => {
+  revalidatePath("/curriculums");
+
+  const basePath = `/curriculums/${majorId}/curriculums`;
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/create`);
+
+  if (curriculumId) {
+    revalidatePath(`${basePath}/${curriculumId}`);
+    revalidatePath(`${basePath}/${curriculumId}/edit`);
+  }
+};
+
 const revalidateMajorOfferingsPaths = (id?: string) => {
   revalidatePath("/major-offerings");
   revalidatePath("/major-offerings/create");
@@ -131,16 +144,6 @@ const revalidateMajorOfferingsPaths = (id?: string) => {
   if (id) {
     revalidatePath(`/major-offerings/${id}`);
     revalidatePath(`/major-offerings/${id}/edit`);
-  }
-};
-
-const revalidateCourseOfferingsPaths = (id?: string) => {
-  revalidatePath("/course-offerings");
-  revalidatePath("/course-offerings/create");
-
-  if (id) {
-    revalidatePath(`/course-offerings/${id}`);
-    revalidatePath(`/course-offerings/${id}/edit`);
   }
 };
 
@@ -735,7 +738,6 @@ export async function createCourse(
   }
 
   revalidateCoursesPaths(data.id);
-  revalidateCourseOfferingsPaths();
   return { data: { id: data.id } };
 }
 
@@ -772,7 +774,6 @@ export async function updateCourse(
   }
 
   revalidateCoursesPaths(input.id);
-  revalidateCourseOfferingsPaths();
   return { data: true };
 }
 
@@ -790,7 +791,6 @@ export async function deleteCourse(
   }
 
   revalidateCoursesPaths();
-  revalidateCourseOfferingsPaths();
   return { data: true };
 }
 
@@ -1117,6 +1117,133 @@ export async function deleteMajor(
   return { data: true };
 }
 
+type CurriculumInput = {
+  major_id: string;
+  title: string;
+  series_year: number;
+  revised_year?: number | null;
+};
+
+type UpdateCurriculumInput = CurriculumInput & {
+  id: string;
+};
+
+const normalizeCurriculumInput = (input: CurriculumInput) => ({
+  major_id: input.major_id.trim(),
+  title: normalizeName(input.title),
+  series_year: input.series_year,
+  revised_year: input.revised_year ?? null,
+});
+
+export async function createCurriculum(
+  input: CurriculumInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.major_id?.trim()) return { error: "Major is required" };
+  if (!input.title?.trim()) return { error: "Curriculum title is required" };
+  if (!Number.isInteger(input.series_year)) {
+    return { error: "Series year is required" };
+  }
+  if (
+    input.revised_year !== undefined &&
+    input.revised_year !== null &&
+    !Number.isInteger(input.revised_year)
+  ) {
+    return { error: "Revised year must be a whole number" };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("curriculum")
+    .insert(normalizeCurriculumInput(input))
+    .select("id")
+    .single();
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Curriculum",
+        "series year in this major",
+        error,
+      ),
+    };
+  }
+
+  revalidateCurriculumsPaths(input.major_id, data.id);
+  revalidateBlocksPaths();
+  return { data: { id: data.id } };
+}
+
+export async function updateCurriculum(
+  input: UpdateCurriculumInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Curriculum ID is required" };
+  if (!input.major_id?.trim()) return { error: "Major is required" };
+  if (!input.title?.trim()) return { error: "Curriculum title is required" };
+  if (!Number.isInteger(input.series_year)) {
+    return { error: "Series year is required" };
+  }
+  if (
+    input.revised_year !== undefined &&
+    input.revised_year !== null &&
+    !Number.isInteger(input.revised_year)
+  ) {
+    return { error: "Revised year must be a whole number" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("curriculum")
+    .update(normalizeCurriculumInput(input))
+    .eq("id", input.id);
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Curriculum",
+        "series year in this major",
+        error,
+      ),
+    };
+  }
+
+  revalidateCurriculumsPaths(input.major_id, input.id);
+  revalidateBlocksPaths();
+  return { data: true };
+}
+
+export async function deleteCurriculum(
+  curriculumId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!curriculumId?.trim()) return { error: "Curriculum ID is required" };
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("curriculum")
+    .select("id, major_id")
+    .eq("id", curriculumId)
+    .maybeSingle();
+
+  if (!existing?.major_id) {
+    return { error: "Curriculum not found" };
+  }
+
+  const { error } = await supabase
+    .from("curriculum")
+    .delete()
+    .eq("id", curriculumId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateCurriculumsPaths(existing.major_id);
+  revalidateBlocksPaths();
+  return { data: true };
+}
+
 type MajorOfferingInput = {
   program_campus_id: string;
   major_id: string;
@@ -1273,107 +1400,9 @@ export async function deleteMajorOffering(
   return { data: true };
 }
 
-type CourseOfferingInput = {
-  campus_id: string;
-  course_id: string;
-  academic_term_id: string;
-};
-
-type UpdateCourseOfferingInput = CourseOfferingInput & {
-  id: string;
-};
-
-export async function createCourseOffering(
-  input: CourseOfferingInput,
-): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.campus_id?.trim()) return { error: "Campus is required" };
-  if (!input.course_id?.trim()) return { error: "Course is required" };
-  if (!input.academic_term_id?.trim())
-    return { error: "Academic term is required" };
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("course_campus_at")
-    .insert({
-      campus_id: input.campus_id.trim(),
-      course_id: input.course_id.trim(),
-      academic_term_id: input.academic_term_id.trim(),
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    return {
-      error: mapDuplicateError(
-        "Course offering",
-        "for this campus, course, and term",
-        error,
-      ),
-    };
-  }
-
-  revalidateCourseOfferingsPaths(data.id);
-  return { data: { id: data.id } };
-}
-
-export async function updateCourseOffering(
-  input: UpdateCourseOfferingInput,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!input.id?.trim()) return { error: "Course offering ID is required" };
-  if (!input.campus_id?.trim()) return { error: "Campus is required" };
-  if (!input.course_id?.trim()) return { error: "Course is required" };
-  if (!input.academic_term_id?.trim())
-    return { error: "Academic term is required" };
-
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("course_campus_at")
-    .update({
-      campus_id: input.campus_id.trim(),
-      course_id: input.course_id.trim(),
-      academic_term_id: input.academic_term_id.trim(),
-    })
-    .eq("id", input.id);
-
-  if (error) {
-    return {
-      error: mapDuplicateError(
-        "Course offering",
-        "for this campus, course, and term",
-        error,
-      ),
-    };
-  }
-
-  revalidateCourseOfferingsPaths(input.id);
-  return { data: true };
-}
-
-export async function deleteCourseOffering(
-  courseOfferingId: string,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!courseOfferingId?.trim())
-    return { error: "Course offering ID is required" };
-
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("course_campus_at")
-    .delete()
-    .eq("id", courseOfferingId);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidateCourseOfferingsPaths();
-  return { data: true };
-}
-
 type BlockInput = {
   major_p_c_id: string;
+  curriculum_id: string;
   year_level: number;
   section: string;
   student_count?: number | null;
@@ -1385,6 +1414,7 @@ type UpdateBlockInput = BlockInput & {
 
 const normalizeBlockInput = (input: BlockInput) => ({
   major_p_c_id: input.major_p_c_id.trim(),
+  curriculum_id: input.curriculum_id.trim(),
   year_level: input.year_level,
   section: normalizeCode(input.section),
   student_count: input.student_count ?? null,
@@ -1395,6 +1425,7 @@ export async function createBlock(
 ): Promise<{ data?: { id: string }; error?: string }> {
   if (!input.major_p_c_id?.trim())
     return { error: "Major offering is required" };
+  if (!input.curriculum_id?.trim()) return { error: "Curriculum is required" };
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
     return { error: "Year level must be greater than zero" };
   }
@@ -1408,6 +1439,34 @@ export async function createBlock(
   }
 
   const supabase = await createClient();
+
+  const [{ data: majorOffering }, { data: curriculum }] = await Promise.all([
+    supabase
+      .from("major_p_c")
+      .select("id, major_id")
+      .eq("id", input.major_p_c_id)
+      .maybeSingle(),
+    supabase
+      .from("curriculum")
+      .select("id, major_id")
+      .eq("id", input.curriculum_id)
+      .maybeSingle(),
+  ]);
+
+  if (!majorOffering) {
+    return { error: "Major offering not found" };
+  }
+
+  if (!curriculum) {
+    return { error: "Curriculum not found" };
+  }
+
+  if (majorOffering.major_id !== curriculum.major_id) {
+    return {
+      error:
+        "Selected curriculum must belong to the same major as the selected major offering",
+    };
+  }
 
   const { data, error } = await supabase
     .from("block")
@@ -1435,6 +1494,7 @@ export async function updateBlock(
   if (!input.id?.trim()) return { error: "Block ID is required" };
   if (!input.major_p_c_id?.trim())
     return { error: "Major offering is required" };
+  if (!input.curriculum_id?.trim()) return { error: "Curriculum is required" };
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
     return { error: "Year level must be greater than zero" };
   }
@@ -1448,6 +1508,34 @@ export async function updateBlock(
   }
 
   const supabase = await createClient();
+
+  const [{ data: majorOffering }, { data: curriculum }] = await Promise.all([
+    supabase
+      .from("major_p_c")
+      .select("id, major_id")
+      .eq("id", input.major_p_c_id)
+      .maybeSingle(),
+    supabase
+      .from("curriculum")
+      .select("id, major_id")
+      .eq("id", input.curriculum_id)
+      .maybeSingle(),
+  ]);
+
+  if (!majorOffering) {
+    return { error: "Major offering not found" };
+  }
+
+  if (!curriculum) {
+    return { error: "Curriculum not found" };
+  }
+
+  if (majorOffering.major_id !== curriculum.major_id) {
+    return {
+      error:
+        "Selected curriculum must belong to the same major as the selected major offering",
+    };
+  }
 
   const { error } = await supabase
     .from("block")

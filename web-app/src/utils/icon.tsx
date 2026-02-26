@@ -10,6 +10,7 @@ import {
   Award,
   CalendarDays,
   NotebookTabs,
+  BookCopy,
 } from "lucide-react";
 
 export type IconName =
@@ -22,7 +23,8 @@ export type IconName =
   | "shapes"
   | "award"
   | "calendar-days"
-  | "notebook-tabs";
+  | "notebook-tabs"
+  | "book-copy";
 
 export const iconMap: Record<string, LucideIcon> = {
   home: Home,
@@ -35,6 +37,7 @@ export const iconMap: Record<string, LucideIcon> = {
   award: Award,
   "calendar-days": CalendarDays,
   "notebook-tabs": NotebookTabs,
+  "book-copy": BookCopy,
 };
 
 export const mapIcon = (name?: IconName) => {

@@ -93,14 +93,6 @@ export const CampusView = ({ campus }: CampusViewProps) => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() =>
-                  router.push(`/campuses/${campus.id}/course-offerings`)
-                }
-              >
-                Course Offerings
-              </Button>
-              <Button
-                variant="outline"
                 onClick={() => router.push(`/campuses/${campus.id}/blocks`)}
               >
                 Blocks
@@ -117,7 +109,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
 
         <DangerZone
           description={
-            "Deleting this campus removes related rooms, program offerings, course offerings, and linked designations."
+            "Deleting this campus removes related rooms, program offerings, blocks, and linked designations."
           }
           buttonLabel="Delete Campus"
           onDeleteClick={() => setShowDeleteConfirm(true)}
