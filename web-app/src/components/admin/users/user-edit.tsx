@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   CheckCircle,
-  User,
   Trash2,
   Mail,
   Lock,
@@ -24,21 +23,14 @@ import {
 } from "@/lib/users/actions";
 import { DesignationAddForm } from "@/components/admin/users/designation-add-form";
 import AdminPanel from "../admin-panel";
+import {
+  UserInitialForm,
+  UserInitialFormState,
+} from "@/components/admin/users/user-initial-form";
 
-type UserEditFormProps = {
+type UserEditProps = {
   user: UserDetail;
   ranks?: Array<{ id: string; title: string }>;
-};
-
-type PersonalFormState = {
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  extension: string;
-  birthDate: string;
-  address: string;
-  zipCode: string;
-  contactNumber: string;
 };
 
 type ProfessionalFormState = {
@@ -61,7 +53,9 @@ type SecurityFormState = {
   confirmPassword: string;
 };
 
-const userToPersonalFormState = (user: UserDetail): PersonalFormState => ({
+const userToPersonalFormState = (user: UserDetail): UserInitialFormState => ({
+  email: "",
+  password: "",
   firstName: user.identity?.first_name ?? "",
   middleName: user.identity?.middle_name ?? "",
   lastName: user.identity?.last_name ?? "",
@@ -70,6 +64,7 @@ const userToPersonalFormState = (user: UserDetail): PersonalFormState => ({
   address: user.identity?.address ?? "",
   zipCode: user.identity?.zip_code ?? "",
   contactNumber: user.identity?.contact_number ?? "",
+  employmentStatus: "",
 });
 
 const userToProfessionalFormState = (
@@ -89,53 +84,44 @@ const userToProfessionalFormState = (
     })) ?? [],
 });
 
-export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
+export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
   const router = useRouter();
 
-  // Personal Information State
-  const [personalData, setPersonalData] = useState<PersonalFormState>(() =>
+  const [personalData, setPersonalData] = useState<UserInitialFormState>(() =>
     userToPersonalFormState(user),
   );
-  const [savedPersonalData, setSavedPersonalData] = useState<PersonalFormState>(
-    () => userToPersonalFormState(user),
-  );
+  const [savedPersonalData, setSavedPersonalData] =
+    useState<UserInitialFormState>(() => userToPersonalFormState(user));
 
-  // Professional Information State
   const [professionalData, setProfessionalData] =
     useState<ProfessionalFormState>(() => userToProfessionalFormState(user));
   const [savedProfessionalData, setSavedProfessionalData] =
     useState<ProfessionalFormState>(() => userToProfessionalFormState(user));
 
-  // Security State
   const [securityData, setSecurityData] = useState<SecurityFormState>({
     newEmail: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  // UI States - Personal
   const [isPersonalSaving, setIsPersonalSaving] = useState(false);
   const [personalError, setPersonalError] = useState("");
   const [personalSuccess, setPersonalSuccess] = useState(false);
 
-  // UI States - Professional
   const [isProfessionalSaving, setIsProfessionalSaving] = useState(false);
   const [professionalError, setProfessionalError] = useState("");
   const [professionalSuccess, setProfessionalSuccess] = useState(false);
 
-  // UI States - Security
   const [isSecuritySaving, setIsSecuritySaving] = useState(false);
 
-  // Handle Personal Data Change
   const handlePersonalChange = (
-    field: keyof PersonalFormState,
+    field: keyof UserInitialFormState,
     value: string,
   ) => {
     setPersonalData((prev) => ({ ...prev, [field]: value }));
     setPersonalError("");
   };
 
-  // Handle Professional Data Change
   const handleProfessionalChange = (
     field: keyof Omit<ProfessionalFormState, "designations">,
     value: string | null,
@@ -144,7 +130,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     setProfessionalError("");
   };
 
-  // Handle Designation Addition (from DesignationAddForm)
   const handleAddDesignation = (designation: any) => {
     setProfessionalData((prev) => ({
       ...prev,
@@ -163,7 +148,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     setProfessionalError("");
   };
 
-  // Handle Designation Removal
   const handleRemoveDesignation = (index: number) => {
     setProfessionalData((prev) => ({
       ...prev,
@@ -171,7 +155,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     }));
   };
 
-  // PERSONAL INFORMATION HANDLERS
   const handleResetPersonal = () => {
     setPersonalData(savedPersonalData);
     setPersonalError("");
@@ -179,7 +162,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
   };
 
   const handleSavePersonal = async () => {
-    // Validate personal data
     if (!personalData.firstName.trim()) {
       setPersonalError("First name is required");
       return;
@@ -223,7 +205,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     }
   };
 
-  // PROFESSIONAL INFORMATION HANDLERS
   const handleResetProfessional = () => {
     setProfessionalData(savedProfessionalData);
     setProfessionalError("");
@@ -256,7 +237,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     }
   };
 
-  // Handle Email Change
   const handleChangeEmail = async () => {
     if (!securityData.newEmail.trim()) {
       setProfessionalError("New email is required");
@@ -283,7 +263,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
     setTimeout(() => setProfessionalSuccess(false), 3000);
   };
 
-  // Handle Password Change
   const handleChangePassword = async () => {
     if (!securityData.newPassword.trim()) {
       setProfessionalError("New password is required");
@@ -330,197 +309,19 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
       icon={Edit}
       onClose={() => router.back()}
     >
-      {/* Personal Information Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <User className="w-5 h-5" />
-          <h3 className=" font-semibold">Personal Information</h3>
-        </div>
+      <UserInitialForm
+        formData={personalData}
+        onChange={handlePersonalChange}
+        onReset={handleResetPersonal}
+        onSubmit={handleSavePersonal}
+        isSaving={isPersonalSaving}
+        error={personalError}
+        success={personalSuccess}
+        successMessage="Personal information saved successfully"
+        submitText="Save Changes"
+        savingText="Saving..."
+      />
 
-        {personalSuccess && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-green-900">
-              Personal information saved successfully
-            </p>
-          </div>
-        )}
-
-        {personalError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-red-900">{personalError}</p>
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="firstName" className="text-xs">
-              First Name *
-            </Label>
-            <Input
-              id="firstName"
-              placeholder="Enter first name"
-              value={personalData.firstName}
-              onChange={(e) =>
-                handlePersonalChange("firstName", e.target.value)
-              }
-              className="mt-1"
-              disabled={isPersonalSaving}
-              onBlur={(e) => {
-                handlePersonalChange(
-                  "firstName",
-                  e.target.value.trim().toUpperCase(),
-                );
-              }}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="middleName" className="text-xs">
-              Middle Name
-            </Label>
-            <Input
-              id="middleName"
-              placeholder="Enter middle name"
-              value={personalData.middleName}
-              onChange={(e) =>
-                handlePersonalChange("middleName", e.target.value)
-              }
-              className="mt-1"
-              disabled={isPersonalSaving}
-              onBlur={(e) => {
-                handlePersonalChange(
-                  "middleName",
-                  e.target.value.trim().toUpperCase(),
-                );
-              }}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="lastName" className="text-xs">
-              Last Name *
-            </Label>
-            <Input
-              id="lastName"
-              placeholder="Enter last name"
-              value={personalData.lastName}
-              onChange={(e) => handlePersonalChange("lastName", e.target.value)}
-              className="mt-1"
-              disabled={isPersonalSaving}
-              onBlur={(e) => {
-                handlePersonalChange(
-                  "lastName",
-                  e.target.value.trim().toUpperCase(),
-                );
-              }}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="extension" className="text-xs">
-              Extension
-            </Label>
-            <Input
-              id="extension"
-              placeholder="e.g. JR., III"
-              value={personalData.extension}
-              onChange={(e) =>
-                handlePersonalChange("extension", e.target.value)
-              }
-              className="mt-1"
-              disabled={isPersonalSaving}
-              onBlur={(e) => {
-                handlePersonalChange(
-                  "extension",
-                  e.target.value.trim().toUpperCase(),
-                );
-              }}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="birthDate" className="text-xs">
-              Birth Date *
-            </Label>
-            <Input
-              id="birthDate"
-              type="date"
-              value={personalData.birthDate}
-              onChange={(e) =>
-                handlePersonalChange("birthDate", e.target.value)
-              }
-              className="mt-1"
-              disabled={isPersonalSaving}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="contactNumber" className="text-xs">
-              Contact Number
-            </Label>
-            <Input
-              id="contactNumber"
-              placeholder="Enter contact number"
-              value={personalData.contactNumber}
-              onChange={(e) =>
-                handlePersonalChange("contactNumber", e.target.value)
-              }
-              className="mt-1"
-              disabled={isPersonalSaving}
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <Label htmlFor="address" className="text-xs">
-              Address
-            </Label>
-            <Input
-              id="address"
-              placeholder="Enter address"
-              value={personalData.address}
-              onChange={(e) => handlePersonalChange("address", e.target.value)}
-              className="mt-1"
-              disabled={isPersonalSaving}
-              onBlur={(e) => {
-                handlePersonalChange(
-                  "address",
-                  e.target.value.trim().toUpperCase(),
-                );
-              }}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="zipCode" className="text-xs">
-              ZIP Code
-            </Label>
-            <Input
-              id="zipCode"
-              placeholder="Enter ZIP code"
-              value={personalData.zipCode}
-              onChange={(e) => handlePersonalChange("zipCode", e.target.value)}
-              className="mt-1"
-              disabled={isPersonalSaving}
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2 justify-end">
-          <Button
-            variant="outline"
-            onClick={handleResetPersonal}
-            disabled={isPersonalSaving}
-          >
-            Reset
-          </Button>
-          <Button onClick={handleSavePersonal} disabled={isPersonalSaving}>
-            {isPersonalSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Professional Information Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b">
           <Briefcase className="w-5 h-5" />
@@ -543,7 +344,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
           </div>
         )}
         <div className="space-y-6">
-          {/* Rank and Employment Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="academicRank" className="text-xs">
@@ -595,11 +395,9 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
             </div>
           </div>
 
-          {/* Designations */}
           <div className="flex flex-col gap-1">
             <Label className="text-xs">Designations</Label>
 
-            {/* List of Current Designations */}
             {professionalData.designations.length > 0 && (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
                 {professionalData.designations.map((designation, idx) => (
@@ -653,7 +451,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
               </div>
             )}
 
-            {/* Add New Designation Form */}
             <DesignationAddForm
               onAdd={handleAddDesignation}
               isLoading={isProfessionalSaving}
@@ -661,7 +458,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
             />
           </div>
         </div>
-        {/* Dedicated Save/Reset Buttons */}
         <div className="flex gap-2 justify-end">
           <Button
             variant="outline"
@@ -679,7 +475,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
         </div>
       </div>
 
-      {/* Security Section */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b">
           <Lock className="w-5 h-5" />
@@ -691,7 +486,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
         </p>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {/* Change Email */}
           <div className="p-4 border rounded-lg">
             <div className="flex items-center gap-2 mb-4">
               <Mail className="w-5 h-5" />
@@ -738,7 +532,6 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
             </div>
           </div>
 
-          {/* Change Password */}
           <div className="p-4 border rounded-lg">
             <div className="flex items-center gap-2 mb-4">
               <Lock className="w-5 h-5" />

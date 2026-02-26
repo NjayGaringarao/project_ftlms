@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserById, getRanks } from "@/lib/users/users";
-import { UserEditForm } from "@/components/admin/users/user-edit-form";
+import { UserEdit } from "@/components/admin/users/user-edit";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ const EditPage = async ({ params }: EditPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <UserEditForm user={user} ranks={ranks} />{" "}
+      <UserEdit user={user} ranks={ranks} />
     </div>
   );
 };
