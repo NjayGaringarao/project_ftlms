@@ -1,6 +1,6 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { BlockView } from "@/components/admin/block-view";
+import { BlockView } from "@/components/admin/campus/block-view";
 import { getBlockById } from "@/lib/admin/blocks";
 
 type BlockPageProps = {

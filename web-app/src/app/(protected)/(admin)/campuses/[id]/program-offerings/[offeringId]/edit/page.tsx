@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ProgramOfferingEdit } from "@/components/admin/program-offering-edit";
+import { ProgramOfferingEdit } from "@/components/admin/campus/program-offering-edit";
 import { getProgramOfferingById } from "@/lib/admin/program-offerings";
 
 export const dynamic = "force-dynamic";

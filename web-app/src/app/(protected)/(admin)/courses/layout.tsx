@@ -1,5 +1,5 @@
 import React from "react";
-import { CoursesList } from "@/components/admin/courses-list";
+import { CoursesList } from "@/components/admin/course/courses-list";
 import { getCoursesList } from "@/lib/admin/courses";
 
 const CoursesLayout = async ({ children }: { children: React.ReactNode }) => {

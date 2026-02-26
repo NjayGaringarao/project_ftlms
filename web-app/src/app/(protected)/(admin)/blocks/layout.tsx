@@ -1,5 +1,5 @@
 import React from "react";
-import { BlocksList } from "@/components/admin/blocks-list";
+import { BlocksList } from "@/components/admin/campus/blocks-list";
 import { getBlocksList } from "@/lib/admin/blocks";
 
 const BlocksLayout = async ({ children }: { children: React.ReactNode }) => {

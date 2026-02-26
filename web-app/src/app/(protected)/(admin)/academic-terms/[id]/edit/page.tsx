@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { TermEdit } from "@/components/admin/term-edit";
+import { TermEdit } from "@/components/admin/academic-term/term-edit";
 import { getTermById } from "@/lib/admin/terms";
 
 export const dynamic = "force-dynamic";

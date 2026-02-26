@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { RoomView } from "@/components/admin/room-view";
+import { RoomView } from "@/components/admin/campus/room-view";
 import { getRoomById } from "@/lib/admin/rooms";
 
 export const dynamic = "force-dynamic";

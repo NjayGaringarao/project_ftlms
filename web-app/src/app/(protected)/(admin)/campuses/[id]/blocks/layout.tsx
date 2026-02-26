@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { BlocksList } from "@/components/admin/blocks-list";
+import { BlocksList } from "@/components/admin/campus/blocks-list";
 import { getBlocksByCampus } from "@/lib/admin/blocks";
 import { getCampusById } from "@/lib/admin/campuses";
 

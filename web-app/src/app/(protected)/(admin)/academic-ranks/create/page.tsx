@@ -1,4 +1,4 @@
-import { RankCreate } from "@/components/admin/rank-create";
+import { RankCreate } from "@/components/admin/academic-rank/rank-create";
 
 const CreatePage = () => {
   return (

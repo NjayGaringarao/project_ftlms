@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BlockEdit } from "@/components/admin/block-edit";
+import { BlockEdit } from "@/components/admin/campus/block-edit";
 import { getBlockById } from "@/lib/admin/blocks";
 
 export const dynamic = "force-dynamic";

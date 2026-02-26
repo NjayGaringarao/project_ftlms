@@ -1,5 +1,5 @@
 import React from "react";
-import { DepartmentsList } from "@/components/admin/departments-list";
+import { DepartmentsList } from "@/components/admin/department/departments-list";
 import { getDepartmentsList } from "@/lib/admin/departments";
 
 const DepartmentsLayout = async ({

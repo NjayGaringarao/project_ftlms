@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CampusView } from "@/components/admin/campus-view";
+import { CampusView } from "@/components/admin/campus/campus-view";
 import { getCampusById } from "@/lib/admin/campuses";
 
 export const dynamic = "force-dynamic";

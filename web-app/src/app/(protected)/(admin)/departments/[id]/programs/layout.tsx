@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { ProgramsList } from "@/components/admin/programs-list";
+import { ProgramsList } from "@/components/admin/department/programs-list";
 import { getProgramsByDepartment } from "@/lib/admin/programs";
 import { getDepartmentById } from "@/lib/admin/departments";
 

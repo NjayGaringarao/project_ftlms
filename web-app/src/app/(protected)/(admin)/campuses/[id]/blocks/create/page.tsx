@@ -1,4 +1,4 @@
-import { BlockCreate } from "@/components/admin/block-create";
+import { BlockCreate } from "@/components/admin/campus/block-create";
 
 type CreateCampusBlockPageProps = {
   params: Promise<{ id: string }>;

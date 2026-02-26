@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { ProgramEdit } from "@/components/admin/program-edit";
+import { ProgramEdit } from "@/components/admin/department/program-edit";
 import { getProgramById } from "@/lib/admin/programs";
 
 export const dynamic = "force-dynamic";

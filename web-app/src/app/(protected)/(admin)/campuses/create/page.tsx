@@ -1,4 +1,4 @@
-import { CampusCreate } from "@/components/admin/campus-create";
+import { CampusCreate } from "@/components/admin/campus/campus-create";
 
 const CreatePage = async () => {
   return (

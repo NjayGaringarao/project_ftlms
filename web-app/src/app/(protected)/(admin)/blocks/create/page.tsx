@@ -1,5 +1,5 @@
 import React from "react";
-import { BlockCreate } from "@/components/admin/block-create";
+import { BlockCreate } from "@/components/admin/campus/block-create";
 
 const CreateBlockPage = () => {
   return <BlockCreate />;

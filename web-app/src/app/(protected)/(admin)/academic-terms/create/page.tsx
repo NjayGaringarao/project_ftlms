@@ -1,4 +1,4 @@
-import { TermCreate } from "@/components/admin/term-create";
+import { TermCreate } from "@/components/admin/academic-term/term-create";
 
 const CreatePage = () => {
   return (

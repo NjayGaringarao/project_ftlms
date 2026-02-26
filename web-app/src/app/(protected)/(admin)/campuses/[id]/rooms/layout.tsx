@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { RoomsList } from "@/components/admin/rooms-list";
+import { RoomsList } from "@/components/admin/campus/rooms-list";
 import { getRoomsByCampus } from "@/lib/admin/rooms";
 import { getCampusById } from "@/lib/admin/campuses";
 

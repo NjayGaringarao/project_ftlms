@@ -1,4 +1,4 @@
-import { DepartmentCreate } from "@/components/admin/department-create";
+import { DepartmentCreate } from "@/components/admin/department/department-create";
 
 const CreatePage = () => {
   return (

@@ -1,4 +1,4 @@
-import { CourseOfferingCreate } from "@/components/admin/course-offering-create";
+import { CourseOfferingCreate } from "@/components/admin/campus/course-offering-create";
 
 type CreateCampusCourseOfferingPageProps = {
   params: Promise<{ id: string }>;

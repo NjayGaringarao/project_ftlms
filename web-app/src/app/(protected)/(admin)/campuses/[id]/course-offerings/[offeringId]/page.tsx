@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CourseOfferingView } from "@/components/admin/course-offering-view";
+import { CourseOfferingView } from "@/components/admin/campus/course-offering-view";
 import { getCourseOfferingById } from "@/lib/admin/course-offerings";
 
 export const dynamic = "force-dynamic";

@@ -1,4 +1,4 @@
-import { RoomCreate } from "@/components/admin/room-create";
+import { RoomCreate } from "@/components/admin/campus/room-create";
 
 type CreateCampusRoomPageProps = {
   params: Promise<{ id: string }>;
