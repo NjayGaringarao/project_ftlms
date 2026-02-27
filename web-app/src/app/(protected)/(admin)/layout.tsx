@@ -6,7 +6,7 @@ const UniversityLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="relative flex h-full flex-col">
       <PageHeader />
-      <div className="p-4 h-full">{children}</div>
+      <div className="p-4 flex-1 overflow-hidden">{children}</div>
       <div className="absolute  h-full w-full bg-background z-100 lg:hidden flex flex-col items-center justify-center px-16">
         <div className="flex flex-col gap-4 justify-center">
           <Image
