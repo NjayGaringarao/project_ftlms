@@ -5,21 +5,20 @@ import { getCurriculumById } from "@/lib/admin/curriculums";
 export const dynamic = "force-dynamic";
 
 type ViewCurriculumPageProps = {
-  params: Promise<{ majorId: string; id: string }>;
+  params: Promise<{ id: string }>;
 };
 
 const ViewCurriculumPage = async ({ params }: ViewCurriculumPageProps) => {
-  const { majorId, id } = await params;
-  const basePath = `/curriculums/${majorId}/curriculums`;
+  const { id } = await params;
   const curriculum = await getCurriculumById(id);
 
-  if (!curriculum || curriculum.major_id !== majorId) {
-    redirect(basePath);
+  if (!curriculum) {
+    redirect("/curriculums");
   }
 
   return (
     <div className="flex w-1/2 flex-col">
-      <CurriculumView curriculum={curriculum} basePath={basePath} />
+      <CurriculumView curriculum={curriculum} basePath="/curriculums" />
     </div>
   );
 };

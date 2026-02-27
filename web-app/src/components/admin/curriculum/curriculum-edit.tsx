@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Edit } from "lucide-react";
 import { updateCurriculum } from "@/lib/admin/actions";
+import { getMajorsList, MajorListItem } from "@/lib/admin/majors";
 import AdminPanel from "../admin-panel";
 import FormStatusBanner from "../form-status-banner";
 import {
@@ -20,6 +22,7 @@ type CurriculumEditProps = {
 const curriculumToFormState = (
   curriculum: CurriculumListItem,
 ): CurriculumFormState => ({
+  major_id: curriculum.major_id,
   title: curriculum.title,
   series_year: String(curriculum.series_year),
   revised_year:
@@ -28,9 +31,11 @@ const curriculumToFormState = (
 
 export const CurriculumEdit = ({
   curriculum,
-  basePath,
+  basePath = "/curriculums",
 }: CurriculumEditProps) => {
   const router = useRouter();
+  const [majorOptions, setMajorOptions] = useState<MajorListItem[]>([]);
+  const [isLoadingMajors, setIsLoadingMajors] = useState(true);
   const [formData, setFormData] = useState<CurriculumFormState>(() =>
     curriculumToFormState(curriculum),
   );
@@ -40,6 +45,17 @@ export const CurriculumEdit = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const loadMajors = async () => {
+      setIsLoadingMajors(true);
+      const majors = await getMajorsList();
+      setMajorOptions(majors);
+      setIsLoadingMajors(false);
+    };
+
+    loadMajors();
+  }, []);
 
   const handleChange = (field: keyof CurriculumFormState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -58,6 +74,10 @@ export const CurriculumEdit = ({
       ? Number(formData.revised_year)
       : null;
 
+    if (!formData.major_id.trim()) {
+      setError("Major is required");
+      return;
+    }
     if (!formData.title.trim()) {
       setError("Curriculum title is required");
       return;
@@ -81,7 +101,7 @@ export const CurriculumEdit = ({
 
     const { error: updateError } = await updateCurriculum({
       id: curriculum.id,
-      major_id: curriculum.major_id,
+      major_id: formData.major_id,
       title: formData.title,
       series_year: parsedSeriesYear,
       revised_year: parsedRevisedYear,
@@ -95,6 +115,7 @@ export const CurriculumEdit = ({
     }
 
     setSavedState({
+      major_id: formData.major_id,
       title: formData.title.trim(),
       series_year: String(parsedSeriesYear),
       revised_year: parsedRevisedYear !== null ? String(parsedRevisedYear) : "",
@@ -123,9 +144,10 @@ export const CurriculumEdit = ({
           onChange={handleChange}
           onReset={handleReset}
           onSubmit={handleSave}
-          isSaving={isSaving}
+          isSaving={isSaving || isLoadingMajors}
           submitLabel="Save Changes"
           submitLoadingLabel="Saving..."
+          majorOptions={majorOptions}
         />
       </div>
     </AdminPanel>

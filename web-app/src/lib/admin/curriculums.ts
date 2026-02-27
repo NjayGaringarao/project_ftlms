@@ -89,6 +89,46 @@ export const getCurriculumsByMajor = async (
   return (data ?? []).map(normalizeCurriculumRow);
 };
 
+export const getCurriculumsList = async (): Promise<CurriculumListItem[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("curriculum")
+    .select(
+      `
+      id,
+      major_id,
+      title,
+      series_year,
+      revised_year,
+      major:major_id (
+        id,
+        program_id,
+        code,
+        name,
+        description,
+        program:program_id (
+          id,
+          department_id,
+          code,
+          name,
+          description,
+          department:department_id (id, code, name, type, description)
+        )
+      )
+      `,
+    )
+    .order("series_year", { ascending: false })
+    .order("title", { ascending: true });
+
+  if (error) {
+    console.error("lib.admin.curriculums.getCurriculumsList ::", error);
+    return [];
+  }
+
+  return (data ?? []).map(normalizeCurriculumRow);
+};
+
 export const getCurriculumById = async (
   curriculumId: string,
 ): Promise<CurriculumListItem | null> => {

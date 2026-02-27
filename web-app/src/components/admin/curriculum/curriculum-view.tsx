@@ -16,7 +16,7 @@ type CurriculumViewProps = {
 
 export const CurriculumView = ({
   curriculum,
-  basePath,
+  basePath = "/curriculums",
 }: CurriculumViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -66,6 +66,16 @@ export const CurriculumView = ({
               <p className="text-xs text-foreground/60">Revised Year</p>
               <p className="font-medium">
                 {curriculum.revised_year ?? "Not revised"}
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-xs text-foreground/60">Major</p>
+              <p className="font-medium">
+                {curriculum.major?.program?.code
+                  ? `${curriculum.major.program.code} - `
+                  : ""}
+                {curriculum.major?.name ?? "Unknown"}
+                {curriculum.major?.code ? ` (${curriculum.major.code})` : ""}
               </p>
             </div>
           </div>

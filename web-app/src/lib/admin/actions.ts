@@ -124,16 +124,13 @@ const revalidateMajorsPaths = (id?: string) => {
   }
 };
 
-const revalidateCurriculumsPaths = (majorId: string, curriculumId?: string) => {
+const revalidateCurriculumsPaths = (curriculumId?: string) => {
   revalidatePath("/curriculums");
-
-  const basePath = `/curriculums/${majorId}/curriculums`;
-  revalidatePath(basePath);
-  revalidatePath(`${basePath}/create`);
+  revalidatePath("/curriculums/create");
 
   if (curriculumId) {
-    revalidatePath(`${basePath}/${curriculumId}`);
-    revalidatePath(`${basePath}/${curriculumId}/edit`);
+    revalidatePath(`/curriculums/${curriculumId}`);
+    revalidatePath(`/curriculums/${curriculumId}/edit`);
   }
 };
 
@@ -1169,7 +1166,7 @@ export async function createCurriculum(
     };
   }
 
-  revalidateCurriculumsPaths(input.major_id, data.id);
+  revalidateCurriculumsPaths(data.id);
   revalidateBlocksPaths();
   return { data: { id: data.id } };
 }
@@ -1208,7 +1205,7 @@ export async function updateCurriculum(
     };
   }
 
-  revalidateCurriculumsPaths(input.major_id, input.id);
+  revalidateCurriculumsPaths(input.id);
   revalidateBlocksPaths();
   return { data: true };
 }
@@ -1239,7 +1236,7 @@ export async function deleteCurriculum(
     return { error: error.message };
   }
 
-  revalidateCurriculumsPaths(existing.major_id);
+  revalidateCurriculumsPaths();
   revalidateBlocksPaths();
   return { data: true };
 }

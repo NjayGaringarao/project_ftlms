@@ -3,9 +3,20 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 export type CurriculumFormState = {
+  major_id: string;
   title: string;
   series_year: string;
   revised_year: string;
+};
+
+type MajorOption = {
+  id: string;
+  code: string;
+  name: string;
+  program?: {
+    code: string;
+    name: string;
+  } | null;
 };
 
 type CurriculumInitialFormProps = {
@@ -16,6 +27,7 @@ type CurriculumInitialFormProps = {
   isSaving?: boolean;
   submitLabel: string;
   submitLoadingLabel: string;
+  majorOptions: MajorOption[];
 };
 
 export const CurriculumInitialForm = ({
@@ -26,10 +38,32 @@ export const CurriculumInitialForm = ({
   isSaving = false,
   submitLabel,
   submitLoadingLabel,
+  majorOptions,
 }: CurriculumInitialFormProps) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <Label className="text-xs" htmlFor="curriculum-major-id">
+            Major *
+          </Label>
+          <select
+            id="curriculum-major-id"
+            className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+            value={formData.major_id}
+            onChange={(event) => onChange("major_id", event.target.value)}
+            disabled={isSaving}
+          >
+            <option value="">Select major...</option>
+            {majorOptions.map((major) => (
+              <option key={major.id} value={major.id}>
+                {major.program?.code ? `${major.program.code} - ` : ""}
+                {major.name} ({major.code})
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="md:col-span-2">
           <Label className="text-xs" htmlFor="curriculum-title">
             Title *
