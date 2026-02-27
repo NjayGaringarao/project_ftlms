@@ -1,8 +1,6 @@
 import { Identity } from "./identity";
 import { AcademicRank } from "./rank";
 
-export type UserRole = "FACULTY" | "CHAIR" | "EVALUATOR" | "DIRECTOR" | "ADMIN";
-
 export type User = {
   id: string;
   academic_rank_id: string | null;
@@ -13,3 +11,10 @@ export type ExtendedUser = User & {
   identity: Identity; // Always exists due to 1:1 relationship
   rank: AcademicRank | null;
 };
+
+export type UserRole =
+  | "FACULTY"
+  | "PROGRAM_CHAIRPERSON"
+  | "HIGHER-UPS"
+  | "CAMPUS_DIRECTOR"
+  | "ADMIN";

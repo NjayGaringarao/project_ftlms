@@ -5,5 +5,5 @@ export type NavigationItem = {
   label: string;
   href: string;
   icon?: IconName; // Icon identifier for lucide-react
-  requiredRoles: UserRole[]; // Any role in this list grants access
+  allowedRoles: UserRole[]; // Any role in this list grants access
 };

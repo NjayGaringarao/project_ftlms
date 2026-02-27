@@ -279,11 +279,40 @@ create table designation (
   load integer check (load >= 0),
   designated_at timestamptz default now(),
 
-  constraint designation_requires_context check (
-    campus_id is not null
-    or department_id is not null
-    or program_campus_id is not null
-    or room_id is not null
+  constraint designation_role_context_rules check (
+    (
+      lower(trim(job_title)) in (
+        'university president',
+        'director for instruction'
+      )
+    )
+    or (
+      lower(trim(job_title)) = 'program chairperson'
+      and program_campus_id is not null
+    )
+    or (
+      lower(trim(job_title)) = 'college dean'
+      and department_id is not null
+    )
+    or (
+      lower(trim(job_title)) = 'campus director'
+      and campus_id is not null
+    )
+    or (
+      lower(trim(job_title)) not in (
+        'university president',
+        'director for instruction',
+        'program chairperson',
+        'college dean',
+        'campus director'
+      )
+      and (
+        campus_id is not null
+        or department_id is not null
+        or program_campus_id is not null
+        or room_id is not null
+      )
+    )
   )
 );
 
@@ -294,6 +323,11 @@ where job_title='University President';
 create unique index unique_director_instruction
 on designation(job_title)
 where job_title='Director for Instruction';
+
+create unique index unique_campus_director_per_campus
+on designation(campus_id)
+where lower(trim(job_title)) = 'campus director'
+  and campus_id is not null;
 
 -- =========================================================
 -- EVALUATION

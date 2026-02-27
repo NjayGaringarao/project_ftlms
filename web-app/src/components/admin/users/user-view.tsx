@@ -57,12 +57,6 @@ export const UserView = ({ user }: UserViewProps) => {
     : null;
   const age = birthDate ? calculateAge(birthDate) : null;
 
-  useEffect(() => {
-    console.log(
-      `User designations updated: ${JSON.stringify(user.designations, null, 2)}`,
-    );
-  }, [user.designations]);
-
   return (
     <AdminPanel
       title="User Information"

@@ -26,6 +26,17 @@ const normalizeEmploymentStatus = (value?: string | null) => {
     : "PART_TIME";
 };
 
+const normalizeJobTitleKey = (value?: string | null) =>
+  value?.trim().toLowerCase() ?? "";
+
+const isHigherUpsTitle = (value?: string | null) => {
+  const normalized = normalizeJobTitleKey(value);
+  return (
+    normalized === "university president" ||
+    normalized === "director for instruction"
+  );
+};
+
 type UpdateUserInput = {
   user_id: string;
   first_name: string;
@@ -256,8 +267,11 @@ export async function updateUserProfessional(
 
   // Handle designations update
   if (input.designations) {
+    // Use admin client for designation operations (bypasses RLS)
+    const adminClient = await createAdminClient();
+
     // Delete existing designations
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await adminClient
       .from("designation")
       .delete()
       .eq("user_id", input.user_id);
@@ -269,18 +283,82 @@ export async function updateUserProfessional(
     // Insert new designations
     if (input.designations.length > 0) {
       const invalidDesignation = input.designations.find((d) => {
+        const normalizedJobTitle = normalizeJobTitleKey(d.job_title);
+        const campusId = d.campus_id?.trim() || null;
+        const departmentId = d.department_id?.trim() || null;
+        const programCampusId = d.program_campus_id?.trim() || null;
+        const roomId = d.room_id?.trim() || null;
+
+        if (!d.job_title?.trim()) {
+          return true;
+        }
+
+        if (d.load !== undefined && d.load !== null && d.load < 0) {
+          return true;
+        }
+
+        if (normalizedJobTitle === "program chairperson") {
+          return !programCampusId;
+        }
+
+        if (normalizedJobTitle === "college dean") {
+          return !departmentId;
+        }
+
+        if (normalizedJobTitle === "campus director") {
+          return !campusId;
+        }
+
+        if (isHigherUpsTitle(d.job_title)) {
+          return false;
+        }
+
         const hasContext =
-          d.campus_id?.trim() ||
-          d.department_id?.trim() ||
-          d.program_campus_id?.trim() ||
-          d.room_id?.trim();
+          campusId || departmentId || programCampusId || roomId;
         return !hasContext;
       });
 
       if (invalidDesignation) {
+        const normalizedJobTitle = normalizeJobTitleKey(
+          invalidDesignation.job_title,
+        );
+
+        if (!invalidDesignation.job_title?.trim()) {
+          return { error: "Each designation must include a job title." };
+        }
+
+        if (
+          invalidDesignation.load !== undefined &&
+          invalidDesignation.load !== null &&
+          invalidDesignation.load < 0
+        ) {
+          return {
+            error: "Designation load must be a non-negative number.",
+          };
+        }
+
+        if (normalizedJobTitle === "program chairperson") {
+          return {
+            error:
+              "Program Chairperson designation requires a program offering.",
+          };
+        }
+
+        if (normalizedJobTitle === "college dean") {
+          return {
+            error: "College Dean designation requires a department.",
+          };
+        }
+
+        if (normalizedJobTitle === "campus director") {
+          return {
+            error: "Campus Director designation requires a campus.",
+          };
+        }
+
         return {
           error:
-            "Each designation must include at least one context: campus, department, program offering, or room.",
+            "Each designation must include at least one context: campus, department, program offering, or room (except University President and Director for Instruction).",
         };
       }
 
@@ -291,10 +369,10 @@ export async function updateUserProfessional(
         department_id: d.department_id?.trim() || null,
         program_campus_id: d.program_campus_id?.trim() || null,
         room_id: d.room_id?.trim() || null,
-        load: d.load || null,
+        load: d.load ?? null,
       }));
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await adminClient
         .from("designation")
         .insert(designationsToInsert);
 

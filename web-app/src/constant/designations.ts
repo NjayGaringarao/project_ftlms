@@ -79,7 +79,7 @@ export const getDesignationRequirements = (
   if (designationType === "administrative") {
     if (subType === "higher_ups") {
       return {
-        requiresCampus: true,
+        requiresCampus: false,
         requiresDepartment: false,
         requiresProgram: false,
         requiresJobTitle: true,

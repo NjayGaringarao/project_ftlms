@@ -1,20 +1,13 @@
 "use server";
 
-import { UserRole } from "@/models/user";
 import { NavigationItem } from "./types";
 import { NAV_ITEMS } from "@/constant/navigation";
+import { getUserRole } from "../auth/utils";
 
 export const getNavigationItems = async (): Promise<NavigationItem[]> => {
-  // This array should be dynamically fetched from the database based on the AUTH.USER ID
-  const userActiveRoles: UserRole[] = [
-    "FACULTY",
-    "CHAIR",
-    "EVALUATOR",
-    "DIRECTOR",
-    "ADMIN",
-  ];
+  const userActiveRoles = await getUserRole();
 
   return NAV_ITEMS.filter((item) =>
-    item.requiredRoles.some((role) => userActiveRoles.includes(role)),
+    item.allowedRoles.some((role) => userActiveRoles.includes(role)),
   );
 };

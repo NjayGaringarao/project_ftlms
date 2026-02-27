@@ -1,3 +1,4 @@
+import { UserRole } from "@/models";
 import { createClient } from "@/utils/supabase/server";
 import { User } from "@supabase/supabase-js";
 
@@ -28,4 +29,17 @@ export const getCurrentUser = async (): Promise<User | undefined> => {
   } else {
     return data.user;
   }
+};
+
+export const getUserRole = async (): Promise<UserRole[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("get_user_roles");
+
+  if (error) {
+    console.error("getUserRole error:", error);
+    return [];
+  }
+
+  return (data as UserRole[]) ?? [];
 };
