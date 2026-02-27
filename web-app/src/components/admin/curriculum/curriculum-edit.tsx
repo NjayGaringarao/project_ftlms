@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Edit } from "lucide-react";
 import { updateCurriculum } from "@/lib/admin/actions";
-import { getMajorsList, MajorListItem } from "@/lib/admin/majors";
 import AdminPanel from "../admin-panel";
 import FormStatusBanner from "../form-status-banner";
 import {
@@ -34,8 +32,6 @@ export const CurriculumEdit = ({
   basePath = "/curriculums",
 }: CurriculumEditProps) => {
   const router = useRouter();
-  const [majorOptions, setMajorOptions] = useState<MajorListItem[]>([]);
-  const [isLoadingMajors, setIsLoadingMajors] = useState(true);
   const [formData, setFormData] = useState<CurriculumFormState>(() =>
     curriculumToFormState(curriculum),
   );
@@ -45,17 +41,6 @@ export const CurriculumEdit = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    const loadMajors = async () => {
-      setIsLoadingMajors(true);
-      const majors = await getMajorsList();
-      setMajorOptions(majors);
-      setIsLoadingMajors(false);
-    };
-
-    loadMajors();
-  }, []);
 
   const handleChange = (field: keyof CurriculumFormState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -144,10 +129,9 @@ export const CurriculumEdit = ({
           onChange={handleChange}
           onReset={handleReset}
           onSubmit={handleSave}
-          isSaving={isSaving || isLoadingMajors}
+          isSaving={isSaving}
           submitLabel="Save Changes"
           submitLoadingLabel="Saving..."
-          majorOptions={majorOptions}
         />
       </div>
     </AdminPanel>

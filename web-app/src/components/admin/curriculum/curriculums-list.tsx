@@ -67,7 +67,6 @@ export const CurriculumsList = ({
         </>
       }
       isItemSelected={!!selectedId}
-      directoryLevel="SECOND"
     >
       {filteredItems.length === 0 && (
         <div className="rounded-md border border-dashed p-6 text-center text-sm text-foreground/70">
@@ -81,10 +80,11 @@ export const CurriculumsList = ({
           onClick={() => router.push(`${basePath}/${curriculum.id}`)}
           title={curriculum.title}
           subtitle={[
-            `Series Year: ${curriculum.series_year}`,
-            curriculum.revised_year
-              ? `Revised Year: ${curriculum.revised_year}`
-              : "Not revised",
+            `Series of ${curriculum.series_year}`.concat(
+              curriculum.revised_year
+                ? ` | Revised on ${curriculum.revised_year}`
+                : "",
+            ),
           ]}
           isSelected={selectedId === curriculum.id}
           icon={<BookCopy className="h-14 w-14 text-background" />}

@@ -95,8 +95,14 @@ create table curriculum (
   major_id uuid not null references major(id) on delete cascade,
   title text not null,
   series_year integer not null,
-  revised_year integer,
-  unique(major_id, series_year)
+  revised_year integer check (revised_year is null or series_year < revised_year)
+);
+
+create unique index curriculum_major_series_revised_unique_idx
+on curriculum (
+  major_id,
+  series_year,
+  coalesce(revised_year, -1)
 );
 
 create table academic_term (

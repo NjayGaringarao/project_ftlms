@@ -1160,7 +1160,7 @@ export async function createCurriculum(
     return {
       error: mapDuplicateError(
         "Curriculum",
-        "series year in this major",
+        "series and revised year in this major",
         error,
       ),
     };
@@ -1199,7 +1199,7 @@ export async function updateCurriculum(
     return {
       error: mapDuplicateError(
         "Curriculum",
-        "series year in this major",
+        "series and revised year in this major",
         error,
       ),
     };
@@ -1238,6 +1238,191 @@ export async function deleteCurriculum(
 
   revalidateCurriculumsPaths();
   revalidateBlocksPaths();
+  return { data: true };
+}
+
+type CurriculumTermLinkInput = {
+  curriculum_id: string;
+  academic_term_id: string;
+};
+
+type CurriculumTermCoursesInput = {
+  curriculum_at_id: string;
+  course_ids: string[];
+};
+
+export async function createCurriculumTermLink(
+  input: CurriculumTermLinkInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.curriculum_id?.trim())
+    return { error: "Curriculum ID is required" };
+  if (!input.academic_term_id?.trim()) {
+    return { error: "Academic term is required" };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("curriculum_at")
+    .insert({
+      curriculum_id: input.curriculum_id.trim(),
+      academic_term_id: input.academic_term_id.trim(),
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return {
+      error: mapDuplicateError(
+        "Curriculum term",
+        "link for this curriculum and term",
+        error,
+      ),
+    };
+  }
+
+  revalidateCurriculumsPaths(input.curriculum_id.trim());
+  return { data: { id: data.id } };
+}
+
+export async function deleteCurriculumTermLink(
+  curriculumAtId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!curriculumAtId?.trim()) {
+    return { error: "Curriculum term ID is required" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("curriculum_at")
+    .select("id, curriculum_id")
+    .eq("id", curriculumAtId)
+    .maybeSingle();
+
+  if (!existing?.curriculum_id) {
+    return { error: "Curriculum term link not found" };
+  }
+
+  const { error } = await supabase
+    .from("curriculum_at")
+    .delete()
+    .eq("id", curriculumAtId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateCurriculumsPaths(existing.curriculum_id);
+  return { data: true };
+}
+
+export async function addCoursesToCurriculumTerm(
+  input: CurriculumTermCoursesInput,
+): Promise<{ data?: { added: number }; error?: string }> {
+  if (!input.curriculum_at_id?.trim()) {
+    return { error: "Curriculum term ID is required" };
+  }
+
+  const normalizedCourseIds = Array.from(
+    new Set(input.course_ids.map((value) => value.trim()).filter(Boolean)),
+  );
+
+  if (normalizedCourseIds.length === 0) {
+    return { error: "Select at least one course" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: parentLink } = await supabase
+    .from("curriculum_at")
+    .select("id, curriculum_id")
+    .eq("id", input.curriculum_at_id.trim())
+    .maybeSingle();
+
+  if (!parentLink?.curriculum_id) {
+    return { error: "Curriculum term link not found" };
+  }
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("course_c_t")
+    .select("course_id")
+    .eq("curriculum_at_id", input.curriculum_at_id.trim())
+    .in("course_id", normalizedCourseIds);
+
+  if (existingError) {
+    return { error: existingError.message };
+  }
+
+  const existingCourseIds = new Set(
+    (existingRows ?? []).map((row) => row.course_id as string),
+  );
+
+  const rowsToInsert = normalizedCourseIds
+    .filter((courseId) => !existingCourseIds.has(courseId))
+    .map((courseId) => ({
+      curriculum_at_id: input.curriculum_at_id.trim(),
+      course_id: courseId,
+    }));
+
+  if (rowsToInsert.length > 0) {
+    const { error } = await supabase.from("course_c_t").insert(rowsToInsert);
+
+    if (error) {
+      return {
+        error: mapDuplicateError(
+          "Curriculum course",
+          "link for this curriculum term and course",
+          error,
+        ),
+      };
+    }
+  }
+
+  revalidateCurriculumsPaths(parentLink.curriculum_id);
+  return { data: { added: rowsToInsert.length } };
+}
+
+export async function deleteCurriculumTermCourseLink(
+  courseCTId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!courseCTId?.trim()) {
+    return { error: "Curriculum course link ID is required" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("course_c_t")
+    .select(
+      `
+      id,
+      curriculum_at:curriculum_at_id (
+        curriculum_id
+      )
+      `,
+    )
+    .eq("id", courseCTId)
+    .maybeSingle();
+
+  const curriculumAt = Array.isArray(existing?.curriculum_at)
+    ? existing.curriculum_at[0]
+    : existing?.curriculum_at;
+
+  if (!curriculumAt?.curriculum_id) {
+    return { error: "Curriculum course link not found" };
+  }
+
+  const { error } = await supabase
+    .from("course_c_t")
+    .delete()
+    .eq("id", courseCTId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateCurriculumsPaths(curriculumAt.curriculum_id);
   return { data: true };
 }
 

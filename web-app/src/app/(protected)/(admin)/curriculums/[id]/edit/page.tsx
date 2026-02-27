@@ -17,7 +17,7 @@ const EditCurriculumPage = async ({ params }: EditCurriculumPageProps) => {
   }
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/2 flex-col">
       <CurriculumEdit curriculum={curriculum} basePath="/curriculums" />
     </div>
   );

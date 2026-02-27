@@ -34,7 +34,7 @@ export const AddTile = ({
         <div className="mt-0.5 rounded-md bg-foreground/10 p-1.5">
           <Plus className="h-4 w-4" />
         </div>
-        <div className="space-y-1">
+        <div>
           <p className="text-sm font-semibold">{title}</p>
           {description && (
             <p className="text-xs text-foreground/70">{description}</p>

@@ -22,10 +22,10 @@ const AdminListContainer = ({
           {header}
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex">
         <div
           className={cn(
-            "grid gap-4",
+            "grid gap-4 flex-1",
             directoryLevel === "FIRST" && "grid-cols-1 lg:grid-cols-3",
             directoryLevel === "SECOND" && "grid-cols-1 lg:grid-cols-2",
             directoryLevel === "THIRD" && "grid-cols-1",

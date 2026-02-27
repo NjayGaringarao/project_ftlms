@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { CurriculumView } from "@/components/admin/curriculum/curriculum-view";
-import { getCurriculumById } from "@/lib/admin/curriculums";
+import {
+  getCurriculumById,
+  getCurriculumTermCourseLinks,
+} from "@/lib/admin/curriculums";
+import { getCoursesList } from "@/lib/admin/courses";
+import { getTermsList } from "@/lib/admin/terms";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +15,27 @@ type ViewCurriculumPageProps = {
 
 const ViewCurriculumPage = async ({ params }: ViewCurriculumPageProps) => {
   const { id } = await params;
-  const curriculum = await getCurriculumById(id);
+  const [curriculum, termCourseLinks, availableTerms, availableCourses] =
+    await Promise.all([
+      getCurriculumById(id),
+      getCurriculumTermCourseLinks(id),
+      getTermsList(),
+      getCoursesList(),
+    ]);
 
   if (!curriculum) {
     redirect("/curriculums");
   }
 
   return (
-    <div className="flex w-1/2 flex-col">
-      <CurriculumView curriculum={curriculum} basePath="/curriculums" />
+    <div className="flex w-2/3 flex-col">
+      <CurriculumView
+        curriculum={curriculum}
+        termCourseLinks={termCourseLinks}
+        availableTerms={availableTerms}
+        availableCourses={availableCourses}
+        basePath="/curriculums"
+      />
     </div>
   );
 };

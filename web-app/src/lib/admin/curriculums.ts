@@ -2,6 +2,8 @@
 
 import { ExtendedCurriculum } from "@/models";
 import { createClient } from "@/utils/supabase/server";
+import { CourseListItem } from "./courses";
+import { TermListItem } from "./terms";
 
 export type CurriculumListItem = ExtendedCurriculum & {
   major: ExtendedCurriculum["major"] & {
@@ -24,6 +26,24 @@ export type CurriculumListItem = ExtendedCurriculum & {
       } | null;
     } | null;
   };
+};
+
+export type CurriculumTermCourseLink = {
+  id: string;
+  academic_term_id: string;
+  term: TermListItem;
+  courses: Array<{
+    id: string;
+    course_id: string;
+    course: CourseListItem;
+  }>;
+};
+
+const TERM_ORDER_LABELS: Record<string, number> = {
+  FIRST: 1,
+  SECOND: 2,
+  THIRD: 3,
+  FOURTH: 4,
 };
 
 const normalizeCurriculumRow = (item: any): CurriculumListItem => {
@@ -170,4 +190,89 @@ export const getCurriculumById = async (
 
   if (!data) return null;
   return normalizeCurriculumRow(data);
+};
+
+export const getCurriculumTermCourseLinks = async (
+  curriculumId: string,
+): Promise<CurriculumTermCourseLink[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("curriculum_at")
+    .select(
+      `
+      id,
+      academic_term_id,
+      term:academic_term_id (
+        id,
+        academic_year_start,
+        academic_year_end,
+        code,
+        term_order,
+        type,
+        start,
+        end
+      ),
+      courses:course_c_t (
+        id,
+        course_id,
+        course:course_id (
+          id,
+          code,
+          title,
+          lecture_hour,
+          laboratory_hour
+        )
+      )
+      `,
+    )
+    .eq("curriculum_id", curriculumId);
+
+  if (error) {
+    console.error(
+      "lib.admin.curriculums.getCurriculumTermCourseLinks ::",
+      error,
+    );
+    return [];
+  }
+
+  return (data ?? [])
+    .map((item: any) => {
+      const rawTerm = Array.isArray(item.term) ? item.term[0] : item.term;
+      const rawCourses = Array.isArray(item.courses) ? item.courses : [];
+
+      return {
+        id: item.id,
+        academic_term_id: item.academic_term_id,
+        term: rawTerm as TermListItem,
+        courses: rawCourses
+          .map((entry: any) => ({
+            id: entry.id,
+            course_id: entry.course_id,
+            course: Array.isArray(entry.course)
+              ? entry.course[0]
+              : entry.course,
+          }))
+          .filter((entry: any) => Boolean(entry.course?.id))
+          .sort((a: any, b: any) => {
+            const codeA = a.course.code?.toLowerCase() ?? "";
+            const codeB = b.course.code?.toLowerCase() ?? "";
+            return codeA.localeCompare(codeB);
+          }),
+      } as CurriculumTermCourseLink;
+    })
+    .filter((item) => Boolean(item.term?.id))
+    .sort((a, b) => {
+      const yearCompare =
+        b.term.academic_year_start - a.term.academic_year_start;
+      if (yearCompare !== 0) return yearCompare;
+
+      const typeCompare = a.term.type.localeCompare(b.term.type);
+      if (typeCompare !== 0) return typeCompare;
+
+      return (
+        (TERM_ORDER_LABELS[a.term.term_order] ?? 99) -
+        (TERM_ORDER_LABELS[b.term.term_order] ?? 99)
+      );
+    });
 };
