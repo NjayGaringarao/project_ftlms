@@ -1344,10 +1344,28 @@ export async function addCoursesToCurriculumTerm(
     return { error: "Curriculum term link not found" };
   }
 
+  const { data: curriculumTermLinks, error: curriculumTermLinksError } =
+    await supabase
+      .from("curriculum_at")
+      .select("id")
+      .eq("curriculum_id", parentLink.curriculum_id);
+
+  if (curriculumTermLinksError) {
+    return { error: curriculumTermLinksError.message };
+  }
+
+  const curriculumTermIds = (curriculumTermLinks ?? []).map(
+    (item) => item.id as string,
+  );
+
+  if (curriculumTermIds.length === 0) {
+    return { error: "Curriculum term link not found" };
+  }
+
   const { data: existingRows, error: existingError } = await supabase
     .from("course_c_t")
     .select("course_id")
-    .eq("curriculum_at_id", input.curriculum_at_id.trim())
+    .in("curriculum_at_id", curriculumTermIds)
     .in("course_id", normalizedCourseIds);
 
   if (existingError) {
@@ -1365,6 +1383,13 @@ export async function addCoursesToCurriculumTerm(
       course_id: courseId,
     }));
 
+  if (rowsToInsert.length !== normalizedCourseIds.length) {
+    return {
+      error:
+        "One or more selected courses are already linked in this curriculum",
+    };
+  }
+
   if (rowsToInsert.length > 0) {
     const { error } = await supabase.from("course_c_t").insert(rowsToInsert);
 
@@ -1372,7 +1397,7 @@ export async function addCoursesToCurriculumTerm(
       return {
         error: mapDuplicateError(
           "Curriculum course",
-          "link for this curriculum term and course",
+          "link for this curriculum and course",
           error,
         ),
       };

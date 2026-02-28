@@ -48,6 +48,8 @@ export const CoursePickerModal = ({
     const normalizedQuery = query.trim().toLowerCase();
 
     return courses.filter((course) => {
+      if (linkedIdSet.has(course.id)) return false;
+
       if (!normalizedQuery) return true;
 
       return (
@@ -55,7 +57,7 @@ export const CoursePickerModal = ({
         course.title.toLowerCase().includes(normalizedQuery)
       );
     });
-  }, [courses, query]);
+  }, [courses, linkedIdSet, query]);
 
   const toggleSelection = (courseId: string) => {
     setSelectedCourseIds((current) =>
@@ -66,8 +68,12 @@ export const CoursePickerModal = ({
   };
 
   const handleSubmit = () => {
-    if (selectedCourseIds.length === 0) return;
-    onSubmit(selectedCourseIds);
+    const selectableCourseIds = selectedCourseIds.filter(
+      (courseId) => !linkedIdSet.has(courseId),
+    );
+
+    if (selectableCourseIds.length === 0) return;
+    onSubmit(selectableCourseIds);
   };
 
   return (
@@ -97,7 +103,6 @@ export const CoursePickerModal = ({
           )}
 
           {filteredCourses.map((course) => {
-            const isLinked = linkedIdSet.has(course.id);
             const isChecked = selectedCourseIds.includes(course.id);
 
             return (
@@ -110,16 +115,11 @@ export const CoursePickerModal = ({
                   <p className="text-xs text-foreground/70">{course.title}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {isLinked && (
-                    <span className="rounded-md bg-foreground/10 px-2 py-1 text-[11px] text-foreground/80">
-                      Linked
-                    </span>
-                  )}
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleSelection(course.id)}
-                    disabled={isLoading || isLinked}
+                    disabled={isLoading}
                     className="mt-0.5 h-4 w-4"
                   />
                 </div>

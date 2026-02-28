@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Info, BookCopy, CalendarDays, Trash2 } from "lucide-react";
 import AdminPanel from "../admin-panel";
@@ -59,8 +59,16 @@ export const CurriculumView = ({
   >(null);
 
   const linkedTermIds = termCourseLinks.map((item) => item.term.id);
-  const activeCourseTerm = termCourseLinks.find(
-    (item) => item.id === activeCourseTermId,
+  const linkedCourseIdsInCurriculum = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          termCourseLinks.flatMap((item) =>
+            item.courses.map((courseLink) => courseLink.course_id),
+          ),
+        ),
+      ),
+    [termCourseLinks],
   );
 
   const formatTermSummary = (courses: CurriculumTermCourseLink["courses"]) => {
@@ -349,9 +357,7 @@ export const CurriculumView = ({
             }
           }}
           courses={availableCourses}
-          linkedCourseIds={
-            activeCourseTerm?.courses.map((item) => item.course_id) ?? []
-          }
+          linkedCourseIds={linkedCourseIdsInCurriculum}
           query={courseQuery}
           onQueryChange={setCourseQuery}
           isLoading={isAddingCourses}
