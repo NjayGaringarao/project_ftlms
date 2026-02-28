@@ -88,11 +88,7 @@ export const BlocksList = ({
           onClick={() => router.push(`${basePath}/${block.id}`)}
           title={`${block.major_p_c.program_campus?.program?.code} ${block.year_level} - ${block.section}`}
           subtitle={[
-            `${block.major_p_c?.program_campus?.program?.name ?? "Unknown"}`,
-            `${block.major_p_c?.major?.name ?? "Unknown Major"}`,
-            block.curriculum
-              ? `Curriculum: ${block.curriculum.title} (${block.curriculum.series_year})`
-              : "Curriculum: Unknown",
+            `${block.major_p_c?.program_campus?.program?.code ?? "Unknown"} ${block.major_p_c?.major?.code ?? ""}`,
           ]}
           isSelected={selectedId === block.id}
           icon={<Blocks className="h-14 w-14 text-background" />}

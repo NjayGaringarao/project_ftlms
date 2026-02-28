@@ -11,7 +11,7 @@ const CreateCampusBlockPage = async ({
   const basePath = `/campuses/${id}/blocks`;
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/2 flex-col">
       <BlockCreate basePath={basePath} fixedCampusId={id} />
     </div>
   );

@@ -19,10 +19,6 @@ type TermPickerModalProps = {
   onSelect: (termId: string) => void;
 };
 
-const formatTermLabel = (term: TermListItem) => {
-  return `${term.code} • AY ${term.academic_year_start}-${term.academic_year_end} • ${term.type} ${term.term_order}`;
-};
-
 export const TermPickerModal = ({
   open,
   onOpenChange,
@@ -93,9 +89,6 @@ export const TermPickerModal = ({
               >
                 <div>
                   <p className="text-sm font-medium">{term.code}</p>
-                  <p className="text-xs text-foreground/70">
-                    {formatTermLabel(term)}
-                  </p>
                 </div>
                 <Button
                   type="button"

@@ -210,7 +210,10 @@ export const BlockEdit = ({
                 <option value="">Select curriculum...</option>
                 {availableCurriculums.map((curriculum) => (
                   <option key={curriculum.id} value={curriculum.id}>
-                    {curriculum.title} ({curriculum.series_year})
+                    {curriculum.title} series of {curriculum.series_year}{" "}
+                    {curriculum.revised_year
+                      ? `revised on ${curriculum.revised_year}`
+                      : ""}
                   </option>
                 ))}
               </select>

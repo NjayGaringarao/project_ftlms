@@ -55,7 +55,7 @@ const ListItem = ({
 
         {/* Subtitle rows */}
         {isSubtitleArray && (
-          <div className="flex-1 flex flex-col gap-1 text-start">
+          <div className="flex-1 flex flex-col text-start">
             {subtitle.map((item, index) => (
               <p
                 key={index}

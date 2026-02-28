@@ -18,7 +18,7 @@ const EditCampusBlockPage = async ({ params }: EditCampusBlockPageProps) => {
   }
 
   return (
-    <div className="flex w-2/3 flex-col">
+    <div className="flex w-1/2 flex-col">
       <BlockEdit block={block} basePath={basePath} fixedCampusId={id} />
     </div>
   );
