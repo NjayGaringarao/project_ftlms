@@ -35,6 +35,9 @@ export const BlockEdit = ({
     [],
   );
   const [curriculums, setCurriculums] = useState<CurriculumListItem[]>([]);
+  const [programOfferingId, setProgramOfferingId] = useState(
+    block.major_p_c?.program_campus_id ?? "",
+  );
   const [majorOfferingId, setMajorOfferingId] = useState(block.major_p_c_id);
   const [curriculumId, setCurriculumId] = useState(block.curriculum_id);
   const [yearLevel, setYearLevel] = useState(block.year_level.toString());
@@ -43,6 +46,7 @@ export const BlockEdit = ({
     block.student_count !== null ? block.student_count.toString() : "",
   );
   const [savedState, setSavedState] = useState({
+    programOfferingId: block.major_p_c?.program_campus_id ?? "",
     majorOfferingId: block.major_p_c_id,
     curriculumId: block.curriculum_id,
     yearLevel: block.year_level.toString(),
@@ -82,6 +86,7 @@ export const BlockEdit = ({
     if (!majorId) return [];
     return curriculums.filter((curriculum) => curriculum.major_id === majorId);
   }, [curriculums, selectedOffering]);
+
   const scopedOfferings = useMemo(() => {
     if (!fixedCampusId) return majorOfferings;
     return majorOfferings.filter(
@@ -89,12 +94,45 @@ export const BlockEdit = ({
     );
   }, [fixedCampusId, majorOfferings]);
 
+  const programOfferingOptions = useMemo(() => {
+    const optionMap = new Map<
+      string,
+      { id: string; programName: string; campusName: string }
+    >();
+
+    scopedOfferings.forEach((offering) => {
+      if (
+        !offering.program_campus_id ||
+        optionMap.has(offering.program_campus_id)
+      ) {
+        return;
+      }
+
+      optionMap.set(offering.program_campus_id, {
+        id: offering.program_campus_id,
+        programName:
+          offering.program_campus?.program?.name ?? "Unknown Program",
+        campusName: offering.program_campus?.campus?.name ?? "Unknown Campus",
+      });
+    });
+
+    return Array.from(optionMap.values());
+  }, [scopedOfferings]);
+
+  const availableMajorOfferings = useMemo(() => {
+    if (!programOfferingId) return [];
+    return scopedOfferings.filter(
+      (offering) => offering.program_campus_id === programOfferingId,
+    );
+  }, [programOfferingId, scopedOfferings]);
+
   const handleSave = async () => {
     const parsedYearLevel = Number(yearLevel);
     const parsedStudentCount = studentCount.trim()
       ? Number(studentCount)
       : null;
 
+    if (!programOfferingId) return setError("Program offering is required");
     if (!majorOfferingId) return setError("Major offering is required");
     if (!curriculumId) return setError("Curriculum is required");
     if (!Number.isFinite(parsedYearLevel) || parsedYearLevel <= 0) {
@@ -129,6 +167,7 @@ export const BlockEdit = ({
     }
 
     setSavedState({
+      programOfferingId,
       majorOfferingId,
       curriculumId,
       yearLevel: parsedYearLevel.toString(),
@@ -162,6 +201,31 @@ export const BlockEdit = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
+              <Label className="text-xs" htmlFor="program-offering-id">
+                Program Offering *
+              </Label>
+              <select
+                id="program-offering-id"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                value={programOfferingId}
+                onChange={(event) => {
+                  setProgramOfferingId(event.target.value);
+                  setMajorOfferingId("");
+                  setCurriculumId("");
+                  setError("");
+                }}
+                disabled={isSaving || isLoadingData}
+              >
+                <option value="">Select program offering...</option>
+                {programOfferingOptions.map((offering) => (
+                  <option key={offering.id} value={offering.id}>
+                    {offering.programName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
               <Label className="text-xs" htmlFor="major-offering-id">
                 Major Offering *
               </Label>
@@ -174,14 +238,13 @@ export const BlockEdit = ({
                   setCurriculumId("");
                   setError("");
                 }}
-                disabled={isSaving || isLoadingData}
+                disabled={isSaving || isLoadingData || !programOfferingId}
               >
                 <option value="">Select major offering...</option>
-                {scopedOfferings.map((offering) => (
+                {availableMajorOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
                     {offering.major?.name} -{" "}
-                    {offering.program_campus?.program?.name} -{" "}
-                    {offering.program_campus?.campus?.name}
+                    {offering.program_campus?.program?.name}
                   </option>
                 ))}
               </select>
@@ -279,6 +342,7 @@ export const BlockEdit = ({
             <Button
               variant="outline"
               onClick={() => {
+                setProgramOfferingId(savedState.programOfferingId);
                 setMajorOfferingId(savedState.majorOfferingId);
                 setCurriculumId(savedState.curriculumId);
                 setYearLevel(savedState.yearLevel);

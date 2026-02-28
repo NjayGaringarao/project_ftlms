@@ -32,6 +32,7 @@ export const BlockCreate = ({
     [],
   );
   const [curriculums, setCurriculums] = useState<CurriculumListItem[]>([]);
+  const [programOfferingId, setProgramOfferingId] = useState("");
   const [majorOfferingId, setMajorOfferingId] = useState("");
   const [curriculumId, setCurriculumId] = useState("");
   const [yearLevel, setYearLevel] = useState("");
@@ -69,6 +70,7 @@ export const BlockCreate = ({
     if (!majorId) return [];
     return curriculums.filter((curriculum) => curriculum.major_id === majorId);
   }, [curriculums, selectedOffering]);
+
   const scopedOfferings = useMemo(() => {
     if (!fixedCampusId) return majorOfferings;
     return majorOfferings.filter(
@@ -76,12 +78,45 @@ export const BlockCreate = ({
     );
   }, [fixedCampusId, majorOfferings]);
 
+  const programOfferingOptions = useMemo(() => {
+    const optionMap = new Map<
+      string,
+      { id: string; programName: string; campusName: string }
+    >();
+
+    scopedOfferings.forEach((offering) => {
+      if (
+        !offering.program_campus_id ||
+        optionMap.has(offering.program_campus_id)
+      ) {
+        return;
+      }
+
+      optionMap.set(offering.program_campus_id, {
+        id: offering.program_campus_id,
+        programName:
+          offering.program_campus?.program?.name ?? "Unknown Program",
+        campusName: offering.program_campus?.campus?.name ?? "Unknown Campus",
+      });
+    });
+
+    return Array.from(optionMap.values());
+  }, [scopedOfferings]);
+
+  const availableMajorOfferings = useMemo(() => {
+    if (!programOfferingId) return [];
+    return scopedOfferings.filter(
+      (offering) => offering.program_campus_id === programOfferingId,
+    );
+  }, [programOfferingId, scopedOfferings]);
+
   const handleCreate = async () => {
     const parsedYearLevel = Number(yearLevel);
     const parsedStudentCount = studentCount.trim()
       ? Number(studentCount)
       : null;
 
+    if (!programOfferingId) return setError("Program offering is required");
     if (!majorOfferingId) return setError("Major offering is required");
     if (!curriculumId) return setError("Curriculum is required");
     if (!Number.isFinite(parsedYearLevel) || parsedYearLevel <= 0) {
@@ -151,6 +186,31 @@ export const BlockCreate = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
+              <Label className="text-xs" htmlFor="program-offering-id">
+                Program Offering *
+              </Label>
+              <select
+                id="program-offering-id"
+                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
+                value={programOfferingId}
+                onChange={(event) => {
+                  setProgramOfferingId(event.target.value);
+                  setMajorOfferingId("");
+                  setCurriculumId("");
+                  setError("");
+                }}
+                disabled={isSaving || isLoadingData}
+              >
+                <option value="">Select program offering...</option>
+                {programOfferingOptions.map((offering) => (
+                  <option key={offering.id} value={offering.id}>
+                    {offering.programName} - {offering.campusName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
               <Label className="text-xs" htmlFor="major-offering-id">
                 Major Offering *
               </Label>
@@ -163,10 +223,10 @@ export const BlockCreate = ({
                   setCurriculumId("");
                   setError("");
                 }}
-                disabled={isSaving || isLoadingData}
+                disabled={isSaving || isLoadingData || !programOfferingId}
               >
                 <option value="">Select major offering...</option>
-                {scopedOfferings.map((offering) => (
+                {availableMajorOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
                     {offering.major?.name} -{" "}
                     {offering.program_campus?.program?.name} -{" "}
@@ -265,6 +325,7 @@ export const BlockCreate = ({
             <Button
               variant="outline"
               onClick={() => {
+                setProgramOfferingId("");
                 setMajorOfferingId("");
                 setCurriculumId("");
                 setYearLevel("");
