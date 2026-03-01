@@ -93,6 +93,10 @@ Seed SQL files are stored in `seeds/` and loaded during `db reset` based on `con
 - `004_campuses.sql`
 - `005_academic_ranks.sql`
 - `006_academic_terms.sql`
+- `007_majors.sql`
+- `008_curriculums.sql`
+- `009_rooms.sql`
+- `010_blocks.sql`
 
 ## Snippets
 
