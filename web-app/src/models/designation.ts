@@ -38,7 +38,7 @@ export type Designation = {
   user_id: string;
   campus_id: string | null;
   department_id: string | null;
-  program_campus_id: string | null;
+  program_offering_id: string | null;
   room_id: string | null;
   job_title: string;
   position?: string;
@@ -51,5 +51,5 @@ export type ExtendedDesignation = Designation & {
   campus: Campus | null;
   department: Department | null;
   program: Program | null;
-  program_campus: ProgramCampus | null;
+  program_offering: ProgramCampus | null;
 };

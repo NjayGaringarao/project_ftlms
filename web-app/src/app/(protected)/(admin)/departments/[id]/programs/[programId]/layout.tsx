@@ -1,7 +1,4 @@
 import React from "react";
-import { redirect } from "next/navigation";
-import { ProgramView } from "@/components/admin/department/program-view";
-import { getProgramById } from "@/lib/admin/programs";
 
 type DepartmentProgramsLayoutProps = {
   children: React.ReactNode;

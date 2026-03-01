@@ -1,6 +1,6 @@
 "use server";
 
-import { ExtendedRoom, Room } from "@/models/room";
+import { ExtendedRoom } from "@/models/room";
 import { createClient } from "@/utils/supabase/server";
 
 export const getRooms = async (): Promise<ExtendedRoom[]> => {
@@ -25,7 +25,7 @@ export const getRooms = async (): Promise<ExtendedRoom[]> => {
     return [];
   }
 
-  const rooms = (data ?? []).map((r: any) => ({
+  const rooms = (data ?? []).map((r) => ({
     ...r,
     campus: Array.isArray(r.campus) ? r.campus[0] : r.campus,
   })) as ExtendedRoom[];
@@ -58,7 +58,7 @@ export const getRoomsByCampus = async (
     return [];
   }
 
-  const rooms = (data ?? []).map((r: any) => ({
+  const rooms = (data ?? []).map((r) => ({
     ...r,
     campus: Array.isArray(r.campus) ? r.campus[0] : r.campus,
   })) as ExtendedRoom[];

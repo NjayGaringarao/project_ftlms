@@ -25,7 +25,7 @@ import { Campus } from "@/models/campus";
 
 type NewDesignation = {
   department_id: string | null;
-  program_campus_id: string | null;
+  program_offering_id: string | null;
   campus_id: string | null;
   room_id: string | null;
   job_title: string;
@@ -59,7 +59,7 @@ export const DesignationAddForm = ({
   const [subType, setSubType] = useState<string>("");
   const [campusId, setCampusId] = useState<string>("");
   const [departmentId, setDepartmentId] = useState<string>("");
-  const [programCampusId, setProgramCampusId] = useState<string>("");
+  const [programOfferingId, setProgramOfferingId] = useState<string>("");
   const [jobTitle, setJobTitle] = useState<string>("");
   const [load, setLoad] = useState<string>("");
   const [formError, setFormError] = useState<string>("");
@@ -91,7 +91,7 @@ export const DesignationAddForm = ({
     setSubType("");
     setCampusId("");
     setDepartmentId("");
-    setProgramCampusId("");
+    setProgramOfferingId("");
     setJobTitle("");
     setLoad("");
     setFormError("");
@@ -103,7 +103,7 @@ export const DesignationAddForm = ({
     setSubType("");
     setCampusId("");
     setDepartmentId("");
-    setProgramCampusId("");
+    setProgramOfferingId("");
     setJobTitle("");
     setFormError("");
   };
@@ -125,7 +125,7 @@ export const DesignationAddForm = ({
   // When program offering changes, auto-fill related campus/department context
   const handleProgramOfferingChange = (offeringId: string) => {
     setFormError("");
-    setProgramCampusId(offeringId);
+    setProgramOfferingId(offeringId);
     const offering = programOfferings.find((p) => p.id === offeringId);
     if (offering) {
       setCampusId(offering.campus_id);
@@ -136,12 +136,12 @@ export const DesignationAddForm = ({
   const handleCampusChange = (nextCampusId: string) => {
     setFormError("");
     setCampusId(nextCampusId);
-    if (programCampusId) {
+    if (programOfferingId) {
       const selected = programOfferings.find(
-        (offering) => offering.id === programCampusId,
+        (offering) => offering.id === programOfferingId,
       );
       if (selected && selected.campus_id !== nextCampusId) {
-        setProgramCampusId("");
+        setProgramOfferingId("");
       }
     }
   };
@@ -153,7 +153,7 @@ export const DesignationAddForm = ({
     const validation = validateDesignation(designationType, subType, {
       campus_id: campusId,
       department_id: departmentId,
-      program_campus_id: programCampusId,
+      program_offering_id: programOfferingId,
       job_title: jobTitle,
     });
 
@@ -170,7 +170,7 @@ export const DesignationAddForm = ({
     // Build designation object
     const designation: NewDesignation = {
       department_id: departmentId || null,
-      program_campus_id: programCampusId || null,
+      program_offering_id: programOfferingId || null,
       campus_id: campusId || null,
       room_id: null,
       job_title: jobTitle.trim(),
@@ -310,7 +310,7 @@ export const DesignationAddForm = ({
                     </Label>
                     <select
                       id="program"
-                      value={programCampusId}
+                      value={programOfferingId}
                       onChange={(e) =>
                         handleProgramOfferingChange(e.target.value)
                       }

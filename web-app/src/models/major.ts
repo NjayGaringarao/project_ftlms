@@ -1,4 +1,4 @@
-import { ExtendedProgram, Program } from "./program";
+import { ExtendedProgram } from "./program";
 
 export type Major = {
   id: string;

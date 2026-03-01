@@ -2,7 +2,7 @@ import { MajorPC } from "./major-p-c";
 
 export type Block = {
   id: string;
-  major_p_c_id: string;
+  major_offering_id: string;
   curriculum_id: string;
   year_level: number;
   section: string;
@@ -10,5 +10,5 @@ export type Block = {
 };
 
 export type ExtendedBlock = Block & {
-  major_p_c: MajorPC;
+  major_offering: MajorPC;
 };

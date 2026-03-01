@@ -94,16 +94,6 @@ begin
       add constraint room_capacity_nonnegative check (capacity >= 0);
   end if;
 
-  -- session day should be between 1 and 7 (Sunday to Saturday)
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'session_day_between_1_7'
-      and conrelid = 'public.session'::regclass
-  ) then
-    alter table public.session
-      add constraint session_day_between_1_7 check (day between 1 and 7);
-  end if;
-
   -- Session time range should be valid (end time should be after start time).
   if not exists (
     select 1 from pg_constraint
@@ -138,7 +128,7 @@ begin
         )
         or (
           lower(trim(job_title)) = 'program chairperson'
-          and program_campus_id is not null
+          and program_offering_id is not null
         )
         or (
           lower(trim(job_title)) = 'college dean'
@@ -159,7 +149,7 @@ begin
           and (
             campus_id is not null
             or department_id is not null
-            or program_campus_id is not null
+            or program_offering_id is not null
             or room_id is not null
           )
         )

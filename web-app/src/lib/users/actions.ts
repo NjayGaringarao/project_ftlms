@@ -230,7 +230,7 @@ type UpdateUserProfessionalInput = {
     campus_id?: string | null;
     job_title: string;
     department_id?: string | null;
-    program_campus_id?: string | null;
+    program_offering_id?: string | null;
     room_id?: string | null;
     load?: number | null;
   }>;
@@ -286,7 +286,7 @@ export async function updateUserProfessional(
         const normalizedJobTitle = normalizeJobTitleKey(d.job_title);
         const campusId = d.campus_id?.trim() || null;
         const departmentId = d.department_id?.trim() || null;
-        const programCampusId = d.program_campus_id?.trim() || null;
+        const programOfferingId = d.program_offering_id?.trim() || null;
         const roomId = d.room_id?.trim() || null;
 
         if (!d.job_title?.trim()) {
@@ -298,7 +298,7 @@ export async function updateUserProfessional(
         }
 
         if (normalizedJobTitle === "program chairperson") {
-          return !programCampusId;
+          return !programOfferingId;
         }
 
         if (normalizedJobTitle === "college dean") {
@@ -314,7 +314,7 @@ export async function updateUserProfessional(
         }
 
         const hasContext =
-          campusId || departmentId || programCampusId || roomId;
+          campusId || departmentId || programOfferingId || roomId;
         return !hasContext;
       });
 
@@ -367,7 +367,7 @@ export async function updateUserProfessional(
         campus_id: d.campus_id || null,
         job_title: d.job_title.trim(),
         department_id: d.department_id?.trim() || null,
-        program_campus_id: d.program_campus_id?.trim() || null,
+        program_offering_id: d.program_offering_id?.trim() || null,
         room_id: d.room_id?.trim() || null,
         load: d.load ?? null,
       }));

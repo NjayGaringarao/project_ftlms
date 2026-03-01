@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/utils/style";
 import { CampusListItem } from "@/lib/admin/campuses";
 import ListItem from "../list-item";
 import { Landmark } from "lucide-react";

@@ -34,7 +34,7 @@ export const getPrograms = async (): Promise<ExtendedProgram[]> => {
     return [];
   }
 
-  const programs = (data ?? []).map((p: any) => ({
+  const programs = (data ?? []).map((p) => ({
     ...p,
     department: Array.isArray(p.department) ? p.department[0] : p.department,
   })) as ExtendedProgram[];
@@ -67,7 +67,7 @@ export const getProgramsByDepartment = async (
     return [];
   }
 
-  const programs = (data ?? []).map((p: any) => ({
+  const programs = (data ?? []).map((p) => ({
     ...p,
     department: Array.isArray(p.department) ? p.department[0] : p.department,
   })) as ExtendedProgram[];
@@ -128,7 +128,7 @@ export const getProgramCampusOfferings = async (
   const supabase = await createClient();
 
   let query = supabase
-    .from("program_campus")
+    .from("program_offering")
     .select(
       `
       id,
@@ -158,7 +158,7 @@ export const getProgramCampusOfferings = async (
     return [];
   }
 
-  return (data ?? []).map((offering: any) => ({
+  return (data ?? []).map((offering) => ({
     ...offering,
     campus: Array.isArray(offering.campus)
       ? offering.campus[0]

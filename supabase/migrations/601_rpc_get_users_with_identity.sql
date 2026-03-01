@@ -34,7 +34,7 @@ as $$
             'campus_id', d.campus_id,
             'job_title', d.job_title,
             'department_id', d.department_id,
-            'program_campus_id', d.program_campus_id,
+            'program_offering_id', d.program_offering_id,
             'room_id', d.room_id,
             'load', d.load,
             'designated_at', d.designated_at,
@@ -44,10 +44,10 @@ as $$
               'employment_status', u.employment_status
             ),
             'campus', case
-              when coalesce(c.id, pc_c.id) is null then null
+              when coalesce(c.id, po_c.id) is null then null
               else json_build_object(
-                'id', coalesce(c.id, pc_c.id),
-                'name', coalesce(c.name, pc_c.name)
+                'id', coalesce(c.id, po_c.id),
+                'name', coalesce(c.name, po_c.name)
               )
             end,
             'department', case
@@ -67,12 +67,12 @@ as $$
                 'name', prog.name
               )
             end,
-            'program_campus', case
-              when pc.id is null then null
+            'program_offering', case
+              when po.id is null then null
               else json_build_object(
-                'id', pc.id,
-                'campus_id', pc.campus_id,
-                'program_id', pc.program_id
+                'id', po.id,
+                'campus_id', po.campus_id,
+                'program_id', po.program_id
               )
             end
           )
@@ -85,9 +85,9 @@ as $$
     left join auth.users au on au.id = d.user_id
     left join public.campus c on c.id = d.campus_id
     left join public.department dep on dep.id = d.department_id
-    left join public.program_campus pc on pc.id = d.program_campus_id
-    left join public.campus pc_c on pc_c.id = pc.campus_id
-    left join public.program prog on prog.id = pc.program_id
+    left join public.program_offering po on po.id = d.program_offering_id
+    left join public.campus po_c on po_c.id = po.campus_id
+    left join public.program prog on prog.id = po.program_id
     group by d.user_id
   ),
   user_degrees as (

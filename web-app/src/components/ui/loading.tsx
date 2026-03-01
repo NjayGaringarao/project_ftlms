@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/style";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 type LoadingSize = "small" | "medium" | "large" | "extralarge";
 
@@ -33,11 +33,7 @@ export const Loading: React.FC<LoadingProps> = ({
   classname,
 }) => {
   const spinnerSize = sizeMap[size];
-  const [primaryColor, setPrimaryColor] = useState("#0000");
-
-  useEffect(() => {
-    setPrimaryColor(getPrimaryColor());
-  }, []);
+  const [primaryColor] = useState(getPrimaryColor);
 
   return (
     <div className={cn("flex flex-col items-center gap-3", classname)}>

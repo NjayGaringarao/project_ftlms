@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Edit, Save } from "lucide-react";
+import { Edit } from "lucide-react";
 import { Department } from "@/models/department";
 import { updateDepartment } from "@/lib/admin/actions";
 import AdminPanel from "../admin-panel";

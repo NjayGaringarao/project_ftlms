@@ -152,7 +152,7 @@ export const validateDesignation = (
   context: {
     campus_id?: string | null;
     department_id?: string | null;
-    program_campus_id?: string | null;
+    program_offering_id?: string | null;
     job_title?: string | null;
   },
 ): { valid: boolean; missing: string[] } => {
@@ -182,7 +182,7 @@ export const validateDesignation = (
     missing.push("department");
   }
 
-  if (requirements.requiresProgram && !context.program_campus_id?.trim()) {
+  if (requirements.requiresProgram && !context.program_offering_id?.trim()) {
     missing.push("program offering");
   }
 

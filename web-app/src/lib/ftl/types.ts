@@ -1,5 +1,14 @@
 export type ScheduleState = "APPROVED" | "PENDING" | "REJECTED" | "NONE";
 
+export type DayOfWeek =
+  | "SUNDAY"
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY";
+
 export type FTLBootstrapData = {
   terms: {
     id: string;
@@ -18,7 +27,7 @@ export type FTLBootstrapData = {
 };
 
 export type FTLOffering = {
-  course_c_t_id: string;
+  course_offering_id: string;
   course_id: string;
   course_code: string;
   course_title: string;
@@ -59,11 +68,11 @@ export type FTLRoom = {
 
 export type FTLSession = {
   id: string;
-  class_id: string;
+  class_delivery_id: string;
   room_id: string | null;
   room_code: string | null;
   room_name: string | null;
-  day: number;
+  day: DayOfWeek;
   start_time: string;
   end_time: string;
   last_conflict_count: number;
@@ -72,8 +81,8 @@ export type FTLSession = {
 export type FTLClass = {
   id: string;
   schedule_id: string;
-  course_c_t_id: string;
-  block_id: string | null;
+  course_offering_id: string;
+  block_ids: string[];
   course_code: string;
   course_title: string;
   lecture_hour: number | null;
@@ -82,6 +91,7 @@ export type FTLClass = {
   program_code: string | null;
   major_code: string | null;
   major_name: string | null;
+  campus_ids: string[];
   campus_id: string | null;
   campus_name: string | null;
   year_section: string | null;
@@ -92,7 +102,7 @@ export type FTLOfferingOption = {
   key: string;
   campus_id: string;
   campus_name: string;
-  course_c_t_id: string;
+  course_offering_id: string;
   block_id: string;
   block_label: string;
   course_code: string;
@@ -132,21 +142,20 @@ export type SessionConflict = {
   conflicting_faculty_name: string;
   conflicting_room_code: string | null;
   conflicting_block: string | null;
-  day: number;
+  day: DayOfWeek;
   start_time: string;
   end_time: string;
 };
 
 export type SaveSessionInput = {
   session_id?: string;
-  class_id: string;
+  class_delivery_id: string;
   schedule_id: string;
   academic_term_id: string;
-  campus_id: string;
   faculty_user_id: string;
-  block_id: string | null;
+  block_ids: string[];
   room_id: string | null;
-  day: number;
+  day: DayOfWeek;
   start_time: string;
   end_time: string;
   expected_schedule_updated_at: string | null;

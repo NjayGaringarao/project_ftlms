@@ -5,6 +5,7 @@ import { getUserRole } from "@/lib/auth/utils";
 import { createClient } from "@/utils/supabase/server";
 import {
   ConflictType,
+  DayOfWeek,
   FTLBootstrapData,
   FTLClass,
   FTLFaculty,
@@ -58,6 +59,24 @@ const mapScheduleState = (value: string | null | undefined): ScheduleState => {
     return value;
   }
   return "NONE";
+};
+
+const DAY_SORT_ORDER: Record<DayOfWeek, number> = {
+  SUNDAY: 1,
+  MONDAY: 2,
+  TUESDAY: 3,
+  WEDNESDAY: 4,
+  THURSDAY: 5,
+  FRIDAY: 6,
+  SATURDAY: 7,
+};
+
+const asDayOfWeek = (value: unknown): DayOfWeek => {
+  const normalized = String(value ?? "").toUpperCase();
+  if (normalized in DAY_SORT_ORDER) {
+    return normalized as DayOfWeek;
+  }
+  return "MONDAY";
 };
 
 const formatName = (
@@ -159,11 +178,11 @@ const mapSession = (row: RowObject): FTLSession => {
   const room = asObject(row.room);
   return {
     id: asString(row.id) ?? "",
-    class_id: asString(row.class_id) ?? "",
+    class_delivery_id: asString(row.class_delivery_id) ?? "",
     room_id: asString(row.room_id),
     room_code: asString(room?.code),
     room_name: asString(room?.name),
-    day: asNumber(row.day) ?? 1,
+    day: asDayOfWeek(row.day),
     start_time: asString(row.start_time) ?? "00:00",
     end_time: asString(row.end_time) ?? "00:00",
     last_conflict_count: 0,
@@ -174,17 +193,18 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("class")
+    .from("class_delivery")
     .select(
       `
       id,
-      schedule_id,
-      course_c_t_id,
-      block_id,
-      course_c_t:course_c_t!inner(
+      course_allocation:course_allocation!inner(
+        id,
+        schedule_id,
+        course_offering_id,
+        course_offering:course_offering!inner(
         id,
         course:course!inner(id, code, title, lecture_hour, laboratory_hour),
-        curriculum_at:curriculum_at!inner(
+        curriculum_offering:curriculum_offering!inner(
           id,
           academic_term_id,
           curriculum:curriculum!inner(
@@ -193,20 +213,24 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
             major:major(id, code, name, program:program(id, code, name))
           )
         )
+        )
       ),
-      block:block(
-        id,
-        year_level,
-        section,
-        major_p_c:major_p_c!inner(
-          program_campus:program_campus!inner(
-            campus:campus!inner(id, name)
+      class_delivery_block(
+        block_id,
+        block:block(
+          id,
+          year_level,
+          section,
+          major_offering:major_offering!inner(
+            program_offering:program_offering!inner(
+              campus:campus!inner(id, name)
+            )
           )
         )
       ),
-      session(
+      session:session!session_class_delivery_id_fkey(
         id,
-        class_id,
+        class_delivery_id,
         room_id,
         day,
         start_time,
@@ -215,7 +239,7 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
       )
     `,
     )
-    .eq("schedule_id", scheduleId);
+    .eq("course_allocation.schedule_id", scheduleId);
 
   if (error) {
     console.error("lib.ftl.mapScheduleClasses ::", error);
@@ -224,17 +248,47 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
 
   return (data ?? []).map((raw) => {
     const row = raw as RowObject;
-    const block = asObject(row.block);
-    const courseCt = asObject(row.course_c_t);
-    const course = asObject(courseCt?.course);
-    const curriculumAt = asObject(courseCt?.curriculum_at);
-    const curriculum = asObject(curriculumAt?.curriculum);
+    const courseAllocation = asObject(row.course_allocation);
+    const courseOffering = asObject(courseAllocation?.course_offering);
+    const course = asObject(courseOffering?.course);
+    const curriculumOffering = asObject(courseOffering?.curriculum_offering);
+    const curriculum = asObject(curriculumOffering?.curriculum);
     const major = asObject(curriculum?.major);
     const program = asObject(major?.program);
 
-    const majorPc = asObject(block?.major_p_c);
-    const programCampus = asObject(majorPc?.program_campus);
-    const campus = asObject(programCampus?.campus);
+    const classDeliveryBlocks =
+      (row.class_delivery_block as RowObject[] | undefined) ?? [];
+
+    const mappedBlocks = classDeliveryBlocks
+      .map((item) => asObject(item.block))
+      .filter((item): item is RowObject => Boolean(item));
+
+    const blockIds = classDeliveryBlocks
+      .map((item) => asString(item.block_id))
+      .filter((item): item is string => Boolean(item));
+
+    const campuses = mappedBlocks
+      .map((item) => asObject(item.major_offering))
+      .map((majorOffering) => asObject(majorOffering?.program_offering))
+      .map((programCampus) => asObject(programCampus?.campus))
+      .filter((item): item is RowObject => Boolean(item));
+
+    const campusIdList = Array.from(
+      new Set(campuses.map((item) => asString(item.id)).filter(Boolean)),
+    ) as string[];
+
+    const campusNameList = Array.from(
+      new Set(campuses.map((item) => asString(item.name)).filter(Boolean)),
+    ) as string[];
+
+    const yearSections = mappedBlocks
+      .map((item) => {
+        const yearLevel = asNumber(item.year_level);
+        const section = asString(item.section);
+        if (!yearLevel || !section) return null;
+        return `Year ${yearLevel} - ${section}`;
+      })
+      .filter((item): item is string => Boolean(item));
 
     const sessionsRaw = (row.session as RowObject[] | undefined) ?? [];
     const sessions = sessionsRaw
@@ -242,17 +296,14 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
       .sort((a, b) =>
         a.day === b.day
           ? a.start_time.localeCompare(b.start_time)
-          : a.day - b.day,
+          : DAY_SORT_ORDER[a.day] - DAY_SORT_ORDER[b.day],
       );
-
-    const yearLevel = asNumber(block?.year_level);
-    const section = asString(block?.section);
 
     return {
       id: asString(row.id) ?? "",
-      schedule_id: asString(row.schedule_id) ?? "",
-      course_c_t_id: asString(row.course_c_t_id) ?? "",
-      block_id: asString(row.block_id),
+      schedule_id: asString(courseAllocation?.schedule_id) ?? "",
+      course_offering_id: asString(courseAllocation?.course_offering_id) ?? "",
+      block_ids: blockIds,
       course_code: asString(course?.code) ?? "",
       course_title: asString(course?.title) ?? "",
       lecture_hour: asNumber(course?.lecture_hour),
@@ -261,10 +312,10 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
       program_code: asString(program?.code),
       major_code: asString(major?.code),
       major_name: asString(major?.name),
-      campus_id: asString(campus?.id),
-      campus_name: asString(campus?.name),
-      year_section:
-        yearLevel && section ? `Year ${yearLevel} - ${section}` : null,
+      campus_ids: campusIdList,
+      campus_id: campusIdList[0] ?? null,
+      campus_name: campusNameList.length > 0 ? campusNameList.join(", ") : null,
+      year_section: yearSections.length > 0 ? yearSections.join(", ") : null,
       sessions,
     };
   });
@@ -421,12 +472,12 @@ export const getOfferedCoursesByTermCampus = async (
       year_level,
       section,
       student_count,
-      major_p_c:major_p_c!inner(
-        program_campus:program_campus!inner(campus_id)
+      major_offering:major_offering!inner(
+        program_offering:program_offering!inner(campus_id)
       )
     `,
     )
-    .eq("major_p_c.program_campus.campus_id", campusId);
+    .eq("major_offering.program_offering.campus_id", campusId);
 
   if (blocksError) {
     console.error(
@@ -465,13 +516,13 @@ export const getOfferedCoursesByTermCampus = async (
   if (curriculumIds.length === 0) return [];
 
   const { data: offeringsRaw, error: offeringsError } = await supabase
-    .from("course_c_t")
+    .from("course_offering")
     .select(
       `
       id,
       course_id,
       course:course!inner(id, code, title, lecture_hour, laboratory_hour),
-      curriculum_at:curriculum_at!inner(
+      curriculum_offering:curriculum_offering!inner(
         id,
         curriculum_id,
         academic_term_id,
@@ -490,8 +541,8 @@ export const getOfferedCoursesByTermCampus = async (
       )
     `,
     )
-    .eq("curriculum_at.academic_term_id", termId)
-    .in("curriculum_at.curriculum_id", curriculumIds);
+    .eq("curriculum_offering.academic_term_id", termId)
+    .in("curriculum_offering.curriculum_id", curriculumIds);
 
   if (offeringsError) {
     console.error(
@@ -504,14 +555,14 @@ export const getOfferedCoursesByTermCampus = async (
   return (offeringsRaw ?? []).map((raw) => {
     const row = raw as RowObject;
     const course = asObject(row.course);
-    const curriculumAt = asObject(row.curriculum_at);
-    const curriculum = asObject(curriculumAt?.curriculum);
+    const curriculumOffering = asObject(row.curriculum_offering);
+    const curriculum = asObject(curriculumOffering?.curriculum);
     const major = asObject(curriculum?.major);
     const program = asObject(major?.program);
-    const curriculumId = asString(curriculumAt?.curriculum_id) ?? "";
+    const curriculumId = asString(curriculumOffering?.curriculum_id) ?? "";
 
     return {
-      course_c_t_id: asString(row.id) ?? "",
+      course_offering_id: asString(row.id) ?? "",
       course_id: asString(row.course_id) ?? "",
       course_code: asString(course?.code) ?? "",
       course_title: asString(course?.title) ?? "",
@@ -556,19 +607,19 @@ export const getOfferedCourseOptionsByTermCampuses = async (
       curriculum_id,
       year_level,
       section,
-      major_p_c:major_p_c!inner(
+      major_offering:major_offering!inner(
         major:major!inner(
           code,
           name,
           program:program(code, name)
         ),
-        program_campus:program_campus!inner(
+        program_offering:program_offering!inner(
           campus:campus!inner(id, name)
         )
       )
     `,
     )
-    .in("major_p_c.program_campus.campus_id", dedupedCampusIds);
+    .in("major_offering.program_offering.campus_id", dedupedCampusIds);
 
   if (blocksError) {
     console.error(
@@ -580,10 +631,10 @@ export const getOfferedCourseOptionsByTermCampuses = async (
 
   const blocks = (blocksRaw ?? []).map((raw) => {
     const row = raw as RowObject;
-    const majorPc = asObject(row.major_p_c);
-    const major = asObject(majorPc?.major);
+    const majorOffering = asObject(row.major_offering);
+    const major = asObject(majorOffering?.major);
     const program = asObject(major?.program);
-    const programCampus = asObject(majorPc?.program_campus);
+    const programCampus = asObject(majorOffering?.program_offering);
     const campus = asObject(programCampus?.campus);
 
     return {
@@ -610,13 +661,13 @@ export const getOfferedCourseOptionsByTermCampuses = async (
 
   const [offeringsResult, takenResult] = await Promise.all([
     supabase
-      .from("course_c_t")
+      .from("course_offering")
       .select(
         `
         id,
         course_id,
         course:course!inner(id, code, title, lecture_hour, laboratory_hour),
-        curriculum_at:curriculum_at!inner(
+        curriculum_offering:curriculum_offering!inner(
           id,
           curriculum_id,
           academic_term_id,
@@ -624,25 +675,31 @@ export const getOfferedCourseOptionsByTermCampuses = async (
         )
       `,
       )
-      .eq("curriculum_at.academic_term_id", termId)
-      .in("curriculum_at.curriculum_id", curriculumIds),
+      .eq("curriculum_offering.academic_term_id", termId)
+      .in("curriculum_offering.curriculum_id", curriculumIds),
     supabase
-      .from("class")
+      .from("class_delivery_block")
       .select(
         `
-        id,
-        course_c_t_id,
         block_id,
-        schedule:schedule!inner(
+        class_delivery:class_delivery!inner(
           id,
-          academic_term_id,
-          user:user!inner(
-            identity(first_name, middle_name, last_name, extension)
+          course_allocation:course_allocation!inner(
+            id,
+            schedule_id,
+            course_offering_id,
+            schedule:schedule!inner(
+            id,
+            academic_term_id,
+            user:user!inner(
+              identity(first_name, middle_name, last_name, extension)
+            )
+            )
           )
         )
       `,
       )
-      .eq("schedule.academic_term_id", termId)
+      .eq("class_delivery.course_allocation.schedule.academic_term_id", termId)
       .in("block_id", blockIds),
   ]);
 
@@ -666,11 +723,13 @@ export const getOfferedCourseOptionsByTermCampuses = async (
 
   for (const raw of takenResult.data ?? []) {
     const row = raw as RowObject;
-    const courseCtId = asString(row.course_c_t_id);
+    const classDelivery = asObject(row.class_delivery);
+    const courseAllocation = asObject(classDelivery?.course_allocation);
+    const courseOfferingId = asString(courseAllocation?.course_offering_id);
     const blockId = asString(row.block_id);
-    if (!courseCtId || !blockId) continue;
+    if (!courseOfferingId || !blockId) continue;
 
-    const schedule = asObject(row.schedule);
+    const schedule = asObject(courseAllocation?.schedule);
     const user = asObject(schedule?.user);
     const identity = asObject(user?.identity);
     const facultyName = formatName(
@@ -680,7 +739,7 @@ export const getOfferedCourseOptionsByTermCampuses = async (
       asString(identity?.extension),
     );
 
-    const key = `${courseCtId}:${blockId}`;
+    const key = `${courseOfferingId}:${blockId}`;
     const existing = takenMap.get(key) ?? [];
 
     if (!existing.includes(facultyName)) {
@@ -694,25 +753,25 @@ export const getOfferedCourseOptionsByTermCampuses = async (
 
   for (const rawOffering of offeringsResult.data ?? []) {
     const offering = rawOffering as RowObject;
-    const curriculumAt = asObject(offering.curriculum_at);
-    const curriculumId = asString(curriculumAt?.curriculum_id);
+    const curriculumOffering = asObject(offering.curriculum_offering);
+    const curriculumId = asString(curriculumOffering?.curriculum_id);
     if (!curriculumId) continue;
 
-    const curriculum = asObject(curriculumAt?.curriculum);
+    const curriculum = asObject(curriculumOffering?.curriculum);
     const course = asObject(offering.course);
-    const courseCtId = asString(offering.id) ?? "";
+    const courseOfferingId = asString(offering.id) ?? "";
 
     for (const block of blocks.filter(
       (item) => item.curriculum_id === curriculumId,
     )) {
-      const key = `${courseCtId}:${block.id}`;
+      const key = `${courseOfferingId}:${block.id}`;
       const assignedFaculty = takenMap.get(key) ?? [];
 
       options.push({
         key,
         campus_id: block.campus_id,
         campus_name: block.campus_name,
-        course_c_t_id: courseCtId,
+        course_offering_id: courseOfferingId,
         block_id: block.id,
         block_label: `Y${block.year_level}-${block.section}`,
         course_code: asString(course?.code) ?? "",
@@ -783,7 +842,7 @@ export const findOrCreateSchedule = async (
 
 export const createClass = async (input: {
   schedule_id: string;
-  course_c_t_id: string;
+  course_offering_id: string;
   block_id: string | null;
   expected_schedule_updated_at: string | null;
   force_stale_save?: boolean;
@@ -798,15 +857,102 @@ export const createClass = async (input: {
   );
   if (staleError) return { error: staleError };
 
-  const { error } = await supabase.from("class").insert({
-    schedule_id: input.schedule_id,
-    course_c_t_id: input.course_c_t_id,
-    block_id: input.block_id,
-  });
+  const { data: existingAllocation, error: existingAllocationError } =
+    await supabase
+      .from("course_allocation")
+      .select("id")
+      .eq("schedule_id", input.schedule_id)
+      .eq("course_offering_id", input.course_offering_id)
+      .maybeSingle();
 
-  if (error) {
-    console.error("lib.ftl.createClass ::", error);
-    return { error: error.message ?? "Unable to add class" };
+  if (existingAllocationError) {
+    console.error(
+      "lib.ftl.createClass existingAllocation::",
+      existingAllocationError,
+    );
+    return { error: existingAllocationError.message ?? "Unable to add class" };
+  }
+
+  let courseAllocationId = existingAllocation?.id ?? null;
+
+  if (!courseAllocationId) {
+    const { data: insertedAllocation, error: insertAllocationError } =
+      await supabase
+        .from("course_allocation")
+        .insert({
+          schedule_id: input.schedule_id,
+          course_offering_id: input.course_offering_id,
+        })
+        .select("id")
+        .single();
+
+    if (insertAllocationError) {
+      console.error(
+        "lib.ftl.createClass insertAllocation::",
+        insertAllocationError,
+      );
+      return { error: insertAllocationError.message ?? "Unable to add class" };
+    }
+
+    courseAllocationId = insertedAllocation.id;
+  }
+
+  const { data: existingDelivery, error: existingDeliveryError } =
+    await supabase
+      .from("class_delivery")
+      .select("id")
+      .eq("course_allocation_id", courseAllocationId)
+      .maybeSingle();
+
+  if (existingDeliveryError) {
+    console.error(
+      "lib.ftl.createClass existingDelivery::",
+      existingDeliveryError,
+    );
+    return { error: existingDeliveryError.message ?? "Unable to add class" };
+  }
+
+  let classDeliveryId = existingDelivery?.id ?? null;
+
+  if (!classDeliveryId) {
+    const { data: insertedDelivery, error: insertDeliveryError } =
+      await supabase
+        .from("class_delivery")
+        .insert({
+          course_allocation_id: courseAllocationId,
+        })
+        .select("id")
+        .single();
+
+    if (insertDeliveryError) {
+      console.error(
+        "lib.ftl.createClass insertDelivery::",
+        insertDeliveryError,
+      );
+      return { error: insertDeliveryError.message ?? "Unable to add class" };
+    }
+
+    classDeliveryId = insertedDelivery.id;
+  }
+
+  if (input.block_id && classDeliveryId) {
+    const { error: blockLinkError } = await supabase
+      .from("class_delivery_block")
+      .upsert(
+        {
+          class_delivery_id: classDeliveryId,
+          block_id: input.block_id,
+        },
+        {
+          onConflict: "class_delivery_id,block_id",
+          ignoreDuplicates: true,
+        },
+      );
+
+    if (blockLinkError) {
+      console.error("lib.ftl.createClass blockLink::", blockLinkError);
+      return { error: blockLinkError.message ?? "Unable to add class block" };
+    }
   }
 
   await touchSchedule(input.schedule_id);
@@ -817,7 +963,7 @@ export const createClass = async (input: {
 export const updateClass = async (input: {
   class_id: string;
   schedule_id: string;
-  course_c_t_id: string;
+  course_offering_id: string;
   block_id: string | null;
   expected_schedule_updated_at: string | null;
   force_stale_save?: boolean;
@@ -832,17 +978,48 @@ export const updateClass = async (input: {
   );
   if (staleError) return { error: staleError };
 
+  const { data: classDelivery, error: classDeliveryError } = await supabase
+    .from("class_delivery")
+    .select("course_allocation_id")
+    .eq("id", input.class_id)
+    .maybeSingle();
+
+  if (classDeliveryError || !classDelivery?.course_allocation_id) {
+    return { error: classDeliveryError?.message ?? "Class delivery not found" };
+  }
+
   const { error } = await supabase
-    .from("class")
+    .from("course_allocation")
     .update({
-      course_c_t_id: input.course_c_t_id,
-      block_id: input.block_id,
+      course_offering_id: input.course_offering_id,
     })
-    .eq("id", input.class_id);
+    .eq("id", classDelivery.course_allocation_id);
 
   if (error) {
     console.error("lib.ftl.updateClass ::", error);
     return { error: error.message ?? "Unable to update class" };
+  }
+
+  if (input.block_id) {
+    const { error: blockLinkError } = await supabase
+      .from("class_delivery_block")
+      .upsert(
+        {
+          class_delivery_id: input.class_id,
+          block_id: input.block_id,
+        },
+        {
+          onConflict: "class_delivery_id,block_id",
+          ignoreDuplicates: true,
+        },
+      );
+
+    if (blockLinkError) {
+      console.error("lib.ftl.updateClass blockLink::", blockLinkError);
+      return {
+        error: blockLinkError.message ?? "Unable to update class block",
+      };
+    }
   }
 
   await touchSchedule(input.schedule_id);
@@ -867,7 +1044,7 @@ export const deleteClass = async (input: {
   if (staleError) return { error: staleError };
 
   const { error } = await supabase
-    .from("class")
+    .from("class_delivery")
     .delete()
     .eq("id", input.class_id);
 
@@ -896,27 +1073,32 @@ const getOverlapConflicts = async (
       start_time,
       end_time,
       room:room(id, campus_id, code, name),
-      class:class!inner(
+      class_delivery:class_delivery!inner(
         id,
-        block_id,
-        block:block(id, year_level, section),
-        course_c_t:course_c_t!inner(
+        course_allocation:course_allocation!inner(
           id,
-          course:course!inner(code, title)
-        ),
-        schedule:schedule!inner(
-          id,
-          user_id,
-          academic_term_id,
-          user:user!inner(
-            identity(first_name, middle_name, last_name, extension)
+          course_offering:course_offering!inner(
+            id,
+            course:course!inner(code, title)
+          ),
+          schedule:schedule!inner(
+            id,
+            user_id,
+            academic_term_id,
+            user:user!inner(
+              identity(first_name, middle_name, last_name, extension)
+            )
           )
+        ),
+        class_delivery_block(
+          block_id,
+          block:block(id, year_level, section)
         )
       )
     `,
     )
     .eq("day", input.day)
-    .eq("class.schedule.academic_term_id", input.academic_term_id);
+    .eq("class_delivery.schedule.academic_term_id", input.academic_term_id);
 
   if (error) {
     console.error("lib.ftl.getOverlapConflicts ::", error);
@@ -935,8 +1117,9 @@ const getOverlapConflicts = async (
   if (overlaps.length === 0) return [];
 
   const scheduleIds = overlaps
-    .map((raw) => asObject((raw as RowObject).class))
-    .map((classRow) => asObject(classRow?.schedule))
+    .map((raw) => asObject((raw as RowObject).class_delivery))
+    .map((classRow) => asObject(classRow?.course_allocation))
+    .map((courseAllocation) => asObject(courseAllocation?.schedule))
     .map((schedule) => asString(schedule?.id))
     .filter((id): id is string => Boolean(id));
 
@@ -945,16 +1128,32 @@ const getOverlapConflicts = async (
 
   for (const raw of overlaps) {
     const row = raw as RowObject;
-    const classRow = asObject(row.class);
-    const schedule = asObject(classRow?.schedule);
+    const classRow = asObject(row.class_delivery);
+    const courseAllocation = asObject(classRow?.course_allocation);
+    const schedule = asObject(courseAllocation?.schedule);
     if (!classRow || !schedule) continue;
 
     const user = asObject(schedule.user);
     const identity = asObject(user?.identity);
     const room = asObject(row.room);
-    const courseCt = asObject(classRow.course_c_t);
-    const course = asObject(courseCt?.course);
-    const block = asObject(classRow.block);
+    const courseOffering = asObject(courseAllocation?.course_offering);
+    const course = asObject(courseOffering?.course);
+    const classDeliveryBlocks =
+      (classRow.class_delivery_block as RowObject[] | undefined) ?? [];
+
+    const conflictingBlockIds = classDeliveryBlocks
+      .map((item) => asString(item.block_id))
+      .filter((item): item is string => Boolean(item));
+
+    const conflictingBlockLabels = classDeliveryBlocks
+      .map((item) => asObject(item.block))
+      .map((block) => {
+        const yearLevel = asNumber(block?.year_level);
+        const section = asString(block?.section);
+        if (!yearLevel || !section) return null;
+        return `Year ${yearLevel} - ${section}`;
+      })
+      .filter((item): item is string => Boolean(item));
 
     const scheduleId = asString(schedule.id);
     if (!scheduleId) continue;
@@ -968,13 +1167,15 @@ const getOverlapConflicts = async (
     if (
       input.room_id &&
       asString(row.room_id) &&
-      asString(row.room_id) === input.room_id &&
-      asString(room?.campus_id) === input.campus_id
+      asString(row.room_id) === input.room_id
     ) {
       matchedTypes.push("ROOM");
     }
 
-    if (input.block_id && asString(classRow.block_id) === input.block_id) {
+    if (
+      input.block_ids.length > 0 &&
+      conflictingBlockIds.some((blockId) => input.block_ids.includes(blockId))
+    ) {
       matchedTypes.push("BLOCK");
     }
 
@@ -1005,10 +1206,10 @@ const getOverlapConflicts = async (
         conflicting_faculty_name: facultyName,
         conflicting_room_code: asString(room?.code),
         conflicting_block:
-          asNumber(block?.year_level) && asString(block?.section)
-            ? `Year ${asNumber(block?.year_level)} - ${asString(block?.section)}`
+          conflictingBlockLabels.length > 0
+            ? conflictingBlockLabels.join(", ")
             : null,
-        day: asNumber(row.day) ?? input.day,
+        day: asDayOfWeek(row.day),
         start_time: asString(row.start_time) ?? "00:00",
         end_time: asString(row.end_time) ?? "00:00",
       });
@@ -1053,7 +1254,7 @@ export const saveSession = async (
   }
 
   const payload = {
-    class_id: input.class_id,
+    class_delivery_id: input.class_delivery_id,
     room_id: input.room_id,
     day: input.day,
     start_time: input.start_time,
@@ -1068,7 +1269,7 @@ export const saveSession = async (
     .select(
       `
       id,
-      class_id,
+      class_delivery_id,
       room_id,
       day,
       start_time,
@@ -1098,11 +1299,11 @@ export const saveSession = async (
   return {
     session: {
       id: asString(dataRow.id) ?? "",
-      class_id: asString(dataRow.class_id) ?? "",
+      class_delivery_id: asString(dataRow.class_delivery_id) ?? "",
       room_id: asString(dataRow.room_id),
       room_code: asString(room?.code),
       room_name: asString(room?.name),
-      day: asNumber(dataRow.day) ?? input.day,
+      day: asDayOfWeek(dataRow.day),
       start_time: asString(dataRow.start_time) ?? input.start_time,
       end_time: asString(dataRow.end_time) ?? input.end_time,
       last_conflict_count: conflicts.length,

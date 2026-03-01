@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/utils/style";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -55,7 +56,13 @@ export function ForgotPasswordForm({
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-transparent rounded-none flex flex-col justify-center border-none shadow-none">
+        <Card
+          className={cn(
+            "bg-transparent rounded-none flex flex-col justify-center border-none shadow-none",
+            className,
+          )}
+          {...props}
+        >
           <CardHeader>
             <CardTitle className="text-2xl">Reset Your Password</CardTitle>
             <CardDescription>

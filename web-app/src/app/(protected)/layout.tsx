@@ -1,7 +1,6 @@
 import { SidebarNav } from "@/components/ui/sidebar-nav";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/utils";
-import { TopBarNav } from "@/components/ui/topbar-nav";
 
 export default async function ProtectedLayout({
   children,

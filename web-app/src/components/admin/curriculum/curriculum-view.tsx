@@ -145,7 +145,7 @@ export const CurriculumView = ({
     setCourseActionError("");
 
     const { error } = await addCoursesToCurriculumTerm({
-      curriculum_at_id: activeCourseTermId,
+      curriculum_offering_id: activeCourseTermId,
       course_ids: courseIds,
     });
 

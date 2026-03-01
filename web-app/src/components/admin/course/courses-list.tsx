@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { NotebookTabs } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/utils/style";
 import { useListState } from "@/hooks/useListState";
 import ListItem from "../list-item";
 import { CourseListItem } from "@/lib/admin/courses";

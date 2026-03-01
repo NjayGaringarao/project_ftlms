@@ -11,7 +11,7 @@ export const getProgramOfferingsList = async (): Promise<
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("program_campus")
+    .from("program_offering")
     .select(
       `
       id,
@@ -38,7 +38,7 @@ export const getProgramOfferingsList = async (): Promise<
     return [];
   }
 
-  return (data ?? []).map((item: any) => {
+  return (data ?? []).map((item) => {
     const program = Array.isArray(item.program)
       ? item.program[0]
       : item.program;
@@ -62,7 +62,7 @@ export const getProgramOfferingById = async (
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("program_campus")
+    .from("program_offering")
     .select(
       `
       id,

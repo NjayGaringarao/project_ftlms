@@ -36,9 +36,11 @@ export const BlockEdit = ({
   );
   const [curriculums, setCurriculums] = useState<CurriculumListItem[]>([]);
   const [programOfferingId, setProgramOfferingId] = useState(
-    block.major_p_c?.program_campus_id ?? "",
+    block.major_offering?.program_offering_id ?? "",
   );
-  const [majorOfferingId, setMajorOfferingId] = useState(block.major_p_c_id);
+  const [majorOfferingId, setMajorOfferingId] = useState(
+    block.major_offering_id,
+  );
   const [curriculumId, setCurriculumId] = useState(block.curriculum_id);
   const [yearLevel, setYearLevel] = useState(block.year_level.toString());
   const [section, setSection] = useState(block.section);
@@ -46,8 +48,8 @@ export const BlockEdit = ({
     block.student_count !== null ? block.student_count.toString() : "",
   );
   const [savedState, setSavedState] = useState({
-    programOfferingId: block.major_p_c?.program_campus_id ?? "",
-    majorOfferingId: block.major_p_c_id,
+    programOfferingId: block.major_offering?.program_offering_id ?? "",
+    majorOfferingId: block.major_offering_id,
     curriculumId: block.curriculum_id,
     yearLevel: block.year_level.toString(),
     section: block.section,
@@ -90,7 +92,7 @@ export const BlockEdit = ({
   const scopedOfferings = useMemo(() => {
     if (!fixedCampusId) return majorOfferings;
     return majorOfferings.filter(
-      (offering) => offering.program_campus?.campus_id === fixedCampusId,
+      (offering) => offering.program_offering?.campus_id === fixedCampusId,
     );
   }, [fixedCampusId, majorOfferings]);
 
@@ -102,17 +104,17 @@ export const BlockEdit = ({
 
     scopedOfferings.forEach((offering) => {
       if (
-        !offering.program_campus_id ||
-        optionMap.has(offering.program_campus_id)
+        !offering.program_offering_id ||
+        optionMap.has(offering.program_offering_id)
       ) {
         return;
       }
 
-      optionMap.set(offering.program_campus_id, {
-        id: offering.program_campus_id,
+      optionMap.set(offering.program_offering_id, {
+        id: offering.program_offering_id,
         programName:
-          offering.program_campus?.program?.name ?? "Unknown Program",
-        campusName: offering.program_campus?.campus?.name ?? "Unknown Campus",
+          offering.program_offering?.program?.name ?? "Unknown Program",
+        campusName: offering.program_offering?.campus?.name ?? "Unknown Campus",
       });
     });
 
@@ -122,7 +124,7 @@ export const BlockEdit = ({
   const availableMajorOfferings = useMemo(() => {
     if (!programOfferingId) return [];
     return scopedOfferings.filter(
-      (offering) => offering.program_campus_id === programOfferingId,
+      (offering) => offering.program_offering_id === programOfferingId,
     );
   }, [programOfferingId, scopedOfferings]);
 
@@ -152,7 +154,7 @@ export const BlockEdit = ({
 
     const { error: updateError } = await updateBlock({
       id: block.id,
-      major_p_c_id: majorOfferingId,
+      major_offering_id: majorOfferingId,
       curriculum_id: curriculumId,
       year_level: parsedYearLevel,
       section,
@@ -244,14 +246,14 @@ export const BlockEdit = ({
                 {availableMajorOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
                     {offering.major?.name} -{" "}
-                    {offering.program_campus?.program?.name}
+                    {offering.program_offering?.program?.name}
                   </option>
                 ))}
               </select>
               {selectedOffering && (
                 <p className="text-xs text-foreground/60 mt-1">
                   Selected: {selectedOffering.major?.code} (
-                  {selectedOffering.program_campus?.program?.code})
+                  {selectedOffering.program_offering?.program?.code})
                 </p>
               )}
             </div>

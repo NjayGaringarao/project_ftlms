@@ -11,11 +11,11 @@ export const getMajorOfferingsList = async (): Promise<
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("major_p_c")
+    .from("major_offering")
     .select(
       `
       id,
-      program_campus_id,
+      program_offering_id,
       major_id,
       major:major_id (
         id,
@@ -24,7 +24,7 @@ export const getMajorOfferingsList = async (): Promise<
         description,
         program_id
       ),
-      program_campus:program_campus_id (
+      program_offering:program_offering_id (
         id,
         campus_id,
         program_id,
@@ -47,22 +47,22 @@ export const getMajorOfferingsList = async (): Promise<
     return [];
   }
 
-  return (data ?? []).map((item: any) => {
-    const programCampus = Array.isArray(item.program_campus)
-      ? item.program_campus[0]
-      : item.program_campus;
-    const program = Array.isArray(programCampus?.program)
-      ? programCampus.program[0]
-      : programCampus?.program;
+  return (data ?? []).map((item) => {
+    const programOffering = Array.isArray(item.program_offering)
+      ? item.program_offering[0]
+      : item.program_offering;
+    const program = Array.isArray(programOffering?.program)
+      ? programOffering.program[0]
+      : programOffering?.program;
 
     return {
       ...item,
       major: Array.isArray(item.major) ? item.major[0] : item.major,
-      program_campus: {
-        ...programCampus,
-        campus: Array.isArray(programCampus?.campus)
-          ? programCampus.campus[0]
-          : programCampus?.campus,
+      program_offering: {
+        ...programOffering,
+        campus: Array.isArray(programOffering?.campus)
+          ? programOffering.campus[0]
+          : programOffering?.campus,
         program: {
           ...program,
           department: Array.isArray(program?.department)
@@ -80,11 +80,11 @@ export const getMajorOfferingById = async (
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("major_p_c")
+    .from("major_offering")
     .select(
       `
       id,
-      program_campus_id,
+      program_offering_id,
       major_id,
       major:major_id (
         id,
@@ -93,7 +93,7 @@ export const getMajorOfferingById = async (
         description,
         program_id
       ),
-      program_campus:program_campus_id (
+      program_offering:program_offering_id (
         id,
         campus_id,
         program_id,
@@ -119,21 +119,21 @@ export const getMajorOfferingById = async (
 
   if (!data) return null;
 
-  const programCampus = Array.isArray(data.program_campus)
-    ? data.program_campus[0]
-    : data.program_campus;
-  const program = Array.isArray(programCampus?.program)
-    ? programCampus.program[0]
-    : programCampus?.program;
+  const programOffering = Array.isArray(data.program_offering)
+    ? data.program_offering[0]
+    : data.program_offering;
+  const program = Array.isArray(programOffering?.program)
+    ? programOffering.program[0]
+    : programOffering?.program;
 
   return {
     ...data,
     major: Array.isArray(data.major) ? data.major[0] : data.major,
-    program_campus: {
-      ...programCampus,
-      campus: Array.isArray(programCampus?.campus)
-        ? programCampus.campus[0]
-        : programCampus?.campus,
+    program_offering: {
+      ...programOffering,
+      campus: Array.isArray(programOffering?.campus)
+        ? programOffering.campus[0]
+        : programOffering?.campus,
       program: {
         ...program,
         department: Array.isArray(program?.department)
@@ -149,6 +149,6 @@ export const getMajorOfferingsByProgramOffering = async (
 ): Promise<MajorOfferingListItem[]> => {
   const offerings = await getMajorOfferingsList();
   return offerings.filter(
-    (offering) => offering.program_campus_id === programOfferingId,
+    (offering) => offering.program_offering_id === programOfferingId,
   );
 };

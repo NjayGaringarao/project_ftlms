@@ -87,11 +87,19 @@ export const CurriculumInitialForm = ({
     const nextDepartmentId = selectedMajor.program?.department_id ?? "";
 
     if (nextDepartmentId && nextDepartmentId !== selectedDepartmentId) {
-      setSelectedDepartmentId(nextDepartmentId);
+      const timer = setTimeout(() => {
+        setSelectedDepartmentId(nextDepartmentId);
+      }, 0);
+
+      return () => clearTimeout(timer);
     }
 
     if (nextProgramId && nextProgramId !== selectedProgramId) {
-      setSelectedProgramId(nextProgramId);
+      const timer = setTimeout(() => {
+        setSelectedProgramId(nextProgramId);
+      }, 0);
+
+      return () => clearTimeout(timer);
     }
   }, [
     formData.major_id,

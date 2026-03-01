@@ -1,14 +1,17 @@
 import { Block } from "./block";
 import { CourseCT } from "./course-c-t";
 
-export type Class = {
+export type ClassDelivery = {
   id: string;
   schedule_id: string;
-  course_c_t_id: string;
-  block_id: string | null;
+  course_offering_id: string;
+  block_ids: string[];
 };
 
-export type ExtendedClass = Class & {
-  course_c_t: CourseCT;
-  block: Block | null;
+export type ExtendedClassDelivery = ClassDelivery & {
+  course_offering: CourseCT;
+  blocks: Block[];
 };
+
+export type Class = ClassDelivery;
+export type ExtendedClass = ExtendedClassDelivery;

@@ -84,41 +84,41 @@ begin
  -- Multiple same academic term within a curriculum is not allowed.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'curriculum_academic_term_unique'
-      and conrelid = 'public.curriculum_at'::regclass
+    where conname = 'curriculum_offering_unique'
+      and conrelid = 'public.curriculum_offering'::regclass
   ) then
-    alter table public.curriculum_at
-      add constraint curriculum_academic_term_unique unique (curriculum_id, academic_term_id);
+    alter table public.curriculum_offering
+      add constraint curriculum_offering_unique unique (curriculum_id, academic_term_id);
   end if;
 
   -- Courses within the same curriculum regardless of academic term should be unique.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'course_curriculum_term_unique'
-      and conrelid = 'public.course_c_t'::regclass
+    where conname = 'course_offering_unique'
+      and conrelid = 'public.course_offering'::regclass
   ) then
-    alter table public.course_c_t
-      add constraint course_curriculum_term_unique unique (curriculum_at_id, course_id);
+    alter table public.course_offering
+      add constraint course_offering_unique unique (curriculum_offering_id, course_id);
   end if;
 
   -- Program Offering within the campus should be unique.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'program_campus_unique'
-      and conrelid = 'public.program_campus'::regclass
+    where conname = 'program_offering_unique'
+      and conrelid = 'public.program_offering'::regclass
   ) then
-    alter table public.program_campus
-      add constraint program_campus_unique unique (campus_id, program_id);
+    alter table public.program_offering
+      add constraint program_offering_unique unique (campus_id, program_id);
   end if;
 
   -- Major Offering within the campus should be unique
   if not exists (
     select 1 from pg_constraint
-    where conname = 'major_program_campus_unique'
-      and conrelid = 'public.major_p_c'::regclass
+    where conname = 'major_offering_unique'
+      and conrelid = 'public.major_offering'::regclass
   ) then
-    alter table public.major_p_c
-      add constraint major_program_campus_unique unique (program_campus_id, major_id);
+    alter table public.major_offering
+      add constraint major_offering_unique unique (program_offering_id, major_id);
   end if;
 
  -- Block section should be unique within a curriculum, campus offering of programs and major, and year level.
@@ -128,7 +128,7 @@ begin
       and conrelid = 'public.block'::regclass
   ) then
     alter table public.block
-      add constraint block_section_unique unique (major_p_c_id, curriculum_id, year_level, section);
+      add constraint block_section_unique unique (major_offering_id, curriculum_id, year_level, section);
   end if;
 
   -- Academic rank number and title should be unique across the university.
@@ -171,22 +171,37 @@ begin
       add constraint room_campus_code_unique unique (campus_id, code);
   end if;
   
-  -- A session should not have overlapping time slots in the same room or for the same class.
+  -- One course allocation per schedule/course offering.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'session_room_slot_unique'
-      and conrelid = 'public.session'::regclass
+    where conname = 'course_allocation_schedule_course_offering_unique'
+      and conrelid = 'public.course_allocation'::regclass
   ) then
-    alter table public.session
-      add constraint session_room_slot_unique unique (room_id, day, start_time, end_time);
+    alter table public.course_allocation
+      add constraint course_allocation_schedule_course_offering_unique
+      unique (schedule_id, course_offering_id);
   end if;
+
+  -- One class delivery per course allocation.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'session_class_slot_unique'
-      and conrelid = 'public.session'::regclass
+    where conname = 'class_delivery_course_allocation_unique'
+      and conrelid = 'public.class_delivery'::regclass
   ) then
-    alter table public.session
-      add constraint session_class_slot_unique unique (class_id, day, start_time, end_time);
+    alter table public.class_delivery
+      add constraint class_delivery_course_allocation_unique
+      unique (course_allocation_id);
+  end if;
+
+  -- No duplicate block links within the same class delivery.
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'class_delivery_block_unique'
+      and conrelid = 'public.class_delivery_block'::regclass
+  ) then
+    alter table public.class_delivery_block
+      add constraint class_delivery_block_unique
+      unique (class_delivery_id, block_id);
   end if;
 
   -- Multiple same evaluation for a designation and schedule is not allowed.

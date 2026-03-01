@@ -66,13 +66,14 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
             <div>
               <p className="text-xs text-foreground/60">Major</p>
               <p className="font-medium">
-                {block.major_p_c?.major?.name ?? "Unknown"}
+                {block.major_offering?.major?.name ?? "Unknown"}
               </p>
             </div>
             <div>
               <p className="text-xs text-foreground/60">Program</p>
               <p className="font-medium">
-                {block.major_p_c?.program_campus?.program?.name ?? "Unknown"}
+                {block.major_offering?.program_offering?.program?.name ??
+                  "Unknown"}
               </p>
             </div>
             <div className="md:col-span-2">
@@ -86,7 +87,8 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
             <div>
               <p className="text-xs text-foreground/60">Campus</p>
               <p className="font-medium">
-                {block.major_p_c?.program_campus?.campus?.name ?? "Unknown"}
+                {block.major_offering?.program_offering?.campus?.name ??
+                  "Unknown"}
               </p>
             </div>
           </div>

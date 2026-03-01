@@ -1,13 +1,16 @@
 import { Course } from "./course";
-import { CurriculumAt } from "./curriculum-at";
+import { CurriculumOffering } from "./curriculum-at";
 
-export type CourseCT = {
+export type CourseOffering = {
   id: string;
-  curriculum_at_id: string;
+  curriculum_offering_id: string;
   course_id: string;
 };
 
-export type ExtendedCourseCT = CourseCT & {
-  curriculum_at: CurriculumAt;
+export type ExtendedCourseOffering = CourseOffering & {
+  curriculum_offering: CurriculumOffering;
   course: Course;
 };
+
+export type CourseCT = CourseOffering;
+export type ExtendedCourseCT = ExtendedCourseOffering;

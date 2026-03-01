@@ -1,15 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   CheckCircle,
   User,
   X,
-  Plus,
   Trash2,
-  BookOpen,
   Mail,
   Lock,
   Briefcase,
@@ -52,7 +49,7 @@ type ProfessionalFormState = {
     campus_id?: string | null;
     job_title: string;
     department_id?: string | null;
-    program_campus_id?: string | null;
+    program_offering_id?: string | null;
     room_id?: string | null;
     load?: number | null;
   }>;
@@ -62,6 +59,15 @@ type SecurityFormState = {
   newEmail: string;
   newPassword: string;
   confirmPassword: string;
+};
+
+type NewDesignationInput = {
+  department_id: string | null;
+  program_offering_id: string | null;
+  campus_id: string | null;
+  room_id: string | null;
+  job_title: string;
+  load: number;
 };
 
 const userToPersonalFormState = (user: UserDetail): PersonalFormState => ({
@@ -86,15 +92,13 @@ const userToProfessionalFormState = (
       campus_id: d.campus_id,
       job_title: d.job_title,
       department_id: d.department_id,
-      program_campus_id: d.program_campus_id,
+      program_offering_id: d.program_offering_id,
       room_id: d.room_id,
       load: d.load,
     })) ?? [],
 });
 
 export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
-  const router = useRouter();
-
   // Personal Information State
   const [personalData, setPersonalData] = useState<PersonalFormState>(() =>
     userToPersonalFormState(user),
@@ -148,7 +152,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
   };
 
   // Handle Designation Addition (from DesignationAddForm)
-  const handleAddDesignation = (designation: any) => {
+  const handleAddDesignation = (designation: NewDesignationInput) => {
     setProfessionalData((prev) => ({
       ...prev,
       designations: [
@@ -156,7 +160,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
         {
           job_title: designation.job_title,
           department_id: designation.department_id || null,
-          program_campus_id: designation.program_campus_id || null,
+          program_offering_id: designation.program_offering_id || null,
           campus_id: designation.campus_id || null,
           room_id: designation.room_id || null,
           load: designation.load,
@@ -634,9 +638,10 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                               Department: {designation.department_id}
                             </p>
                           )}
-                          {designation.program_campus_id && (
+                          {designation.program_offering_id && (
                             <p className="text-xs text-foreground/60">
-                              Program Offering: {designation.program_campus_id}
+                              Program Offering:{" "}
+                              {designation.program_offering_id}
                             </p>
                           )}
                           {designation.campus_id && (

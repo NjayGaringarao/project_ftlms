@@ -11,7 +11,7 @@ export type BlockListItem = ExtendedBlock & {
     series_year: number;
     revised_year: number | null;
   } | null;
-  major_p_c: ExtendedBlock["major_p_c"] & {
+  major_offering: ExtendedBlock["major_offering"] & {
     major: {
       id: string;
       code: string;
@@ -19,7 +19,7 @@ export type BlockListItem = ExtendedBlock & {
       description: string | null;
       program_id: string;
     } | null;
-    program_campus: {
+    program_offering: {
       id: string;
       campus_id: string;
       program_id: string;
@@ -48,7 +48,7 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
     .select(
       `
       id,
-      major_p_c_id,
+      major_offering_id,
       curriculum_id,
       year_level,
       section,
@@ -60,9 +60,9 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
         series_year,
         revised_year
       ),
-      major_p_c:major_p_c_id (
+      major_offering:major_offering_id (
         id,
-        program_campus_id,
+        program_offering_id,
         major_id,
         major:major_id (
           id,
@@ -71,7 +71,7 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
           description,
           program_id
         ),
-        program_campus:program_campus_id (
+        program_offering:program_offering_id (
           id,
           campus_id,
           program_id,
@@ -89,34 +89,34 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
     return [];
   }
 
-  return (data ?? []).map((item: any) => {
+  return (data ?? []).map((item) => {
     const curriculum = Array.isArray(item.curriculum)
       ? item.curriculum[0]
       : item.curriculum;
-    const majorPC = Array.isArray(item.major_p_c)
-      ? item.major_p_c[0]
-      : item.major_p_c;
-    const major = Array.isArray(majorPC?.major)
-      ? majorPC.major[0]
-      : majorPC?.major;
-    const programCampus = Array.isArray(majorPC?.program_campus)
-      ? majorPC.program_campus[0]
-      : majorPC?.program_campus;
+    const majorOffering = Array.isArray(item.major_offering)
+      ? item.major_offering[0]
+      : item.major_offering;
+    const major = Array.isArray(majorOffering?.major)
+      ? majorOffering.major[0]
+      : majorOffering?.major;
+    const programOffering = Array.isArray(majorOffering?.program_offering)
+      ? majorOffering.program_offering[0]
+      : majorOffering?.program_offering;
 
     return {
       ...item,
       curriculum,
-      major_p_c: {
-        ...majorPC,
+      major_offering: {
+        ...majorOffering,
         major,
-        program_campus: {
-          ...programCampus,
-          campus: Array.isArray(programCampus?.campus)
-            ? programCampus.campus[0]
-            : programCampus?.campus,
-          program: Array.isArray(programCampus?.program)
-            ? programCampus.program[0]
-            : programCampus?.program,
+        program_offering: {
+          ...programOffering,
+          campus: Array.isArray(programOffering?.campus)
+            ? programOffering.campus[0]
+            : programOffering?.campus,
+          program: Array.isArray(programOffering?.program)
+            ? programOffering.program[0]
+            : programOffering?.program,
         },
       },
     };
@@ -133,7 +133,7 @@ export const getBlockById = async (
     .select(
       `
       id,
-      major_p_c_id,
+      major_offering_id,
       curriculum_id,
       year_level,
       section,
@@ -145,9 +145,9 @@ export const getBlockById = async (
         series_year,
         revised_year
       ),
-      major_p_c:major_p_c_id (
+      major_offering:major_offering_id (
         id,
-        program_campus_id,
+        program_offering_id,
         major_id,
         major:major_id (
           id,
@@ -156,7 +156,7 @@ export const getBlockById = async (
           description,
           program_id
         ),
-        program_campus:program_campus_id (
+        program_offering:program_offering_id (
           id,
           campus_id,
           program_id,
@@ -176,33 +176,33 @@ export const getBlockById = async (
 
   if (!data) return null;
 
-  const majorPC = Array.isArray(data.major_p_c)
-    ? data.major_p_c[0]
-    : data.major_p_c;
+  const majorOffering = Array.isArray(data.major_offering)
+    ? data.major_offering[0]
+    : data.major_offering;
   const curriculum = Array.isArray(data.curriculum)
     ? data.curriculum[0]
     : data.curriculum;
-  const major = Array.isArray(majorPC?.major)
-    ? majorPC.major[0]
-    : majorPC?.major;
-  const programCampus = Array.isArray(majorPC?.program_campus)
-    ? majorPC.program_campus[0]
-    : majorPC?.program_campus;
+  const major = Array.isArray(majorOffering?.major)
+    ? majorOffering.major[0]
+    : majorOffering?.major;
+  const programOffering = Array.isArray(majorOffering?.program_offering)
+    ? majorOffering.program_offering[0]
+    : majorOffering?.program_offering;
 
   return {
     ...data,
     curriculum,
-    major_p_c: {
-      ...majorPC,
+    major_offering: {
+      ...majorOffering,
       major,
-      program_campus: {
-        ...programCampus,
-        campus: Array.isArray(programCampus?.campus)
-          ? programCampus.campus[0]
-          : programCampus?.campus,
-        program: Array.isArray(programCampus?.program)
-          ? programCampus.program[0]
-          : programCampus?.program,
+      program_offering: {
+        ...programOffering,
+        campus: Array.isArray(programOffering?.campus)
+          ? programOffering.campus[0]
+          : programOffering?.campus,
+        program: Array.isArray(programOffering?.program)
+          ? programOffering.program[0]
+          : programOffering?.program,
       },
     },
   } as BlockListItem;
@@ -213,6 +213,6 @@ export const getBlocksByCampus = async (
 ): Promise<BlockListItem[]> => {
   const blocks = await getBlocksList();
   return blocks.filter(
-    (block) => block.major_p_c?.program_campus?.campus_id === campusId,
+    (block) => block.major_offering?.program_offering?.campus_id === campusId,
   );
 };

@@ -50,13 +50,13 @@ import {
 import { cn } from "@/utils/style";
 
 const DAY_OPTIONS = [
-  { value: 1, label: "Sunday" },
-  { value: 2, label: "Monday" },
-  { value: 3, label: "Tuesday" },
-  { value: 4, label: "Wednesday" },
-  { value: 5, label: "Thursday" },
-  { value: 6, label: "Friday" },
-  { value: 7, label: "Saturday" },
+  { value: "SUNDAY", label: "Sunday" },
+  { value: "MONDAY", label: "Monday" },
+  { value: "TUESDAY", label: "Tuesday" },
+  { value: "WEDNESDAY", label: "Wednesday" },
+  { value: "THURSDAY", label: "Thursday" },
+  { value: "FRIDAY", label: "Friday" },
+  { value: "SATURDAY", label: "Saturday" },
 ];
 
 const typeLabelMap: Record<ConflictType, string> = {
@@ -67,7 +67,7 @@ const typeLabelMap: Record<ConflictType, string> = {
 
 const toTimeInput = (value: string) => value.slice(0, 5);
 
-const dayLabel = (value: number) =>
+const dayLabel = (value: string) =>
   DAY_OPTIONS.find((day) => day.value === value)?.label ?? `Day ${value}`;
 
 const fullName = (faculty: FTLFaculty | null) => {
@@ -92,11 +92,18 @@ type ProgramChairPlannerProps = {
 };
 
 type SessionDraft = {
-  class_id: string;
-  block_id: string | null;
+  class_delivery_id: string;
+  block_ids: string[];
   session_id?: string;
   room_id: string | null;
-  day: number;
+  day:
+    | "SUNDAY"
+    | "MONDAY"
+    | "TUESDAY"
+    | "WEDNESDAY"
+    | "THURSDAY"
+    | "FRIDAY"
+    | "SATURDAY";
   start_time: string;
   end_time: string;
 };
@@ -236,18 +243,18 @@ const ProgramChairPlanner = ({
       return;
     }
 
-    const primaryCampusId = dedupedCampusIds[0];
-    if (!primaryCampusId) {
-      setRooms([]);
-      return;
-    }
-
     setIsLoadingOfferings(true);
 
-    const [nextOfferings, nextRooms] = await Promise.all([
+    const [nextOfferings, roomGroups] = await Promise.all([
       getOfferedCourseOptionsByTermCampuses(termId, dedupedCampusIds),
-      getRoomsByCampus(primaryCampusId),
+      Promise.all(
+        dedupedCampusIds.map((campusId) => getRoomsByCampus(campusId)),
+      ),
     ]);
+
+    const nextRooms = Array.from(
+      new Map(roomGroups.flat().map((room) => [room.id, room])).values(),
+    );
 
     setOfferingOptions(nextOfferings);
     setRooms(nextRooms);
@@ -310,7 +317,7 @@ const ProgramChairPlanner = ({
 
     const result = await createClass({
       schedule_id: schedule.id,
-      course_c_t_id: option.course_c_t_id,
+      course_offering_id: option.course_offering_id,
       block_id: option.block_id,
       expected_schedule_updated_at: schedule.updated_at,
     });
@@ -353,16 +360,23 @@ const ProgramChairPlanner = ({
   };
 
   const openCreateSessionDialog = async (item: FTLClass) => {
-    if (item.campus_id) {
-      const campusRooms = await getRoomsByCampus(item.campus_id);
+    const campusIds =
+      item.campus_ids.length > 0 ? item.campus_ids : selectedCampusIds;
+    if (campusIds.length > 0) {
+      const roomGroups = await Promise.all(
+        campusIds.map((campusId) => getRoomsByCampus(campusId)),
+      );
+      const campusRooms = Array.from(
+        new Map(roomGroups.flat().map((room) => [room.id, room])).values(),
+      );
       setRooms(campusRooms);
     }
 
     setSessionDraft({
-      class_id: item.id,
-      block_id: item.block_id,
+      class_delivery_id: item.id,
+      block_ids: item.block_ids,
       room_id: null,
-      day: 2,
+      day: "MONDAY",
       start_time: "07:30",
       end_time: "09:00",
     });
@@ -370,14 +384,21 @@ const ProgramChairPlanner = ({
   };
 
   const openEditSessionDialog = async (item: FTLClass, session: FTLSession) => {
-    if (item.campus_id) {
-      const campusRooms = await getRoomsByCampus(item.campus_id);
+    const campusIds =
+      item.campus_ids.length > 0 ? item.campus_ids : selectedCampusIds;
+    if (campusIds.length > 0) {
+      const roomGroups = await Promise.all(
+        campusIds.map((campusId) => getRoomsByCampus(campusId)),
+      );
+      const campusRooms = Array.from(
+        new Map(roomGroups.flat().map((room) => [room.id, room])).values(),
+      );
       setRooms(campusRooms);
     }
 
     setSessionDraft({
-      class_id: item.id,
-      block_id: item.block_id,
+      class_delivery_id: item.id,
+      block_ids: item.block_ids,
       session_id: session.id,
       room_id: session.room_id,
       day: session.day,
@@ -394,27 +415,16 @@ const ProgramChairPlanner = ({
     if (!scheduleBundle.schedule || !selectedFacultyId) return;
 
     const ownerClass = scheduleBundle.classes.find(
-      (item) => item.id === draft.class_id,
+      (item) => item.id === draft.class_delivery_id,
     );
-
-    const campusId = ownerClass?.campus_id ?? selectedCampusIds[0] ?? "";
-
-    if (!campusId) {
-      setFeedback({
-        kind: "error",
-        text: "No campus context found for this class.",
-      });
-      return;
-    }
 
     const input: SaveSessionInput = {
       session_id: draft.session_id,
-      class_id: draft.class_id,
+      class_delivery_id: draft.class_delivery_id,
       schedule_id: scheduleBundle.schedule.id,
       academic_term_id: scheduleBundle.schedule.academic_term_id,
-      campus_id: campusId,
       faculty_user_id: selectedFacultyId,
-      block_id: draft.block_id,
+      block_ids: ownerClass?.block_ids ?? draft.block_ids,
       room_id: draft.room_id,
       day: draft.day,
       start_time: draft.start_time,
@@ -1186,11 +1196,11 @@ const ProgramChairPlanner = ({
                 <p className="text-xs text-foreground/70">Day</p>
                 <select
                   className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={String(sessionDraft.day)}
+                  value={sessionDraft.day}
                   onChange={(event) =>
                     setSessionDraft({
                       ...sessionDraft,
-                      day: Number(event.target.value),
+                      day: event.target.value as SessionDraft["day"],
                     })
                   }
                 >

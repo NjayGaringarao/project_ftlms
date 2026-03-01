@@ -5,8 +5,6 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/utils/style";
 import { useListState } from "@/hooks/useListState";
 import ListItem from "../list-item";
 import { BookOpen } from "lucide-react";

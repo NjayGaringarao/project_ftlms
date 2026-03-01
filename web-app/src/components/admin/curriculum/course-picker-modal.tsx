@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
@@ -31,13 +31,6 @@ export const CoursePickerModal = ({
   onSubmit,
 }: CoursePickerModalProps) => {
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!open) {
-      setSelectedCourseIds([]);
-      onQueryChange("");
-    }
-  }, [open, onQueryChange]);
 
   const linkedIdSet = useMemo(
     () => new Set(linkedCourseIds),
@@ -79,7 +72,13 @@ export const CoursePickerModal = ({
   return (
     <AppDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          setSelectedCourseIds([]);
+          onQueryChange("");
+        }
+        onOpenChange(nextOpen);
+      }}
       title="Select Courses"
       description="Select one or more courses to link to this curriculum term."
       contentClassName="max-w-3xl"

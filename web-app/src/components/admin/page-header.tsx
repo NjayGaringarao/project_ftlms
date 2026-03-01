@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { mapIcon } from "@/utils/icon";
+import { iconMap, type IconName } from "@/utils/icon";
 import { NAV_ITEMS } from "@/constant/navigation";
 import Image from "next/image";
 const formatSegmentTitle = (value: string) => {
@@ -17,7 +17,8 @@ export function PageHeader() {
   const activeItem = NAV_ITEMS.find(
     (item) => pathname === item.href || pathname.startsWith(item.href + "/"),
   );
-  const Icon = mapIcon(activeItem?.icon);
+  const iconName = activeItem?.icon as IconName | undefined;
+  const Icon = iconName ? iconMap[iconName] : null;
   const fallbackTitle =
     pathname === "/"
       ? "Home"

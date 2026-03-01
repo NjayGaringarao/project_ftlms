@@ -12,18 +12,31 @@ create table if not exists public.schedule (
   updated_at timestamptz default now()
 );
 
-create table if not exists public.class (
+create table if not exists public.course_allocation (
   id uuid primary key default gen_random_uuid(),
   schedule_id uuid not null references public.schedule(id) on delete cascade,
-  course_c_t_id uuid not null references public.course_c_t(id) on delete cascade,
-  block_id uuid references public.block(id) on delete set null
+  course_offering_id uuid not null references public.course_offering(id) on delete cascade
+);
+
+create table if not exists public.class_delivery (
+  id uuid primary key default gen_random_uuid(),
+  course_allocation_id uuid not null references public.course_allocation(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.class_delivery_block (
+  id uuid primary key default gen_random_uuid(),
+  class_delivery_id uuid not null references public.class_delivery(id) on delete cascade,
+  block_id uuid not null references public.block(id) on delete cascade,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.session (
   id uuid primary key default gen_random_uuid(),
-  class_id uuid not null references public.class(id) on delete cascade,
-  room_id uuid references public.room(id) on delete set null,
-  day integer not null,
+  class_delivery_id uuid not null references public.class_delivery(id) on delete cascade,
+  room_id uuid not null references public.room(id) on delete restrict,
+  day public.day_of_week_enum not null,
   start_time time not null,
   end_time time not null
 );

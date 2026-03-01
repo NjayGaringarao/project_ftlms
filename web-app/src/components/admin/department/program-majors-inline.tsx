@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,16 +51,20 @@ export const ProgramMajorsInline = ({ program }: ProgramMajorsInlineProps) => {
   const [deleteError, setDeleteError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     const programMajors = await getMajorsByProgram(program.id);
     setMajors(programMajors);
     setIsLoading(false);
-  };
+  }, [program.id]);
 
   useEffect(() => {
-    loadData();
-  }, [program.id]);
+    const timer = setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [loadData]);
 
   const showSuccess = () => {
     setSuccess(true);

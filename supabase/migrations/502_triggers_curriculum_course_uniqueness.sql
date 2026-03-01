@@ -2,10 +2,10 @@ do $$
 begin
   if exists (
     select 1
-    from public.course_c_t cct
-    join public.curriculum_at ca
-      on ca.id = cct.curriculum_at_id
-    group by ca.curriculum_id, cct.course_id
+    from public.course_offering co
+    join public.curriculum_offering cfo
+      on cfo.id = co.curriculum_offering_id
+    group by cfo.curriculum_id, co.course_id
     having count(*) > 1
   ) then
     raise exception
@@ -14,11 +14,11 @@ begin
 end;
 $$;
 
-create index if not exists idx_curriculum_at_curriculum_id
-  on public.curriculum_at (curriculum_id);
+create index if not exists idx_curriculum_offering_curriculum_id
+  on public.curriculum_offering (curriculum_id);
 
-create index if not exists idx_course_c_t_course_id
-  on public.course_c_t (course_id);
+create index if not exists idx_course_offering_course_id
+  on public.course_offering (course_id);
 
 create or replace function public.enforce_course_unique_per_curriculum()
 returns trigger
@@ -27,28 +27,28 @@ as $$
 declare
   target_curriculum_id uuid;
 begin
-  select ca.curriculum_id
+  select cfo.curriculum_id
   into target_curriculum_id
-  from public.curriculum_at ca
-  where ca.id = new.curriculum_at_id;
+  from public.curriculum_offering cfo
+  where cfo.id = new.curriculum_offering_id;
 
   if target_curriculum_id is null then
-    raise exception 'Curriculum term link not found for curriculum_at_id: %', new.curriculum_at_id;
+    raise exception 'Curriculum offering link not found for curriculum_offering_id: %', new.curriculum_offering_id;
   end if;
 
   if exists (
     select 1
-    from public.course_c_t cct
-    join public.curriculum_at ca
-      on ca.id = cct.curriculum_at_id
-    where ca.curriculum_id = target_curriculum_id
-      and cct.course_id = new.course_id
-      and cct.id <> coalesce(new.id, '00000000-0000-0000-0000-000000000000'::uuid)
+    from public.course_offering co
+    join public.curriculum_offering cfo
+      on cfo.id = co.curriculum_offering_id
+    where cfo.curriculum_id = target_curriculum_id
+      and co.course_id = new.course_id
+      and co.id <> coalesce(new.id, '00000000-0000-0000-0000-000000000000'::uuid)
   ) then
     raise exception
       using
         errcode = '23505',
-        message = 'duplicate key value violates unique constraint "course_c_t_curriculum_course_unique"',
+        message = 'duplicate key value violates unique constraint "course_offering_curriculum_course_unique"',
         detail = 'A course can only be linked once per curriculum across all terms.';
   end if;
 
@@ -56,9 +56,9 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_enforce_course_unique_per_curriculum on public.course_c_t;
+drop trigger if exists trg_enforce_course_unique_per_curriculum on public.course_offering;
 create trigger trg_enforce_course_unique_per_curriculum
-before insert or update of curriculum_at_id, course_id
-on public.course_c_t
+before insert or update of curriculum_offering_id, course_id
+on public.course_offering
 for each row
 execute function public.enforce_course_unique_per_curriculum();

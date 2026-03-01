@@ -132,7 +132,7 @@ export const getProfessionalInfoByUserId = async (
   const { data: designationData, error: designationError } = await supabase
     .from("designation")
     .select(
-      "id, user_id, campus_id, department_id, program_campus_id, room_id, job_title, load, designated_at, campus ( id, name, address, zip_code ), department ( id, code, name , type, description), program_campus:program_campus_id ( id, campus_id, program_id, campus:campus_id ( id, name, address, zip_code ), program:program_id ( id, department_id, code, name, description ) )",
+      "id, user_id, campus_id, department_id, program_offering_id, room_id, job_title, load, designated_at, campus ( id, name, address, zip_code ), department ( id, code, name , type, description), program_offering:program_offering_id ( id, campus_id, program_id, campus:campus_id ( id, name, address, zip_code ), program:program_id ( id, department_id, code, name, description ) )",
     )
     .eq("user_id", userId)
     .order("job_title", { ascending: true });
@@ -144,16 +144,16 @@ export const getProfessionalInfoByUserId = async (
     );
   }
 
-  const designations = (designationData ?? []).map((d: any) => {
-    const programCampus = Array.isArray(d.program_campus)
-      ? (d.program_campus[0] ?? null)
-      : d.program_campus;
-    const program = Array.isArray(programCampus?.program)
-      ? (programCampus.program[0] ?? null)
-      : (programCampus?.program ?? null);
-    const campusFromOffering = Array.isArray(programCampus?.campus)
-      ? (programCampus.campus[0] ?? null)
-      : (programCampus?.campus ?? null);
+  const designations = (designationData ?? []).map((d) => {
+    const programOffering = Array.isArray(d.program_offering)
+      ? (d.program_offering[0] ?? null)
+      : d.program_offering;
+    const program = Array.isArray(programOffering?.program)
+      ? (programOffering.program[0] ?? null)
+      : (programOffering?.program ?? null);
+    const campusFromOffering = Array.isArray(programOffering?.campus)
+      ? (programOffering.campus[0] ?? null)
+      : (programOffering?.campus ?? null);
     const directCampus = Array.isArray(d.campus)
       ? (d.campus[0] ?? null)
       : d.campus;
@@ -163,7 +163,7 @@ export const getProfessionalInfoByUserId = async (
       position: d.job_title,
       campus: directCampus ?? campusFromOffering,
       program,
-      program_campus: programCampus,
+      program_offering: programOffering,
     };
   }) as ExtendedDesignation[];
 

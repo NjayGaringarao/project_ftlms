@@ -62,17 +62,19 @@ const EmailChangeStatusBanner = ({
   useEffect(() => {
     const hashData = parseHashParams();
 
-    if (hashData.status) {
-      setStatus(hashData.status);
-    } else if (!initialStatus && hashData.message) {
-      setStatus("success");
-    }
-    if (hashData.message) {
-      setMessage(hashData.message);
-    }
-    if (hashData.confirmedEmail) {
-      setConfirmedEmail(hashData.confirmedEmail);
-    }
+    const timer = setTimeout(() => {
+      if (hashData.status) {
+        setStatus(hashData.status);
+      } else if (!initialStatus && hashData.message) {
+        setStatus("success");
+      }
+      if (hashData.message) {
+        setMessage(hashData.message);
+      }
+      if (hashData.confirmedEmail) {
+        setConfirmedEmail(hashData.confirmedEmail);
+      }
+    }, 0);
 
     if (typeof window === "undefined") {
       return;
@@ -105,7 +107,8 @@ const EmailChangeStatusBanner = ({
       const next = `${url.pathname}${url.search}${url.hash}`;
       window.history.replaceState({}, "", next || url.pathname);
     }
-  }, []);
+    return () => clearTimeout(timer);
+  }, [initialStatus]);
 
   const showBanner = status === "success" || status === "error";
   if (!showBanner) {

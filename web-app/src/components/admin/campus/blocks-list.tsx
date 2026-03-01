@@ -5,8 +5,6 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/utils/style";
 import { useListState } from "@/hooks/useListState";
 import ListItem from "../list-item";
 import { Blocks } from "lucide-react";
@@ -40,11 +38,13 @@ export const BlocksList = ({
       if (!q) return items;
 
       return items.filter((block) => {
-        const major = block.major_p_c?.major?.name?.toLowerCase() ?? "";
+        const major = block.major_offering?.major?.name?.toLowerCase() ?? "";
         const campus =
-          block.major_p_c?.program_campus?.campus?.name?.toLowerCase() ?? "";
+          block.major_offering?.program_offering?.campus?.name?.toLowerCase() ??
+          "";
         const program =
-          block.major_p_c?.program_campus?.program?.name?.toLowerCase() ?? "";
+          block.major_offering?.program_offering?.program?.name?.toLowerCase() ??
+          "";
         const section = block.section.toLowerCase();
         const yearLevel = `year ${block.year_level}`;
 
@@ -86,9 +86,9 @@ export const BlocksList = ({
         <ListItem
           key={block.id}
           onClick={() => router.push(`${basePath}/${block.id}`)}
-          title={`${block.major_p_c.program_campus?.program?.code} ${block.year_level} - ${block.section}`}
+          title={`${block.major_offering.program_offering?.program?.code} ${block.year_level} - ${block.section}`}
           subtitle={[
-            `${block.major_p_c?.program_campus?.program?.code ?? "Unknown"} ${block.major_p_c?.major?.code ?? ""}`,
+            `${block.major_offering?.program_offering?.program?.code ?? "Unknown"} ${block.major_offering?.major?.code ?? ""}`,
           ]}
           isSelected={selectedId === block.id}
           icon={<Blocks className="h-14 w-14 text-background" />}

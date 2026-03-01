@@ -41,7 +41,7 @@ create table if not exists public.designation (
   user_id uuid not null references public."user"(id) on delete cascade,
   campus_id uuid references public.campus(id) on delete cascade,
   department_id uuid references public.department(id) on delete cascade,
-  program_campus_id uuid references public.program_campus(id) on delete cascade,
+  program_offering_id uuid references public.program_offering(id) on delete cascade,
   room_id uuid references public.room(id) on delete cascade,
   job_title text not null,
   load integer,

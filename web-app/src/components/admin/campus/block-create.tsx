@@ -74,7 +74,7 @@ export const BlockCreate = ({
   const scopedOfferings = useMemo(() => {
     if (!fixedCampusId) return majorOfferings;
     return majorOfferings.filter(
-      (offering) => offering.program_campus?.campus_id === fixedCampusId,
+      (offering) => offering.program_offering?.campus_id === fixedCampusId,
     );
   }, [fixedCampusId, majorOfferings]);
 
@@ -86,17 +86,17 @@ export const BlockCreate = ({
 
     scopedOfferings.forEach((offering) => {
       if (
-        !offering.program_campus_id ||
-        optionMap.has(offering.program_campus_id)
+        !offering.program_offering_id ||
+        optionMap.has(offering.program_offering_id)
       ) {
         return;
       }
 
-      optionMap.set(offering.program_campus_id, {
-        id: offering.program_campus_id,
+      optionMap.set(offering.program_offering_id, {
+        id: offering.program_offering_id,
         programName:
-          offering.program_campus?.program?.name ?? "Unknown Program",
-        campusName: offering.program_campus?.campus?.name ?? "Unknown Campus",
+          offering.program_offering?.program?.name ?? "Unknown Program",
+        campusName: offering.program_offering?.campus?.name ?? "Unknown Campus",
       });
     });
 
@@ -106,7 +106,7 @@ export const BlockCreate = ({
   const availableMajorOfferings = useMemo(() => {
     if (!programOfferingId) return [];
     return scopedOfferings.filter(
-      (offering) => offering.program_campus_id === programOfferingId,
+      (offering) => offering.program_offering_id === programOfferingId,
     );
   }, [programOfferingId, scopedOfferings]);
 
@@ -135,7 +135,7 @@ export const BlockCreate = ({
     setShowSuccess(false);
 
     const { data, error: createError } = await createBlock({
-      major_p_c_id: majorOfferingId,
+      major_offering_id: majorOfferingId,
       curriculum_id: curriculumId,
       year_level: parsedYearLevel,
       section,
@@ -229,15 +229,15 @@ export const BlockCreate = ({
                 {availableMajorOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
                     {offering.major?.name} -{" "}
-                    {offering.program_campus?.program?.name} -{" "}
-                    {offering.program_campus?.campus?.name}
+                    {offering.program_offering?.program?.name} -{" "}
+                    {offering.program_offering?.campus?.name}
                   </option>
                 ))}
               </select>
               {selectedOffering && (
                 <p className="text-xs text-foreground/60 mt-1">
                   Selected: {selectedOffering.major?.code} (
-                  {selectedOffering.program_campus?.program?.code})
+                  {selectedOffering.program_offering?.program?.code})
                 </p>
               )}
             </div>

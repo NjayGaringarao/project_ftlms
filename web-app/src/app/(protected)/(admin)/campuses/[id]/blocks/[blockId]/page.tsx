@@ -13,7 +13,7 @@ const ViewCampusBlockPage = async ({ params }: ViewCampusBlockPageProps) => {
   const basePath = `/campuses/${id}/blocks`;
   const block = await getBlockById(blockId);
 
-  if (!block || block.major_p_c?.program_campus?.campus_id !== id) {
+  if (!block || block.major_offering?.program_offering?.campus_id !== id) {
     redirect(basePath);
   }
 

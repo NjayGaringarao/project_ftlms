@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/utils/style";
 import { TermListItem } from "@/lib/admin/terms";
 import ListItem from "../list-item";
 import { CalendarDays } from "lucide-react";

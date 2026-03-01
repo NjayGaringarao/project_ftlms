@@ -34,7 +34,7 @@ export const getMajorsList = async (): Promise<MajorListItem[]> => {
     return [];
   }
 
-  return (data ?? []).map((item: any) => {
+  return (data ?? []).map((item) => {
     const program = Array.isArray(item.program)
       ? item.program[0]
       : item.program;
@@ -130,7 +130,7 @@ export const getMajorsByProgram = async (
     return [];
   }
 
-  return (data ?? []).map((item: any) => {
+  return (data ?? []).map((item) => {
     const program = Array.isArray(item.program)
       ? item.program[0]
       : item.program;

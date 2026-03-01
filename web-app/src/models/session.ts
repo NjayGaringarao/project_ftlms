@@ -3,9 +3,16 @@ import { Room } from "./room";
 
 export type Session = {
   id: string;
-  class_id: string;
+  class_delivery_id: string;
   room_id: string | null;
-  day: number;
+  day:
+    | "SUNDAY"
+    | "MONDAY"
+    | "TUESDAY"
+    | "WEDNESDAY"
+    | "THURSDAY"
+    | "FRIDAY"
+    | "SATURDAY";
   start_time: string;
   end_time: string;
 };

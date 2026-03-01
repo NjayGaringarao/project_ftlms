@@ -903,7 +903,7 @@ export async function createProgramOffering(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("program_campus")
+    .from("program_offering")
     .insert({
       campus_id: input.campus_id.trim(),
       program_id: input.program_id.trim(),
@@ -935,7 +935,7 @@ export async function updateProgramOffering(
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("program_campus")
+    .from("program_offering")
     .update({
       campus_id: input.campus_id.trim(),
       program_id: input.program_id.trim(),
@@ -964,7 +964,7 @@ export async function deleteProgramOffering(
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("program_campus")
+    .from("program_offering")
     .delete()
     .eq("id", offeringId);
 
@@ -1247,7 +1247,7 @@ type CurriculumTermLinkInput = {
 };
 
 type CurriculumTermCoursesInput = {
-  curriculum_at_id: string;
+  curriculum_offering_id: string;
   course_ids: string[];
 };
 
@@ -1263,7 +1263,7 @@ export async function createCurriculumTermLink(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("curriculum_at")
+    .from("curriculum_offering")
     .insert({
       curriculum_id: input.curriculum_id.trim(),
       academic_term_id: input.academic_term_id.trim(),
@@ -1295,7 +1295,7 @@ export async function deleteCurriculumTermLink(
   const supabase = await createClient();
 
   const { data: existing } = await supabase
-    .from("curriculum_at")
+    .from("curriculum_offering")
     .select("id, curriculum_id")
     .eq("id", curriculumAtId)
     .maybeSingle();
@@ -1305,7 +1305,7 @@ export async function deleteCurriculumTermLink(
   }
 
   const { error } = await supabase
-    .from("curriculum_at")
+    .from("curriculum_offering")
     .delete()
     .eq("id", curriculumAtId);
 
@@ -1320,7 +1320,7 @@ export async function deleteCurriculumTermLink(
 export async function addCoursesToCurriculumTerm(
   input: CurriculumTermCoursesInput,
 ): Promise<{ data?: { added: number }; error?: string }> {
-  if (!input.curriculum_at_id?.trim()) {
+  if (!input.curriculum_offering_id?.trim()) {
     return { error: "Curriculum term ID is required" };
   }
 
@@ -1335,9 +1335,9 @@ export async function addCoursesToCurriculumTerm(
   const supabase = await createClient();
 
   const { data: parentLink } = await supabase
-    .from("curriculum_at")
+    .from("curriculum_offering")
     .select("id, curriculum_id")
-    .eq("id", input.curriculum_at_id.trim())
+    .eq("id", input.curriculum_offering_id.trim())
     .maybeSingle();
 
   if (!parentLink?.curriculum_id) {
@@ -1346,7 +1346,7 @@ export async function addCoursesToCurriculumTerm(
 
   const { data: curriculumTermLinks, error: curriculumTermLinksError } =
     await supabase
-      .from("curriculum_at")
+      .from("curriculum_offering")
       .select("id")
       .eq("curriculum_id", parentLink.curriculum_id);
 
@@ -1363,9 +1363,9 @@ export async function addCoursesToCurriculumTerm(
   }
 
   const { data: existingRows, error: existingError } = await supabase
-    .from("course_c_t")
+    .from("course_offering")
     .select("course_id")
-    .in("curriculum_at_id", curriculumTermIds)
+    .in("curriculum_offering_id", curriculumTermIds)
     .in("course_id", normalizedCourseIds);
 
   if (existingError) {
@@ -1379,7 +1379,7 @@ export async function addCoursesToCurriculumTerm(
   const rowsToInsert = normalizedCourseIds
     .filter((courseId) => !existingCourseIds.has(courseId))
     .map((courseId) => ({
-      curriculum_at_id: input.curriculum_at_id.trim(),
+      curriculum_offering_id: input.curriculum_offering_id.trim(),
       course_id: courseId,
     }));
 
@@ -1391,7 +1391,9 @@ export async function addCoursesToCurriculumTerm(
   }
 
   if (rowsToInsert.length > 0) {
-    const { error } = await supabase.from("course_c_t").insert(rowsToInsert);
+    const { error } = await supabase
+      .from("course_offering")
+      .insert(rowsToInsert);
 
     if (error) {
       return {
@@ -1418,11 +1420,11 @@ export async function deleteCurriculumTermCourseLink(
   const supabase = await createClient();
 
   const { data: existing } = await supabase
-    .from("course_c_t")
+    .from("course_offering")
     .select(
       `
       id,
-      curriculum_at:curriculum_at_id (
+      curriculum_offering:curriculum_offering_id (
         curriculum_id
       )
       `,
@@ -1430,16 +1432,16 @@ export async function deleteCurriculumTermCourseLink(
     .eq("id", courseCTId)
     .maybeSingle();
 
-  const curriculumAt = Array.isArray(existing?.curriculum_at)
-    ? existing.curriculum_at[0]
-    : existing?.curriculum_at;
+  const curriculumOffering = Array.isArray(existing?.curriculum_offering)
+    ? existing.curriculum_offering[0]
+    : existing?.curriculum_offering;
 
-  if (!curriculumAt?.curriculum_id) {
+  if (!curriculumOffering?.curriculum_id) {
     return { error: "Curriculum course link not found" };
   }
 
   const { error } = await supabase
-    .from("course_c_t")
+    .from("course_offering")
     .delete()
     .eq("id", courseCTId);
 
@@ -1447,12 +1449,12 @@ export async function deleteCurriculumTermCourseLink(
     return { error: error.message };
   }
 
-  revalidateCurriculumsPaths(curriculumAt.curriculum_id);
+  revalidateCurriculumsPaths(curriculumOffering.curriculum_id);
   return { data: true };
 }
 
 type MajorOfferingInput = {
-  program_campus_id: string;
+  program_offering_id: string;
   major_id: string;
 };
 
@@ -1463,7 +1465,7 @@ type UpdateMajorOfferingInput = MajorOfferingInput & {
 export async function createMajorOffering(
   input: MajorOfferingInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.program_campus_id?.trim()) {
+  if (!input.program_offering_id?.trim()) {
     return { error: "Program offering is required" };
   }
   if (!input.major_id?.trim()) return { error: "Major is required" };
@@ -1471,9 +1473,9 @@ export async function createMajorOffering(
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("major_p_c")
+    .from("major_offering")
     .insert({
-      program_campus_id: input.program_campus_id.trim(),
+      program_offering_id: input.program_offering_id.trim(),
       major_id: input.major_id.trim(),
     })
     .select("id")
@@ -1490,20 +1492,20 @@ export async function createMajorOffering(
   }
 
   const { data: parentOffering } = await supabase
-    .from("program_campus")
+    .from("program_offering")
     .select("id, campus_id")
-    .eq("id", input.program_campus_id)
+    .eq("id", input.program_offering_id)
     .maybeSingle();
 
   revalidateMajorOfferingsPaths(data.id);
   if (parentOffering?.campus_id) {
     revalidateCampusProgramOfferingDetailPath(
       parentOffering.campus_id,
-      input.program_campus_id,
+      input.program_offering_id,
     );
     revalidateCampusProgramMajorOfferingsPaths(
       parentOffering.campus_id,
-      input.program_campus_id,
+      input.program_offering_id,
       data.id,
     );
   }
@@ -1514,7 +1516,7 @@ export async function updateMajorOffering(
   input: UpdateMajorOfferingInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Major offering ID is required" };
-  if (!input.program_campus_id?.trim()) {
+  if (!input.program_offering_id?.trim()) {
     return { error: "Program offering is required" };
   }
   if (!input.major_id?.trim()) return { error: "Major is required" };
@@ -1522,9 +1524,9 @@ export async function updateMajorOffering(
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("major_p_c")
+    .from("major_offering")
     .update({
-      program_campus_id: input.program_campus_id.trim(),
+      program_offering_id: input.program_offering_id.trim(),
       major_id: input.major_id.trim(),
     })
     .eq("id", input.id);
@@ -1540,20 +1542,20 @@ export async function updateMajorOffering(
   }
 
   const { data: parentOffering } = await supabase
-    .from("program_campus")
+    .from("program_offering")
     .select("id, campus_id")
-    .eq("id", input.program_campus_id)
+    .eq("id", input.program_offering_id)
     .maybeSingle();
 
   revalidateMajorOfferingsPaths(input.id);
   if (parentOffering?.campus_id) {
     revalidateCampusProgramOfferingDetailPath(
       parentOffering.campus_id,
-      input.program_campus_id,
+      input.program_offering_id,
     );
     revalidateCampusProgramMajorOfferingsPaths(
       parentOffering.campus_id,
-      input.program_campus_id,
+      input.program_offering_id,
       input.id,
     );
   }
@@ -1569,23 +1571,23 @@ export async function deleteMajorOffering(
   const supabase = await createClient();
 
   const { data: existingMajorOffering } = await supabase
-    .from("major_p_c")
-    .select("id, program_campus_id")
+    .from("major_offering")
+    .select("id, program_offering_id")
     .eq("id", majorOfferingId)
     .maybeSingle();
 
   let campusId: string | undefined;
-  if (existingMajorOffering?.program_campus_id) {
+  if (existingMajorOffering?.program_offering_id) {
     const { data: parentOffering } = await supabase
-      .from("program_campus")
+      .from("program_offering")
       .select("campus_id")
-      .eq("id", existingMajorOffering.program_campus_id)
+      .eq("id", existingMajorOffering.program_offering_id)
       .maybeSingle();
     campusId = parentOffering?.campus_id;
   }
 
   const { error } = await supabase
-    .from("major_p_c")
+    .from("major_offering")
     .delete()
     .eq("id", majorOfferingId);
 
@@ -1594,21 +1596,21 @@ export async function deleteMajorOffering(
   }
 
   revalidateMajorOfferingsPaths();
-  if (campusId && existingMajorOffering?.program_campus_id) {
+  if (campusId && existingMajorOffering?.program_offering_id) {
     revalidateCampusProgramOfferingDetailPath(
       campusId,
-      existingMajorOffering.program_campus_id,
+      existingMajorOffering.program_offering_id,
     );
     revalidateCampusProgramMajorOfferingsPaths(
       campusId,
-      existingMajorOffering.program_campus_id,
+      existingMajorOffering.program_offering_id,
     );
   }
   return { data: true };
 }
 
 type BlockInput = {
-  major_p_c_id: string;
+  major_offering_id: string;
   curriculum_id: string;
   year_level: number;
   section: string;
@@ -1620,7 +1622,7 @@ type UpdateBlockInput = BlockInput & {
 };
 
 const normalizeBlockInput = (input: BlockInput) => ({
-  major_p_c_id: input.major_p_c_id.trim(),
+  major_offering_id: input.major_offering_id.trim(),
   curriculum_id: input.curriculum_id.trim(),
   year_level: input.year_level,
   section: normalizeCode(input.section),
@@ -1630,7 +1632,7 @@ const normalizeBlockInput = (input: BlockInput) => ({
 export async function createBlock(
   input: BlockInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.major_p_c_id?.trim())
+  if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
   if (!input.curriculum_id?.trim()) return { error: "Curriculum is required" };
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
@@ -1649,9 +1651,9 @@ export async function createBlock(
 
   const [{ data: majorOffering }, { data: curriculum }] = await Promise.all([
     supabase
-      .from("major_p_c")
+      .from("major_offering")
       .select("id, major_id")
-      .eq("id", input.major_p_c_id)
+      .eq("id", input.major_offering_id)
       .maybeSingle(),
     supabase
       .from("curriculum")
@@ -1699,7 +1701,7 @@ export async function updateBlock(
   input: UpdateBlockInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Block ID is required" };
-  if (!input.major_p_c_id?.trim())
+  if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
   if (!input.curriculum_id?.trim()) return { error: "Curriculum is required" };
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
@@ -1718,9 +1720,9 @@ export async function updateBlock(
 
   const [{ data: majorOffering }, { data: curriculum }] = await Promise.all([
     supabase
-      .from("major_p_c")
+      .from("major_offering")
       .select("id, major_id")
-      .eq("id", input.major_p_c_id)
+      .eq("id", input.major_offering_id)
       .maybeSingle(),
     supabase
       .from("curriculum")

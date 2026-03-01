@@ -46,7 +46,9 @@ const TERM_ORDER_LABELS: Record<string, number> = {
   FOURTH: 4,
 };
 
-const normalizeCurriculumRow = (item: any): CurriculumListItem => {
+const normalizeCurriculumRow = (
+  item: CurriculumListItem,
+): CurriculumListItem => {
   const major = Array.isArray(item.major) ? item.major[0] : item.major;
   const program = Array.isArray(major?.program)
     ? major.program[0]
@@ -198,7 +200,7 @@ export const getCurriculumTermCourseLinks = async (
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("curriculum_at")
+    .from("curriculum_offering")
     .select(
       `
       id,
@@ -213,7 +215,7 @@ export const getCurriculumTermCourseLinks = async (
         start,
         end
       ),
-      courses:course_c_t (
+      courses:course_offering (
         id,
         course_id,
         course:course_id (
@@ -237,7 +239,7 @@ export const getCurriculumTermCourseLinks = async (
   }
 
   return (data ?? [])
-    .map((item: any) => {
+    .map((item) => {
       const rawTerm = Array.isArray(item.term) ? item.term[0] : item.term;
       const rawCourses = Array.isArray(item.courses) ? item.courses : [];
 
@@ -246,15 +248,15 @@ export const getCurriculumTermCourseLinks = async (
         academic_term_id: item.academic_term_id,
         term: rawTerm as TermListItem,
         courses: rawCourses
-          .map((entry: any) => ({
+          .map((entry) => ({
             id: entry.id,
             course_id: entry.course_id,
             course: Array.isArray(entry.course)
               ? entry.course[0]
               : entry.course,
           }))
-          .filter((entry: any) => Boolean(entry.course?.id))
-          .sort((a: any, b: any) => {
+          .filter((entry) => Boolean(entry.course?.id))
+          .sort((a, b) => {
             const codeA = a.course.code?.toLowerCase() ?? "";
             const codeB = b.course.code?.toLowerCase() ?? "";
             return codeA.localeCompare(codeB);

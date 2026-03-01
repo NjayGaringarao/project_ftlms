@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AddTile } from "@/components/ui/add-tile";
@@ -36,7 +36,7 @@ export const ProgramOfferingMajorOfferingsInline = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     const [existingOfferings, availableMajors] = await Promise.all([
       getMajorOfferingsByProgramOffering(offering.id),
@@ -45,11 +45,15 @@ export const ProgramOfferingMajorOfferingsInline = ({
     setMajorOfferings(existingOfferings);
     setMajors(availableMajors);
     setIsLoading(false);
-  };
+  }, [offering.id, offering.program_id]);
 
   useEffect(() => {
-    loadData();
-  }, [offering.id, offering.program_id]);
+    const timer = setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [loadData]);
 
   const addableMajors = useMemo(() => {
     const linkedMajorIds = new Set(majorOfferings.map((item) => item.major_id));
@@ -67,7 +71,7 @@ export const ProgramOfferingMajorOfferingsInline = ({
     setSuccess(false);
 
     const { error: createError } = await createMajorOffering({
-      program_campus_id: offering.id,
+      program_offering_id: offering.id,
       major_id: majorIdToAdd,
     });
 
