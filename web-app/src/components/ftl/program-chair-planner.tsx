@@ -3,12 +3,15 @@
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
+  Calendar,
   CalendarClock,
+  Landmark,
   Plus,
-  Save,
   Send,
   Trash2,
   TriangleAlert,
+  UserCircle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,30 +23,31 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppDialog } from "@/components/ui/app-dialog";
+import { AddTile } from "@/components/ui/add-tile";
 import {
   createClass,
   deleteClass,
   deleteSession,
   findOrCreateSchedule,
   getFacultyScheduleBundle,
-  getOfferedCoursesByTermCampus,
+  getOfferedCourseOptionsByTermCampuses,
   getRoomsByCampus,
   saveSession,
-  submitScheduleForCampusDirector,
-  updateClass,
+  submitScheduleForCampusDirectors,
 } from "@/lib/ftl/actions";
 import {
   ConflictType,
   FTLBootstrapData,
   FTLClass,
   FTLFaculty,
-  FTLOffering,
+  FTLOfferingOption,
   FTLRoom,
   FTLScheduleBundle,
   FTLSession,
   SaveSessionInput,
   SessionConflict,
 } from "@/lib/ftl/types";
+import { cn } from "@/utils/style";
 
 const DAY_OPTIONS = [
   { value: 1, label: "Sunday" },
@@ -101,20 +105,32 @@ const ProgramChairPlanner = ({
   bootstrap,
   initialFaculty,
 }: ProgramChairPlannerProps) => {
-  const [selectedTermId, setSelectedTermId] = useState("");
-  const [selectedCampusId, setSelectedCampusId] = useState("");
-  const [facultyQuery, setFacultyQuery] = useState("");
-  const [selectedFacultyId, setSelectedFacultyId] = useState("");
+  const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
+  const [selectedFacultyId, setSelectedFacultyId] = useState<string | null>(
+    null,
+  );
+  const [selectedCampusIds, setSelectedCampusIds] = useState<string[]>([]);
 
   const [faculties] = useState<FTLFaculty[]>(initialFaculty);
-  const [offerings, setOfferings] = useState<FTLOffering[]>([]);
+  const [offeringOptions, setOfferingOptions] = useState<FTLOfferingOption[]>(
+    [],
+  );
   const [rooms, setRooms] = useState<FTLRoom[]>([]);
   const [scheduleBundle, setScheduleBundle] = useState<FTLScheduleBundle>({
     schedule: null,
     classes: [],
   });
 
-  const isLoadingFaculty = false;
+  const [facultyQuery, setFacultyQuery] = useState("");
+  const [termQuery, setTermQuery] = useState("");
+  const [campusQuery, setCampusQuery] = useState("");
+  const [offeringQuery, setOfferingQuery] = useState("");
+
+  const [isFacultyPickerOpen, setIsFacultyPickerOpen] = useState(false);
+  const [isTermPickerOpen, setIsTermPickerOpen] = useState(false);
+  const [isCampusPickerOpen, setIsCampusPickerOpen] = useState(false);
+  const [isOfferingPickerOpen, setIsOfferingPickerOpen] = useState(false);
+
   const [isLoadingOfferings, setIsLoadingOfferings] = useState(false);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -122,11 +138,6 @@ const ProgramChairPlanner = ({
     kind: "error" | "success";
     text: string;
   } | null>(null);
-
-  const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
-  const [editingClass, setEditingClass] = useState<FTLClass | null>(null);
-  const [classCourseCtId, setClassCourseCtId] = useState("");
-  const [classBlockId, setClassBlockId] = useState<string>("none");
 
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
   const [sessionDraft, setSessionDraft] = useState<SessionDraft | null>(null);
@@ -156,23 +167,53 @@ const ProgramChairPlanner = ({
     });
   }, [faculties, facultyQuery]);
 
-  const selectedOffering = useMemo(
+  const selectedFacultyDesignationLoad =
+    selectedFaculty?.total_designation_load ?? 0;
+
+  const teachingLoadTotal = useMemo(
     () =>
-      offerings.find((item) => item.course_c_t_id === classCourseCtId) ?? null,
-    [offerings, classCourseCtId],
+      scheduleBundle.classes.reduce(
+        (sum, item) =>
+          sum + (item.lecture_hour ?? 0) + (item.laboratory_hour ?? 0) * 0.75,
+        0,
+      ),
+    [scheduleBundle.classes],
   );
 
-  const sortedOfferings = useMemo(
-    () =>
-      [...offerings].sort((a, b) => {
-        if (a.course_code !== b.course_code) {
-          return a.course_code.localeCompare(b.course_code);
-        }
+  const totalWorkingLoad = teachingLoadTotal + selectedFacultyDesignationLoad;
 
-        return a.curriculum_title.localeCompare(b.curriculum_title);
-      }),
-    [offerings],
-  );
+  const filteredTerms = useMemo(() => {
+    const query = termQuery.trim().toLowerCase();
+    if (!query) return bootstrap.terms;
+
+    return bootstrap.terms.filter((term) =>
+      formatTermLabel(term).toLowerCase().includes(query),
+    );
+  }, [bootstrap.terms, termQuery]);
+
+  const filteredCampuses = useMemo(() => {
+    const query = campusQuery.trim().toLowerCase();
+    if (!query) return bootstrap.campuses;
+
+    return bootstrap.campuses.filter((campus) =>
+      campus.name.toLowerCase().includes(query),
+    );
+  }, [bootstrap.campuses, campusQuery]);
+
+  const filteredOfferingOptions = useMemo(() => {
+    const query = offeringQuery.trim().toLowerCase();
+    if (!query) return offeringOptions;
+
+    return offeringOptions.filter((item) => {
+      const summary =
+        `${item.course_code} ${item.course_title} ${item.program_code ?? ""} ${item.major_code ?? ""} ${item.block_label} ${item.campus_name}`
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim();
+
+      return summary.includes(query);
+    });
+  }, [offeringOptions, offeringQuery]);
 
   const groupedConflicts = useMemo(
     () => ({
@@ -183,9 +224,20 @@ const ProgramChairPlanner = ({
     [conflicts],
   );
 
-  const loadTermCampusDataFor = async (termId: string, campusId: string) => {
-    if (!termId || !campusId) {
-      setOfferings([]);
+  const loadTermCampusDataFor = async (
+    termId: string | null,
+    campusIds: string[],
+  ) => {
+    const dedupedCampusIds = Array.from(new Set(campusIds.filter(Boolean)));
+
+    if (!termId || dedupedCampusIds.length === 0) {
+      setOfferingOptions([]);
+      setRooms([]);
+      return;
+    }
+
+    const primaryCampusId = dedupedCampusIds[0];
+    if (!primaryCampusId) {
       setRooms([]);
       return;
     }
@@ -193,16 +245,19 @@ const ProgramChairPlanner = ({
     setIsLoadingOfferings(true);
 
     const [nextOfferings, nextRooms] = await Promise.all([
-      getOfferedCoursesByTermCampus(termId, campusId),
-      getRoomsByCampus(campusId),
+      getOfferedCourseOptionsByTermCampuses(termId, dedupedCampusIds),
+      getRoomsByCampus(primaryCampusId),
     ]);
 
-    setOfferings(nextOfferings);
+    setOfferingOptions(nextOfferings);
     setRooms(nextRooms);
     setIsLoadingOfferings(false);
   };
 
-  const loadScheduleFor = async (facultyId: string, termId: string) => {
+  const loadScheduleFor = async (
+    facultyId: string | null,
+    termId: string | null,
+  ) => {
     if (!facultyId || !termId) {
       setScheduleBundle({ schedule: null, classes: [] });
       return;
@@ -212,6 +267,17 @@ const ProgramChairPlanner = ({
     const bundle = await getFacultyScheduleBundle(facultyId, termId);
     setScheduleBundle(bundle);
     setIsLoadingSchedule(false);
+  };
+
+  const refreshScheduleBundle = async () => {
+    if (!selectedFacultyId || !selectedTermId) return null;
+
+    const refreshed = await getFacultyScheduleBundle(
+      selectedFacultyId,
+      selectedTermId,
+    );
+    setScheduleBundle(refreshed);
+    return refreshed;
   };
 
   const requireSchedule = async () => {
@@ -235,46 +301,19 @@ const ProgramChairPlanner = ({
     return bundle.schedule;
   };
 
-  const openCreateClassDialog = async () => {
-    setFeedback(null);
-    const schedule = await requireSchedule();
-    if (!schedule) return;
-
-    setEditingClass(null);
-    setClassCourseCtId(offerings[0]?.course_c_t_id ?? "");
-    setClassBlockId("none");
-    setIsClassDialogOpen(true);
-  };
-
-  const openEditClassDialog = (item: FTLClass) => {
-    setEditingClass(item);
-    setClassCourseCtId(item.course_c_t_id);
-    setClassBlockId(item.block_id ?? "none");
-    setIsClassDialogOpen(true);
-  };
-
-  const handleSaveClass = async () => {
-    if (!classCourseCtId) {
-      setFeedback({ kind: "error", text: "Select an offered course." });
-      return;
-    }
-
+  const handleAddOfferingToSchedule = async (option: FTLOfferingOption) => {
     const schedule = await requireSchedule();
     if (!schedule) return;
 
     setIsSaving(true);
     setFeedback(null);
 
-    const payload = {
+    const result = await createClass({
       schedule_id: schedule.id,
-      course_c_t_id: classCourseCtId,
-      block_id: classBlockId === "none" ? null : classBlockId,
+      course_c_t_id: option.course_c_t_id,
+      block_id: option.block_id,
       expected_schedule_updated_at: schedule.updated_at,
-    };
-
-    const result = editingClass
-      ? await updateClass({ class_id: editingClass.id, ...payload })
-      : await createClass(payload);
+    });
 
     if (result.error) {
       setFeedback({ kind: "error", text: result.error });
@@ -282,17 +321,11 @@ const ProgramChairPlanner = ({
       return;
     }
 
-    const refreshed = await getFacultyScheduleBundle(
-      selectedFacultyId,
-      selectedTermId,
-    );
-    setScheduleBundle(refreshed);
-    setIsClassDialogOpen(false);
+    await refreshScheduleBundle();
+    await loadTermCampusDataFor(selectedTermId, selectedCampusIds);
+    setIsOfferingPickerOpen(false);
     setIsSaving(false);
-    setFeedback({
-      kind: "success",
-      text: editingClass ? "Class updated" : "Class added",
-    });
+    setFeedback({ kind: "success", text: "Course added to schedule" });
   };
 
   const handleDeleteClass = async (classId: string) => {
@@ -313,16 +346,18 @@ const ProgramChairPlanner = ({
       return;
     }
 
-    const refreshed = await getFacultyScheduleBundle(
-      selectedFacultyId,
-      selectedTermId,
-    );
-    setScheduleBundle(refreshed);
+    await refreshScheduleBundle();
+    await loadTermCampusDataFor(selectedTermId, selectedCampusIds);
     setIsSaving(false);
     setFeedback({ kind: "success", text: "Class deleted" });
   };
 
-  const openCreateSessionDialog = (item: FTLClass) => {
+  const openCreateSessionDialog = async (item: FTLClass) => {
+    if (item.campus_id) {
+      const campusRooms = await getRoomsByCampus(item.campus_id);
+      setRooms(campusRooms);
+    }
+
     setSessionDraft({
       class_id: item.id,
       block_id: item.block_id,
@@ -334,7 +369,12 @@ const ProgramChairPlanner = ({
     setIsSessionDialogOpen(true);
   };
 
-  const openEditSessionDialog = (item: FTLClass, session: FTLSession) => {
+  const openEditSessionDialog = async (item: FTLClass, session: FTLSession) => {
+    if (item.campus_id) {
+      const campusRooms = await getRoomsByCampus(item.campus_id);
+      setRooms(campusRooms);
+    }
+
     setSessionDraft({
       class_id: item.id,
       block_id: item.block_id,
@@ -351,15 +391,28 @@ const ProgramChairPlanner = ({
     draft: SessionDraft,
     saveAnyway: boolean,
   ) => {
-    if (!scheduleBundle.schedule || !selectedFacultyId || !selectedCampusId)
+    if (!scheduleBundle.schedule || !selectedFacultyId) return;
+
+    const ownerClass = scheduleBundle.classes.find(
+      (item) => item.id === draft.class_id,
+    );
+
+    const campusId = ownerClass?.campus_id ?? selectedCampusIds[0] ?? "";
+
+    if (!campusId) {
+      setFeedback({
+        kind: "error",
+        text: "No campus context found for this class.",
+      });
       return;
+    }
 
     const input: SaveSessionInput = {
       session_id: draft.session_id,
       class_id: draft.class_id,
       schedule_id: scheduleBundle.schedule.id,
       academic_term_id: scheduleBundle.schedule.academic_term_id,
-      campus_id: selectedCampusId,
+      campus_id: campusId,
       faculty_user_id: selectedFacultyId,
       block_id: draft.block_id,
       room_id: draft.room_id,
@@ -389,10 +442,8 @@ const ProgramChairPlanner = ({
     setPendingSessionInput(null);
     setConflicts([]);
 
-    const refreshed = await getFacultyScheduleBundle(
-      selectedFacultyId,
-      selectedTermId,
-    );
+    const refreshed = await refreshScheduleBundle();
+    if (!refreshed) return;
 
     if (result.session) {
       const nextClasses = refreshed.classes.map((item) => ({
@@ -449,10 +500,11 @@ const ProgramChairPlanner = ({
       return;
     }
 
-    const refreshed = await getFacultyScheduleBundle(
-      selectedFacultyId,
-      selectedTermId,
-    );
+    const refreshed = await refreshScheduleBundle();
+    if (!refreshed) {
+      setIsSaving(false);
+      return;
+    }
 
     if (result.session) {
       const nextClasses = refreshed.classes.map((item) => ({
@@ -496,22 +548,18 @@ const ProgramChairPlanner = ({
       return;
     }
 
-    const refreshed = await getFacultyScheduleBundle(
-      selectedFacultyId,
-      selectedTermId,
-    );
-    setScheduleBundle(refreshed);
+    await refreshScheduleBundle();
     setIsSaving(false);
     setFeedback({ kind: "success", text: "Session deleted" });
   };
 
   const handleSubmitSchedule = async () => {
-    if (!scheduleBundle.schedule || !selectedCampusId) return;
+    if (!scheduleBundle.schedule || selectedCampusIds.length === 0) return;
 
     setIsSaving(true);
-    const result = await submitScheduleForCampusDirector({
+    const result = await submitScheduleForCampusDirectors({
       schedule_id: scheduleBundle.schedule.id,
-      campus_id: selectedCampusId,
+      campus_ids: selectedCampusIds,
     });
 
     if (result.error) {
@@ -520,13 +568,23 @@ const ProgramChairPlanner = ({
       return;
     }
 
-    const refreshed = await getFacultyScheduleBundle(
-      selectedFacultyId,
-      selectedTermId,
-    );
-    setScheduleBundle(refreshed);
+    await refreshScheduleBundle();
     setIsSaving(false);
-    setFeedback({ kind: "success", text: "Schedule submitted for evaluation" });
+
+    if (result.missing_directors.length > 0) {
+      setFeedback({
+        kind: "error",
+        text: `Submitted to ${result.submitted_campus_count} campus director(s). Missing director designation for: ${result.missing_directors
+          .map((item) => item.campus_name)
+          .join(", ")}`,
+      });
+      return;
+    }
+
+    setFeedback({
+      kind: "success",
+      text: `Schedule submitted to ${result.submitted_campus_count} campus director(s).`,
+    });
   };
 
   const conflictBadgeClass = (type: ConflictType) => {
@@ -551,66 +609,6 @@ const ProgramChairPlanner = ({
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden p-4">
-      <Card className="py-4">
-        <CardHeader className="pb-2">
-          <CardTitle>Program Chair Scheduling</CardTitle>
-          <CardDescription>
-            Build faculty-level schedule proposals by term and campus.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
-          <div className="space-y-1">
-            <p className="text-xs text-foreground/70">Academic Term</p>
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={selectedTermId}
-              onChange={(event) => {
-                const nextTermId = event.target.value;
-                setSelectedTermId(nextTermId);
-                void loadTermCampusDataFor(nextTermId, selectedCampusId);
-                void loadScheduleFor(selectedFacultyId, nextTermId);
-              }}
-            >
-              <option value="">Select term</option>
-              {bootstrap.terms.map((term) => (
-                <option key={term.id} value={term.id}>
-                  {formatTermLabel(term)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-xs text-foreground/70">Campus</p>
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={selectedCampusId}
-              onChange={(event) => {
-                const nextCampusId = event.target.value;
-                setSelectedCampusId(nextCampusId);
-                void loadTermCampusDataFor(selectedTermId, nextCampusId);
-              }}
-            >
-              <option value="">Select campus</option>
-              {bootstrap.campuses.map((campus) => (
-                <option key={campus.id} value={campus.id}>
-                  {campus.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-xs text-foreground/70">Faculty</p>
-            <Input
-              placeholder="Search faculty"
-              value={facultyQuery}
-              onChange={(event) => setFacultyQuery(event.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {feedback ? (
         <div
           className={`rounded-md border px-3 py-2 text-sm ${
@@ -623,126 +621,188 @@ const ProgramChairPlanner = ({
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[320px_1fr]">
-        <Card className="min-h-0 py-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Faculty List</CardTitle>
+      <div
+        className={cn(
+          "h-full overflow-hidden",
+          "grid grid-cols-4 grid-rows-5 gap-4",
+        )}
+      >
+        <Card className="row-span-2 col-span-1">
+          <CardHeader className="gap-0">
+            <CardTitle>Step 1: Set Context</CardTitle>
             <CardDescription>
-              {isLoadingFaculty
-                ? "Loading faculty..."
-                : `${filteredFaculty.length} faculty`}
+              Complete this form to load course offerings.
             </CardDescription>
           </CardHeader>
-          <CardContent className="min-h-0 overflow-y-auto space-y-2">
-            {filteredFaculty.map((faculty) => {
-              const active = faculty.id === selectedFacultyId;
-              return (
-                <button
-                  key={faculty.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedFacultyId(faculty.id);
-                    void loadScheduleFor(faculty.id, selectedTermId);
-                  }}
-                  className={`w-full rounded-md border px-3 py-2 text-left transition ${
-                    active
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-background hover:bg-accent"
-                  }`}
+          <CardContent className="flex flex-col gap-3 overflow-auto">
+            <div className="space-y-1">
+              <p className="text-xs text-foreground/70">Faculty</p>
+              {selectedFaculty ? (
+                <div
+                  key={selectedFaculty.id}
+                  className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
                 >
-                  <p className="font-medium text-sm">{fullName(faculty)}</p>
-                  <p className="text-xs text-foreground/70">
-                    {faculty.employment_status} • Designation load{" "}
-                    {faculty.total_designation_load}
-                  </p>
-                </button>
-              );
-            })}
+                  <div className="flex items-center gap-2 p-4 text-sm">
+                    <UserCircle className="h-6 w-6 text-foreground/70" />
+                    <p>{fullName(selectedFaculty)}</p>
+                  </div>
+                  <button
+                    className="p-4"
+                    onClick={() => {
+                      setSelectedFacultyId(null);
+                      setSelectedCampusIds([]);
+                      setScheduleBundle({ schedule: null, classes: [] });
+                    }}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : null}
 
-            {!isLoadingFaculty && filteredFaculty.length === 0 ? (
-              <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-foreground/70">
-                No faculty found.
+              {!selectedFaculty && (
+                <AddTile
+                  title="Select Faculty"
+                  description="Open searchable faculty list"
+                  onClick={() => setIsFacultyPickerOpen(true)}
+                />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs text-foreground/70">Academic Term</p>
+              {selectedTermId ? (
+                <div
+                  key={selectedTermId}
+                  className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
+                >
+                  <div className="flex items-center gap-2 p-4 text-sm">
+                    <Calendar className="h-6 w-6 text-foreground/70" />
+                    <p>
+                      {bootstrap.terms.find(
+                        (term) => term.id === selectedTermId,
+                      )?.code ?? ""}
+                    </p>
+                  </div>
+                  <button
+                    className="p-4"
+                    onClick={() => {
+                      setSelectedTermId(null);
+                      setScheduleBundle({ schedule: null, classes: [] });
+                    }}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : null}
+
+              {!selectedTermId && (
+                <AddTile
+                  title="Select Academic Term"
+                  description="Open searchable term list"
+                  onClick={() => setIsTermPickerOpen(true)}
+                />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs text-foreground/70">Campus</p>
+              {selectedCampusIds.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selectedCampusIds.map((campusId) => {
+                    const campus = bootstrap.campuses.find(
+                      (item) => item.id === campusId,
+                    );
+                    if (!campus) return null;
+
+                    return (
+                      <div
+                        key={campusId}
+                        className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
+                      >
+                        <div className="flex items-center gap-2 p-4 text-sm">
+                          <Landmark className="h-6 w-6 text-foreground/70" />
+                          <p>{campus.name}</p>
+                        </div>
+                        <button
+                          className="p-4"
+                          onClick={() => {
+                            const nextCampusIds = selectedCampusIds.filter(
+                              (item) => item !== campusId,
+                            );
+                            setSelectedCampusIds(nextCampusIds);
+                            void loadTermCampusDataFor(
+                              selectedTermId,
+                              nextCampusIds,
+                            );
+                          }}
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              <AddTile
+                title="Add Campus"
+                description="Select one or more campuses"
+                onClick={() => setIsCampusPickerOpen(true)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="row-start-3 row-span-3 col-span-1">
+          <CardHeader className="pb-2 gap-0">
+            <CardTitle className="text-base">STEP 2: Select Courses</CardTitle>
+            <CardDescription>
+              Add courses to be handle by the faculty.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="min-h-0 overflow-auto space-y-3">
+            <AddTile
+              title="Add Course Offering"
+              description="Open searchable offerings list"
+              onClick={() => setIsOfferingPickerOpen(true)}
+              disabled={
+                !selectedFacultyId ||
+                !selectedTermId ||
+                selectedCampusIds.length === 0
+              }
+            />
+
+            {scheduleBundle.classes.map((item) => (
+              <div key={item.id} className="rounded-md border p-2 text-sm">
+                <p className="font-medium">{item.course_code}</p>
+                <p className="text-xs text-foreground/70">
+                  {item.program_code ?? "N/A"} | {item.major_code ?? "N/A"} |{" "}
+                  {item.year_section ?? "No Block"}
+                </p>
+                <p className="text-xs text-foreground/70">
+                  Course load = {item.lecture_hour ?? 0} + (
+                  {item.laboratory_hour ?? 0} × 0.75)
+                </p>
+              </div>
+            ))}
+
+            {!isLoadingOfferings &&
+            selectedTermId &&
+            selectedCampusIds.length > 0 &&
+            offeringOptions.length === 0 ? (
+              <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
+                No offered courses found for selected term and campuses.
               </p>
             ) : null}
           </CardContent>
         </Card>
 
-        <div className="grid min-h-0 gap-4 lg:grid-rows-[minmax(200px,320px)_1fr]">
-          <Card className="min-h-0 py-4">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Offered Courses</CardTitle>
-              <CardDescription>
-                {selectedTermId && selectedCampusId
-                  ? isLoadingOfferings
-                    ? "Loading offerings..."
-                    : `${sortedOfferings.length} offered courses`
-                  : "Select term and campus to load offerings"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="min-h-0 overflow-auto">
-              <table className="w-full min-w-180 text-sm">
-                <thead>
-                  <tr className="border-b text-left text-foreground/70">
-                    <th className="py-2 pr-2">Course</th>
-                    <th className="py-2 pr-2">Title</th>
-                    <th className="py-2 pr-2">Curriculum</th>
-                    <th className="py-2 pr-2">Major</th>
-                    <th className="py-2 pr-2">Blocks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedOfferings.map((item) => (
-                    <tr key={item.course_c_t_id} className="border-b align-top">
-                      <td className="py-2 pr-2 font-medium">
-                        {item.course_code}
-                      </td>
-                      <td className="py-2 pr-2">{item.course_title}</td>
-                      <td className="py-2 pr-2">
-                        <p>{item.curriculum_title}</p>
-                        <p className="text-xs text-foreground/70">
-                          Series {item.curriculum_series_year}
-                          {item.curriculum_revised_year
-                            ? ` • Revised ${item.curriculum_revised_year}`
-                            : ""}
-                        </p>
-                      </td>
-                      <td className="py-2 pr-2">
-                        {item.major_code
-                          ? `${item.major_code} - ${item.major_name}`
-                          : item.major_name}
-                      </td>
-                      <td className="py-2 pr-2">
-                        {item.available_blocks.length > 0
-                          ? item.available_blocks
-                              .map(
-                                (block) =>
-                                  `Y${block.year_level}-${block.section}`,
-                              )
-                              .join(", ")
-                          : "No block"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {!isLoadingOfferings &&
-              selectedTermId &&
-              selectedCampusId &&
-              sortedOfferings.length === 0 ? (
-                <p className="mt-4 rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                  No offered courses found for this term and campus.
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card className="min-h-0 py-4">
+        <div className="col-span-3 row-span-5 flex flex-col gap-4 overflow-hidden">
+          <Card className="flex-1 overflow-hidden">
             <CardHeader className="pb-2">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <CardTitle className="text-base">
-                    Faculty Schedule Editor
+                    Step 3: Construct Schedule
                   </CardTitle>
                   <CardDescription>
                     {selectedFaculty
@@ -762,28 +822,7 @@ const ProgramChairPlanner = ({
                   ) : null}
                 </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={openCreateClassDialog}
-                    disabled={
-                      !selectedFacultyId ||
-                      !selectedTermId ||
-                      !selectedCampusId ||
-                      isSaving
-                    }
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Class
-                  </Button>
-                  <Button
-                    onClick={handleSubmitSchedule}
-                    disabled={!scheduleBundle.schedule || isSaving}
-                  >
-                    <Send className="h-4 w-4" />
-                    Submit
-                  </Button>
-                </div>
+                <div className="flex gap-2"></div>
               </div>
             </CardHeader>
 
@@ -804,6 +843,8 @@ const ProgramChairPlanner = ({
                   <Button
                     size="sm"
                     onClick={async () => {
+                      if (!selectedFacultyId || !selectedTermId) return;
+
                       setIsSaving(true);
                       const bundle = await findOrCreateSchedule(
                         selectedFacultyId,
@@ -843,14 +884,6 @@ const ProgramChairPlanner = ({
                         </div>
 
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditClassDialog(item)}
-                          >
-                            <Save className="h-4 w-4" />
-                            Edit Class
-                          </Button>
                           <Button
                             size="sm"
                             variant="destructive"
@@ -931,71 +964,211 @@ const ProgramChairPlanner = ({
               ) : null}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="gap-0">
+              <CardTitle className="text-base">
+                Step 4: Submit Schedule
+              </CardTitle>
+              <CardDescription>
+                Review load summary then submit to selected campus directors.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-md border p-2">
+                  <p className="text-foreground/70">Teaching Load</p>
+                  <p className="text-sm font-semibold">
+                    {teachingLoadTotal.toFixed(2)}
+                  </p>
+                </div>
+                <div className="rounded-md border p-2">
+                  <p className="text-foreground/70">Designation Load</p>
+                  <p className="text-sm font-semibold">
+                    {selectedFacultyDesignationLoad.toFixed(2)}
+                  </p>
+                </div>
+                <div className="rounded-md border p-2">
+                  <p className="text-foreground/70">Total Working Load</p>
+                  <p className="text-sm font-semibold">
+                    {totalWorkingLoad.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-row">
+                <div className="flex flex-1"></div>
+                <Button
+                  onClick={handleSubmitSchedule}
+                  disabled={
+                    !scheduleBundle.schedule ||
+                    isSaving ||
+                    selectedCampusIds.length === 0
+                  }
+                >
+                  <Send className="h-4 w-4" />
+                  Submit
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       <AppDialog
-        open={isClassDialogOpen}
-        onOpenChange={setIsClassDialogOpen}
-        title={editingClass ? "Edit Class" : "Add Class"}
-        description="Assign offered course and optional block"
+        open={isFacultyPickerOpen}
+        onOpenChange={setIsFacultyPickerOpen}
+        title="Select Faculty"
+        description="Search and select one faculty"
       >
         <div className="space-y-3">
-          <div className="space-y-1">
-            <p className="text-xs text-foreground/70">Offered Course</p>
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={classCourseCtId}
-              onChange={(event) => {
-                const nextCourseCtId = event.target.value;
-                setClassCourseCtId(nextCourseCtId);
-                const nextOffering = offerings.find(
-                  (item) => item.course_c_t_id === nextCourseCtId,
-                );
-                setClassBlockId(
-                  nextOffering?.available_blocks[0]?.id ?? "none",
-                );
-              }}
-            >
-              <option value="">Select offered course</option>
-              {sortedOfferings.map((item) => (
-                <option key={item.course_c_t_id} value={item.course_c_t_id}>
-                  {item.course_code} - {item.course_title} •{" "}
-                  {item.curriculum_title}
-                </option>
-              ))}
-            </select>
+          <Input
+            placeholder="Search faculty"
+            value={facultyQuery}
+            onChange={(event) => setFacultyQuery(event.target.value)}
+          />
+          <div className="max-h-80 space-y-2 overflow-y-auto">
+            {filteredFaculty.map((faculty) => (
+              <button
+                key={faculty.id}
+                type="button"
+                className="w-full rounded-md border p-2 text-left hover:bg-accent"
+                onClick={() => {
+                  setSelectedFacultyId(faculty.id);
+                  setIsFacultyPickerOpen(false);
+                  void loadScheduleFor(faculty.id, selectedTermId);
+                }}
+              >
+                <p className="text-sm font-medium">{fullName(faculty)}</p>
+                <p className="text-xs text-foreground/70">
+                  {faculty.employment_status} • Designation load{" "}
+                  {faculty.total_designation_load}
+                </p>
+              </button>
+            ))}
           </div>
+        </div>
+      </AppDialog>
 
-          <div className="space-y-1">
-            <p className="text-xs text-foreground/70">Block</p>
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={classBlockId}
-              onChange={(event) => setClassBlockId(event.target.value)}
-            >
-              <option value="none">No block</option>
-              {(selectedOffering?.available_blocks ?? []).map((block) => (
-                <option key={block.id} value={block.id}>
-                  Year {block.year_level} - {block.section}
-                </option>
-              ))}
-            </select>
+      <AppDialog
+        open={isTermPickerOpen}
+        onOpenChange={setIsTermPickerOpen}
+        title="Select Academic Term"
+        description="Search and select one term"
+      >
+        <div className="space-y-3">
+          <Input
+            placeholder="Search term"
+            value={termQuery}
+            onChange={(event) => setTermQuery(event.target.value)}
+          />
+          <div className="max-h-80 space-y-2 overflow-y-auto">
+            {filteredTerms.map((term) => (
+              <button
+                key={term.id}
+                type="button"
+                className="w-full rounded-md border p-2 text-left hover:bg-accent"
+                onClick={() => {
+                  setSelectedTermId(term.id);
+                  setIsTermPickerOpen(false);
+                  void loadTermCampusDataFor(term.id, selectedCampusIds);
+                  void loadScheduleFor(selectedFacultyId, term.id);
+                }}
+              >
+                <p className="text-sm font-medium">{term.code}</p>
+              </button>
+            ))}
           </div>
+        </div>
+      </AppDialog>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsClassDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveClass}
-              disabled={isSaving || !classCourseCtId}
-            >
-              {editingClass ? "Save Class" : "Add Class"}
-            </Button>
+      <AppDialog
+        open={isCampusPickerOpen}
+        onOpenChange={setIsCampusPickerOpen}
+        title="Add Campuses"
+        description="Search and add one or more campuses"
+      >
+        <div className="space-y-3">
+          <Input
+            placeholder="Search campus"
+            value={campusQuery}
+            onChange={(event) => setCampusQuery(event.target.value)}
+          />
+          <div className="max-h-80 space-y-2 overflow-y-auto">
+            {filteredCampuses.map((campus) => {
+              const selected = selectedCampusIds.includes(campus.id);
+              return (
+                <button
+                  key={campus.id}
+                  type="button"
+                  className={cn(
+                    "w-full rounded-md border p-2 text-left",
+                    selected
+                      ? "border-primary bg-primary/10"
+                      : "hover:bg-accent",
+                  )}
+                  onClick={() => {
+                    const nextCampusIds = selected
+                      ? selectedCampusIds.filter((item) => item !== campus.id)
+                      : [...selectedCampusIds, campus.id];
+
+                    setSelectedCampusIds(nextCampusIds);
+                    void loadTermCampusDataFor(selectedTermId, nextCampusIds);
+                  }}
+                >
+                  <p className="text-sm font-medium">{campus.name}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </AppDialog>
+
+      <AppDialog
+        open={isOfferingPickerOpen}
+        onOpenChange={setIsOfferingPickerOpen}
+        title="Add Course Offering"
+        description="Select an offering; taken items are shown but disabled"
+      >
+        <div className="space-y-3">
+          <Input
+            placeholder="Search offering"
+            value={offeringQuery}
+            onChange={(event) => setOfferingQuery(event.target.value)}
+          />
+          <div className="max-h-80 space-y-2 overflow-y-auto">
+            {filteredOfferingOptions.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                disabled={item.is_taken || isSaving}
+                className={cn(
+                  "w-full rounded-md border p-2 text-left",
+                  item.is_taken
+                    ? "cursor-not-allowed border-border bg-muted text-foreground/60"
+                    : "hover:bg-accent",
+                )}
+                onClick={() => void handleAddOfferingToSchedule(item)}
+              >
+                <p className="text-sm font-medium">
+                  {item.course_code} • {item.course_title}
+                </p>
+                <p className="text-xs text-foreground/70">
+                  {item.campus_name} • {item.program_code ?? "N/A"} |{" "}
+                  {item.major_code ?? "N/A"} | {item.block_label}
+                </p>
+                <p className="text-xs text-foreground/70">
+                  Course load = {item.lecture_hour ?? 0} + (
+                  {item.laboratory_hour ?? 0} × 0.75)
+                </p>
+                {item.is_taken ? (
+                  <p className="text-xs text-destructive">
+                    Already assigned to:{" "}
+                    {item.assigned_faculty_name ?? "Unknown Faculty"}
+                  </p>
+                ) : null}
+              </button>
+            ))}
           </div>
         </div>
       </AppDialog>

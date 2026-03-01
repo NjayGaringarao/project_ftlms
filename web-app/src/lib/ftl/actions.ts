@@ -8,10 +8,12 @@ import {
   FTLBootstrapData,
   FTLClass,
   FTLFaculty,
+  FTLOfferingOption,
   FTLOffering,
   FTLRoom,
   FTLScheduleBundle,
   FTLSession,
+  MultiCampusSubmitResult,
   MutationResult,
   SaveSessionInput,
   SaveSessionResult,
@@ -181,18 +183,27 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
       block_id,
       course_c_t:course_c_t!inner(
         id,
-        course:course!inner(id, code, title),
+        course:course!inner(id, code, title, lecture_hour, laboratory_hour),
         curriculum_at:curriculum_at!inner(
           id,
           academic_term_id,
           curriculum:curriculum!inner(
             id,
             title,
-            major:major(id, code, name)
+            major:major(id, code, name, program:program(id, code, name))
           )
         )
       ),
-      block:block(id, year_level, section),
+      block:block(
+        id,
+        year_level,
+        section,
+        major_p_c:major_p_c!inner(
+          program_campus:program_campus!inner(
+            campus:campus!inner(id, name)
+          )
+        )
+      ),
       session(
         id,
         class_id,
@@ -219,6 +230,11 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
     const curriculumAt = asObject(courseCt?.curriculum_at);
     const curriculum = asObject(curriculumAt?.curriculum);
     const major = asObject(curriculum?.major);
+    const program = asObject(major?.program);
+
+    const majorPc = asObject(block?.major_p_c);
+    const programCampus = asObject(majorPc?.program_campus);
+    const campus = asObject(programCampus?.campus);
 
     const sessionsRaw = (row.session as RowObject[] | undefined) ?? [];
     const sessions = sessionsRaw
@@ -239,9 +255,14 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
       block_id: asString(row.block_id),
       course_code: asString(course?.code) ?? "",
       course_title: asString(course?.title) ?? "",
+      lecture_hour: asNumber(course?.lecture_hour),
+      laboratory_hour: asNumber(course?.laboratory_hour),
       curriculum_title: asString(curriculum?.title) ?? "",
+      program_code: asString(program?.code),
       major_code: asString(major?.code),
       major_name: asString(major?.name),
+      campus_id: asString(campus?.id),
+      campus_name: asString(campus?.name),
       year_section:
         yearLevel && section ? `Year ${yearLevel} - ${section}` : null,
       sessions,
@@ -513,6 +534,211 @@ export const getOfferedCoursesByTermCampus = async (
               : a.year_level - b.year_level,
           ) ?? [],
     };
+  });
+};
+
+export const getOfferedCourseOptionsByTermCampuses = async (
+  termId: string,
+  campusIds: string[],
+): Promise<FTLOfferingOption[]> => {
+  await ensureProgramChair();
+
+  const dedupedCampusIds = Array.from(new Set(campusIds.filter(Boolean)));
+  if (!termId || dedupedCampusIds.length === 0) return [];
+
+  const supabase = await createClient();
+
+  const { data: blocksRaw, error: blocksError } = await supabase
+    .from("block")
+    .select(
+      `
+      id,
+      curriculum_id,
+      year_level,
+      section,
+      major_p_c:major_p_c!inner(
+        major:major!inner(
+          code,
+          name,
+          program:program(code, name)
+        ),
+        program_campus:program_campus!inner(
+          campus:campus!inner(id, name)
+        )
+      )
+    `,
+    )
+    .in("major_p_c.program_campus.campus_id", dedupedCampusIds);
+
+  if (blocksError) {
+    console.error(
+      "lib.ftl.getOfferedCourseOptionsByTermCampuses blocks::",
+      blocksError,
+    );
+    return [];
+  }
+
+  const blocks = (blocksRaw ?? []).map((raw) => {
+    const row = raw as RowObject;
+    const majorPc = asObject(row.major_p_c);
+    const major = asObject(majorPc?.major);
+    const program = asObject(major?.program);
+    const programCampus = asObject(majorPc?.program_campus);
+    const campus = asObject(programCampus?.campus);
+
+    return {
+      id: asString(row.id) ?? "",
+      curriculum_id: asString(row.curriculum_id) ?? "",
+      year_level: asNumber(row.year_level) ?? 1,
+      section: asString(row.section) ?? "",
+      campus_id: asString(campus?.id) ?? "",
+      campus_name: asString(campus?.name) ?? "Unknown Campus",
+      program_code: asString(program?.code),
+      major_code: asString(major?.code),
+      major_name: asString(major?.name),
+    };
+  });
+
+  const curriculumIds = Array.from(
+    new Set(blocks.map((item) => item.curriculum_id).filter(Boolean)),
+  );
+  const blockIds = Array.from(
+    new Set(blocks.map((item) => item.id).filter(Boolean)),
+  );
+
+  if (curriculumIds.length === 0 || blockIds.length === 0) return [];
+
+  const [offeringsResult, takenResult] = await Promise.all([
+    supabase
+      .from("course_c_t")
+      .select(
+        `
+        id,
+        course_id,
+        course:course!inner(id, code, title, lecture_hour, laboratory_hour),
+        curriculum_at:curriculum_at!inner(
+          id,
+          curriculum_id,
+          academic_term_id,
+          curriculum:curriculum!inner(id, title)
+        )
+      `,
+      )
+      .eq("curriculum_at.academic_term_id", termId)
+      .in("curriculum_at.curriculum_id", curriculumIds),
+    supabase
+      .from("class")
+      .select(
+        `
+        id,
+        course_c_t_id,
+        block_id,
+        schedule:schedule!inner(
+          id,
+          academic_term_id,
+          user:user!inner(
+            identity(first_name, middle_name, last_name, extension)
+          )
+        )
+      `,
+      )
+      .eq("schedule.academic_term_id", termId)
+      .in("block_id", blockIds),
+  ]);
+
+  if (offeringsResult.error) {
+    console.error(
+      "lib.ftl.getOfferedCourseOptionsByTermCampuses offerings::",
+      offeringsResult.error,
+    );
+    return [];
+  }
+
+  if (takenResult.error) {
+    console.error(
+      "lib.ftl.getOfferedCourseOptionsByTermCampuses taken::",
+      takenResult.error,
+    );
+    return [];
+  }
+
+  const takenMap = new Map<string, string[]>();
+
+  for (const raw of takenResult.data ?? []) {
+    const row = raw as RowObject;
+    const courseCtId = asString(row.course_c_t_id);
+    const blockId = asString(row.block_id);
+    if (!courseCtId || !blockId) continue;
+
+    const schedule = asObject(row.schedule);
+    const user = asObject(schedule?.user);
+    const identity = asObject(user?.identity);
+    const facultyName = formatName(
+      asString(identity?.first_name),
+      asString(identity?.middle_name),
+      asString(identity?.last_name),
+      asString(identity?.extension),
+    );
+
+    const key = `${courseCtId}:${blockId}`;
+    const existing = takenMap.get(key) ?? [];
+
+    if (!existing.includes(facultyName)) {
+      existing.push(facultyName);
+    }
+
+    takenMap.set(key, existing);
+  }
+
+  const options: FTLOfferingOption[] = [];
+
+  for (const rawOffering of offeringsResult.data ?? []) {
+    const offering = rawOffering as RowObject;
+    const curriculumAt = asObject(offering.curriculum_at);
+    const curriculumId = asString(curriculumAt?.curriculum_id);
+    if (!curriculumId) continue;
+
+    const curriculum = asObject(curriculumAt?.curriculum);
+    const course = asObject(offering.course);
+    const courseCtId = asString(offering.id) ?? "";
+
+    for (const block of blocks.filter(
+      (item) => item.curriculum_id === curriculumId,
+    )) {
+      const key = `${courseCtId}:${block.id}`;
+      const assignedFaculty = takenMap.get(key) ?? [];
+
+      options.push({
+        key,
+        campus_id: block.campus_id,
+        campus_name: block.campus_name,
+        course_c_t_id: courseCtId,
+        block_id: block.id,
+        block_label: `Y${block.year_level}-${block.section}`,
+        course_code: asString(course?.code) ?? "",
+        course_title: asString(course?.title) ?? "",
+        lecture_hour: asNumber(course?.lecture_hour),
+        laboratory_hour: asNumber(course?.laboratory_hour),
+        program_code: block.program_code,
+        major_code: block.major_code,
+        major_name: block.major_name,
+        curriculum_title: asString(curriculum?.title) ?? "",
+        is_taken: assignedFaculty.length > 0,
+        assigned_faculty_name:
+          assignedFaculty.length > 0 ? assignedFaculty.join(", ") : null,
+      });
+    }
+  }
+
+  return options.sort((a, b) => {
+    if (a.campus_name !== b.campus_name)
+      return a.campus_name.localeCompare(b.campus_name);
+    if (a.course_code !== b.course_code)
+      return a.course_code.localeCompare(b.course_code);
+    if ((a.program_code ?? "") !== (b.program_code ?? "")) {
+      return (a.program_code ?? "").localeCompare(b.program_code ?? "");
+    }
+    return a.block_label.localeCompare(b.block_label);
   });
 };
 
@@ -979,4 +1205,116 @@ export const submitScheduleForCampusDirector = async (input: {
   await touchSchedule(input.schedule_id);
   revalidatePath("/ftl");
   return { error: null };
+};
+
+export const submitScheduleForCampusDirectors = async (input: {
+  schedule_id: string;
+  campus_ids: string[];
+}): Promise<MultiCampusSubmitResult> => {
+  await ensureProgramChair();
+
+  const campusIds = Array.from(new Set(input.campus_ids.filter(Boolean)));
+  if (campusIds.length === 0) {
+    return {
+      error: "Select at least one campus before submission.",
+      submitted_campus_count: 0,
+      missing_directors: [],
+    };
+  }
+
+  const supabase = await createClient();
+
+  const { data: campuses, error: campusesError } = await supabase
+    .from("campus")
+    .select("id, name")
+    .in("id", campusIds);
+
+  if (campusesError) {
+    console.error(
+      "lib.ftl.submitScheduleForCampusDirectors campuses::",
+      campusesError,
+    );
+    return {
+      error: campusesError.message ?? "Unable to resolve selected campuses",
+      submitted_campus_count: 0,
+      missing_directors: [],
+    };
+  }
+
+  const campusNameMap = new Map<string, string>(
+    (campuses ?? []).map((item) => [item.id, item.name]),
+  );
+
+  const missing_directors: { campus_id: string; campus_name: string }[] = [];
+  let submittedCount = 0;
+
+  for (const campusId of campusIds) {
+    const { data: designation, error: designationError } = await supabase
+      .from("designation")
+      .select("id")
+      .eq("campus_id", campusId)
+      .ilike("job_title", "Campus Director")
+      .order("designated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (designationError) {
+      console.error(
+        "lib.ftl.submitScheduleForCampusDirectors designation::",
+        designationError,
+      );
+      return {
+        error: designationError.message ?? "Unable to resolve campus director",
+        submitted_campus_count: submittedCount,
+        missing_directors,
+      };
+    }
+
+    if (!designation?.id) {
+      missing_directors.push({
+        campus_id: campusId,
+        campus_name: campusNameMap.get(campusId) ?? "Unknown Campus",
+      });
+      continue;
+    }
+
+    const { error } = await supabase.from("evaluation").upsert(
+      {
+        designation_id: designation.id,
+        schedule_id: input.schedule_id,
+        evaluation_level: 0,
+        evaluator_role: "CAMPUS_DIRECTOR",
+        status: "PENDING",
+        comment: null,
+        created_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "designation_id,schedule_id",
+        ignoreDuplicates: false,
+      },
+    );
+
+    if (error) {
+      console.error(
+        "lib.ftl.submitScheduleForCampusDirectors evaluation::",
+        error,
+      );
+      return {
+        error: error.message ?? "Unable to submit schedule",
+        submitted_campus_count: submittedCount,
+        missing_directors,
+      };
+    }
+
+    submittedCount += 1;
+  }
+
+  await touchSchedule(input.schedule_id);
+  revalidatePath("/ftl");
+
+  return {
+    error: null,
+    submitted_campus_count: submittedCount,
+    missing_directors,
+  };
 };

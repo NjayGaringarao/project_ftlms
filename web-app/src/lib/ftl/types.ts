@@ -76,11 +76,35 @@ export type FTLClass = {
   block_id: string | null;
   course_code: string;
   course_title: string;
+  lecture_hour: number | null;
+  laboratory_hour: number | null;
   curriculum_title: string;
+  program_code: string | null;
   major_code: string | null;
   major_name: string | null;
+  campus_id: string | null;
+  campus_name: string | null;
   year_section: string | null;
   sessions: FTLSession[];
+};
+
+export type FTLOfferingOption = {
+  key: string;
+  campus_id: string;
+  campus_name: string;
+  course_c_t_id: string;
+  block_id: string;
+  block_label: string;
+  course_code: string;
+  course_title: string;
+  lecture_hour: number | null;
+  laboratory_hour: number | null;
+  program_code: string | null;
+  major_code: string | null;
+  major_name: string | null;
+  curriculum_title: string;
+  is_taken: boolean;
+  assigned_faculty_name: string | null;
 };
 
 export type FTLScheduleBundle = {
@@ -140,4 +164,13 @@ export type SaveSessionResult = {
 
 export type MutationResult = {
   error: string | null;
+};
+
+export type MultiCampusSubmitResult = {
+  error: string | null;
+  submitted_campus_count: number;
+  missing_directors: {
+    campus_id: string;
+    campus_name: string;
+  }[];
 };
