@@ -69,7 +69,7 @@ export type FTLRoom = {
 export type FTLSession = {
   id: string;
   class_delivery_id: string;
-  room_id: string | null;
+  room_id: string;
   room_code: string | null;
   room_name: string | null;
   day: DayOfWeek;
@@ -154,7 +154,7 @@ export type SaveSessionInput = {
   academic_term_id: string;
   faculty_user_id: string;
   block_ids: string[];
-  room_id: string | null;
+  room_id: string;
   day: DayOfWeek;
   start_time: string;
   end_time: string;

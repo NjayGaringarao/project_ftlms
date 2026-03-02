@@ -179,7 +179,7 @@ const mapSession = (row: RowObject): FTLSession => {
   return {
     id: asString(row.id) ?? "",
     class_delivery_id: asString(row.class_delivery_id) ?? "",
-    room_id: asString(row.room_id),
+    room_id: asString(row.room_id) ?? "",
     room_code: asString(room?.code),
     room_name: asString(room?.name),
     day: asDayOfWeek(row.day),
@@ -286,7 +286,7 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
         const yearLevel = asNumber(item.year_level);
         const section = asString(item.section);
         if (!yearLevel || !section) return null;
-        return `Year ${yearLevel} - ${section}`;
+        return `${yearLevel} - ${section}`;
       })
       .filter((item): item is string => Boolean(item));
 
@@ -1058,6 +1058,263 @@ export const deleteClass = async (input: {
   return { error: null };
 };
 
+export const deleteClassesByCourseOffering = async (input: {
+  schedule_id: string;
+  course_offering_id: string;
+  expected_schedule_updated_at: string | null;
+  force_stale_save?: boolean;
+}): Promise<MutationResult> => {
+  await ensureProgramChair();
+  const supabase = await createClient();
+
+  const staleError = await assertScheduleIsFresh(
+    input.schedule_id,
+    input.expected_schedule_updated_at,
+    Boolean(input.force_stale_save),
+  );
+  if (staleError) return { error: staleError };
+
+  const { data: allocations, error: allocationsError } = await supabase
+    .from("course_allocation")
+    .select("id")
+    .eq("schedule_id", input.schedule_id)
+    .eq("course_offering_id", input.course_offering_id);
+
+  if (allocationsError) {
+    console.error(
+      "lib.ftl.deleteClassesByCourseOffering allocations::",
+      allocationsError,
+    );
+    return {
+      error:
+        allocationsError.message ?? "Unable to remove course from schedule",
+    };
+  }
+
+  const allocationIds = (allocations ?? [])
+    .map((item) => item.id)
+    .filter((item): item is string => Boolean(item));
+
+  if (allocationIds.length === 0) {
+    return { error: null };
+  }
+
+  const { error: deleteDeliveryError } = await supabase
+    .from("class_delivery")
+    .delete()
+    .in("course_allocation_id", allocationIds);
+
+  if (deleteDeliveryError) {
+    console.error(
+      "lib.ftl.deleteClassesByCourseOffering class_delivery::",
+      deleteDeliveryError,
+    );
+    return {
+      error: deleteDeliveryError.message ?? "Unable to remove class delivery",
+    };
+  }
+
+  const { error: deleteAllocationError } = await supabase
+    .from("course_allocation")
+    .delete()
+    .in("id", allocationIds);
+
+  if (deleteAllocationError) {
+    console.error(
+      "lib.ftl.deleteClassesByCourseOffering course_allocation::",
+      deleteAllocationError,
+    );
+    return {
+      error:
+        deleteAllocationError.message ?? "Unable to remove course allocation",
+    };
+  }
+
+  await touchSchedule(input.schedule_id);
+  revalidatePath("/ftl");
+  return { error: null };
+};
+
+export const pruneScheduleByCampuses = async (input: {
+  schedule_id: string;
+  campus_ids: string[];
+  expected_schedule_updated_at: string | null;
+  force_stale_save?: boolean;
+}): Promise<MutationResult> => {
+  await ensureProgramChair();
+  const supabase = await createClient();
+
+  const staleError = await assertScheduleIsFresh(
+    input.schedule_id,
+    input.expected_schedule_updated_at,
+    Boolean(input.force_stale_save),
+  );
+  if (staleError) return { error: staleError };
+
+  const keptCampusIds = new Set(input.campus_ids.filter(Boolean));
+
+  const { data: deliveriesRaw, error: deliveriesError } = await supabase
+    .from("class_delivery")
+    .select(
+      `
+      id,
+      course_allocation:course_allocation!inner(schedule_id),
+      class_delivery_block(
+        id,
+        block:block!inner(
+          major_offering:major_offering!inner(
+            program_offering:program_offering!inner(campus_id)
+          )
+        )
+      )
+    `,
+    )
+    .eq("course_allocation.schedule_id", input.schedule_id);
+
+  if (deliveriesError) {
+    console.error(
+      "lib.ftl.pruneScheduleByCampuses deliveries::",
+      deliveriesError,
+    );
+    return {
+      error: deliveriesError.message ?? "Unable to prune schedule by campus",
+    };
+  }
+
+  const blockLinkIdsToDelete: string[] = [];
+  const classDeliveryIdsToDelete: string[] = [];
+
+  for (const raw of deliveriesRaw ?? []) {
+    const row = raw as RowObject;
+    const classDeliveryId = asString(row.id);
+    if (!classDeliveryId) continue;
+
+    const blockLinks =
+      (row.class_delivery_block as RowObject[] | undefined) ?? [];
+
+    let hasKeptCampus = false;
+
+    for (const link of blockLinks) {
+      const linkId = asString(link.id);
+      const block = asObject(link.block);
+      const majorOffering = asObject(block?.major_offering);
+      const programOffering = asObject(majorOffering?.program_offering);
+      const campusId = asString(programOffering?.campus_id);
+
+      if (campusId && keptCampusIds.has(campusId)) {
+        hasKeptCampus = true;
+      } else if (linkId) {
+        blockLinkIdsToDelete.push(linkId);
+      }
+    }
+
+    if (!hasKeptCampus || keptCampusIds.size === 0) {
+      classDeliveryIdsToDelete.push(classDeliveryId);
+    }
+  }
+
+  if (blockLinkIdsToDelete.length > 0) {
+    const { error: deleteLinksError } = await supabase
+      .from("class_delivery_block")
+      .delete()
+      .in("id", blockLinkIdsToDelete);
+
+    if (deleteLinksError) {
+      console.error(
+        "lib.ftl.pruneScheduleByCampuses delete links::",
+        deleteLinksError,
+      );
+      return {
+        error:
+          deleteLinksError.message ??
+          "Unable to remove campus-related class links",
+      };
+    }
+  }
+
+  if (classDeliveryIdsToDelete.length > 0) {
+    const { error: deleteDeliveriesError } = await supabase
+      .from("class_delivery")
+      .delete()
+      .in("id", classDeliveryIdsToDelete);
+
+    if (deleteDeliveriesError) {
+      console.error(
+        "lib.ftl.pruneScheduleByCampuses delete deliveries::",
+        deleteDeliveriesError,
+      );
+      return {
+        error:
+          deleteDeliveriesError.message ??
+          "Unable to remove campus-related classes",
+      };
+    }
+  }
+
+  const [
+    { data: allocationRows, error: allocationError },
+    { data: activeDeliveries, error: activeDeliveriesError },
+  ] = await Promise.all([
+    supabase
+      .from("course_allocation")
+      .select("id")
+      .eq("schedule_id", input.schedule_id),
+    supabase
+      .from("class_delivery")
+      .select(
+        "course_allocation_id, course_allocation:course_allocation!inner(schedule_id)",
+      )
+      .eq("course_allocation.schedule_id", input.schedule_id),
+  ]);
+
+  if (allocationError || activeDeliveriesError) {
+    console.error(
+      "lib.ftl.pruneScheduleByCampuses cleanup::",
+      allocationError ?? activeDeliveriesError,
+    );
+    return {
+      error:
+        allocationError?.message ??
+        activeDeliveriesError?.message ??
+        "Unable to clean course allocations",
+    };
+  }
+
+  const referencedAllocationIds = new Set(
+    (activeDeliveries ?? [])
+      .map((item) => item.course_allocation_id)
+      .filter((item): item is string => Boolean(item)),
+  );
+
+  const orphanAllocationIds = (allocationRows ?? [])
+    .map((item) => item.id)
+    .filter((item): item is string => Boolean(item))
+    .filter((item) => !referencedAllocationIds.has(item));
+
+  if (orphanAllocationIds.length > 0) {
+    const { error: deleteOrphanError } = await supabase
+      .from("course_allocation")
+      .delete()
+      .in("id", orphanAllocationIds);
+
+    if (deleteOrphanError) {
+      console.error(
+        "lib.ftl.pruneScheduleByCampuses delete orphans::",
+        deleteOrphanError,
+      );
+      return {
+        error:
+          deleteOrphanError.message ??
+          "Unable to remove orphan course allocations",
+      };
+    }
+  }
+
+  await touchSchedule(input.schedule_id);
+  revalidatePath("/ftl");
+  return { error: null };
+};
+
 const getOverlapConflicts = async (
   input: SaveSessionInput,
 ): Promise<SessionConflict[]> => {
@@ -1098,7 +1355,10 @@ const getOverlapConflicts = async (
     `,
     )
     .eq("day", input.day)
-    .eq("class_delivery.schedule.academic_term_id", input.academic_term_id);
+    .eq(
+      "class_delivery.course_allocation.schedule.academic_term_id",
+      input.academic_term_id,
+    );
 
   if (error) {
     console.error("lib.ftl.getOverlapConflicts ::", error);
@@ -1225,6 +1485,16 @@ export const saveSession = async (
   await ensureProgramChair();
   const supabase = await createClient();
 
+  if (!input.room_id) {
+    return {
+      session: null,
+      conflicts: [],
+      stale_error: null,
+      needs_conflict_confirmation: false,
+      error: "Room is required.",
+    };
+  }
+
   const staleError = await assertScheduleIsFresh(
     input.schedule_id,
     input.expected_schedule_updated_at,
@@ -1300,7 +1570,7 @@ export const saveSession = async (
     session: {
       id: asString(dataRow.id) ?? "",
       class_delivery_id: asString(dataRow.class_delivery_id) ?? "",
-      room_id: asString(dataRow.room_id),
+      room_id: asString(dataRow.room_id) ?? "",
       room_code: asString(room?.code),
       room_name: asString(room?.name),
       day: asDayOfWeek(dataRow.day),
