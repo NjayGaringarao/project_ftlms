@@ -83,6 +83,10 @@ export type FTLClass = {
   schedule_id: string;
   course_offering_id: string;
   block_ids: string[];
+  blocks: {
+    id: string;
+    label: string;
+  }[];
   course_code: string;
   course_title: string;
   lecture_hour: number | null;

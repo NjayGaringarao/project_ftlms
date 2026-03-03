@@ -6,35 +6,34 @@ import {
   Calendar,
   Edit,
   Landmark,
+  Merge,
   Plus,
+  PlusCircle,
   Send,
+  Split,
   Trash2,
   TriangleAlert,
   UserCircle,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { AddTile } from "@/components/ui/add-tile";
 import {
   createClass,
-  deleteClassesByCourseOffering,
+  deleteClass,
   deleteSession,
   findOrCreateSchedule,
   getFacultyScheduleBundle,
   getOfferedCourseOptionsByTermCampuses,
+  mergeClassDeliveries,
   pruneScheduleByCampuses,
   getRoomsByCampus,
   saveSession,
   submitScheduleForCampusDirectors,
+  unmergeClassBlock,
 } from "@/lib/ftl/actions";
 import {
   ConflictType,
@@ -50,15 +49,16 @@ import {
 } from "@/lib/ftl/types";
 import { cn } from "@/utils/style";
 import { formatDateTime } from "@/utils/time";
+import ListItemSmall from "../admin/list-item-small";
 
 const DAY_OPTIONS = [
-  { value: "SUNDAY", label: "Sunday" },
-  { value: "MONDAY", label: "Monday" },
-  { value: "TUESDAY", label: "Tuesday" },
-  { value: "WEDNESDAY", label: "Wednesday" },
-  { value: "THURSDAY", label: "Thursday" },
-  { value: "FRIDAY", label: "Friday" },
-  { value: "SATURDAY", label: "Saturday" },
+  { value: "SUNDAY", label: "Sun" },
+  { value: "MONDAY", label: "Mon" },
+  { value: "TUESDAY", label: "Tue" },
+  { value: "WEDNESDAY", label: "Wed" },
+  { value: "THURSDAY", label: "Thu" },
+  { value: "FRIDAY", label: "Fri" },
+  { value: "SATURDAY", label: "Sat  " },
 ];
 
 const typeLabelMap: Record<ConflictType, string> = {
@@ -188,6 +188,20 @@ const ProgramChairPlanner = ({
     useState<SaveSessionInput | null>(null);
   const [conflicts, setConflicts] = useState<SessionConflict[]>([]);
 
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
+  const [mergeSourceClassId, setMergeSourceClassId] = useState<string | null>(
+    null,
+  );
+  const [mergeTargetClassId, setMergeTargetClassId] = useState<string | null>(
+    null,
+  );
+
+  const [isUnmergeDialogOpen, setIsUnmergeDialogOpen] = useState(false);
+  const [unmergeSourceClassId, setUnmergeSourceClassId] = useState<
+    string | null
+  >(null);
+  const [unmergeBlockId, setUnmergeBlockId] = useState<string | null>(null);
+
   const selectedFaculty = useMemo(
     () => faculties.find((item) => item.id === selectedFacultyId) ?? null,
     [faculties, selectedFacultyId],
@@ -289,41 +303,86 @@ const ProgramChairPlanner = ({
   }, [scheduleBundle.classes]);
 
   const sessionTableRows = useMemo<SessionTableRow[]>(() => {
-    return scheduleBundle.classes.flatMap((item) => {
+    const scheduledRows: SessionTableRow[] = [];
+    const unscheduledRows: SessionTableRow[] = [];
+
+    for (const item of scheduleBundle.classes) {
       const courseLabel = `${item.course_code}`;
       const majorLabel = [
         item.program_code ?? "N/A",
         item.major_code ?? "N/A",
-      ].join(" ");
+      ].join(" | ");
       const blockLabel = item.year_section ?? "No Block";
       const remainingHours = classLoadSummaryMap.get(item.id)?.remaining ?? 0;
 
-      if (item.sessions.length === 0) {
-        return [
-          {
-            row_id: `placeholder-${item.id}`,
-            class_delivery_id: item.id,
-            course_label: courseLabel,
-            major_label: majorLabel,
-            block_label: blockLabel,
-            remaining_hours: remainingHours,
-            has_session: false,
-          },
-        ];
+      for (const session of item.sessions) {
+        scheduledRows.push({
+          row_id: session.id,
+          class_delivery_id: item.id,
+          course_label: courseLabel,
+          major_label: majorLabel,
+          block_label: blockLabel,
+          remaining_hours: remainingHours,
+          has_session: true,
+          session,
+        });
       }
 
-      return item.sessions.map((session) => ({
-        row_id: session.id,
-        class_delivery_id: item.id,
-        course_label: courseLabel,
-        major_label: majorLabel,
-        block_label: blockLabel,
-        remaining_hours: remainingHours,
-        has_session: true,
-        session,
-      }));
+      if (item.sessions.length === 0 || remainingHours > 0) {
+        unscheduledRows.push({
+          row_id: `placeholder-${item.id}`,
+          class_delivery_id: item.id,
+          course_label: courseLabel,
+          major_label: majorLabel,
+          block_label: blockLabel,
+          remaining_hours: remainingHours,
+          has_session: false,
+        });
+      }
+    }
+
+    unscheduledRows.sort((a, b) => {
+      if (a.remaining_hours !== b.remaining_hours) {
+        return b.remaining_hours - a.remaining_hours;
+      }
+
+      return a.course_label.localeCompare(b.course_label);
     });
+
+    return [...scheduledRows, ...unscheduledRows];
   }, [classLoadSummaryMap, scheduleBundle.classes]);
+
+  const classByIdMap = useMemo(
+    () =>
+      new Map(scheduleBundle.classes.map((item) => [item.id, item] as const)),
+    [scheduleBundle.classes],
+  );
+
+  const mergeTargetsByClassId = useMemo(() => {
+    const grouped = new Map<string, FTLClass[]>();
+
+    for (const item of scheduleBundle.classes) {
+      const key = item.course_code.trim().toUpperCase();
+      const bucket = grouped.get(key) ?? [];
+      bucket.push(item);
+      grouped.set(key, bucket);
+    }
+
+    const targetsById = new Map<string, FTLClass[]>();
+
+    for (const group of grouped.values()) {
+      if (group.length < 2) continue;
+
+      for (const item of group) {
+        targetsById.set(
+          item.id,
+          group.filter((candidate) => candidate.id !== item.id),
+        );
+      }
+    }
+
+    return targetsById;
+  }, [scheduleBundle.classes]);
 
   const classDeliveryOptions = useMemo(
     () =>
@@ -331,7 +390,7 @@ const ProgramChairPlanner = ({
         .map((item) => ({
           class_delivery_id: item.id,
           block_ids: item.block_ids,
-          label: `${item.course_code}`,
+          label: `${item.course_code} (${item.year_section ?? "No Block"})`,
           remaining: classLoadSummaryMap.get(item.id)?.remaining ?? 0,
         }))
         .filter((item) => item.remaining > 0)
@@ -352,6 +411,18 @@ const ProgramChairPlanner = ({
         : null;
 
   const isAddDisabled = addDisabledReason !== null;
+
+  const mergeSourceClass = mergeSourceClassId
+    ? (classByIdMap.get(mergeSourceClassId) ?? null)
+    : null;
+
+  const mergeTargetOptions = mergeSourceClassId
+    ? (mergeTargetsByClassId.get(mergeSourceClassId) ?? [])
+    : [];
+
+  const unmergeSourceClass = unmergeSourceClassId
+    ? (classByIdMap.get(unmergeSourceClassId) ?? null)
+    : null;
 
   const pickDefaultClassForAdd = (classes: FTLClass[]) => {
     const sorted = [...classes]
@@ -472,6 +543,29 @@ const ProgramChairPlanner = ({
       (campusId) => !uniqueCampusIds.includes(campusId),
     );
 
+    if (scheduleBundle.schedule && removedCampusIds.length > 0) {
+      const affectedClasses = scheduleBundle.classes.filter((item) =>
+        item.campus_ids.some((campusId) => removedCampusIds.includes(campusId)),
+      );
+      const affectedSessions = affectedClasses.reduce(
+        (sum, item) => sum + item.sessions.length,
+        0,
+      );
+      const removedCampusNames = removedCampusIds
+        .map(
+          (campusId) =>
+            bootstrap.campuses.find((item) => item.id === campusId)?.name ??
+            campusId,
+        )
+        .join(", ");
+
+      const confirmed = window.confirm(
+        `Removing campus (${removedCampusNames}) will remove ${affectedClasses.length} class row(s) and ${affectedSessions} session(s) from this schedule. Continue?`,
+      );
+
+      if (!confirmed) return;
+    }
+
     setSelectedCampusIds(uniqueCampusIds);
     await loadTermCampusDataFor(selectedTermId, uniqueCampusIds);
 
@@ -544,20 +638,22 @@ const ProgramChairPlanner = ({
     setFeedback({ kind: "success", text: "Course added to schedule" });
   };
 
-  const handleRemoveCourseOfferingFromSchedule = async (
-    courseOfferingId: string,
-    courseCode: string,
-  ) => {
+  const handleRemoveClassFromSchedule = async (item: FTLClass) => {
     if (!scheduleBundle.schedule) return;
+
+    const sessionCount = item.sessions.length;
+    const blockSummary =
+      item.year_section ?? item.blocks.map((block) => block.label).join(", ");
+
     const confirmed = window.confirm(
-      `Remove ${courseCode} from Step 2? This removes all linked class rows and sessions for this schedule.`,
+      `Remove class row ${item.course_code} (${blockSummary || "No Block"}) from Step 2?\n\nImpact:\n- 1 class row removed\n- ${sessionCount} session(s) removed`,
     );
     if (!confirmed) return;
 
     setIsSaving(true);
-    const result = await deleteClassesByCourseOffering({
+    const result = await deleteClass({
+      class_id: item.id,
       schedule_id: scheduleBundle.schedule.id,
-      course_offering_id: courseOfferingId,
       expected_schedule_updated_at: scheduleBundle.schedule.updated_at,
     });
 
@@ -572,8 +668,85 @@ const ProgramChairPlanner = ({
     setIsSaving(false);
     setFeedback({
       kind: "success",
-      text: `${courseCode} removed from schedule`,
+      text: `${item.course_code} class row removed from schedule`,
     });
+  };
+
+  const openMergeDialog = (classDeliveryId: string) => {
+    const targets = mergeTargetsByClassId.get(classDeliveryId) ?? [];
+    if (targets.length === 0) return;
+
+    setMergeSourceClassId(classDeliveryId);
+    setMergeTargetClassId(targets[0]?.id ?? null);
+    setIsMergeDialogOpen(true);
+  };
+
+  const handleMergeClasses = async () => {
+    if (
+      !scheduleBundle.schedule ||
+      !mergeSourceClassId ||
+      !mergeTargetClassId
+    ) {
+      return;
+    }
+
+    setIsSaving(true);
+    const result = await mergeClassDeliveries({
+      schedule_id: scheduleBundle.schedule.id,
+      source_class_id: mergeSourceClassId,
+      target_class_id: mergeTargetClassId,
+      expected_schedule_updated_at: scheduleBundle.schedule.updated_at,
+    });
+
+    if (result.error) {
+      setFeedback({ kind: "error", text: result.error });
+      setIsSaving(false);
+      return;
+    }
+
+    await refreshScheduleBundle();
+    setIsMergeDialogOpen(false);
+    setMergeSourceClassId(null);
+    setMergeTargetClassId(null);
+    setIsSaving(false);
+    setFeedback({ kind: "success", text: "Classes merged successfully" });
+  };
+
+  const openUnmergeDialog = (classDeliveryId: string) => {
+    const ownerClass = classByIdMap.get(classDeliveryId);
+    if (!ownerClass || ownerClass.blocks.length <= 1) return;
+
+    setUnmergeSourceClassId(classDeliveryId);
+    setUnmergeBlockId(ownerClass.blocks[0]?.id ?? null);
+    setIsUnmergeDialogOpen(true);
+  };
+
+  const handleUnmergeClass = async () => {
+    if (!scheduleBundle.schedule || !unmergeSourceClassId || !unmergeBlockId) {
+      return;
+    }
+
+    setIsSaving(true);
+    const result = await unmergeClassBlock({
+      schedule_id: scheduleBundle.schedule.id,
+      class_id: unmergeSourceClassId,
+      block_id: unmergeBlockId,
+      expected_schedule_updated_at: scheduleBundle.schedule.updated_at,
+      remove_sessions: true,
+    });
+
+    if (result.error) {
+      setFeedback({ kind: "error", text: result.error });
+      setIsSaving(false);
+      return;
+    }
+
+    await refreshScheduleBundle();
+    setIsUnmergeDialogOpen(false);
+    setUnmergeSourceClassId(null);
+    setUnmergeBlockId(null);
+    setIsSaving(false);
+    setFeedback({ kind: "success", text: "Class unmerged successfully" });
   };
 
   const seedNewSessionDraft = (classDeliveryId: string) => {
@@ -878,206 +1051,229 @@ const ProgramChairPlanner = ({
         </div>
       ) : null}
 
-      <div
-        className={cn(
-          "h-full overflow-hidden",
-          "grid grid-cols-4 grid-rows-5 gap-4",
-        )}
-      >
-        <Card className="row-span-2 col-span-1 gap-2">
-          <CardHeader className="gap-0">
-            <CardTitle>Step 1: Set Context</CardTitle>
-            <CardDescription>
-              Complete this form to load course offerings.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 overflow-auto">
-            <div className="space-y-1">
-              <p className="text-xs text-foreground/70">Faculty</p>
-              {selectedFaculty ? (
-                <div
-                  key={selectedFaculty.id}
-                  className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-                >
-                  <div className="flex items-center gap-2 p-4 text-sm">
-                    <UserCircle className="h-6 w-6 text-foreground/70" />
-                    <p>{fullName(selectedFaculty)}</p>
-                  </div>
-                  <button
-                    className="p-4"
-                    onClick={() => {
-                      setSelectedFacultyId(null);
-                      setSelectedTermId(null);
-                      setSelectedCampusIds([]);
-                      setOfferingOptions([]);
-                      setRooms([]);
-                      setScheduleBundle({ schedule: null, classes: [] });
-                    }}
+      <div className={cn("h-full overflow-hidden", "grid grid-cols-4 gap-4")}>
+        <div className="flex flex-col gap-4 h-full overflow-hidden">
+          <Card className="gap-2">
+            <CardHeader className="gap-0">
+              <CardTitle>Step 1: Set Context</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 overflow-auto">
+              <div className="space-y-1">
+                <p className="text-xs text-foreground/70">Faculty</p>
+                {selectedFaculty ? (
+                  <div
+                    key={selectedFaculty.id}
+                    className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
                   >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              ) : null}
-
-              {!selectedFaculty && (
-                <AddTile
-                  title="Select Faculty"
-                  description="Open searchable faculty list"
-                  onClick={() => setIsFacultyPickerOpen(true)}
-                />
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <p className="text-xs text-foreground/70">Academic Term</p>
-              {selectedTermId ? (
-                <div
-                  key={selectedTermId}
-                  className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-                >
-                  <div className="flex items-center gap-2 p-4 text-sm">
-                    <Calendar className="h-6 w-6 text-foreground/70" />
-                    <p>
-                      {bootstrap.terms.find(
-                        (term) => term.id === selectedTermId,
-                      )?.code ?? ""}
-                    </p>
+                    <div className="flex items-center gap-2 p-4 text-sm">
+                      <UserCircle className="h-6 w-6 text-foreground/70" />
+                      <p>{fullName(selectedFaculty)}</p>
+                    </div>
+                    <button
+                      className="p-4"
+                      onClick={() => {
+                        setSelectedFacultyId(null);
+                        setSelectedTermId(null);
+                        setSelectedCampusIds([]);
+                        setOfferingOptions([]);
+                        setRooms([]);
+                        setScheduleBundle({ schedule: null, classes: [] });
+                      }}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                  <button
-                    className="p-4"
-                    onClick={() => {
-                      setSelectedTermId(null);
-                      setSelectedCampusIds([]);
-                      setOfferingOptions([]);
-                      setRooms([]);
-                      setScheduleBundle({ schedule: null, classes: [] });
-                    }}
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              ) : null}
+                ) : null}
 
-              {!selectedTermId && (
-                <AddTile
-                  title="Select Academic Term"
-                  description="Open searchable term list"
-                  onClick={() => setIsTermPickerOpen(true)}
-                />
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <p className="text-xs text-foreground/70">Campus</p>
-              {selectedCampusIds.length > 0 ? (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {selectedCampusIds.map((campusId) => {
-                    const campus = bootstrap.campuses.find(
-                      (item) => item.id === campusId,
-                    );
-                    if (!campus) return null;
-
-                    return (
-                      <div
-                        key={campusId}
-                        className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-                      >
-                        <div className="flex items-center gap-2 p-4 text-sm">
-                          <Landmark className="h-6 w-6 text-foreground/70" />
-                          <p>{campus.name}</p>
-                        </div>
-                        <button
-                          className="p-4"
-                          onClick={() => {
-                            const nextCampusIds = selectedCampusIds.filter(
-                              (item) => item !== campusId,
-                            );
-                            void handleCampusSelectionChange(nextCampusIds);
-                          }}
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-              <AddTile
-                title="Add Campus"
-                description="Select one or more campuses"
-                onClick={() => setIsCampusPickerOpen(true)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="row-start-3 row-span-3 col-span-1 gap-2">
-          <CardHeader className="pb-2 gap-0">
-            <CardTitle className="text-base">STEP 2: Select Courses</CardTitle>
-            <CardDescription>
-              Add courses to be handle by the faculty.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="min-h-0 overflow-auto space-y-3">
-            <AddTile
-              title="Add Course Offering"
-              description="Open searchable offerings list"
-              onClick={() => setIsOfferingPickerOpen(true)}
-              disabled={
-                !selectedFacultyId ||
-                !selectedTermId ||
-                selectedCampusIds.length === 0
-              }
-            />
-
-            {scheduleBundle.classes.map((item) => (
-              <div
-                key={`${item.id}-${item.course_offering_id}`}
-                className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-              >
-                <div className="p-3 text-sm">
-                  <p className="font-medium">{item.course_code}</p>
-                  <p className="text-xs text-foreground/70">
-                    {item.program_code ?? "N/A"} {item.major_code ?? "N/A"}{" "}
-                    {" | "}
-                    {item.year_section ?? "No Block"}
-                  </p>
-                  <p className="text-xs text-foreground/70">
-                    Course load :{" "}
-                    {(item.lecture_hour ?? 0) +
-                      (item.laboratory_hour ?? 0) * 0.75}
-                    {" = "}
-                    Lecture: {item.lecture_hour ?? 0} + Laboratory:{" "}
-                    {item.laboratory_hour ?? 0} × 0.75
-                  </p>
-                </div>
-                <button
-                  className="p-3"
-                  onClick={() =>
-                    void handleRemoveCourseOfferingFromSchedule(
-                      item.course_offering_id,
-                      item.course_code,
-                    )
-                  }
-                  disabled={isSaving}
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                {!selectedFaculty && (
+                  <AddTile
+                    title="Select Faculty"
+                    description="Open searchable faculty list"
+                    onClick={() => setIsFacultyPickerOpen(true)}
+                  />
+                )}
               </div>
-            ))}
 
-            {!isLoadingOfferings &&
-            selectedTermId &&
-            selectedCampusIds.length > 0 &&
-            offeringOptions.length === 0 ? (
-              <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                No offered courses found for selected term and campuses.
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <p className="text-xs text-foreground/70">Academic Term</p>
+                {selectedTermId ? (
+                  <div
+                    key={selectedTermId}
+                    className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2 p-4 text-xs">
+                      <Calendar className="h-6 w-6 text-foreground/70" />
+                      <p>
+                        {bootstrap.terms.find(
+                          (term) => term.id === selectedTermId,
+                        )?.code ?? ""}
+                      </p>
+                    </div>
+                    <button
+                      className="p-4"
+                      onClick={() => {
+                        setSelectedTermId(null);
+                        setSelectedCampusIds([]);
+                        setOfferingOptions([]);
+                        setRooms([]);
+                        setScheduleBundle({ schedule: null, classes: [] });
+                      }}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                ) : null}
 
-        <div className="col-span-3 row-span-5 flex flex-col gap-4 overflow-hidden">
+                {!selectedTermId && (
+                  <AddTile
+                    title="Select Academic Term"
+                    description="Open searchable term list"
+                    onClick={() => setIsTermPickerOpen(true)}
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 gap-2 overflow-hidden flex flex-col">
+            <CardHeader className="pb-2 gap-0">
+              <CardTitle className="text-base">
+                Step 2: Manage Teaching Load
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="min-h-0 overflow-auto space-y-3">
+              <div className="space-y-1">
+                <p className="text-xs text-foreground/70">Campuses</p>
+                {selectedCampusIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {selectedCampusIds.map((campusId) => {
+                      const campus = bootstrap.campuses.find(
+                        (item) => item.id === campusId,
+                      );
+                      if (!campus) return null;
+
+                      return (
+                        <div
+                          key={campusId}
+                          className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
+                        >
+                          <div className="flex items-center gap-2 p-4 text-sm">
+                            <Landmark className="h-6 w-6 text-foreground/70" />
+                            <p>{campus.name}</p>
+                          </div>
+                          <button
+                            className="p-4"
+                            onClick={() => {
+                              const nextCampusIds = selectedCampusIds.filter(
+                                (item) => item !== campusId,
+                              );
+                              void handleCampusSelectionChange(nextCampusIds);
+                            }}
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                <AddTile
+                  title="Add Campus"
+                  description="Select one or more campuses"
+                  onClick={() => setIsCampusPickerOpen(true)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs text-foreground/70">Classes</p>
+
+                {scheduleBundle.classes.map((item) => (
+                  <div
+                    key={`${item.id}-${item.course_offering_id}`}
+                    className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
+                  >
+                    <div className="p-3 text-sm">
+                      <div className="flex flex-row gap-2 items-center">
+                        <p className="font-medium">{item.course_code}</p>
+                        <p className="text-xs text-foreground/70">
+                          {item.program_code ?? "N/A"}{" "}
+                          {item.major_code ?? "N/A"} {" | "}
+                          {item.year_section ?? "No Block"}
+                        </p>
+                      </div>
+                      <p className="text-xs text-foreground/70">
+                        {`Load: ${(item.lecture_hour ?? 0) + (item.laboratory_hour ?? 0) * 0.75} ${(item.laboratory_hour ?? 0) * 0.75} = Lecture: ${item.lecture_hour ?? 0} + Laboratory: ${item.laboratory_hour ?? 0} × 0.75`}
+                      </p>
+                      <p className="text-xs text-emerald-700">
+                        {(item.blocks.length ?? 0) > 1
+                          ? `Merged Class with ${item.blocks.length} blocks`
+                          : "Single class delivery"}
+                      </p>
+                    </div>
+
+                    <div className="p-2 flex flex-col items-center justify-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleRemoveClassFromSchedule(item)}
+                        disabled={isSaving}
+                        title="unassign this class from the faculty schedule"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+
+                      {(mergeTargetsByClassId.get(item.id)?.length ?? 0) > 0 ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openMergeDialog(item.id)}
+                          disabled={isSaving}
+                          title="Merge into another same-course class"
+                        >
+                          <Merge className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+
+                      {(item.blocks.length ?? 0) > 1 ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openUnmergeDialog(item.id)}
+                          disabled={isSaving}
+                          title="Unmerge into separate classes"
+                        >
+                          <Split className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+
+                {!isLoadingOfferings &&
+                selectedTermId &&
+                selectedCampusIds.length > 0 &&
+                offeringOptions.length === 0 ? (
+                  <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
+                    No offered courses found for selected term and campuses.
+                  </p>
+                ) : null}
+
+                <AddTile
+                  title="Add Class"
+                  description="Open searchable class list"
+                  onClick={() => setIsOfferingPickerOpen(true)}
+                  disabled={
+                    !selectedFacultyId ||
+                    !selectedTermId ||
+                    selectedCampusIds.length === 0
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="col-span-3 flex flex-col gap-4 overflow-hidden">
           <Card className="flex-1 overflow-hidden flex-col gap-0">
             <CardHeader className="pb-2">
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1085,10 +1281,6 @@ const ProgramChairPlanner = ({
                   <CardTitle className="text-base">
                     Step 3: Construct Schedule
                   </CardTitle>
-                  <CardDescription>
-                    Manage class sessions for each course and submit schedule to
-                    campus directors when ready.
-                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -1139,22 +1331,24 @@ const ProgramChairPlanner = ({
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b text-left text-foreground/70">
-                            <th className="px-2 py-2">Class Course</th>
-                            <th className="px-2 py-2">
-                              Program | Major | Block
+                            <th className="px-1.5 py-1.5">Class Course</th>
+                            <th className="px-1.5 py-1.5 min-w-40">
+                              Program Major | Block
                             </th>
-                            <th className="px-2 py-2">Day</th>
-                            <th className="px-2 py-2">Start</th>
-                            <th className="px-2 py-2">End</th>
-                            <th className="px-2 py-2">Room</th>
-                            <th className="px-2 py-2 text-right">Actions</th>
+                            <th className="px-1.5 py-1.5">Day</th>
+                            <th className="px-1.5 py-1.5">Start</th>
+                            <th className="px-1.5 py-1.5">End</th>
+                            <th className="px-1.5 py-1.5 min-w-28">Room</th>
+                            <th className="px-1.5 py-1.5 text-left min-w-20">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr className="border-b bg-muted/20 align-top">
-                            <td className="px-2 py-2">
+                          <tr className="border-b bg-muted/20 align-center">
+                            <td className="px-1.5 py-1.5">
                               <select
-                                className="w-36 rounded-md border bg-background px-2 py-1.5 text-sm"
+                                className="w-32 rounded-md border bg-background px-2 py-1.5 text-sm"
                                 value={newSessionDraft.class_delivery_id}
                                 onChange={(event) =>
                                   seedNewSessionDraft(event.target.value)
@@ -1171,14 +1365,16 @@ const ProgramChairPlanner = ({
                                 ))}
                               </select>
                             </td>
-                            <td className="px-2 py-2 text-xs text-foreground/70">
-                              {newSessionDraft.class_delivery_id
-                                ? `${newSessionRemainingHours?.toFixed(2) ?? "0.00"}h remaining`
-                                : "Select a class course first"}
+                            <td className="px-1.5 py-1.5 text-xs text-foreground/70 min-w-32">
+                              <p>
+                                {newSessionDraft.class_delivery_id
+                                  ? `Unscheduled: ${newSessionRemainingHours?.toFixed(2) ?? "0.00"} Hours`
+                                  : "Select a class course first"}
+                              </p>
                             </td>
-                            <td className="px-2 py-2">
+                            <td className="px-1.5 py-1.5">
                               <select
-                                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                                className="w-20 rounded-md border bg-background px-2 py-1.5 text-sm"
                                 value={newSessionDraft.day}
                                 onChange={(event) =>
                                   setNewSessionDraft((prev) => ({
@@ -1195,7 +1391,7 @@ const ProgramChairPlanner = ({
                                 ))}
                               </select>
                             </td>
-                            <td className="px-2 py-2">
+                            <td className="px-1.5 py-1.5">
                               <Input
                                 type="time"
                                 value={newSessionDraft.start_time}
@@ -1207,7 +1403,7 @@ const ProgramChairPlanner = ({
                                 }
                               />
                             </td>
-                            <td className="px-2 py-2">
+                            <td className="px-1.5 py-1.5">
                               <Input
                                 type="time"
                                 value={newSessionDraft.end_time}
@@ -1219,7 +1415,7 @@ const ProgramChairPlanner = ({
                                 }
                               />
                             </td>
-                            <td className="px-2 py-2">
+                            <td className="px-1.5 py-1.5">
                               <select
                                 className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
                                 value={newSessionDraft.room_id}
@@ -1239,9 +1435,9 @@ const ProgramChairPlanner = ({
                                 ))}
                               </select>
                             </td>
-                            <td className="px-2 py-2 text-right">
+                            <td className="px-1.5 py-1.5 text-right">
                               <span
-                                className="inline-flex"
+                                className="inline-flex w-full"
                                 title={
                                   isAddDisabled ? addDisabledReason : undefined
                                 }
@@ -1250,17 +1446,18 @@ const ProgramChairPlanner = ({
                                   size="sm"
                                   onClick={() => void handleAddSessionRow()}
                                   disabled={isAddDisabled}
+                                  className="w-full"
                                 >
-                                  <Plus className="h-4 w-4" />
-                                  Add
+                                  <Plus className="h-4 w-4 text-background" />
+                                  Insert
                                 </Button>
                               </span>
                             </td>
                           </tr>
 
                           {sessionTableRows.map((row) => {
-                            const ownerClass = scheduleBundle.classes.find(
-                              (item) => item.id === row.class_delivery_id,
+                            const ownerClass = classByIdMap.get(
+                              row.class_delivery_id,
                             );
 
                             return (
@@ -1268,30 +1465,30 @@ const ProgramChairPlanner = ({
                                 key={row.row_id}
                                 className="border-b align-center"
                               >
-                                <td className="px-2 py-2 font-medium">
+                                <td className="px-1.5 py-1.5 font-medium">
                                   {row.course_label}
                                 </td>
-                                <td className="px-2 py-2 text-xs text-foreground/70">
+                                <td className="px-1.5 py-1.5 text-xs text-foreground/70">
                                   {row.major_label} | {row.block_label}
                                 </td>
-                                <td className="px-2 py-2">
+                                <td className="px-1.5 py-1.5">
                                   {row.session
                                     ? dayLabel(row.session.day)
                                     : "—"}
                                 </td>
                                 {row.has_session ? (
                                   <>
-                                    <td className="px-2 py-2">
+                                    <td className="px-1.5 py-1.5">
                                       {row.session
                                         ? toTimeInput(row.session.start_time)
                                         : "—"}
                                     </td>
-                                    <td className="px-2 py-2">
+                                    <td className="px-1.5 py-1.5">
                                       {row.session
                                         ? toTimeInput(row.session.end_time)
                                         : "—"}
                                     </td>
-                                    <td className="px-2 py-2">
+                                    <td className="px-1.5 py-1.5 text-xs">
                                       {row.session
                                         ? `${row.session.room_code ?? "Unknown"}${row.session.room_name ? ` - ${row.session.room_name}` : ""}`
                                         : "—"}
@@ -1300,13 +1497,12 @@ const ProgramChairPlanner = ({
                                 ) : (
                                   <td
                                     colSpan={3}
-                                    className="px-2 py-2 text-xs text-foreground/70"
+                                    className="px-1.5 py-1.5 text-xs text-foreground/70"
                                   >
                                     {row.remaining_hours > 0 ? (
                                       <span>
                                         Unscheduled:{" "}
-                                        {row.remaining_hours.toFixed(2)}h
-                                        remaining
+                                        {row.remaining_hours.toFixed(2)} Hours
                                       </span>
                                     ) : (
                                       <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
@@ -1315,8 +1511,8 @@ const ProgramChairPlanner = ({
                                     )}
                                   </td>
                                 )}
-                                <td className="px-2 py-2">
-                                  <div className="flex justify-end gap-2">
+                                <td className="px-1.5 py-1.5">
+                                  <div className="flex items-center gap-1.5 justify-end">
                                     {!row.has_session ? (
                                       <span
                                         className="inline-flex"
@@ -1329,6 +1525,7 @@ const ProgramChairPlanner = ({
                                         <Button
                                           size="sm"
                                           variant="outline"
+                                          title="Stage this class"
                                           onClick={() =>
                                             seedNewSessionDraft(
                                               row.class_delivery_id,
@@ -1336,7 +1533,7 @@ const ProgramChairPlanner = ({
                                           }
                                           disabled={row.remaining_hours <= 0}
                                         >
-                                          Use in Add
+                                          <PlusCircle className="h-4 w-4" />
                                         </Button>
                                       </span>
                                     ) : (
@@ -1344,6 +1541,7 @@ const ProgramChairPlanner = ({
                                         <Button
                                           size="sm"
                                           variant="outline"
+                                          title="Modify this schedule"
                                           onClick={() => {
                                             if (ownerClass && row.session) {
                                               void openEditSessionDialog(
@@ -1358,6 +1556,7 @@ const ProgramChairPlanner = ({
                                         <Button
                                           size="sm"
                                           variant="destructive"
+                                          title="Delete this schedule"
                                           onClick={() => {
                                             if (row.session) {
                                               void handleDeleteSession(
@@ -1386,28 +1585,23 @@ const ProgramChairPlanner = ({
 
           <Card>
             <CardHeader className="gap-0">
-              <CardTitle className="text-base">
-                Step 4: Submit Schedule
-              </CardTitle>
-              <CardDescription>
-                Review load summary then submit to selected campus directors.
-              </CardDescription>
+              <CardTitle className="text-base">Step 4: Review</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex gap-3 flex-row">
               <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="rounded-md border p-2">
+                <div className="rounded-md border p-2 flex items-center gap-2">
                   <p className="text-foreground/70">Teaching Load</p>
                   <p className="text-sm font-semibold">
                     {teachingLoadTotal.toFixed(2)}
                   </p>
                 </div>
-                <div className="rounded-md border p-2">
+                <div className="rounded-md border p-2 flex items-center gap-2">
                   <p className="text-foreground/70">Designation Load</p>
                   <p className="text-sm font-semibold">
                     {selectedFacultyDesignationLoad.toFixed(2)}
                   </p>
                 </div>
-                <div className="rounded-md border p-2">
+                <div className="rounded-md border p-2 flex items-center gap-2">
                   <p className="text-foreground/70">Total Working Load</p>
                   <p className="text-sm font-semibold">
                     {totalWorkingLoad.toFixed(2)}
@@ -1415,25 +1609,23 @@ const ProgramChairPlanner = ({
                 </div>
               </div>
 
-              <div className="flex flex-row gap-4">
-                <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-foreground/70 flex flex-1">
-                  Last Updated:{" "}
-                  {scheduleBundle?.schedule?.updated_at
-                    ? formatDateTime(scheduleBundle.schedule.updated_at)
-                    : "N/A"}
-                </div>
-                <Button
-                  onClick={handleSubmitSchedule}
-                  disabled={
-                    !scheduleBundle.schedule ||
-                    isSaving ||
-                    selectedCampusIds.length === 0
-                  }
-                >
-                  <Send className="h-4 w-4" />
-                  Submit
-                </Button>
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-foreground/70 flex flex-1">
+                Last Updated:{" "}
+                {scheduleBundle?.schedule?.updated_at
+                  ? formatDateTime(scheduleBundle.schedule.updated_at)
+                  : "N/A"}
               </div>
+              <Button
+                onClick={handleSubmitSchedule}
+                disabled={
+                  !scheduleBundle.schedule ||
+                  isSaving ||
+                  selectedCampusIds.length === 0
+                }
+              >
+                <Send className="h-4 w-4" />
+                Submit
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -1479,28 +1671,28 @@ const ProgramChairPlanner = ({
         onOpenChange={setIsTermPickerOpen}
         title="Select Academic Term"
         description="Search and select one term"
+        contentClassName="flex flex-col flex-1 max-h-11/12 w-full max-w-3xl overflow-hidden"
       >
-        <div className="space-y-3">
+        <div className="h-full flex flex-col gap-3 overflow-hidden">
           <Input
             placeholder="Search term"
             value={termQuery}
             onChange={(event) => setTermQuery(event.target.value)}
           />
-          <div className="max-h-80 space-y-2 overflow-y-auto">
+          <div className="flex-1 grid grid-cols-2 gap-2 overflow-y-auto">
             {filteredTerms.map((term) => (
-              <button
+              <ListItemSmall
                 key={term.id}
-                type="button"
-                className="w-full rounded-md border p-2 text-left hover:bg-accent"
+                title={term.code}
+                subtitle={[]}
                 onClick={() => {
                   setSelectedTermId(term.id);
                   setIsTermPickerOpen(false);
                   void loadTermCampusDataFor(term.id, selectedCampusIds);
                   void loadScheduleFor(selectedFacultyId, term.id);
                 }}
-              >
-                <p className="text-sm font-medium">{term.code}</p>
-              </button>
+                icon={<Calendar className="h-6 w-6 text-background/70" />}
+              />
             ))}
           </div>
         </div>
@@ -1550,12 +1742,12 @@ const ProgramChairPlanner = ({
       <AppDialog
         open={isOfferingPickerOpen}
         onOpenChange={setIsOfferingPickerOpen}
-        title="Add Course Offering"
-        description="Select an offering; taken items are shown but disabled"
+        title="Add Class"
+        description="Select a class; taken items are shown but disabled"
       >
         <div className="space-y-3">
           <Input
-            placeholder="Search offering"
+            placeholder="Search class"
             value={offeringQuery}
             onChange={(event) => setOfferingQuery(event.target.value)}
           />
@@ -1689,6 +1881,113 @@ const ProgramChairPlanner = ({
             </div>
           </div>
         ) : null}
+      </AppDialog>
+
+      <AppDialog
+        open={isMergeDialogOpen}
+        onOpenChange={setIsMergeDialogOpen}
+        title="Merge Classes"
+        description="Choose the class row to merge into. Only same course code classes are eligible."
+        contentClassName="w-full max-w-2xl"
+      >
+        <div className="space-y-3">
+          <div className="rounded-md border bg-muted/30 p-3 text-sm text-foreground/80">
+            <p>
+              Source: {mergeSourceClass?.course_code ?? "N/A"} (
+              {mergeSourceClass?.year_section ?? "No Block"})
+            </p>
+            <p className="text-xs text-foreground/70">
+              Source blocks are added to target for scheduling. Step 2 rows stay
+              separate, and existing source sessions are removed.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs text-foreground/70">Merge into</p>
+            <select
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              value={mergeTargetClassId ?? ""}
+              onChange={(event) => setMergeTargetClassId(event.target.value)}
+            >
+              {mergeTargetOptions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.course_code} ({item.year_section ?? "No Block"})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsMergeDialogOpen(false);
+                setMergeSourceClassId(null);
+                setMergeTargetClassId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMergeClasses}
+              disabled={isSaving || !mergeSourceClassId || !mergeTargetClassId}
+            >
+              Merge Selected
+            </Button>
+          </div>
+        </div>
+      </AppDialog>
+
+      <AppDialog
+        open={isUnmergeDialogOpen}
+        onOpenChange={setIsUnmergeDialogOpen}
+        title="Unmerge Class"
+        description="Select the block to split into a new class row."
+      >
+        <div className="space-y-3">
+          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+            <p className="font-medium">Session impact warning</p>
+            <p>
+              Unmerging will remove all existing sessions from this merged class
+              because session ownership per block is ambiguous.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs text-foreground/70">Block to unmerge</p>
+            <select
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              value={unmergeBlockId ?? ""}
+              onChange={(event) => setUnmergeBlockId(event.target.value)}
+            >
+              {(unmergeSourceClass?.blocks ?? []).map((block) => (
+                <option key={block.id} value={block.id}>
+                  {block.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsUnmergeDialogOpen(false);
+                setUnmergeSourceClassId(null);
+                setUnmergeBlockId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleUnmergeClass}
+              disabled={isSaving || !unmergeSourceClassId || !unmergeBlockId}
+            >
+              Unmerge and Remove Sessions
+            </Button>
+          </div>
+        </div>
       </AppDialog>
 
       <AppDialog

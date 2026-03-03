@@ -267,6 +267,21 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
       .map((item) => asString(item.block_id))
       .filter((item): item is string => Boolean(item));
 
+    const blocks = classDeliveryBlocks
+      .map((item) => {
+        const blockId = asString(item.block_id);
+        const block = asObject(item.block);
+        const yearLevel = asNumber(block?.year_level);
+        const section = asString(block?.section);
+        if (!blockId || !yearLevel || !section) return null;
+
+        return {
+          id: blockId,
+          label: `${yearLevel} - ${section}`,
+        };
+      })
+      .filter((item): item is { id: string; label: string } => Boolean(item));
+
     const campuses = mappedBlocks
       .map((item) => asObject(item.major_offering))
       .map((majorOffering) => asObject(majorOffering?.program_offering))
@@ -304,6 +319,7 @@ const mapScheduleClasses = async (scheduleId: string): Promise<FTLClass[]> => {
       schedule_id: asString(courseAllocation?.schedule_id) ?? "",
       course_offering_id: asString(courseAllocation?.course_offering_id) ?? "",
       block_ids: blockIds,
+      blocks,
       course_code: asString(course?.code) ?? "",
       course_title: asString(course?.title) ?? "",
       lecture_hour: asNumber(course?.lecture_hour),
@@ -897,43 +913,54 @@ export const createClass = async (input: {
     courseAllocationId = insertedAllocation.id;
   }
 
-  const { data: existingDelivery, error: existingDeliveryError } =
-    await supabase
-      .from("class_delivery")
-      .select("id")
-      .eq("course_allocation_id", courseAllocationId)
-      .maybeSingle();
-
-  if (existingDeliveryError) {
-    console.error(
-      "lib.ftl.createClass existingDelivery::",
-      existingDeliveryError,
-    );
-    return { error: existingDeliveryError.message ?? "Unable to add class" };
-  }
-
-  let classDeliveryId = existingDelivery?.id ?? null;
-
-  if (!classDeliveryId) {
-    const { data: insertedDelivery, error: insertDeliveryError } =
+  if (input.block_id) {
+    const { data: duplicateBlockLinks, error: duplicateBlockLinksError } =
       await supabase
-        .from("class_delivery")
-        .insert({
-          course_allocation_id: courseAllocationId,
-        })
-        .select("id")
-        .single();
+        .from("class_delivery_block")
+        .select(
+          `
+          block_id,
+          class_delivery:class_delivery!inner(
+            course_allocation:course_allocation!inner(id)
+          )
+        `,
+        )
+        .eq("class_delivery.course_allocation.id", courseAllocationId)
+        .eq("block_id", input.block_id)
+        .limit(1);
 
-    if (insertDeliveryError) {
+    if (duplicateBlockLinksError) {
       console.error(
-        "lib.ftl.createClass insertDelivery::",
-        insertDeliveryError,
+        "lib.ftl.createClass duplicateBlockLinks::",
+        duplicateBlockLinksError,
       );
-      return { error: insertDeliveryError.message ?? "Unable to add class" };
+      return {
+        error: duplicateBlockLinksError.message ?? "Unable to validate class",
+      };
     }
 
-    classDeliveryId = insertedDelivery.id;
+    if ((duplicateBlockLinks ?? []).length > 0) {
+      return {
+        error:
+          "This course and block are already listed in Step 2 for this schedule.",
+      };
+    }
   }
+
+  const { data: insertedDelivery, error: insertDeliveryError } = await supabase
+    .from("class_delivery")
+    .insert({
+      course_allocation_id: courseAllocationId,
+    })
+    .select("id")
+    .single();
+
+  if (insertDeliveryError) {
+    console.error("lib.ftl.createClass insertDelivery::", insertDeliveryError);
+    return { error: insertDeliveryError.message ?? "Unable to add class" };
+  }
+
+  const classDeliveryId = insertedDelivery.id;
 
   if (input.block_id && classDeliveryId) {
     const { error: blockLinkError } = await supabase
@@ -952,6 +979,264 @@ export const createClass = async (input: {
     if (blockLinkError) {
       console.error("lib.ftl.createClass blockLink::", blockLinkError);
       return { error: blockLinkError.message ?? "Unable to add class block" };
+    }
+  }
+
+  await touchSchedule(input.schedule_id);
+  revalidatePath("/ftl");
+  return { error: null };
+};
+
+export const mergeClassDeliveries = async (input: {
+  schedule_id: string;
+  source_class_id: string;
+  target_class_id: string;
+  expected_schedule_updated_at: string | null;
+  force_stale_save?: boolean;
+}): Promise<MutationResult> => {
+  await ensureProgramChair();
+  const supabase = await createClient();
+
+  if (input.source_class_id === input.target_class_id) {
+    return { error: "Source and target class must be different." };
+  }
+
+  const staleError = await assertScheduleIsFresh(
+    input.schedule_id,
+    input.expected_schedule_updated_at,
+    Boolean(input.force_stale_save),
+  );
+  if (staleError) return { error: staleError };
+
+  const { data: classesRaw, error: classesError } = await supabase
+    .from("class_delivery")
+    .select(
+      `
+      id,
+      course_allocation_id,
+      course_allocation:course_allocation!inner(
+        id,
+        schedule_id,
+        course_offering:course_offering!inner(
+          course:course!inner(code)
+        )
+      ),
+      class_delivery_block(id, block_id)
+    `,
+    )
+    .eq("course_allocation.schedule_id", input.schedule_id)
+    .in("id", [input.source_class_id, input.target_class_id]);
+
+  if (classesError) {
+    console.error("lib.ftl.mergeClassDeliveries classes::", classesError);
+    return { error: classesError.message ?? "Unable to load classes to merge" };
+  }
+
+  const classes = (classesRaw ?? []).map((raw) => raw as RowObject);
+  if (classes.length !== 2) {
+    return { error: "Unable to find source and target classes in schedule." };
+  }
+
+  const source = classes.find(
+    (row) => asString(row.id) === input.source_class_id,
+  );
+  const target = classes.find(
+    (row) => asString(row.id) === input.target_class_id,
+  );
+
+  if (!source || !target) {
+    return { error: "Unable to resolve selected classes for merge." };
+  }
+
+  const sourceAllocation = asObject(source.course_allocation);
+  const targetAllocation = asObject(target.course_allocation);
+  const sourceOffering = asObject(sourceAllocation?.course_offering);
+  const targetOffering = asObject(targetAllocation?.course_offering);
+  const sourceCourse = asObject(sourceOffering?.course);
+  const targetCourse = asObject(targetOffering?.course);
+  const sourceCode = asString(sourceCourse?.code);
+  const targetCode = asString(targetCourse?.code);
+
+  if (!sourceCode || !targetCode || sourceCode !== targetCode) {
+    return { error: "Only classes with the same course code can be merged." };
+  }
+
+  const sourceBlockLinks =
+    (source.class_delivery_block as RowObject[] | undefined) ?? [];
+
+  if (sourceBlockLinks.length === 0) {
+    return { error: "Source class has no block links to merge." };
+  }
+
+  const blockRowsToInsert = sourceBlockLinks
+    .map((item) => asString(item.block_id))
+    .filter((item): item is string => Boolean(item))
+    .map((blockId) => ({
+      class_delivery_id: input.target_class_id,
+      block_id: blockId,
+    }));
+
+  if (blockRowsToInsert.length > 0) {
+    const { error: insertBlocksError } = await supabase
+      .from("class_delivery_block")
+      .upsert(blockRowsToInsert, {
+        onConflict: "class_delivery_id,block_id",
+        ignoreDuplicates: true,
+      });
+
+    if (insertBlocksError) {
+      console.error(
+        "lib.ftl.mergeClassDeliveries insertBlocks::",
+        insertBlocksError,
+      );
+      return { error: insertBlocksError.message ?? "Unable to merge blocks" };
+    }
+  }
+
+  const { error: deleteSourceSessionsError } = await supabase
+    .from("session")
+    .delete()
+    .eq("class_delivery_id", input.source_class_id);
+
+  if (deleteSourceSessionsError) {
+    console.error(
+      "lib.ftl.mergeClassDeliveries deleteSourceSessions::",
+      deleteSourceSessionsError,
+    );
+    return {
+      error:
+        deleteSourceSessionsError.message ??
+        "Unable to clear source sessions during merge",
+    };
+  }
+
+  const { error: deleteSourceClassError } = await supabase
+    .from("class_delivery")
+    .delete()
+    .eq("id", input.source_class_id);
+
+  if (deleteSourceClassError) {
+    console.error(
+      "lib.ftl.mergeClassDeliveries deleteSourceClass::",
+      deleteSourceClassError,
+    );
+    return {
+      error:
+        deleteSourceClassError.message ??
+        "Unable to finalize merged class cleanup",
+    };
+  }
+
+  await touchSchedule(input.schedule_id);
+  revalidatePath("/ftl");
+  return { error: null };
+};
+
+export const unmergeClassBlock = async (input: {
+  schedule_id: string;
+  class_id: string;
+  block_id: string;
+  expected_schedule_updated_at: string | null;
+  remove_sessions: boolean;
+  force_stale_save?: boolean;
+}): Promise<MutationResult> => {
+  await ensureProgramChair();
+  const supabase = await createClient();
+
+  const staleError = await assertScheduleIsFresh(
+    input.schedule_id,
+    input.expected_schedule_updated_at,
+    Boolean(input.force_stale_save),
+  );
+  if (staleError) return { error: staleError };
+
+  const { data: classRaw, error: classError } = await supabase
+    .from("class_delivery")
+    .select(
+      `
+      id,
+      course_allocation_id,
+      course_allocation:course_allocation!inner(schedule_id),
+      class_delivery_block(id, block_id)
+    `,
+    )
+    .eq("id", input.class_id)
+    .eq("course_allocation.schedule_id", input.schedule_id)
+    .maybeSingle();
+
+  if (classError) {
+    console.error("lib.ftl.unmergeClassBlock class::", classError);
+    return {
+      error: classError.message ?? "Unable to load class for unmerge",
+    };
+  }
+
+  if (!classRaw) {
+    return { error: "Class to unmerge was not found in this schedule." };
+  }
+
+  const classRow = classRaw as RowObject;
+  const courseAllocationId = asString(classRow.course_allocation_id);
+  const blockLinks =
+    (classRow.class_delivery_block as RowObject[] | undefined) ?? [];
+
+  if (!courseAllocationId) {
+    return { error: "Class is missing allocation reference." };
+  }
+
+  if (blockLinks.length <= 1) {
+    return { error: "This class has only one block and cannot be unmerged." };
+  }
+
+  const blockLinkToMove = blockLinks.find(
+    (item) => asString(item.block_id) === input.block_id,
+  );
+
+  if (!blockLinkToMove) {
+    return { error: "Selected block is not linked to this class." };
+  }
+
+  const { data: newClass, error: createClassError } = await supabase
+    .from("class_delivery")
+    .insert({
+      course_allocation_id: courseAllocationId,
+    })
+    .select("id")
+    .single();
+
+  if (createClassError) {
+    console.error("lib.ftl.unmergeClassBlock createClass::", createClassError);
+    return {
+      error: createClassError.message ?? "Unable to create unmerged class",
+    };
+  }
+
+  const { error: moveBlockError } = await supabase
+    .from("class_delivery_block")
+    .update({ class_delivery_id: newClass.id })
+    .eq("id", asString(blockLinkToMove.id) ?? "");
+
+  if (moveBlockError) {
+    console.error("lib.ftl.unmergeClassBlock moveBlock::", moveBlockError);
+    return { error: moveBlockError.message ?? "Unable to move block" };
+  }
+
+  if (input.remove_sessions) {
+    const { error: deleteSessionsError } = await supabase
+      .from("session")
+      .delete()
+      .eq("class_delivery_id", input.class_id);
+
+    if (deleteSessionsError) {
+      console.error(
+        "lib.ftl.unmergeClassBlock deleteSessions::",
+        deleteSessionsError,
+      );
+      return {
+        error:
+          deleteSessionsError.message ??
+          "Unable to remove sessions during unmerge",
+      };
     }
   }
 
