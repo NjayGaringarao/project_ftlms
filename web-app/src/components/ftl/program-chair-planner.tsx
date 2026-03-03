@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { AddTile } from "@/components/ui/add-tile";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   createClass,
   deleteClass,
@@ -134,6 +135,15 @@ type SessionTableRow = {
   session?: FTLSession;
 };
 
+type ConfirmDialogState = {
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  confirmVariant?: "default" | "destructive" | "outline" | "secondary";
+  onConfirm: () => void | Promise<void>;
+};
+
 const ProgramChairPlanner = ({
   bootstrap,
   initialFaculty,
@@ -201,6 +211,8 @@ const ProgramChairPlanner = ({
     string | null
   >(null);
   const [unmergeBlockId, setUnmergeBlockId] = useState<string | null>(null);
+  const [confirmDialogState, setConfirmDialogState] =
+    useState<ConfirmDialogState | null>(null);
 
   const selectedFaculty = useMemo(
     () => faculties.find((item) => item.id === selectedFacultyId) ?? null,
@@ -537,13 +549,20 @@ const ProgramChairPlanner = ({
     return refreshed;
   };
 
-  const handleCampusSelectionChange = async (nextCampusIds: string[]) => {
+  const handleCampusSelectionChange = async (
+    nextCampusIds: string[],
+    skipConfirmation = false,
+  ) => {
     const uniqueCampusIds = Array.from(new Set(nextCampusIds.filter(Boolean)));
     const removedCampusIds = selectedCampusIds.filter(
       (campusId) => !uniqueCampusIds.includes(campusId),
     );
 
-    if (scheduleBundle.schedule && removedCampusIds.length > 0) {
+    if (
+      !skipConfirmation &&
+      scheduleBundle.schedule &&
+      removedCampusIds.length > 0
+    ) {
       const affectedClasses = scheduleBundle.classes.filter((item) =>
         item.campus_ids.some((campusId) => removedCampusIds.includes(campusId)),
       );
@@ -559,11 +578,17 @@ const ProgramChairPlanner = ({
         )
         .join(", ");
 
-      const confirmed = window.confirm(
-        `Removing campus (${removedCampusNames}) will remove ${affectedClasses.length} class row(s) and ${affectedSessions} session(s) from this schedule. Continue?`,
-      );
-
-      if (!confirmed) return;
+      setConfirmDialogState({
+        title: "Remove campus and dependent schedule data?",
+        description: `Removing campus (${removedCampusNames}) will remove ${affectedClasses.length} class row(s) and ${affectedSessions} session(s) from this schedule.`,
+        confirmLabel: "Remove Campus",
+        confirmVariant: "destructive",
+        onConfirm: async () => {
+          setConfirmDialogState(null);
+          await handleCampusSelectionChange(uniqueCampusIds, true);
+        },
+      });
+      return;
     }
 
     setSelectedCampusIds(uniqueCampusIds);
@@ -645,31 +670,36 @@ const ProgramChairPlanner = ({
     const blockSummary =
       item.year_section ?? item.blocks.map((block) => block.label).join(", ");
 
-    const confirmed = window.confirm(
-      `Remove class row ${item.course_code} (${blockSummary || "No Block"}) from Step 2?\n\nImpact:\n- 1 class row removed\n- ${sessionCount} session(s) removed`,
-    );
-    if (!confirmed) return;
+    setConfirmDialogState({
+      title: "Remove class row from schedule?",
+      description: `Remove class row ${item.course_code} (${blockSummary || "No Block"}) from Step 2? Impact: 1 class row removed and ${sessionCount} session(s) removed.`,
+      confirmLabel: "Remove Class",
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        setConfirmDialogState(null);
+        setIsSaving(true);
+        const result = await deleteClass({
+          class_id: item.id,
+          schedule_id: scheduleBundle.schedule!.id,
+          expected_schedule_updated_at: scheduleBundle.schedule!.updated_at,
+        });
 
-    setIsSaving(true);
-    const result = await deleteClass({
-      class_id: item.id,
-      schedule_id: scheduleBundle.schedule.id,
-      expected_schedule_updated_at: scheduleBundle.schedule.updated_at,
+        if (result.error) {
+          setFeedback({ kind: "error", text: result.error });
+          setIsSaving(false);
+          return;
+        }
+
+        await refreshScheduleBundle();
+        await loadTermCampusDataFor(selectedTermId, selectedCampusIds);
+        setIsSaving(false);
+        setFeedback({
+          kind: "success",
+          text: `${item.course_code} class row removed from schedule`,
+        });
+      },
     });
-
-    if (result.error) {
-      setFeedback({ kind: "error", text: result.error });
-      setIsSaving(false);
-      return;
-    }
-
-    await refreshScheduleBundle();
-    await loadTermCampusDataFor(selectedTermId, selectedCampusIds);
-    setIsSaving(false);
-    setFeedback({
-      kind: "success",
-      text: `${item.course_code} class row removed from schedule`,
-    });
+    return;
   };
 
   const openMergeDialog = (classDeliveryId: string) => {
@@ -971,25 +1001,31 @@ const ProgramChairPlanner = ({
   const handleDeleteSession = async (sessionId: string) => {
     if (!scheduleBundle.schedule) return;
 
-    const confirmed = window.confirm("Delete this session?");
-    if (!confirmed) return;
+    setConfirmDialogState({
+      title: "Delete this session?",
+      description: "This action cannot be undone.",
+      confirmLabel: "Delete Session",
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        setConfirmDialogState(null);
+        setIsSaving(true);
+        const result = await deleteSession({
+          session_id: sessionId,
+          schedule_id: scheduleBundle.schedule!.id,
+          expected_schedule_updated_at: scheduleBundle.schedule!.updated_at,
+        });
 
-    setIsSaving(true);
-    const result = await deleteSession({
-      session_id: sessionId,
-      schedule_id: scheduleBundle.schedule.id,
-      expected_schedule_updated_at: scheduleBundle.schedule.updated_at,
+        if (result.error) {
+          setFeedback({ kind: "error", text: result.error });
+          setIsSaving(false);
+          return;
+        }
+
+        await refreshScheduleBundle();
+        setIsSaving(false);
+        setFeedback({ kind: "success", text: "Session deleted" });
+      },
     });
-
-    if (result.error) {
-      setFeedback({ kind: "error", text: result.error });
-      setIsSaving(false);
-      return;
-    }
-
-    await refreshScheduleBundle();
-    setIsSaving(false);
-    setFeedback({ kind: "success", text: "Session deleted" });
   };
 
   const handleSubmitSchedule = async () => {
@@ -2080,6 +2116,25 @@ const ProgramChairPlanner = ({
           </div>
         </div>
       </AppDialog>
+
+      <ConfirmDialog
+        open={confirmDialogState !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmDialogState(null);
+          }
+        }}
+        title={confirmDialogState?.title ?? "Confirm action"}
+        description={confirmDialogState?.description}
+        confirmLabel={confirmDialogState?.confirmLabel}
+        cancelLabel={confirmDialogState?.cancelLabel}
+        confirmVariant={confirmDialogState?.confirmVariant}
+        onConfirm={async () => {
+          if (!confirmDialogState) return;
+          await confirmDialogState.onConfirm();
+        }}
+        isLoading={isSaving}
+      />
     </div>
   );
 };
