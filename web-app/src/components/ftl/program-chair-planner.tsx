@@ -70,6 +70,16 @@ const typeLabelMap: Record<ConflictType, string> = {
 
 const toTimeInput = (value: string) => value.slice(0, 5);
 
+const toDisplayTime = (value: string) => {
+  const [hourRaw, minuteRaw] = toTimeInput(value).split(":");
+  const hour24 = Number(hourRaw ?? 0);
+  const minute = Number(minuteRaw ?? 0);
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+
+  return `${String(hour12).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${period}`;
+};
+
 const toMinutes = (value: string) => {
   const [hourRaw, minuteRaw] = value.split(":");
   const hour = Number(hourRaw ?? 0);
@@ -323,7 +333,7 @@ const ProgramChairPlanner = ({
       const majorLabel = [
         item.program_code ?? "N/A",
         item.major_code ?? "N/A",
-      ].join(" | ");
+      ].join(" ");
       const blockLabel = item.year_section ?? "No Block";
       const remainingHours = classLoadSummaryMap.get(item.id)?.remaining ?? 0;
 
@@ -1253,7 +1263,7 @@ const ProgramChairPlanner = ({
                         variant="outline"
                         onClick={() => void handleRemoveClassFromSchedule(item)}
                         disabled={isSaving}
-                        title="unassign this class from the faculty schedule"
+                        title="Unassign this class from this faculty"
                       >
                         <X className="h-5 w-5" />
                       </Button>
@@ -1367,9 +1377,11 @@ const ProgramChairPlanner = ({
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b text-left text-foreground/70">
-                            <th className="px-1.5 py-1.5">Class Course</th>
+                            <th className="px-1.5 py-1.5 min-w-28">
+                              Class Course
+                            </th>
                             <th className="px-1.5 py-1.5 min-w-40">
-                              Program Major | Block
+                              Class Block(s)
                             </th>
                             <th className="px-1.5 py-1.5">Day</th>
                             <th className="px-1.5 py-1.5">Start</th>
@@ -1382,15 +1394,15 @@ const ProgramChairPlanner = ({
                         </thead>
                         <tbody>
                           <tr className="border-b bg-muted/20 align-center">
-                            <td className="px-1.5 py-1.5">
+                            <td className="px-1.5 py-1.5" colSpan={2}>
                               <select
-                                className="w-32 rounded-md border bg-background px-2 py-1.5 text-sm"
+                                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
                                 value={newSessionDraft.class_delivery_id}
                                 onChange={(event) =>
                                   seedNewSessionDraft(event.target.value)
                                 }
                               >
-                                <option value="">Select Course</option>
+                                <option value="">Select Class</option>
                                 {classDeliveryOptions.map((item) => (
                                   <option
                                     key={item.class_delivery_id}
@@ -1401,13 +1413,7 @@ const ProgramChairPlanner = ({
                                 ))}
                               </select>
                             </td>
-                            <td className="px-1.5 py-1.5 text-xs text-foreground/70 min-w-32">
-                              <p>
-                                {newSessionDraft.class_delivery_id
-                                  ? `Unscheduled: ${newSessionRemainingHours?.toFixed(2) ?? "0.00"} Hours`
-                                  : "Select a class course first"}
-                              </p>
-                            </td>
+
                             <td className="px-1.5 py-1.5">
                               <select
                                 className="w-20 rounded-md border bg-background px-2 py-1.5 text-sm"
@@ -1507,21 +1513,21 @@ const ProgramChairPlanner = ({
                                 <td className="px-1.5 py-1.5 text-xs text-foreground/70">
                                   {row.major_label} | {row.block_label}
                                 </td>
-                                <td className="px-1.5 py-1.5">
-                                  {row.session
-                                    ? dayLabel(row.session.day)
-                                    : "—"}
-                                </td>
                                 {row.has_session ? (
                                   <>
                                     <td className="px-1.5 py-1.5">
                                       {row.session
-                                        ? toTimeInput(row.session.start_time)
+                                        ? dayLabel(row.session.day)
                                         : "—"}
                                     </td>
                                     <td className="px-1.5 py-1.5">
                                       {row.session
-                                        ? toTimeInput(row.session.end_time)
+                                        ? toDisplayTime(row.session.start_time)
+                                        : "—"}
+                                    </td>
+                                    <td className="px-1.5 py-1.5">
+                                      {row.session
+                                        ? toDisplayTime(row.session.end_time)
                                         : "—"}
                                     </td>
                                     <td className="px-1.5 py-1.5 text-xs">
@@ -1532,13 +1538,12 @@ const ProgramChairPlanner = ({
                                   </>
                                 ) : (
                                   <td
-                                    colSpan={3}
+                                    colSpan={4}
                                     className="px-1.5 py-1.5 text-xs text-foreground/70"
                                   >
                                     {row.remaining_hours > 0 ? (
                                       <span>
-                                        Unscheduled:{" "}
-                                        {row.remaining_hours.toFixed(2)} Hours
+                                        {`${row.remaining_hours.toFixed(2)} hours remaining to be scheduled`}
                                       </span>
                                     ) : (
                                       <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
@@ -2091,8 +2096,8 @@ const ProgramChairPlanner = ({
                       </p>
                       <p className="text-xs text-foreground/70">
                         {dayLabel(conflict.day)} •{" "}
-                        {toTimeInput(conflict.start_time)}-
-                        {toTimeInput(conflict.end_time)}
+                        {toDisplayTime(conflict.start_time)}-
+                        {toDisplayTime(conflict.end_time)}
                         {conflict.conflicting_block
                           ? ` • ${conflict.conflicting_block}`
                           : ""}
