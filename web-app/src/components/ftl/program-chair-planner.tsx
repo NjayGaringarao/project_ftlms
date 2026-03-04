@@ -2,27 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  AlertCircle,
-  Calendar,
-  Edit,
-  Landmark,
-  Merge,
-  Plus,
-  PlusCircle,
-  Send,
-  Split,
-  Trash2,
-  TriangleAlert,
-  UserCircle,
-  X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { AppDialog } from "@/components/ui/app-dialog";
-import { AddTile } from "@/components/ui/add-tile";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
   createClass,
   deleteClass,
   deleteSession,
@@ -37,7 +16,6 @@ import {
   unmergeClassBlock,
 } from "@/lib/ftl/actions";
 import {
-  ConflictType,
   FTLBootstrapData,
   FTLClass,
   FTLFaculty,
@@ -49,109 +27,27 @@ import {
   SessionConflict,
 } from "@/lib/ftl/types";
 import { cn } from "@/utils/style";
-import { formatDateTime } from "@/utils/time";
-import ListItemSmall from "../admin/list-item-small";
-
-const DAY_OPTIONS = [
-  { value: "SUNDAY", label: "Sun" },
-  { value: "MONDAY", label: "Mon" },
-  { value: "TUESDAY", label: "Tue" },
-  { value: "WEDNESDAY", label: "Wed" },
-  { value: "THURSDAY", label: "Thu" },
-  { value: "FRIDAY", label: "Fri" },
-  { value: "SATURDAY", label: "Sat  " },
-];
-
-const typeLabelMap: Record<ConflictType, string> = {
-  FACULTY: "Faculty double-booked",
-  ROOM: "Room occupied",
-  BLOCK: "Block overlap",
-};
-
-const toTimeInput = (value: string) => value.slice(0, 5);
-
-const toDisplayTime = (value: string) => {
-  const [hourRaw, minuteRaw] = toTimeInput(value).split(":");
-  const hour24 = Number(hourRaw ?? 0);
-  const minute = Number(minuteRaw ?? 0);
-  const period = hour24 >= 12 ? "PM" : "AM";
-  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-
-  return `${String(hour12).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${period}`;
-};
-
-const toMinutes = (value: string) => {
-  const [hourRaw, minuteRaw] = value.split(":");
-  const hour = Number(hourRaw ?? 0);
-  const minute = Number(minuteRaw ?? 0);
-  return hour * 60 + minute;
-};
-
-const sessionDurationHours = (start: string, end: string) => {
-  const minutes = toMinutes(end) - toMinutes(start);
-  if (minutes <= 0) return 0;
-  return minutes / 60;
-};
-
-const dayLabel = (value: string) =>
-  DAY_OPTIONS.find((day) => day.value === value)?.label ?? `Day ${value}`;
-
-const fullName = (faculty: FTLFaculty | null) => {
-  if (!faculty) return "";
-
-  const parts = [faculty.first_name, faculty.middle_name, faculty.last_name]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  if (!parts) return "Unknown Faculty";
-  return faculty.extension ? `${parts}, ${faculty.extension}` : parts;
-};
-
-const formatTermLabel = (term: FTLBootstrapData["terms"][number]) => {
-  return `${term.code} • AY ${term.academic_year_start}-${term.academic_year_end} • ${term.term_order}`;
-};
+import { ContextPickersDialogs } from "./program-chair-planner/context-pickers-dialogs";
+import { ScheduleActionDialogs } from "./program-chair-planner/schedule-action-dialogs";
+import { Step1Context } from "./program-chair-planner/step-1-context";
+import { Step2TeachingLoad } from "./program-chair-planner/step-2-teaching-load";
+import { Step3ConstructSchedule } from "./program-chair-planner/step-3-construct-schedule";
+import { Step4Review } from "./program-chair-planner/step-4-review";
+import {
+  formatTermLabel,
+  fullName,
+  sessionDurationHours,
+  toTimeInput,
+} from "./program-chair-planner/utils";
+import {
+  ConfirmDialogState,
+  SessionDraft,
+  SessionTableRow,
+} from "./program-chair-planner/types";
 
 type ProgramChairPlannerProps = {
   bootstrap: FTLBootstrapData;
   initialFaculty: FTLFaculty[];
-};
-
-type SessionDraft = {
-  class_delivery_id: string;
-  block_ids: string[];
-  session_id?: string;
-  room_id: string;
-  day:
-    | "SUNDAY"
-    | "MONDAY"
-    | "TUESDAY"
-    | "WEDNESDAY"
-    | "THURSDAY"
-    | "FRIDAY"
-    | "SATURDAY";
-  start_time: string;
-  end_time: string;
-};
-
-type SessionTableRow = {
-  row_id: string;
-  class_delivery_id: string;
-  course_label: string;
-  major_label: string;
-  block_label: string;
-  remaining_hours: number;
-  has_session: boolean;
-  session?: FTLSession;
-};
-
-type ConfirmDialogState = {
-  title: string;
-  description?: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  confirmVariant?: "default" | "destructive" | "outline" | "secondary";
-  onConfirm: () => void | Promise<void>;
 };
 
 const ProgramChairPlanner = ({
@@ -229,6 +125,11 @@ const ProgramChairPlanner = ({
     [faculties, selectedFacultyId],
   );
 
+  const selectedTerm = useMemo(
+    () => bootstrap.terms.find((term) => term.id === selectedTermId) ?? null,
+    [bootstrap.terms, selectedTermId],
+  );
+
   const filteredFaculty = useMemo(() => {
     const query = facultyQuery.trim().toLowerCase();
     if (!query) return faculties;
@@ -291,15 +192,6 @@ const ProgramChairPlanner = ({
       return summary.includes(query);
     });
   }, [offeringOptions, offeringQuery]);
-
-  const groupedConflicts = useMemo(
-    () => ({
-      FACULTY: conflicts.filter((item) => item.type === "FACULTY"),
-      ROOM: conflicts.filter((item) => item.type === "ROOM"),
-      BLOCK: conflicts.filter((item) => item.type === "BLOCK"),
-    }),
-    [conflicts],
-  );
 
   const classLoadSummaryMap = useMemo(() => {
     return new Map(
@@ -1072,17 +964,6 @@ const ProgramChairPlanner = ({
     });
   };
 
-  const conflictBadgeClass = (type: ConflictType) => {
-    if (type === "FACULTY") return "border-red-300 bg-red-50 text-red-700";
-    if (type === "ROOM") return "border-amber-300 bg-amber-50 text-amber-700";
-    return "border-orange-300 bg-orange-50 text-orange-700";
-  };
-
-  const severityBadgeClass = (severity: SessionConflict["severity"]) => {
-    if (severity === "HIGH") return "border-red-300 bg-red-50 text-red-700";
-    return "border-amber-300 bg-amber-50 text-amber-700";
-  };
-
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden p-4">
       {feedback ? (
@@ -1099,1046 +980,193 @@ const ProgramChairPlanner = ({
 
       <div className={cn("h-full overflow-hidden", "grid grid-cols-4 gap-4")}>
         <div className="flex flex-col gap-4 h-full overflow-hidden">
-          <Card className="gap-2">
-            <CardHeader className="gap-0">
-              <CardTitle>Step 1: Set Context</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 overflow-auto">
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">Faculty</p>
-                {selectedFaculty ? (
-                  <div
-                    key={selectedFaculty.id}
-                    className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2 p-4 text-sm">
-                      <UserCircle className="h-6 w-6 text-foreground/70" />
-                      <p>{fullName(selectedFaculty)}</p>
-                    </div>
-                    <button
-                      className="p-4"
-                      onClick={() => {
-                        setSelectedFacultyId(null);
-                        setSelectedTermId(null);
-                        setSelectedCampusIds([]);
-                        setOfferingOptions([]);
-                        setRooms([]);
-                        setScheduleBundle({ schedule: null, classes: [] });
-                      }}
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-                ) : null}
+          <Step1Context
+            facultyName={selectedFaculty ? fullName(selectedFaculty) : null}
+            selectedFacultyId={selectedFaculty?.id ?? null}
+            selectedTermId={selectedTermId}
+            selectedTermCode={selectedTerm?.code ?? null}
+            onClearFaculty={() => {
+              setSelectedFacultyId(null);
+              setSelectedTermId(null);
+              setSelectedCampusIds([]);
+              setOfferingOptions([]);
+              setRooms([]);
+              setScheduleBundle({ schedule: null, classes: [] });
+            }}
+            onOpenFacultyPicker={() => setIsFacultyPickerOpen(true)}
+            onClearTerm={() => {
+              setSelectedTermId(null);
+              setSelectedCampusIds([]);
+              setOfferingOptions([]);
+              setRooms([]);
+              setScheduleBundle({ schedule: null, classes: [] });
+            }}
+            onOpenTermPicker={() => setIsTermPickerOpen(true)}
+          />
 
-                {!selectedFaculty && (
-                  <AddTile
-                    title="Select Faculty"
-                    description="Open searchable faculty list"
-                    onClick={() => setIsFacultyPickerOpen(true)}
-                  />
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">Academic Term</p>
-                {selectedTermId ? (
-                  <div
-                    key={selectedTermId}
-                    className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2 p-4 text-xs">
-                      <Calendar className="h-6 w-6 text-foreground/70" />
-                      <p>
-                        {bootstrap.terms.find(
-                          (term) => term.id === selectedTermId,
-                        )?.code ?? ""}
-                      </p>
-                    </div>
-                    <button
-                      className="p-4"
-                      onClick={() => {
-                        setSelectedTermId(null);
-                        setSelectedCampusIds([]);
-                        setOfferingOptions([]);
-                        setRooms([]);
-                        setScheduleBundle({ schedule: null, classes: [] });
-                      }}
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-                ) : null}
-
-                {!selectedTermId && (
-                  <AddTile
-                    title="Select Academic Term"
-                    description="Open searchable term list"
-                    onClick={() => setIsTermPickerOpen(true)}
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="flex-1 gap-2 overflow-hidden flex flex-col">
-            <CardHeader className="pb-2 gap-0">
-              <CardTitle className="text-base">
-                Step 2: Manage Teaching Load
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="min-h-0 overflow-auto space-y-3">
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">Campuses</p>
-                {selectedCampusIds.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {selectedCampusIds.map((campusId) => {
-                      const campus = bootstrap.campuses.find(
-                        (item) => item.id === campusId,
-                      );
-                      if (!campus) return null;
-
-                      return (
-                        <div
-                          key={campusId}
-                          className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-                        >
-                          <div className="flex items-center gap-2 p-4 text-sm">
-                            <Landmark className="h-6 w-6 text-foreground/70" />
-                            <p>{campus.name}</p>
-                          </div>
-                          <button
-                            className="p-4"
-                            onClick={() => {
-                              const nextCampusIds = selectedCampusIds.filter(
-                                (item) => item !== campusId,
-                              );
-                              void handleCampusSelectionChange(nextCampusIds);
-                            }}
-                          >
-                            <X className="h-5 w-5" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null}
-                <AddTile
-                  title="Add Campus"
-                  description="Select one or more campuses"
-                  onClick={() => setIsCampusPickerOpen(true)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">Classes</p>
-
-                {scheduleBundle.classes.map((item) => (
-                  <div
-                    key={`${item.id}-${item.course_offering_id}`}
-                    className="rounded-md w-full border flex flex-row items-center justify-between gap-2"
-                  >
-                    <div className="p-3 text-sm">
-                      <div className="flex flex-row gap-2 items-center">
-                        <p className="font-medium">{item.course_code}</p>
-                        <p className="text-xs text-foreground/70">
-                          {item.program_code ?? "N/A"}{" "}
-                          {item.major_code ?? "N/A"} {" | "}
-                          {item.year_section ?? "No Block"}
-                        </p>
-                      </div>
-                      <p className="text-xs text-foreground/70">
-                        {`Load: ${(item.lecture_hour ?? 0) + (item.laboratory_hour ?? 0) * 0.75} ${(item.laboratory_hour ?? 0) * 0.75} = Lecture: ${item.lecture_hour ?? 0} + Laboratory: ${item.laboratory_hour ?? 0} × 0.75`}
-                      </p>
-                      <p className="text-xs text-emerald-700">
-                        {(item.blocks.length ?? 0) > 1
-                          ? `Merged Class with ${item.blocks.length} blocks`
-                          : "Single class delivery"}
-                      </p>
-                    </div>
-
-                    <div className="p-2 flex flex-col items-center justify-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void handleRemoveClassFromSchedule(item)}
-                        disabled={isSaving}
-                        title="Unassign this class from this faculty"
-                      >
-                        <X className="h-5 w-5" />
-                      </Button>
-
-                      {(mergeTargetsByClassId.get(item.id)?.length ?? 0) > 0 ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openMergeDialog(item.id)}
-                          disabled={isSaving}
-                          title="Merge into another same-course class"
-                        >
-                          <Merge className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-
-                      {(item.blocks.length ?? 0) > 1 ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openUnmergeDialog(item.id)}
-                          disabled={isSaving}
-                          title="Unmerge into separate classes"
-                        >
-                          <Split className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-
-                {!isLoadingOfferings &&
-                selectedTermId &&
-                selectedCampusIds.length > 0 &&
-                offeringOptions.length === 0 ? (
-                  <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                    No offered courses found for selected term and campuses.
-                  </p>
-                ) : null}
-
-                <AddTile
-                  title="Add Class"
-                  description="Open searchable class list"
-                  onClick={() => setIsOfferingPickerOpen(true)}
-                  disabled={
-                    !selectedFacultyId ||
-                    !selectedTermId ||
-                    selectedCampusIds.length === 0
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <Step2TeachingLoad
+            campuses={bootstrap.campuses}
+            selectedCampusIds={selectedCampusIds}
+            classes={scheduleBundle.classes}
+            mergeTargetsByClassId={mergeTargetsByClassId}
+            isSaving={isSaving}
+            isLoadingOfferings={isLoadingOfferings}
+            selectedTermId={selectedTermId}
+            offeringOptionsLength={offeringOptions.length}
+            selectedFacultyId={selectedFacultyId}
+            onRemoveCampus={(campusId) => {
+              const nextCampusIds = selectedCampusIds.filter(
+                (item) => item !== campusId,
+              );
+              void handleCampusSelectionChange(nextCampusIds);
+            }}
+            onOpenCampusPicker={() => setIsCampusPickerOpen(true)}
+            onRemoveClass={(item) => void handleRemoveClassFromSchedule(item)}
+            onOpenMerge={(classDeliveryId) => openMergeDialog(classDeliveryId)}
+            onOpenUnmerge={(classDeliveryId) =>
+              openUnmergeDialog(classDeliveryId)
+            }
+            onOpenOfferingPicker={() => setIsOfferingPickerOpen(true)}
+          />
         </div>
 
         <div className="col-span-3 flex flex-col gap-4 overflow-hidden">
-          <Card className="flex-1 overflow-hidden flex-col gap-0">
-            <CardHeader className="pb-2">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base">
-                    Step 3: Construct Schedule
-                  </CardTitle>
-                </div>
-              </div>
-            </CardHeader>
+          <Step3ConstructSchedule
+            isLoadingSchedule={isLoadingSchedule}
+            selectedFacultyId={selectedFacultyId}
+            selectedTermId={selectedTermId}
+            isSaving={isSaving}
+            scheduleBundle={scheduleBundle}
+            classDeliveryOptions={classDeliveryOptions}
+            newSessionDraft={newSessionDraft}
+            setNewSessionDraft={setNewSessionDraft}
+            rooms={rooms}
+            isAddDisabled={isAddDisabled}
+            addDisabledReason={addDisabledReason}
+            sessionTableRows={sessionTableRows}
+            classByIdMap={classByIdMap}
+            onCreateSchedule={async () => {
+              if (!selectedFacultyId || !selectedTermId) return;
 
-            <CardContent className="min-h-0 overflow-y-auto space-y-3">
-              {isLoadingSchedule ? (
-                <p className="text-sm text-foreground/70">
-                  Loading schedule...
-                </p>
-              ) : null}
+              setIsSaving(true);
+              const bundle = await findOrCreateSchedule(
+                selectedFacultyId,
+                selectedTermId,
+              );
+              setScheduleBundle(bundle);
+              setIsSaving(false);
+            }}
+            onSeedNewSessionDraft={seedNewSessionDraft}
+            onAddSessionRow={handleAddSessionRow}
+            onOpenEditSessionDialog={openEditSessionDialog}
+            onDeleteSession={handleDeleteSession}
+          />
 
-              {!isLoadingSchedule &&
-              selectedFacultyId &&
-              !scheduleBundle.schedule ? (
-                <div className="rounded-md border border-dashed p-4">
-                  <p className="text-sm text-foreground/70 mb-3">
-                    No schedule yet for this faculty and term.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      if (!selectedFacultyId || !selectedTermId) return;
-
-                      setIsSaving(true);
-                      const bundle = await findOrCreateSchedule(
-                        selectedFacultyId,
-                        selectedTermId,
-                      );
-                      setScheduleBundle(bundle);
-                      setIsSaving(false);
-                    }}
-                    disabled={!selectedTermId || isSaving}
-                  >
-                    Create Schedule
-                  </Button>
-                </div>
-              ) : null}
-
-              {scheduleBundle.schedule ? (
-                <div className="space-y-3">
-                  {scheduleBundle.classes.length === 0 ? (
-                    <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                      No classes yet. Add at least one class to begin scheduling
-                      sessions.
-                    </p>
-                  ) : (
-                    <div className="space-y-2 overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b text-left text-foreground/70">
-                            <th className="px-1.5 py-1.5 min-w-28">
-                              Class Course
-                            </th>
-                            <th className="px-1.5 py-1.5 min-w-40">
-                              Class Block(s)
-                            </th>
-                            <th className="px-1.5 py-1.5">Day</th>
-                            <th className="px-1.5 py-1.5">Start</th>
-                            <th className="px-1.5 py-1.5">End</th>
-                            <th className="px-1.5 py-1.5 min-w-28">Room</th>
-                            <th className="px-1.5 py-1.5 text-left min-w-20">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-b bg-muted/20 align-center">
-                            <td className="px-1.5 py-1.5" colSpan={2}>
-                              <select
-                                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-                                value={newSessionDraft.class_delivery_id}
-                                onChange={(event) =>
-                                  seedNewSessionDraft(event.target.value)
-                                }
-                              >
-                                <option value="">Select Class</option>
-                                {classDeliveryOptions.map((item) => (
-                                  <option
-                                    key={item.class_delivery_id}
-                                    value={item.class_delivery_id}
-                                  >
-                                    {item.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-
-                            <td className="px-1.5 py-1.5">
-                              <select
-                                className="w-20 rounded-md border bg-background px-2 py-1.5 text-sm"
-                                value={newSessionDraft.day}
-                                onChange={(event) =>
-                                  setNewSessionDraft((prev) => ({
-                                    ...prev,
-                                    day: event.target
-                                      .value as SessionDraft["day"],
-                                  }))
-                                }
-                              >
-                                {DAY_OPTIONS.map((item) => (
-                                  <option key={item.value} value={item.value}>
-                                    {item.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-1.5 py-1.5">
-                              <Input
-                                type="time"
-                                value={newSessionDraft.start_time}
-                                onChange={(event) =>
-                                  setNewSessionDraft((prev) => ({
-                                    ...prev,
-                                    start_time: event.target.value,
-                                  }))
-                                }
-                              />
-                            </td>
-                            <td className="px-1.5 py-1.5">
-                              <Input
-                                type="time"
-                                value={newSessionDraft.end_time}
-                                onChange={(event) =>
-                                  setNewSessionDraft((prev) => ({
-                                    ...prev,
-                                    end_time: event.target.value,
-                                  }))
-                                }
-                              />
-                            </td>
-                            <td className="px-1.5 py-1.5">
-                              <select
-                                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-                                value={newSessionDraft.room_id}
-                                onChange={(event) =>
-                                  setNewSessionDraft((prev) => ({
-                                    ...prev,
-                                    room_id: event.target.value,
-                                  }))
-                                }
-                              >
-                                <option value="">Select room</option>
-                                {rooms.map((room) => (
-                                  <option key={room.id} value={room.id}>
-                                    {room.code}{" "}
-                                    {room.name ? `- ${room.name}` : ""}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-1.5 py-1.5 text-right">
-                              <span
-                                className="inline-flex w-full"
-                                title={
-                                  isAddDisabled ? addDisabledReason : undefined
-                                }
-                              >
-                                <Button
-                                  size="sm"
-                                  onClick={() => void handleAddSessionRow()}
-                                  disabled={isAddDisabled}
-                                  className="w-full"
-                                >
-                                  <Plus className="h-4 w-4 text-background" />
-                                  Insert
-                                </Button>
-                              </span>
-                            </td>
-                          </tr>
-
-                          {sessionTableRows.map((row) => {
-                            const ownerClass = classByIdMap.get(
-                              row.class_delivery_id,
-                            );
-
-                            return (
-                              <tr
-                                key={row.row_id}
-                                className="border-b align-center"
-                              >
-                                <td className="px-1.5 py-1.5 font-medium">
-                                  {row.course_label}
-                                </td>
-                                <td className="px-1.5 py-1.5 text-xs text-foreground/70">
-                                  {row.major_label} | {row.block_label}
-                                </td>
-                                {row.has_session ? (
-                                  <>
-                                    <td className="px-1.5 py-1.5">
-                                      {row.session
-                                        ? dayLabel(row.session.day)
-                                        : "—"}
-                                    </td>
-                                    <td className="px-1.5 py-1.5">
-                                      {row.session
-                                        ? toDisplayTime(row.session.start_time)
-                                        : "—"}
-                                    </td>
-                                    <td className="px-1.5 py-1.5">
-                                      {row.session
-                                        ? toDisplayTime(row.session.end_time)
-                                        : "—"}
-                                    </td>
-                                    <td className="px-1.5 py-1.5 text-xs">
-                                      {row.session
-                                        ? `${row.session.room_code ?? "Unknown"}${row.session.room_name ? ` - ${row.session.room_name}` : ""}`
-                                        : "—"}
-                                    </td>
-                                  </>
-                                ) : (
-                                  <td
-                                    colSpan={4}
-                                    className="px-1.5 py-1.5 text-xs text-foreground/70"
-                                  >
-                                    {row.remaining_hours > 0 ? (
-                                      <span>
-                                        {`${row.remaining_hours.toFixed(2)} hours remaining to be scheduled`}
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                                        Fully Scheduled
-                                      </span>
-                                    )}
-                                  </td>
-                                )}
-                                <td className="px-1.5 py-1.5">
-                                  <div className="flex items-center gap-1.5 justify-end">
-                                    {!row.has_session ? (
-                                      <span
-                                        className="inline-flex"
-                                        title={
-                                          row.remaining_hours <= 0
-                                            ? "Class course is fully scheduled."
-                                            : undefined
-                                        }
-                                      >
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          title="Stage this class"
-                                          onClick={() =>
-                                            seedNewSessionDraft(
-                                              row.class_delivery_id,
-                                            )
-                                          }
-                                          disabled={row.remaining_hours <= 0}
-                                        >
-                                          <PlusCircle className="h-4 w-4" />
-                                        </Button>
-                                      </span>
-                                    ) : (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          title="Modify this schedule"
-                                          onClick={() => {
-                                            if (ownerClass && row.session) {
-                                              void openEditSessionDialog(
-                                                ownerClass,
-                                                row.session,
-                                              );
-                                            }
-                                          }}
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          title="Delete this schedule"
-                                          onClick={() => {
-                                            if (row.session) {
-                                              void handleDeleteSession(
-                                                row.session.id,
-                                              );
-                                            }
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="gap-0">
-              <CardTitle className="text-base">Step 4: Review</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-3 flex-row">
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="rounded-md border p-2 flex items-center gap-2">
-                  <p className="text-foreground/70">Teaching Load</p>
-                  <p className="text-sm font-semibold">
-                    {teachingLoadTotal.toFixed(2)}
-                  </p>
-                </div>
-                <div className="rounded-md border p-2 flex items-center gap-2">
-                  <p className="text-foreground/70">Designation Load</p>
-                  <p className="text-sm font-semibold">
-                    {selectedFacultyDesignationLoad.toFixed(2)}
-                  </p>
-                </div>
-                <div className="rounded-md border p-2 flex items-center gap-2">
-                  <p className="text-foreground/70">Total Working Load</p>
-                  <p className="text-sm font-semibold">
-                    {totalWorkingLoad.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-foreground/70 flex flex-1">
-                Last Updated:{" "}
-                {scheduleBundle?.schedule?.updated_at
-                  ? formatDateTime(scheduleBundle.schedule.updated_at)
-                  : "N/A"}
-              </div>
-              <Button
-                onClick={handleSubmitSchedule}
-                disabled={
-                  !scheduleBundle.schedule ||
-                  isSaving ||
-                  selectedCampusIds.length === 0
-                }
-              >
-                <Send className="h-4 w-4" />
-                Submit
-              </Button>
-            </CardContent>
-          </Card>
+          <Step4Review
+            teachingLoadTotal={teachingLoadTotal}
+            selectedFacultyDesignationLoad={selectedFacultyDesignationLoad}
+            totalWorkingLoad={totalWorkingLoad}
+            updatedAt={scheduleBundle?.schedule?.updated_at ?? null}
+            disableSubmit={
+              !scheduleBundle.schedule ||
+              isSaving ||
+              selectedCampusIds.length === 0
+            }
+            onSubmit={handleSubmitSchedule}
+          />
         </div>
       </div>
 
-      <AppDialog
-        open={isFacultyPickerOpen}
-        onOpenChange={setIsFacultyPickerOpen}
-        title="Select Faculty"
-        description="Search and select one faculty"
-      >
-        <div className="space-y-3">
-          <Input
-            placeholder="Search faculty"
-            value={facultyQuery}
-            onChange={(event) => setFacultyQuery(event.target.value)}
-          />
-          <div className="max-h-80 space-y-2 overflow-y-auto">
-            {filteredFaculty.map((faculty) => (
-              <button
-                key={faculty.id}
-                type="button"
-                className="w-full rounded-md border p-2 text-left hover:bg-accent"
-                onClick={() => {
-                  setSelectedFacultyId(faculty.id);
-                  setIsFacultyPickerOpen(false);
-                  void loadScheduleFor(faculty.id, selectedTermId);
-                }}
-              >
-                <p className="text-sm font-medium">{fullName(faculty)}</p>
-                <p className="text-xs text-foreground/70">
-                  {faculty.employment_status} • Designation load{" "}
-                  {faculty.total_designation_load}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </AppDialog>
-
-      <AppDialog
-        open={isTermPickerOpen}
-        onOpenChange={setIsTermPickerOpen}
-        title="Select Academic Term"
-        description="Search and select one term"
-        contentClassName="flex flex-col flex-1 max-h-11/12 w-full max-w-3xl overflow-hidden"
-      >
-        <div className="h-full flex flex-col gap-3 overflow-hidden">
-          <Input
-            placeholder="Search term"
-            value={termQuery}
-            onChange={(event) => setTermQuery(event.target.value)}
-          />
-          <div className="flex-1 grid grid-cols-2 gap-2 overflow-y-auto">
-            {filteredTerms.map((term) => (
-              <ListItemSmall
-                key={term.id}
-                title={term.code}
-                subtitle={[]}
-                onClick={() => {
-                  setSelectedTermId(term.id);
-                  setIsTermPickerOpen(false);
-                  void loadTermCampusDataFor(term.id, selectedCampusIds);
-                  void loadScheduleFor(selectedFacultyId, term.id);
-                }}
-                icon={<Calendar className="h-6 w-6 text-background/70" />}
-              />
-            ))}
-          </div>
-        </div>
-      </AppDialog>
-
-      <AppDialog
-        open={isCampusPickerOpen}
-        onOpenChange={setIsCampusPickerOpen}
-        title="Add Campuses"
-        description="Search and add one or more campuses"
-      >
-        <div className="space-y-3">
-          <Input
-            placeholder="Search campus"
-            value={campusQuery}
-            onChange={(event) => setCampusQuery(event.target.value)}
-          />
-          <div className="max-h-80 space-y-2 overflow-y-auto">
-            {filteredCampuses.map((campus) => {
-              const selected = selectedCampusIds.includes(campus.id);
-              return (
-                <button
-                  key={campus.id}
-                  type="button"
-                  className={cn(
-                    "w-full rounded-md border p-2 text-left",
-                    selected
-                      ? "border-primary bg-primary/10"
-                      : "hover:bg-accent",
-                  )}
-                  onClick={() => {
-                    const nextCampusIds = selected
-                      ? selectedCampusIds.filter((item) => item !== campus.id)
-                      : [...selectedCampusIds, campus.id];
-
-                    void handleCampusSelectionChange(nextCampusIds);
-                  }}
-                >
-                  <p className="text-sm font-medium">{campus.name}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </AppDialog>
-
-      <AppDialog
-        open={isOfferingPickerOpen}
-        onOpenChange={setIsOfferingPickerOpen}
-        title="Add Class"
-        description="Select a class; taken items are shown but disabled"
-      >
-        <div className="space-y-3">
-          <Input
-            placeholder="Search class"
-            value={offeringQuery}
-            onChange={(event) => setOfferingQuery(event.target.value)}
-          />
-          <div className="max-h-80 space-y-2 overflow-y-auto">
-            {filteredOfferingOptions.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                disabled={item.is_taken || isSaving}
-                className={cn(
-                  "w-full rounded-md border p-2 text-left",
-                  item.is_taken
-                    ? "cursor-not-allowed border-border bg-muted text-foreground/60"
-                    : "hover:bg-accent",
-                )}
-                onClick={() => void handleAddOfferingToSchedule(item)}
-              >
-                <p className="text-sm font-medium">
-                  {item.course_code} • {item.course_title}
-                </p>
-                <p className="text-xs text-foreground/70">
-                  {item.campus_name} • {item.program_code ?? "N/A"} {" | "}
-                  {item.major_code ?? "N/A"} {item.block_label}
-                </p>
-                <p className="text-xs text-foreground/70">
-                  Course load = {item.lecture_hour ?? 0} + (
-                  {item.laboratory_hour ?? 0} × 0.75)
-                </p>
-                {item.is_taken ? (
-                  <p className="text-xs text-destructive">
-                    Already assigned to:{" "}
-                    {item.assigned_faculty_name ?? "Unknown Faculty"}
-                  </p>
-                ) : null}
-              </button>
-            ))}
-          </div>
-        </div>
-      </AppDialog>
-
-      <AppDialog
-        open={isSessionDialogOpen}
-        onOpenChange={setIsSessionDialogOpen}
-        title={sessionDraft?.session_id ? "Edit Session" : "Add Session"}
-        description="Conflict check runs before every session save"
-      >
-        {sessionDraft ? (
-          <div className="space-y-3">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">Day</p>
-                <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={sessionDraft.day}
-                  onChange={(event) =>
-                    setSessionDraft({
-                      ...sessionDraft,
-                      day: event.target.value as SessionDraft["day"],
-                    })
-                  }
-                >
-                  {DAY_OPTIONS.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">Room</p>
-                <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={sessionDraft.room_id}
-                  onChange={(event) =>
-                    setSessionDraft({
-                      ...sessionDraft,
-                      room_id: event.target.value,
-                    })
-                  }
-                >
-                  <option value="">Select room</option>
-                  {rooms.map((room) => (
-                    <option key={room.id} value={room.id}>
-                      {room.code} {room.name ? `- ${room.name}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">Start Time</p>
-                <Input
-                  type="time"
-                  value={sessionDraft.start_time}
-                  onChange={(event) =>
-                    setSessionDraft({
-                      ...sessionDraft,
-                      start_time: event.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-foreground/70">End Time</p>
-                <Input
-                  type="time"
-                  value={sessionDraft.end_time}
-                  onChange={(event) =>
-                    setSessionDraft({
-                      ...sessionDraft,
-                      end_time: event.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsSessionDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleSaveSession} disabled={isSaving}>
-                Save Session
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </AppDialog>
-
-      <AppDialog
-        open={isMergeDialogOpen}
-        onOpenChange={setIsMergeDialogOpen}
-        title="Merge Classes"
-        description="Choose the class row to merge into. Only same course code classes are eligible."
-        contentClassName="w-full max-w-2xl"
-      >
-        <div className="space-y-3">
-          <div className="rounded-md border bg-muted/30 p-3 text-sm text-foreground/80">
-            <p>
-              Source: {mergeSourceClass?.course_code ?? "N/A"} (
-              {mergeSourceClass?.year_section ?? "No Block"})
-            </p>
-            <p className="text-xs text-foreground/70">
-              Source blocks are added to target for scheduling. Step 2 rows stay
-              separate, and existing source sessions are removed.
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-xs text-foreground/70">Merge into</p>
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={mergeTargetClassId ?? ""}
-              onChange={(event) => setMergeTargetClassId(event.target.value)}
-            >
-              {mergeTargetOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.course_code} ({item.year_section ?? "No Block"})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsMergeDialogOpen(false);
-                setMergeSourceClassId(null);
-                setMergeTargetClassId(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleMergeClasses}
-              disabled={isSaving || !mergeSourceClassId || !mergeTargetClassId}
-            >
-              Merge Selected
-            </Button>
-          </div>
-        </div>
-      </AppDialog>
-
-      <AppDialog
-        open={isUnmergeDialogOpen}
-        onOpenChange={setIsUnmergeDialogOpen}
-        title="Unmerge Class"
-        description="Select the block to split into a new class row."
-      >
-        <div className="space-y-3">
-          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-            <p className="font-medium">Session impact warning</p>
-            <p>
-              Unmerging will remove all existing sessions from this merged class
-              because session ownership per block is ambiguous.
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-xs text-foreground/70">Block to unmerge</p>
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={unmergeBlockId ?? ""}
-              onChange={(event) => setUnmergeBlockId(event.target.value)}
-            >
-              {(unmergeSourceClass?.blocks ?? []).map((block) => (
-                <option key={block.id} value={block.id}>
-                  {block.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsUnmergeDialogOpen(false);
-                setUnmergeSourceClassId(null);
-                setUnmergeBlockId(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleUnmergeClass}
-              disabled={isSaving || !unmergeSourceClassId || !unmergeBlockId}
-            >
-              Unmerge and Remove Sessions
-            </Button>
-          </div>
-        </div>
-      </AppDialog>
-
-      <AppDialog
-        open={isConflictDialogOpen}
-        onOpenChange={setIsConflictDialogOpen}
-        title="Conflict Review"
-        description="Conflicts were found. You can return to edit or save anyway."
-        contentClassName="flex flex-col max-h-11/12 w-full max-w-7xl overflow-hidden"
-      >
-        <div className="flex-1 overflow-y-hidden flex flex-col gap-4 ">
-          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-            <p className="font-medium flex items-center gap-2">
-              <TriangleAlert className="h-4 w-4" />
-              {conflicts.length} conflict(s) detected
-            </p>
-            <p>Conflict prompts appear for every session create/edit.</p>
-          </div>
-
-          <div className="flex flex-col md:grid md:grid-cols-3 gap-4 flex-1 overflow-y-auto  ">
-            {(["FACULTY", "ROOM", "BLOCK"] as const)
-              .filter((type) => groupedConflicts[type].length > 0)
-              .map((type) => (
-                <div key={type} className="space-y-2">
-                  <div
-                    className={`flex items-center gap-2 border p-3 rounded-md ${conflictBadgeClass(type)}`}
-                  >
-                    <span className={`text-sm font-medium`}>
-                      {typeLabelMap[type]}
-                    </span>
-                    <span className="text-xs text-foreground/70">
-                      {groupedConflicts[type].length} issue(s)
-                    </span>
-                  </div>
-
-                  {groupedConflicts[type].map((conflict, index) => (
-                    <div
-                      key={`${conflict.conflicting_session_id}-${type}-${index}`}
-                      className="rounded-md border p-3"
-                    >
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${severityBadgeClass(
-                            conflict.severity,
-                          )}`}
-                        >
-                          {conflict.severity === "HIGH" ? (
-                            <TriangleAlert className="h-3.5 w-3.5" />
-                          ) : (
-                            <AlertCircle className="h-3.5 w-3.5" />
-                          )}
-                          {conflict.severity}
-                        </span>
-                        <span className="rounded-full border px-2 py-0.5 text-xs font-medium">
-                          State {conflict.conflicting_schedule_state}
-                        </span>
-                      </div>
-
-                      <p className="text-sm font-medium">
-                        {conflict.conflicting_course_code} -{" "}
-                        {conflict.conflicting_course_title}
-                      </p>
-                      <p className="text-xs text-foreground/70">
-                        Faculty: {conflict.conflicting_faculty_name} • Room:{" "}
-                        {conflict.conflicting_room_code ?? "TBA"}
-                      </p>
-                      <p className="text-xs text-foreground/70">
-                        {dayLabel(conflict.day)} •{" "}
-                        {toDisplayTime(conflict.start_time)}-
-                        {toDisplayTime(conflict.end_time)}
-                        {conflict.conflicting_block
-                          ? ` • ${conflict.conflicting_block}`
-                          : ""}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ))}
-          </div>
-
-          <div className="flex justify-end gap-2  min-h-0">
-            <Button
-              variant="outline"
-              onClick={() => setIsConflictDialogOpen(false)}
-            >
-              Back to Edit
-            </Button>
-            <Button onClick={handleSaveAnyway} disabled={isSaving}>
-              Save Anyway
-            </Button>
-          </div>
-        </div>
-      </AppDialog>
-
-      <ConfirmDialog
-        open={confirmDialogState !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setConfirmDialogState(null);
-          }
+      <ContextPickersDialogs
+        isFacultyPickerOpen={isFacultyPickerOpen}
+        setIsFacultyPickerOpen={setIsFacultyPickerOpen}
+        facultyQuery={facultyQuery}
+        setFacultyQuery={setFacultyQuery}
+        filteredFaculty={filteredFaculty}
+        fullName={fullName}
+        onSelectFaculty={(facultyId) => {
+          setSelectedFacultyId(facultyId);
+          setIsFacultyPickerOpen(false);
+          void loadScheduleFor(facultyId, selectedTermId);
         }}
-        title={confirmDialogState?.title ?? "Confirm action"}
-        description={confirmDialogState?.description}
-        confirmLabel={confirmDialogState?.confirmLabel}
-        cancelLabel={confirmDialogState?.cancelLabel}
-        confirmVariant={confirmDialogState?.confirmVariant}
-        onConfirm={async () => {
-          if (!confirmDialogState) return;
-          await confirmDialogState.onConfirm();
+        isTermPickerOpen={isTermPickerOpen}
+        setIsTermPickerOpen={setIsTermPickerOpen}
+        termQuery={termQuery}
+        setTermQuery={setTermQuery}
+        filteredTerms={filteredTerms}
+        onSelectTerm={(termId) => {
+          setSelectedTermId(termId);
+          setIsTermPickerOpen(false);
+          void loadTermCampusDataFor(termId, selectedCampusIds);
+          void loadScheduleFor(selectedFacultyId, termId);
         }}
-        isLoading={isSaving}
+        isCampusPickerOpen={isCampusPickerOpen}
+        setIsCampusPickerOpen={setIsCampusPickerOpen}
+        campusQuery={campusQuery}
+        setCampusQuery={setCampusQuery}
+        filteredCampuses={filteredCampuses}
+        selectedCampusIds={selectedCampusIds}
+        onChangeCampusIds={(campusIds) => {
+          void handleCampusSelectionChange(campusIds);
+        }}
+        isOfferingPickerOpen={isOfferingPickerOpen}
+        setIsOfferingPickerOpen={setIsOfferingPickerOpen}
+        offeringQuery={offeringQuery}
+        setOfferingQuery={setOfferingQuery}
+        filteredOfferingOptions={filteredOfferingOptions}
+        isSaving={isSaving}
+        onSelectOffering={(item) => {
+          void handleAddOfferingToSchedule(item);
+        }}
+      />
+
+      <ScheduleActionDialogs
+        isSessionDialogOpen={isSessionDialogOpen}
+        setIsSessionDialogOpen={setIsSessionDialogOpen}
+        sessionDraft={sessionDraft}
+        setSessionDraft={(draft) => setSessionDraft(draft)}
+        rooms={rooms}
+        onSaveSession={() => {
+          void handleSaveSession();
+        }}
+        isMergeDialogOpen={isMergeDialogOpen}
+        setIsMergeDialogOpen={setIsMergeDialogOpen}
+        mergeSourceClass={mergeSourceClass}
+        mergeSourceClassId={mergeSourceClassId}
+        mergeTargetClassId={mergeTargetClassId}
+        setMergeTargetClassId={setMergeTargetClassId}
+        mergeTargetOptions={mergeTargetOptions}
+        onCancelMerge={() => {
+          setIsMergeDialogOpen(false);
+          setMergeSourceClassId(null);
+          setMergeTargetClassId(null);
+        }}
+        onMergeClasses={() => {
+          void handleMergeClasses();
+        }}
+        isUnmergeDialogOpen={isUnmergeDialogOpen}
+        setIsUnmergeDialogOpen={setIsUnmergeDialogOpen}
+        unmergeSourceClass={unmergeSourceClass}
+        unmergeSourceClassId={unmergeSourceClassId}
+        unmergeBlockId={unmergeBlockId}
+        setUnmergeBlockId={setUnmergeBlockId}
+        onCancelUnmerge={() => {
+          setIsUnmergeDialogOpen(false);
+          setUnmergeSourceClassId(null);
+          setUnmergeBlockId(null);
+        }}
+        onUnmergeClass={() => {
+          void handleUnmergeClass();
+        }}
+        isConflictDialogOpen={isConflictDialogOpen}
+        setIsConflictDialogOpen={setIsConflictDialogOpen}
+        conflicts={conflicts}
+        onSaveAnyway={() => {
+          void handleSaveAnyway();
+        }}
+        confirmDialogState={confirmDialogState}
+        setConfirmDialogState={setConfirmDialogState}
+        isSaving={isSaving}
       />
     </div>
   );

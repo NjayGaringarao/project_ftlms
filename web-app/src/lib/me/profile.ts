@@ -92,7 +92,53 @@ export async function upsertIdentityForCurrentUser(
 export type ProfessionalInfo = {
   user: User | null;
   rank: AcademicRank | null;
-  designations: ExtendedDesignation[];
+  designations: ProfessionalDesignation[];
+};
+
+export type ProfessionalDesignation = Omit<ExtendedDesignation, "user">;
+
+type DesignationRow = {
+  id: string;
+  user_id: string;
+  campus_id: string | null;
+  department_id: string | null;
+  program_offering_id: string | null;
+  room_id: string | null;
+  job_title: string;
+  load: number | null;
+  designated_at: string;
+  campus:
+    | ProfessionalDesignation["campus"]
+    | ProfessionalDesignation["campus"][]
+    | null;
+  department:
+    | ProfessionalDesignation["department"]
+    | ProfessionalDesignation["department"][]
+    | null;
+  program_offering:
+    | (ProfessionalDesignation["program_offering"] & {
+        campus?:
+          | ProfessionalDesignation["campus"]
+          | ProfessionalDesignation["campus"][]
+          | null;
+        program?:
+          | ProfessionalDesignation["program"]
+          | ProfessionalDesignation["program"][]
+          | null;
+      })
+    | Array<
+        ProfessionalDesignation["program_offering"] & {
+          campus?:
+            | ProfessionalDesignation["campus"]
+            | ProfessionalDesignation["campus"][]
+            | null;
+          program?:
+            | ProfessionalDesignation["program"]
+            | ProfessionalDesignation["program"][]
+            | null;
+        }
+      >
+    | null;
 };
 
 export const getProfessionalInfoByUserId = async (
@@ -144,28 +190,44 @@ export const getProfessionalInfoByUserId = async (
     );
   }
 
-  const designations = (designationData ?? []).map((d) => {
-    const programOffering = Array.isArray(d.program_offering)
-      ? (d.program_offering[0] ?? null)
-      : d.program_offering;
-    const program = Array.isArray(programOffering?.program)
-      ? (programOffering.program[0] ?? null)
-      : (programOffering?.program ?? null);
-    const campusFromOffering = Array.isArray(programOffering?.campus)
-      ? (programOffering.campus[0] ?? null)
-      : (programOffering?.campus ?? null);
-    const directCampus = Array.isArray(d.campus)
-      ? (d.campus[0] ?? null)
-      : d.campus;
+  const designations: ProfessionalDesignation[] = (designationData ?? []).map(
+    (raw) => {
+      const d = raw as DesignationRow;
 
-    return {
-      ...d,
-      position: d.job_title,
-      campus: directCampus ?? campusFromOffering,
-      program,
-      program_offering: programOffering,
-    };
-  }) as ExtendedDesignation[];
+      const programOffering = Array.isArray(d.program_offering)
+        ? (d.program_offering[0] ?? null)
+        : d.program_offering;
+      const program = Array.isArray(programOffering?.program)
+        ? (programOffering.program[0] ?? null)
+        : (programOffering?.program ?? null);
+      const campusFromOffering = Array.isArray(programOffering?.campus)
+        ? (programOffering.campus[0] ?? null)
+        : (programOffering?.campus ?? null);
+      const directCampus = Array.isArray(d.campus)
+        ? (d.campus[0] ?? null)
+        : d.campus;
+      const department = Array.isArray(d.department)
+        ? (d.department[0] ?? null)
+        : d.department;
+
+      return {
+        id: d.id,
+        user_id: d.user_id,
+        campus_id: d.campus_id,
+        department_id: d.department_id,
+        program_offering_id: d.program_offering_id,
+        room_id: d.room_id,
+        job_title: d.job_title,
+        load: d.load,
+        designated_at: d.designated_at,
+        position: d.job_title,
+        campus: directCampus ?? campusFromOffering,
+        department,
+        program,
+        program_offering: programOffering,
+      };
+    },
+  );
 
   return {
     user,

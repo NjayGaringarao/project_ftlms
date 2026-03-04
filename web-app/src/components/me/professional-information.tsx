@@ -6,10 +6,12 @@ import { Rank } from "@/models/rank";
 import { User } from "@/models/user";
 import { SecurityActionCard } from "@/components/me/security-action-card";
 
+type ProfessionalDesignation = Omit<ExtendedDesignation, "user">;
+
 type ProfessionalInformationProps = {
   user: User | null;
   rank: Rank | null;
-  designations: ExtendedDesignation[];
+  designations: ProfessionalDesignation[];
 };
 
 const ProfessionalInformation = ({

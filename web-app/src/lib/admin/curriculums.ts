@@ -46,24 +46,38 @@ const TERM_ORDER_LABELS: Record<string, number> = {
   FOURTH: 4,
 };
 
-const normalizeCurriculumRow = (
-  item: CurriculumListItem,
-): CurriculumListItem => {
-  const major = Array.isArray(item.major) ? item.major[0] : item.major;
-  const program = Array.isArray(major?.program)
-    ? major.program[0]
-    : major?.program;
+const normalizeCurriculumRow = (item: unknown): CurriculumListItem => {
+  const row = item as CurriculumListItem & {
+    major:
+      | CurriculumListItem["major"]
+      | Array<CurriculumListItem["major"]>
+      | null;
+  };
+
+  const major = Array.isArray(row.major) ? row.major[0] : row.major;
+
+  if (!major) {
+    return row as CurriculumListItem;
+  }
+
+  const programValue = major.program as
+    | CurriculumListItem["major"]["program"]
+    | Array<CurriculumListItem["major"]["program"]>
+    | undefined;
+  const program = Array.isArray(programValue) ? programValue[0] : programValue;
 
   return {
-    ...item,
+    ...row,
     major: {
       ...major,
-      program: {
-        ...program,
-        department: Array.isArray(program?.department)
-          ? program.department[0]
-          : program?.department,
-      },
+      program: program
+        ? {
+            ...program,
+            department: Array.isArray(program.department)
+              ? program.department[0]
+              : program.department,
+          }
+        : null,
     },
   } as CurriculumListItem;
 };
