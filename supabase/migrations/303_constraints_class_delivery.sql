@@ -14,11 +14,11 @@ begin
   -- Prevent duplicate block links within a delivery.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'class_delivery_block_delivery_block_unique'
+    where conname = 'class_delivery_block_unique'
       and conrelid = 'public.class_delivery_block'::regclass
   ) then
     alter table public.class_delivery_block
-      add constraint class_delivery_block_delivery_block_unique
+      add constraint class_delivery_block_unique
       unique (class_delivery_id, block_id);
   end if;
 

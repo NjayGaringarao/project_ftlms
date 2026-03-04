@@ -73,15 +73,69 @@ migrations/
 ├── 300_constraints_unique.sql
 ├── 301_constraints_check.sql
 ├── 302_constraints_exclusion.sql
+├── 303_constraints_class_delivery.sql
 ├── 400_rls_enable.sql
 ├── 500_triggers_updated_at.sql
 ├── 501_triggers_auth_signup.sql
 ├── 502_triggers_curriculum_course_uniqueness.sql
 ├── 503_triggers_designation_uniqueness.sql
+├── 504_triggers_class_delivery_block_ownership.sql
+├── 505_allow_multiple_class_delivery_per_allocation.sql
 ├── 600_rpc_is_admin_exists.sql
 ├── 601_rpc_get_users_with_identity.sql
-└── 602_rpc_get_user_roles.sql
+├── 602_rpc_get_user_roles.sql
+└── 603_rpc_schedule_conflict_detection.sql
 ```
+
+## Migration Consistency Check
+
+Run this sequence after editing migration history (development only):
+
+```bash
+# Rebuild local database from migration chain
+npx supabase db reset
+
+# Confirm local/linked migration status
+npx supabase migration list
+
+# Confirm no unexpected schema drift
+npx supabase db diff --linked
+```
+
+Expected result: `db reset` succeeds and `db diff --linked` is empty (or only contains intentional pending changes).
+
+## Development-Only Migration Rewrite Policy
+
+This project is currently maintained by a single developer in a non-production environment.
+
+- Migration history rewrites (edit/delete/reorder existing migration files) are allowed **only** while still in local development.
+- After rewriting migrations, always run the consistency check above.
+- Once this project is shared across teammates/environments, treat existing migrations as immutable and add new migrations instead.
+
+## Migration Management Modes
+
+This project uses two migration management modes:
+
+- **Implementation mode**
+  - Purpose: introduce new database behavior or schema changes.
+  - Rule: always create a **new migration file**.
+  - Typical command: `npx supabase migration new <name>`.
+
+- **Refactor mode**
+  - Purpose: clean/reorganize migration history in development for a clearer canonical chain.
+  - Rule: may edit/delete/reorder existing migration files, but only in local development.
+  - Required follow-up: run the Migration Consistency Check section before continuing work.
+
+### AI Agent Guidance
+
+When updating migrations in this repository:
+
+- First identify active mode: **implementation** or **refactor**.
+- In **implementation mode**, do not modify historical migrations; add a new migration file.
+- In **refactor mode**, preserve chronological intent (schema → constraints → triggers → rpc).
+- If a consolidation migration is removed, redistribute its effective logic into the correct earlier migration categories.
+- Never leave duplicate final-state constraints/triggers under different names.
+- Keep this README migration list synchronized with actual files in `supabase/migrations/`.
 
 ## Seeds
 
@@ -97,19 +151,6 @@ Seed SQL files are stored in `seeds/` and loaded during `db reset` based on `con
 - `008_curriculums.sql`
 - `009_rooms.sql`
 - `010_blocks.sql`
-
-## Snippets
-
-The `snippets/` folder now contains legacy migration references:
-
-- `legacy_migrations/000_create_base_schema.sql`
-- `legacy_migrations/001_rpc_is_admin_exists.sql`
-- `legacy_migrations/002_create_user_on_auth_signup.sql`
-- `legacy_migrations/003_rpc_get_users_with_identity.sql`
-- `legacy_migrations/004_department_unique_constraints.sql`
-- `legacy_migrations/005_university_unique_constraints.sql`
-- `legacy_migrations/006_rpc_get_user_roles.sql`
-- `legacy_migrations/007_enforce_curriculum_course_uniqueness.sql`
 
 ## Useful Commands
 
@@ -129,7 +170,3 @@ npx supabase start
 # Stop local development
 npx supabase stop
 ```
-
-## Legacy Files
-
-Legacy migration files are kept under `snippets/legacy_migrations/` for reference only. Do not use them for new deployments.
