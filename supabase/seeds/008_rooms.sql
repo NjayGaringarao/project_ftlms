@@ -13,8 +13,16 @@ VALUES
 	((SELECT id FROM campus WHERE name = 'San Marcelino'), 'LAB1', 'San Marcelino Computer Laboratory 1', 32),
 
 	-- Castillejos Campus
-	((SELECT id FROM campus WHERE name = 'Castillejos'), 'RM101', 'Castillejos Room 101', 40),
-	((SELECT id FROM campus WHERE name = 'Castillejos'), 'LAB1', 'Castillejos Computer Laboratory 1', 32),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS COMLAB 1', 'Computer Laboratory 1', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS HYBRID 1', 'Hybrid Room 1', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS DGT LAB 1', 'Digital Laboratory 1', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS NTWK LAB 1', 'Network Laboratory 1', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS BEEd RM 1', 'BEEd Room 1', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS BEEd RM 2', 'BEEd Room 2', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS BEEd RM 3', 'BEEd Room 3', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS BEEd RM 4', 'BEEd Room 4', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS BSBA RM 1', 'BSBA Room 1', 30),
+	((SELECT id FROM campus WHERE name = 'Castillejos'), 'CAS BSBA RM 2', 'BSBA Room 2', 30),
 
 	-- Candelaria Campus
 	((SELECT id FROM campus WHERE name = 'Candelaria'), 'RM101', 'Candelaria Room 101', 40),

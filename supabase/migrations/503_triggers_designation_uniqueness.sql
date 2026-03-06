@@ -6,14 +6,14 @@ declare
   normalized_title text;
   current_id uuid;
 begin
-  normalized_title := lower(trim(new.job_title));
+  normalized_title := lower(trim(new.job_title::text));
   current_id := coalesce(new.id, '00000000-0000-0000-0000-000000000000'::uuid);
 
   if normalized_title = 'university president' then
     if exists (
       select 1
       from public.designation d
-      where lower(trim(d.job_title)) = 'university president'
+      where lower(trim(d.job_title::text)) = 'university president'
         and d.id <> current_id
     ) then
       raise exception
@@ -28,7 +28,7 @@ begin
     if exists (
       select 1
       from public.designation d
-      where lower(trim(d.job_title)) = 'director for instruction'
+      where lower(trim(d.job_title::text)) = 'director for instruction'
         and d.id <> current_id
     ) then
       raise exception
@@ -45,7 +45,7 @@ begin
     if exists (
       select 1
       from public.designation d
-      where lower(trim(d.job_title)) = 'campus director'
+      where lower(trim(d.job_title::text)) = 'campus director'
         and d.campus_id = new.campus_id
         and d.id <> current_id
     ) then

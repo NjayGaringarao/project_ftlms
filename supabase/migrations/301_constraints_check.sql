@@ -124,22 +124,22 @@ begin
       add constraint designation_role_context_rules
       check (
         (
-          lower(trim(job_title)) in ('university president', 'director for instruction')
+          lower(trim(job_title::text)) in ('university president', 'director for instruction')
         )
         or (
-          lower(trim(job_title)) = 'program chairperson'
+          lower(trim(job_title::text)) = 'program chairperson'
           and program_offering_id is not null
         )
         or (
-          lower(trim(job_title)) = 'college dean'
+          lower(trim(job_title::text)) = 'college dean'
           and department_id is not null
         )
         or (
-          lower(trim(job_title)) = 'campus director'
+          lower(trim(job_title::text)) = 'campus director'
           and campus_id is not null
         )
         or (
-          lower(trim(job_title)) not in (
+          lower(trim(job_title::text)) not in (
             'university president',
             'director for instruction',
             'program chairperson',

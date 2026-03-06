@@ -8,13 +8,9 @@ returns table (
   academic_rank_title text,
   academic_rank_description text,
   identity_user_id uuid,
-  first_name text,
-  middle_name text,
-  last_name text,
-  extension text,
+  name text,
   birth_date date,
   address text,
-  zip_code text,
   contact_number text,
   designations json,
   degrees json
@@ -99,8 +95,6 @@ as $$
             'id', deg.id,
             'user_id', deg.user_id,
             'academic_level', deg.academic_level,
-            'degree_type', deg.degree_type,
-            'field_of_study', deg.field_of_study,
             'year_graduated', deg.year_graduated,
             'institution', deg.institution,
             'country_code', deg.country_code
@@ -121,13 +115,9 @@ as $$
     r.title as academic_rank_title,
     r.description as academic_rank_description,
     i.user_id as identity_user_id,
-    i.first_name,
-    i.middle_name,
-    i.last_name,
-    i.extension,
+    i.name,
     i.birth_date,
     i.address,
-    i.zip_code,
     i.contact_number,
     coalesce(ud.designations, '[]'::json) as designations,
     coalesce(udeg.degrees, '[]'::json) as degrees
@@ -140,6 +130,5 @@ as $$
   where filter_user_id is null or u.id = filter_user_id
   order by
     u.employment_status asc nulls last,
-    i.last_name asc nulls last,
-    i.first_name asc nulls last;
+    i.name asc nulls last;
 $$;

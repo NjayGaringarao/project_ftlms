@@ -7,11 +7,11 @@ as $$
   with designation_roles as (
     select distinct
       case
-        when lower(trim(d.job_title)) in ('university president', 'director for instruction')
+        when lower(trim(d.job_title::text)) in ('university president', 'director for instruction')
           then 'HIGHER-UPS'
-        when lower(trim(d.job_title)) = 'program chairperson'
+        when lower(trim(d.job_title::text)) = 'program chairperson'
           then 'PROGRAM_CHAIRPERSON'
-        when lower(trim(d.job_title)) = 'campus director'
+        when lower(trim(d.job_title::text)) = 'campus director'
           then 'CAMPUS_DIRECTOR'
         else null
       end as role

@@ -65,15 +65,23 @@ migrations/
 ├── 102_enum_department_type.sql    # ACADEMIC, ADMINISTRATIVE, etc.
 ├── 103_enum_academic_terms_type.sql
 ├── 104_enum_academic_terms_term_order.sql
+├── 105_enum_v6.sql
+├── 106_enum_designation_title_v6.sql
+├── 107_academic_level_v6.sql
+├── 108_enum_college_type_v6.sql
 ├── 200_schema_core.sql             # Part 1/5: Key entities
 ├── 201_schema_programs_curriculum.sql
 ├── 202_schema_offerings_availability.sql
 ├── 203_schema_user_domain.sql
 ├── 204_schema_faculty_operations.sql
+├── 205_schema_core_v6.sql
+├── 207_schema_user_domain_v6.sql
+├── 206_schema_scheduling_v6.sql
 ├── 300_constraints_unique.sql
 ├── 301_constraints_check.sql
 ├── 302_constraints_exclusion.sql
 ├── 303_constraints_class_delivery.sql
+├── 304_constraints_scheduling_v6.sql
 ├── 400_rls_enable.sql
 ├── 500_triggers_updated_at.sql
 ├── 501_triggers_auth_signup.sql
@@ -84,7 +92,11 @@ migrations/
 ├── 600_rpc_is_admin_exists.sql
 ├── 601_rpc_get_users_with_identity.sql
 ├── 602_rpc_get_user_roles.sql
-└── 603_rpc_schedule_conflict_detection.sql
+├── 603_rpc_schedule_conflict_detection.sql
+├── 607_schema_cutover_v6.sql
+├── 608_rpc_get_users_with_identity_v6.sql
+├── 609_rpc_get_user_roles_v6.sql
+└── 610_rpc_schedule_conflict_detection_v6.sql
 ```
 
 ## Migration Consistency Check
@@ -148,9 +160,8 @@ Seed SQL files are stored in `seeds/` and loaded during `db reset` based on `con
 - `005_academic_ranks.sql`
 - `006_academic_terms.sql`
 - `007_majors.sql`
-- `008_curriculums.sql`
-- `009_rooms.sql`
-- `010_blocks.sql`
+- `008_rooms.sql`
+- `009_blocks.sql`
 
 ## Useful Commands
 
