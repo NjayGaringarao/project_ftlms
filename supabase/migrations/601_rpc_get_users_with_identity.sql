@@ -29,7 +29,7 @@ as $$
             'user_id', d.user_id,
             'campus_id', d.campus_id,
             'job_title', d.job_title,
-            'department_id', d.department_id,
+            'college_id', d.college_id,
             'program_offering_id', d.program_offering_id,
             'room_id', d.room_id,
             'load', d.load,
@@ -46,13 +46,12 @@ as $$
                 'name', coalesce(c.name, po_c.name)
               )
             end,
-            'department', case
-              when dep.id is null then null
+            'college', case
+              when col.id is null then null
               else json_build_object(
-                'id', dep.id,
-                'code', dep.code,
-                'name', dep.name,
-                'type', dep.type
+                'id', col.id,
+                'code', col.code,
+                'name', col.name
               )
             end,
             'program', case
@@ -80,7 +79,7 @@ as $$
     left join public."user" u on u.id = d.user_id
     left join auth.users au on au.id = d.user_id
     left join public.campus c on c.id = d.campus_id
-    left join public.department dep on dep.id = d.department_id
+    left join public.college col on col.id = d.college_id
     left join public.program_offering po on po.id = d.program_offering_id
     left join public.campus po_c on po_c.id = po.campus_id
     left join public.program prog on prog.id = po.program_id
@@ -109,7 +108,7 @@ as $$
   select
     u.id,
     au.email,
-    u.employment_status,
+    u.employment_status::text,
     r.id::text as academic_rank_id,
     r.number as academic_rank_number,
     r.title as academic_rank_title,

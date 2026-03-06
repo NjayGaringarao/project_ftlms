@@ -19,17 +19,6 @@ begin
       add constraint course_laboratory_hour_nonnegative check (laboratory_hour >= 0);
   end if;
 
-  -- Revised year of a curriculum should be after the series year if it exists.
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'curriculum_revised_year_after_series'
-      and conrelid = 'public.curriculum'::regclass
-  ) then
-    alter table public.curriculum
-      add constraint curriculum_revised_year_after_series
-      check (revised_year is null or series_year < revised_year);
-  end if;
-
   -- Academic term year should be reasonable and consistent.
   if not exists (
     select 1 from pg_constraint
@@ -127,12 +116,12 @@ begin
           lower(trim(job_title::text)) in ('university president', 'director for instruction')
         )
         or (
-          lower(trim(job_title::text)) = 'program chairperson'
+          lower(trim(job_title::text)) in ('program chair', 'program chairperson')
           and program_offering_id is not null
         )
         or (
           lower(trim(job_title::text)) = 'college dean'
-          and department_id is not null
+          and college_id is not null
         )
         or (
           lower(trim(job_title::text)) = 'campus director'
@@ -148,7 +137,7 @@ begin
           )
           and (
             campus_id is not null
-            or department_id is not null
+            or college_id is not null
             or program_offering_id is not null
             or room_id is not null
           )

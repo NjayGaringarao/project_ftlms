@@ -53,6 +53,9 @@ max_client_conn = 100
 [db.migrations]
 # If disabled, migrations will be skipped during a db push or reset.
 enabled = true
+# Migration workflow modes used in this repo:
+# - implementation mode: add new migration files only.
+# - consolidation mode: development-only migration history cleanup/rewrite.
 # Specifies an ordered list of schema files that describe your database.
 # Supports glob patterns relative to supabase directory: "./schemas/*.sql"
 schema_paths = []
@@ -63,15 +66,15 @@ enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = [
-  "./seeds/001_courses.sql",
-  "./seeds/002_departments.sql",
-  "./seeds/003_programs.sql",
-  "./seeds/004_campuses.sql",
-  "./seeds/005_academic_ranks.sql",
-  "./seeds/006_academic_terms.sql",
-  "./seeds/007_majors.sql",
-  "./seeds/008_rooms.sql",
-  "./seeds/009_blocks.sql"
+  "./seeds/1001_courses.sql",
+  "./seeds/1002_colleges.sql",
+  "./seeds/1003_programs.sql",
+  "./seeds/1004_campuses.sql",
+  "./seeds/1005_academic_ranks.sql",
+  "./seeds/1006_academic_terms.sql",
+  "./seeds/1007_majors.sql",
+  "./seeds/1008_rooms.sql",
+  "./seeds/1009_blocks.sql"
 ]
 
 [db.network_restrictions]

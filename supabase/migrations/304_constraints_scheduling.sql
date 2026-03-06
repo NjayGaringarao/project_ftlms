@@ -22,7 +22,7 @@ begin
       unique (class_id, block_id);
   end if;
 
-  -- V6 block identity is term-aware (curriculum-independent).
+  -- Block identity is academic term aware (curriculum-independent).
   if not exists (
     select 1 from pg_constraint
     where conname = 'block_major_term_year_section_unique'

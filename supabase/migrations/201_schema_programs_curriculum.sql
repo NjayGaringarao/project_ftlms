@@ -1,13 +1,13 @@
 -- =========================================================
--- CORE SCHEMA (PART 2/5): PROGRAMS AND CURRICULUM
+-- CORE SCHEMA (PART 2/5): PROGRAMS
 -- Description:
 --   Defines academic structures built on foundational entities.
---   Depends on: public.department, public.academic_term, public.course.
+--   Depends on: public.college.
 -- =========================================================
 
 create table if not exists public.program (
   id uuid primary key default gen_random_uuid(),
-  department_id uuid not null references public.department(id) on delete cascade,
+  college_id uuid not null references public.college(id) on delete cascade,
   code text not null,
   name text not null,
   description text
@@ -19,12 +19,4 @@ create table if not exists public.major (
   code text not null,
   name text not null,
   description text
-);
-
-create table if not exists public.curriculum (
-  id uuid primary key default gen_random_uuid(),
-  major_id uuid not null references public.major(id) on delete cascade,
-  title text not null,
-  series_year integer not null,
-  revised_year integer
 );

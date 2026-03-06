@@ -1,21 +1,9 @@
 -- =========================================================
 -- CORE SCHEMA (PART 3/5): OFFERINGS AND AVAILABILITY
 -- Description:
---   Defines curriculum-term course offerings and campus availability.
---   Depends on: program/curriculum and key entities.
+--   Defines campus offerings and term-aware blocks.
+--   Depends on: programs and key entities.
 -- =========================================================
-
-create table if not exists public.curriculum_offering (
-  id uuid primary key default gen_random_uuid(),
-  curriculum_id uuid not null references public.curriculum(id) on delete cascade,
-  academic_term_id uuid not null references public.academic_term(id) on delete cascade
-);
-
-create table if not exists public.course_offering (
-  id uuid primary key default gen_random_uuid(),
-  curriculum_offering_id uuid not null references public.curriculum_offering(id) on delete cascade,
-  course_id uuid not null references public.course(id) on delete cascade
-);
 
 create table if not exists public.program_offering (
   id uuid primary key default gen_random_uuid(),
@@ -32,7 +20,8 @@ create table if not exists public.major_offering (
 create table if not exists public.block (
   id uuid primary key default gen_random_uuid(),
   major_offering_id uuid not null references public.major_offering(id) on delete cascade,
-  curriculum_id uuid not null references public.curriculum(id) on delete restrict,
+  academic_term_id uuid not null references public.academic_term(id) on delete cascade,
+  code text,
   year_level integer not null,
   section text not null,
   student_count integer

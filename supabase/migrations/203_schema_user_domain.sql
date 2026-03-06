@@ -13,22 +13,16 @@ create table if not exists public."user" (
 
 create table if not exists public.identity (
   user_id uuid primary key references public."user"(id) on delete cascade,
-  first_name text not null,
-  middle_name text,
-  last_name text not null,
-  extension text,
+  name text,
   birth_date date,
   address text,
-  zip_code text,
   contact_number text
 );
 
 create table if not exists public.degree (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public."user"(id) on delete cascade,
-  academic_level text,
-  degree_type text,
-  field_of_study text,
+  academic_level public.academic_level_enum,
   year_graduated integer,
   institution text,
   country_code char(2),
@@ -40,10 +34,10 @@ create table if not exists public.designation (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public."user"(id) on delete cascade,
   campus_id uuid references public.campus(id) on delete cascade,
-  department_id uuid references public.department(id) on delete cascade,
+  college_id uuid references public.college(id) on delete cascade,
   program_offering_id uuid references public.program_offering(id) on delete cascade,
   room_id uuid references public.room(id) on delete cascade,
-  job_title text not null,
+  job_title public.designation_title_enum not null,
   load integer,
   designated_at timestamptz default now()
 );

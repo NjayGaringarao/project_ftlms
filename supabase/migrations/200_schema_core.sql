@@ -3,15 +3,15 @@
 -- CORE SCHEMA (PART 1/5): KEY ENTITIES
 -- Description:
 --   Defines foundational entities required by later schema files.
---   This file must run before program/curriculum, offerings,
+--   This file must run before programs, offerings,
 --   user-domain, and faculty-operation schema migrations.
 -- =========================================================
 
 create table if not exists public.campus (
   id uuid primary key default gen_random_uuid(),
+  code text not null,
   name text not null,
-  address text,
-  zip_code text
+  address text
 );
 
 create table if not exists public.room (
@@ -22,11 +22,10 @@ create table if not exists public.room (
   capacity integer
 );
 
-create table if not exists public.department (
+create table if not exists public.college (
   id uuid primary key default gen_random_uuid(),
   code text not null,
   name text not null,
-  type public.department_type_enum not null,
   description text
 );
 

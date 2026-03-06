@@ -11,22 +11,31 @@ begin
       add constraint campus_name_unique unique (name);
   end if;
 
-  -- Department code and name should be unique across the university.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'department_code_unique'
-      and conrelid = 'public.department'::regclass
+    where conname = 'campus_code_unique'
+      and conrelid = 'public.campus'::regclass
   ) then
-    alter table public.department
-      add constraint department_code_unique unique (code);
+    alter table public.campus
+      add constraint campus_code_unique unique (code);
+  end if;
+
+  -- College code and name should be unique across the university.
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'college_code_unique'
+      and conrelid = 'public.college'::regclass
+  ) then
+    alter table public.college
+      add constraint college_code_unique unique (code);
   end if;
   if not exists (
     select 1 from pg_constraint
-    where conname = 'department_name_unique'
-      and conrelid = 'public.department'::regclass
+    where conname = 'college_name_unique'
+      and conrelid = 'public.college'::regclass
   ) then
-    alter table public.department
-      add constraint department_name_unique unique (name);
+    alter table public.college
+      add constraint college_name_unique unique (name);
   end if;
 
   -- Program code should be unique across the university. 
@@ -59,17 +68,6 @@ begin
       add constraint course_code_unique unique (code);
   end if;
 
-  -- Curriculum should be unique across the university.
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'curriculum_major_series_revised_unique'
-      and conrelid = 'public.curriculum'::regclass
-  ) then
-    alter table public.curriculum
-      add constraint curriculum_major_series_revised_unique
-      unique nulls not distinct (major_id, series_year, revised_year);
-  end if;
-
   -- Academic term should be unique across the university.
   if not exists (
     select 1 from pg_constraint
@@ -79,26 +77,6 @@ begin
     alter table public.academic_term
       add constraint academic_term_year_term_code_unique
       unique (academic_year_start, academic_year_end, type, term_order, code);
-  end if;
-
- -- Multiple same academic term within a curriculum is not allowed.
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'curriculum_offering_unique'
-      and conrelid = 'public.curriculum_offering'::regclass
-  ) then
-    alter table public.curriculum_offering
-      add constraint curriculum_offering_unique unique (curriculum_id, academic_term_id);
-  end if;
-
-  -- Courses within the same curriculum regardless of academic term should be unique.
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'course_offering_unique'
-      and conrelid = 'public.course_offering'::regclass
-  ) then
-    alter table public.course_offering
-      add constraint course_offering_unique unique (curriculum_offering_id, course_id);
   end if;
 
   -- Program Offering within the campus should be unique.
@@ -121,14 +99,15 @@ begin
       add constraint major_offering_unique unique (program_offering_id, major_id);
   end if;
 
- -- Block section should be unique within a curriculum, campus offering of programs and major, and year level.
+ -- Block section should be unique per major offering and academic term.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'block_section_unique'
+    where conname = 'block_major_term_year_section_unique'
       and conrelid = 'public.block'::regclass
   ) then
     alter table public.block
-      add constraint block_section_unique unique (major_offering_id, curriculum_id, year_level, section);
+      add constraint block_major_term_year_section_unique
+      unique (major_offering_id, academic_term_id, year_level, section);
   end if;
 
   -- Academic rank number and title should be unique across the university.
@@ -171,37 +150,26 @@ begin
       add constraint room_campus_code_unique unique (campus_id, code);
   end if;
   
-  -- One course allocation per schedule/course offering.
+  -- Class code uniqueness scoped by schedule and course.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'course_allocation_schedule_course_offering_unique'
-      and conrelid = 'public.course_allocation'::regclass
+    where conname = 'class_schedule_course_code_unique'
+      and conrelid = 'public.class'::regclass
   ) then
-    alter table public.course_allocation
-      add constraint course_allocation_schedule_course_offering_unique
-      unique (schedule_id, course_offering_id);
+    alter table public.class
+      add constraint class_schedule_course_code_unique
+      unique (schedule_id, course_id, code);
   end if;
 
-  -- One class delivery per course allocation.
+  -- No duplicate block links within the same class.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'class_delivery_course_allocation_unique'
-      and conrelid = 'public.class_delivery'::regclass
+    where conname = 'class_block_unique'
+      and conrelid = 'public.class_block'::regclass
   ) then
-    alter table public.class_delivery
-      add constraint class_delivery_course_allocation_unique
-      unique (course_allocation_id);
-  end if;
-
-  -- No duplicate block links within the same class delivery.
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'class_delivery_block_unique'
-      and conrelid = 'public.class_delivery_block'::regclass
-  ) then
-    alter table public.class_delivery_block
-      add constraint class_delivery_block_unique
-      unique (class_delivery_id, block_id);
+    alter table public.class_block
+      add constraint class_block_unique
+      unique (class_id, block_id);
   end if;
 
   -- Multiple same evaluation for a designation and schedule is not allowed.

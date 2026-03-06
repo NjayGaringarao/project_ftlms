@@ -1,6 +1,11 @@
 do $$
 begin
-  create type public.employment_status_enum as enum ('FULL_TIME', 'PART_TIME');
+  create type public.employment_status_enum as enum (
+    'Regular',
+    'Part-time',
+    'Contract of Service',
+    'Temporary'
+  );
 exception
   when duplicate_object then
     null;
