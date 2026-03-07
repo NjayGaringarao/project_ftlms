@@ -13,8 +13,10 @@ export type ExtendedUser = User & {
 };
 
 export type UserRole =
-  | "FACULTY"
-  | "PROGRAM_CHAIRPERSON"
-  | "HIGHER-UPS"
-  | "CAMPUS_DIRECTOR"
-  | "ADMIN";
+  | "Faculty"
+  | "Program Chairperson"
+  | "Campus Director"
+  | "College Dean"
+  | "University President"
+  | "Director for Instruction"
+  | "Admin";

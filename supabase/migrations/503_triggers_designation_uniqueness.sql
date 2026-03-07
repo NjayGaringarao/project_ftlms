@@ -57,13 +57,49 @@ begin
     end if;
   end if;
 
+  if normalized_title = 'college dean'
+    and new.college_id is not null
+  then
+    if exists (
+      select 1
+      from public.designation d
+      where lower(trim(d.job_title::text)) = 'college dean'
+        and d.college_id = new.college_id
+        and d.id <> current_id
+    ) then
+      raise exception
+        using
+          errcode = '23505',
+          message = 'duplicate key value violates unique constraint "designation_college_dean_per_college_unique"',
+          detail = 'Only one college dean designation is allowed per college.';
+    end if;
+  end if;
+
+  if normalized_title = 'program chairperson'
+    and new.program_offering_id is not null
+  then
+    if exists (
+      select 1
+      from public.designation d
+      where lower(trim(d.job_title::text)) = 'program chairperson'
+        and d.program_offering_id = new.program_offering_id
+        and d.id <> current_id
+    ) then
+      raise exception
+        using
+          errcode = '23505',
+          message = 'duplicate key value violates unique constraint "designation_program_chairperson_per_offering_unique"',
+          detail = 'Only one program chairperson designation is allowed per program offering.';
+    end if;
+  end if;
+
   return new;
 end;
 $$;
 
 drop trigger if exists trg_enforce_designation_role_uniqueness on public.designation;
 create trigger trg_enforce_designation_role_uniqueness
-before insert or update of job_title, campus_id
+before insert or update of job_title, campus_id, college_id, program_offering_id
 on public.designation
 for each row
 execute function public.enforce_designation_role_uniqueness();

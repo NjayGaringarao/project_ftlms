@@ -7,16 +7,14 @@ as $$
   with designation_roles as (
     select distinct
       case
-        when lower(trim(d.job_title::text)) in (
-          'university president',
-          'director for instruction',
-          'vice president for academic affairs'
+        when d.job_title::text in (
+          'University President',
+          'Director for Instruction',
+          'College Dean',
+          'Campus Director',
+          'Program Chairperson'
         )
-          then 'HIGHER-UPS'
-        when lower(trim(d.job_title::text)) in ('program chair', 'program chairperson')
-          then 'PROGRAM_CHAIRPERSON'
-        when lower(trim(d.job_title::text)) = 'campus director'
-          then 'CAMPUS_DIRECTOR'
+          then d.job_title::text
         else null
       end as role
     from public.designation d
@@ -25,15 +23,15 @@ as $$
   admin_role as (
     select
       case
-        when au.raw_user_meta_data ->> 'user_role' = 'ADMIN'
-          then 'ADMIN'
+        when upper(coalesce(au.raw_user_meta_data ->> 'user_role', '')) = 'ADMIN'
+          then 'Admin'
         else null
       end as role
     from auth.users au
     where au.id = auth.uid()
   ),
   base_role as (
-    select 'FACULTY'::text as role
+    select 'Faculty'::text as role
     from public."user" u
     where u.id = auth.uid()
   ),
@@ -44,6 +42,6 @@ as $$
     union
     select role from admin_role where role is not null
   )
-  select coalesce(array_agg(role), array[]::text[])
+  select coalesce(array_agg(role order by role), array[]::text[])
   from all_roles;
 $$;

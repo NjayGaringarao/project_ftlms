@@ -1,6 +1,11 @@
 do $$
 begin
   create type public.designation_title_enum as enum (
+    'University President',
+    'Director for Instruction',
+    'College Dean',
+    'Campus Director',
+    'Program Chairperson',
     'Assistant Director-Graduate Studies',
     'Extension Program',
     'Research',
@@ -27,19 +32,13 @@ begin
     'Campus CADO Coordinator',
     'Campus CCI Coordinator',
     'Campus IGP Coordinator',
-    'College Dean',
-    'Director for Instruction',
     'Quality Assurance',
     'Head',
     'Network Administrator',
-    'Program Chair',
-    'Program Chairperson',
     'Programmer',
     'Secretary',
-    'University President',
     'Vice President for Academic Affairs',
-    'Website Administrator',
-    'Campus Director'
+    'Website Administrator'
   );
 exception
   when duplicate_object then

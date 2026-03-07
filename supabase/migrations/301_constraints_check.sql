@@ -114,18 +114,31 @@ begin
       check (
         (
           lower(trim(job_title::text)) in ('university president', 'director for instruction')
+          and campus_id is null
+          and college_id is null
+          and program_offering_id is null
+          and room_id is null
         )
         or (
-          lower(trim(job_title::text)) in ('program chair', 'program chairperson')
+          lower(trim(job_title::text)) = 'program chairperson'
           and program_offering_id is not null
+          and campus_id is null
+          and college_id is null
+          and room_id is null
         )
         or (
           lower(trim(job_title::text)) = 'college dean'
           and college_id is not null
+          and campus_id is null
+          and program_offering_id is null
+          and room_id is null
         )
         or (
           lower(trim(job_title::text)) = 'campus director'
           and campus_id is not null
+          and college_id is null
+          and program_offering_id is null
+          and room_id is null
         )
         or (
           lower(trim(job_title::text)) not in (

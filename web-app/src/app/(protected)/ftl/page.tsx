@@ -9,7 +9,7 @@ const FTLPage = async () => {
   return (
     <div className="relative flex h-full flex-col">
       <PageHeader />
-      {userRole.includes("PROGRAM_CHAIRPERSON") ? (
+      {userRole.includes("Program Chairperson") ? (
         <ProgramChairInterface />
       ) : null}
     </div>
