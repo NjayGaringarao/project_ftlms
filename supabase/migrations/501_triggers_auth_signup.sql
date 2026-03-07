@@ -6,7 +6,7 @@ set search_path = public, auth
 as $$
 begin
   insert into public."user" (id, employment_status)
-  values (new.id, 'PART_TIME');
+  values (new.id, 'Regular');
   return new;
 end;
 $$;

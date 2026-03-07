@@ -83,11 +83,11 @@ begin
   -- Academic rank number and title should be unique across the university.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'academic_rank_number_unique'
+    where conname = 'academic_rank_unique'
       and conrelid = 'public.academic_rank'::regclass
   ) then
     alter table public.academic_rank
-      add constraint academic_rank_number_unique unique (number);
+      add constraint academic_rank_unique unique (code, title);
   end if;
 
  -- Academic rank title should be unique across the university.

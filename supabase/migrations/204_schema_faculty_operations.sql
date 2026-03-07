@@ -31,15 +31,16 @@ create table if not exists public.class_block (
 create table if not exists public.session (
   id uuid primary key default gen_random_uuid(),
   class_id uuid not null references public.class(id) on delete cascade,
-  room_id uuid not null references public.room(id) on delete restrict,
+  room_id uuid references public.room(id) on delete set null,
   day public.day_of_week_enum not null,
   start_time time not null,
-  end_time time not null
+  end_time time not null,
+  type public.session_type_enum not null
 );
 
 create table if not exists public.evaluation (
   id uuid primary key default gen_random_uuid(),
-  designation_id uuid not null references public.designation(id) on delete cascade,
+  designation_id uuid not null references public.designation(id) on delete set null,
   schedule_id uuid not null references public.schedule(id) on delete cascade,
   evaluation_level integer,
   evaluator_role text,

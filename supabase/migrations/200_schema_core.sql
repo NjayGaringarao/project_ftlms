@@ -31,7 +31,7 @@ create table if not exists public.college (
 
 create table if not exists public.academic_rank (
   id uuid primary key default gen_random_uuid(),
-  number integer not null,
+  code text not null,
   title text not null,
   description text
 );
