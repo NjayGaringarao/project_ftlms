@@ -2,8 +2,6 @@ export type Course = {
   id: string;
   code: string;
   title: string;
-  lecture_unit: number | null;
-  laboratory_unit: number | null;
+  lecture_unit: number;
+  laboratory_unit: number;
 };
-
-export type ExtendedCourse = Course;

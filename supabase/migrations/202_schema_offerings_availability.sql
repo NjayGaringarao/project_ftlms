@@ -19,9 +19,9 @@ create table if not exists public.major_offering (
 
 create table if not exists public.block (
   id uuid primary key default gen_random_uuid(),
+  code text not null,
   major_offering_id uuid not null references public.major_offering(id) on delete cascade,
   academic_term_id uuid not null references public.academic_term(id) on delete cascade,
-  code text,
   year_level integer not null,
   section text not null,
   student_count integer

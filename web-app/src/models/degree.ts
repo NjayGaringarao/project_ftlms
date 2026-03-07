@@ -1,14 +1,18 @@
 import { User } from "./user";
 
+export type AcademicLevelType =
+  | "Bachelor's Degree"
+  | "Master's Degree"
+  | "Doctorate Degree";
+
 export type Degree = {
   id: string;
   user_id: string;
-  academic_level: string; // Bachelor's, Master's, PhD, etc.
-  degree_type: string; // Arts, Science, Engineering, etc.
-  field_of_study: string; // Computer Science, Business Administration, etc.
-  year_graduated: number | null; // Null if still studying or year not provided
-  institution: string; // President Ramon Magsaysay State University, etc.
-  country_code: string; // PH, US, etc.
+  academic_level: AcademicLevelType;
+  title: string;
+  year_graduated: number | null;
+  institution: string;
+  country_code: string;
   created_at: string;
   updated_at: string;
 };

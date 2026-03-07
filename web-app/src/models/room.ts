@@ -2,8 +2,8 @@ import { Campus } from "./campus";
 
 export type Room = {
   id: string;
-  campus_id: string;
   code: string;
+  campus_id: string;
   name: string | null;
   capacity: number | null;
 };

@@ -4,13 +4,11 @@ export type AcademicTermOrder = "FIRST" | "SECOND" | "THIRD" | "FOURTH";
 
 export type AcademicTerm = {
   id: string;
+  code: string;
   academic_year_start: number;
   academic_year_end: number;
-  code: string;
   term_order: AcademicTermOrder;
   type: AcademicTermType;
-  start: string | null;
-  end: string | null;
+  start: string;
+  end: string;
 };
-
-export type Term = AcademicTerm;

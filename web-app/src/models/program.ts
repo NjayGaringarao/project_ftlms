@@ -1,13 +1,13 @@
-import { Department } from "./department";
+import { College } from "./college";
 
 export type Program = {
   id: string;
-  department_id: string;
-  name: string;
   code: string;
+  college_id: string;
+  name: string;
   description: string | null;
 };
 
 export type ExtendedProgram = Program & {
-  department: Department;
+  college: College;
 };

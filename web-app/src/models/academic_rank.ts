@@ -1,6 +1,6 @@
 export type AcademicRank = {
   id: string;
-  number: number;
+  code: string;
   title: string;
   description: string | null;
 };

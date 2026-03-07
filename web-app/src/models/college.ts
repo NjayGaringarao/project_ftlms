@@ -1,7 +1,6 @@
-export type Department = {
+export type College = {
   id: string;
   code: string;
   name: string;
-  type: string;
   description: string | null;
 };

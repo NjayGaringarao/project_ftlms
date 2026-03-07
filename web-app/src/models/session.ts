@@ -1,20 +1,23 @@
 import { Class } from "./class";
 import { Room } from "./room";
 
+export type SessionDay =
+  | "SUNDAY"
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY";
+export type SessionType = "Lecture" | "Laboratory";
 export type Session = {
   id: string;
-  class_delivery_id: string;
+  class_id: string;
   room_id: string | null;
-  day:
-    | "SUNDAY"
-    | "MONDAY"
-    | "TUESDAY"
-    | "WEDNESDAY"
-    | "THURSDAY"
-    | "FRIDAY"
-    | "SATURDAY";
+  day: SessionDay;
   start_time: string;
   end_time: string;
+  type: SessionType;
 };
 
 export type ExtendedSession = Session & {

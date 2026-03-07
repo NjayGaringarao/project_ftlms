@@ -1,5 +1,5 @@
 import { Campus } from "./campus";
-import { ExtendedProgram } from "./program";
+import { Program } from "./program";
 
 export type ProgramOffering = {
   id: string;
@@ -9,8 +9,5 @@ export type ProgramOffering = {
 
 export type ExtendedProgramOffering = ProgramOffering & {
   campus: Campus;
-  program: ExtendedProgram;
+  program: Program;
 };
-
-export type ProgramCampus = ProgramOffering;
-export type ExtendedProgramCampus = ExtendedProgramOffering;

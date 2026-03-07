@@ -22,7 +22,8 @@ create table if not exists public.identity (
 create table if not exists public.degree (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public."user"(id) on delete cascade,
-  academic_level public.academic_level_enum,
+  academic_level public.academic_level_enum not null,
+  title text not null,
   year_graduated integer,
   institution text,
   country_code char(2),

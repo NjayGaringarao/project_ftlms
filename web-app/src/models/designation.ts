@@ -1,10 +1,10 @@
 import { Campus } from "./campus";
-import { Department } from "./department";
-import { ProgramCampus } from "./program-campus";
+import { College } from "./college";
+import { ProgramOffering } from "./program-offering";
 import { Program } from "./program";
 import { User } from "./user";
 
-// Designation workflow types based on department.type
+// Designation workflow types based on role category.
 export type DesignationWorkflow =
   | "academic"
   | "administrative"
@@ -37,7 +37,7 @@ export type Designation = {
   id: string;
   user_id: string;
   campus_id: string | null;
-  department_id: string | null;
+  college_id: string | null;
   program_offering_id: string | null;
   room_id: string | null;
   job_title: string;
@@ -49,7 +49,7 @@ export type Designation = {
 export type ExtendedDesignation = Designation & {
   user: User;
   campus: Campus | null;
-  department: Department | null;
+  college: College | null;
   program: Program | null;
-  program_offering: ProgramCampus | null;
+  program_offering: ProgramOffering | null;
 };

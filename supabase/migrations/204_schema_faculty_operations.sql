@@ -42,8 +42,8 @@ create table if not exists public.evaluation (
   id uuid primary key default gen_random_uuid(),
   designation_id uuid not null references public.designation(id) on delete set null,
   schedule_id uuid not null references public.schedule(id) on delete cascade,
-  evaluation_level integer,
-  evaluator_role text,
+  evaluation_level integer not null,
+  evaluator_role text not null,
   status public.evaluation_status_enum not null default 'PENDING',
   comment text,
   created_at timestamptz default now()

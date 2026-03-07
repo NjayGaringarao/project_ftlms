@@ -40,8 +40,8 @@ create table if not exists public.course (
   id uuid primary key default gen_random_uuid(),
   code text not null,
   title text not null,
-  lecture_unit numeric(4,2) default 0,
-  laboratory_unit numeric(4,2) default 0
+  lecture_unit numeric(4,2) not null default 0,
+  laboratory_unit numeric(4,2) not null default 0
 );
 
 create table if not exists public.academic_term (

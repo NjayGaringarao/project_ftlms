@@ -1,10 +1,16 @@
 import { Identity } from "./identity";
-import { AcademicRank } from "./rank";
+import { AcademicRank } from "./academic_rank";
+
+export type EmploymentStatus =
+  | "Regular"
+  | "Part-time"
+  | "Contract of Service"
+  | "Temporary";
 
 export type User = {
   id: string;
   academic_rank_id: string | null;
-  employment_status: "FULL_TIME" | "PART_TIME";
+  employment_status: EmploymentStatus;
 };
 
 export type ExtendedUser = User & {
