@@ -192,10 +192,10 @@ export const UserView = ({ user }: UserViewProps) => {
                       </p>
                     )}
 
-                    {/** DEPARTMENT */}
-                    {designation.department?.name && (
+                    {/** COLLEGE */}
+                    {designation.college?.name && (
                       <p className="text-xs text-foreground/60">
-                        {designation.department.name || "Unnamed Department"}
+                        {designation.college.name || "Unnamed College"}
                       </p>
                     )}
 

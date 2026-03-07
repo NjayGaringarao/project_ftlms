@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { Identity } from "@/models/identity";
-import { AcademicRank } from "@/models/rank";
+import { AcademicRank } from "@/models/academic_rank";
 import { ExtendedDesignation } from "@/models/designation";
 import { Degree } from "@/models/degree";
 

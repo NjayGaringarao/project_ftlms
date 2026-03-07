@@ -1,6 +1,6 @@
 "use server";
 
-import { Term } from "@/models/term";
+import { Term } from "@/models/academic_term";
 import { createClient } from "@/utils/supabase/server";
 
 export type TermListItem = Pick<

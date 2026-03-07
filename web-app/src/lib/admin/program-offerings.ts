@@ -20,11 +20,11 @@ export const getProgramOfferingsList = async (): Promise<
       campus:campus_id (id, name, address, zip_code),
       program:program_id (
         id,
-        department_id,
+        college_id,
         code,
         name,
         description,
-        department:department_id (id, code, name, type, description)
+        college:college_id (id, code, name, description)
       )
       `,
     )
@@ -48,9 +48,9 @@ export const getProgramOfferingsList = async (): Promise<
       campus: Array.isArray(item.campus) ? item.campus[0] : item.campus,
       program: {
         ...program,
-        department: Array.isArray(program?.department)
-          ? program.department[0]
-          : program?.department,
+        college: Array.isArray(program?.college)
+          ? program.college[0]
+          : program?.college,
       },
     };
   }) as ProgramOfferingListItem[];
@@ -71,11 +71,11 @@ export const getProgramOfferingById = async (
       campus:campus_id (id, name, address, zip_code),
       program:program_id (
         id,
-        department_id,
+        college_id,
         code,
         name,
         description,
-        department:department_id (id, code, name, type, description)
+        college:college_id (id, code, name, description)
       )
       `,
     )
@@ -99,9 +99,9 @@ export const getProgramOfferingById = async (
     campus: Array.isArray(data.campus) ? data.campus[0] : data.campus,
     program: {
       ...program,
-      department: Array.isArray(program?.department)
-        ? program.department[0]
-        : program?.department,
+      college: Array.isArray(program?.college)
+        ? program.college[0]
+        : program?.college,
     },
   } as ProgramOfferingListItem;
 };

@@ -19,11 +19,11 @@ export const getMajorsList = async (): Promise<MajorListItem[]> => {
       program_id,
       program:program_id (
         id,
-        department_id,
+        college_id,
         code,
         name,
         description,
-        department:department_id (id, code, name, type, description)
+        college:college_id (id, code, name, description)
       )
       `,
     )
@@ -43,9 +43,9 @@ export const getMajorsList = async (): Promise<MajorListItem[]> => {
       ...item,
       program: {
         ...program,
-        department: Array.isArray(program?.department)
-          ? program.department[0]
-          : program?.department,
+        college: Array.isArray(program?.college)
+          ? program.college[0]
+          : program?.college,
       },
     };
   }) as MajorListItem[];
@@ -67,11 +67,11 @@ export const getMajorById = async (
       program_id,
       program:program_id (
         id,
-        department_id,
+        college_id,
         code,
         name,
         description,
-        department:department_id (id, code, name, type, description)
+        college:college_id (id, code, name, description)
       )
       `,
     )
@@ -91,9 +91,9 @@ export const getMajorById = async (
     ...data,
     program: {
       ...program,
-      department: Array.isArray(program?.department)
-        ? program.department[0]
-        : program?.department,
+      college: Array.isArray(program?.college)
+        ? program.college[0]
+        : program?.college,
     },
   } as MajorListItem;
 };
@@ -114,11 +114,11 @@ export const getMajorsByProgram = async (
       program_id,
       program:program_id (
         id,
-        department_id,
+        college_id,
         code,
         name,
         description,
-        department:department_id (id, code, name, type, description)
+        college:college_id (id, code, name, description)
       )
       `,
     )
@@ -139,9 +139,9 @@ export const getMajorsByProgram = async (
       ...item,
       program: {
         ...program,
-        department: Array.isArray(program?.department)
-          ? program.department[0]
-          : program?.department,
+        college: Array.isArray(program?.college)
+          ? program.college[0]
+          : program?.college,
       },
     };
   }) as MajorListItem[];

@@ -12,10 +12,7 @@ import {
   getMajorOfferingsList,
   MajorOfferingListItem,
 } from "@/lib/admin/major-offerings";
-import {
-  CurriculumListItem,
-  getCurriculumsByMajor,
-} from "@/lib/admin/curriculums";
+import { getTermsList, TermListItem } from "@/lib/admin/terms";
 import { createBlock } from "@/lib/admin/actions";
 
 type BlockCreateProps = {
@@ -31,10 +28,10 @@ export const BlockCreate = ({
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
   );
-  const [curriculums, setCurriculums] = useState<CurriculumListItem[]>([]);
+  const [terms, setTerms] = useState<TermListItem[]>([]);
   const [programOfferingId, setProgramOfferingId] = useState("");
   const [majorOfferingId, setMajorOfferingId] = useState("");
-  const [curriculumId, setCurriculumId] = useState("");
+  const [academicTermId, setAcademicTermId] = useState("");
   const [yearLevel, setYearLevel] = useState("");
   const [section, setSection] = useState("");
   const [studentCount, setStudentCount] = useState("");
@@ -46,15 +43,12 @@ export const BlockCreate = ({
   useEffect(() => {
     const load = async () => {
       setIsLoadingData(true);
-      const offerings = await getMajorOfferingsList();
+      const [offerings, termsData] = await Promise.all([
+        getMajorOfferingsList(),
+        getTermsList(),
+      ]);
       setMajorOfferings(offerings);
-      const uniqueMajorIds = Array.from(
-        new Set(offerings.map((offering) => offering.major_id).filter(Boolean)),
-      );
-      const curriculumGroups = await Promise.all(
-        uniqueMajorIds.map((majorId) => getCurriculumsByMajor(majorId)),
-      );
-      setCurriculums(curriculumGroups.flat());
+      setTerms(termsData);
       setIsLoadingData(false);
     };
 
@@ -65,12 +59,6 @@ export const BlockCreate = ({
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
-  const availableCurriculums = useMemo(() => {
-    const majorId = selectedOffering?.major_id;
-    if (!majorId) return [];
-    return curriculums.filter((curriculum) => curriculum.major_id === majorId);
-  }, [curriculums, selectedOffering]);
-
   const scopedOfferings = useMemo(() => {
     if (!fixedCampusId) return majorOfferings;
     return majorOfferings.filter(
@@ -118,7 +106,7 @@ export const BlockCreate = ({
 
     if (!programOfferingId) return setError("Program offering is required");
     if (!majorOfferingId) return setError("Major offering is required");
-    if (!curriculumId) return setError("Curriculum is required");
+    if (!academicTermId) return setError("Academic term is required");
     if (!Number.isFinite(parsedYearLevel) || parsedYearLevel <= 0) {
       return setError("Year level must be a positive number");
     }
@@ -136,7 +124,7 @@ export const BlockCreate = ({
 
     const { data, error: createError } = await createBlock({
       major_offering_id: majorOfferingId,
-      curriculum_id: curriculumId,
+      academic_term_id: academicTermId,
       year_level: parsedYearLevel,
       section,
       student_count: parsedStudentCount,
@@ -196,7 +184,7 @@ export const BlockCreate = ({
                 onChange={(event) => {
                   setProgramOfferingId(event.target.value);
                   setMajorOfferingId("");
-                  setCurriculumId("");
+                  setAcademicTermId("");
                   setError("");
                 }}
                 disabled={isSaving || isLoadingData}
@@ -220,7 +208,6 @@ export const BlockCreate = ({
                 value={majorOfferingId}
                 onChange={(event) => {
                   setMajorOfferingId(event.target.value);
-                  setCurriculumId("");
                   setError("");
                 }}
                 disabled={isSaving || isLoadingData || !programOfferingId}
@@ -243,23 +230,23 @@ export const BlockCreate = ({
             </div>
 
             <div className="md:col-span-2">
-              <Label className="text-xs" htmlFor="curriculum-id">
-                Curriculum *
+              <Label className="text-xs" htmlFor="academic-term-id">
+                Academic Term *
               </Label>
               <select
-                id="curriculum-id"
+                id="academic-term-id"
                 className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={curriculumId}
+                value={academicTermId}
                 onChange={(event) => {
-                  setCurriculumId(event.target.value);
+                  setAcademicTermId(event.target.value);
                   setError("");
                 }}
-                disabled={isSaving || isLoadingData || !selectedOffering}
+                disabled={isSaving || isLoadingData}
               >
-                <option value="">Select curriculum...</option>
-                {availableCurriculums.map((curriculum) => (
-                  <option key={curriculum.id} value={curriculum.id}>
-                    {curriculum.title} ({curriculum.series_year})
+                <option value="">Select academic term...</option>
+                {terms.map((term) => (
+                  <option key={term.id} value={term.id}>
+                    {term.code}
                   </option>
                 ))}
               </select>
@@ -327,7 +314,7 @@ export const BlockCreate = ({
               onClick={() => {
                 setProgramOfferingId("");
                 setMajorOfferingId("");
-                setCurriculumId("");
+                setAcademicTermId("");
                 setYearLevel("");
                 setSection("");
                 setStudentCount("");

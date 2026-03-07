@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, Info } from "lucide-react";
-import { Term } from "@/models/term";
+import { Term } from "@/models/academic_term";
 import { deleteTerm } from "@/lib/admin/actions";
 import AdminPanel from "../admin-panel";
 import DangerZone from "../danger-zone";

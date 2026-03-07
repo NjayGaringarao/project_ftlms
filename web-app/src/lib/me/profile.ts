@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth/utils";
 import { Identity } from "@/models/identity";
 import { ExtendedDesignation } from "@/models/designation";
 import { Degree } from "@/models/degree";
-import { AcademicRank } from "@/models/rank";
+import { AcademicRank } from "@/models/academic_rank";
 import { User } from "@/models/user";
 
 export type IdentityUpdateInput = {
@@ -101,7 +101,7 @@ type DesignationRow = {
   id: string;
   user_id: string;
   campus_id: string | null;
-  department_id: string | null;
+  college_id: string | null;
   program_offering_id: string | null;
   room_id: string | null;
   job_title: string;
@@ -111,9 +111,9 @@ type DesignationRow = {
     | ProfessionalDesignation["campus"]
     | ProfessionalDesignation["campus"][]
     | null;
-  department:
-    | ProfessionalDesignation["department"]
-    | ProfessionalDesignation["department"][]
+  college:
+    | ProfessionalDesignation["college"]
+    | ProfessionalDesignation["college"][]
     | null;
   program_offering:
     | (ProfessionalDesignation["program_offering"] & {
@@ -178,7 +178,7 @@ export const getProfessionalInfoByUserId = async (
   const { data: designationData, error: designationError } = await supabase
     .from("designation")
     .select(
-      "id, user_id, campus_id, department_id, program_offering_id, room_id, job_title, load, designated_at, campus ( id, name, address, zip_code ), department ( id, code, name , type, description), program_offering:program_offering_id ( id, campus_id, program_id, campus:campus_id ( id, name, address, zip_code ), program:program_id ( id, department_id, code, name, description ) )",
+      "id, user_id, campus_id, college_id, program_offering_id, room_id, job_title, load, designated_at, campus ( id, name, address, zip_code ), college:college_id ( id, code, name, description ), program_offering:program_offering_id ( id, campus_id, program_id, campus:campus_id ( id, name, address, zip_code ), program:program_id ( id, college_id, code, name, description, college:college_id ( id, code, name, description ) ) )",
     )
     .eq("user_id", userId)
     .order("job_title", { ascending: true });
@@ -206,15 +206,15 @@ export const getProfessionalInfoByUserId = async (
       const directCampus = Array.isArray(d.campus)
         ? (d.campus[0] ?? null)
         : d.campus;
-      const department = Array.isArray(d.department)
-        ? (d.department[0] ?? null)
-        : d.department;
+      const college = Array.isArray(d.college)
+        ? (d.college[0] ?? null)
+        : d.college;
 
       return {
         id: d.id,
         user_id: d.user_id,
         campus_id: d.campus_id,
-        department_id: d.department_id,
+        college_id: d.college_id,
         program_offering_id: d.program_offering_id,
         room_id: d.room_id,
         job_title: d.job_title,
@@ -222,7 +222,7 @@ export const getProfessionalInfoByUserId = async (
         designated_at: d.designated_at,
         position: d.job_title,
         campus: directCampus ?? campusFromOffering,
-        department,
+        college,
         program,
         program_offering: programOffering,
       };

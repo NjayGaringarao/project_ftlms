@@ -42,7 +42,7 @@ export const getDesignationRequirements = (
   subType?: string,
 ): {
   requiresCampus: boolean;
-  requiresDepartment: boolean;
+  requiresCollege: boolean;
   requiresProgram: boolean;
   requiresJobTitle: boolean;
   jobTitleOptions?: readonly { value: string; label: string }[];
@@ -55,7 +55,7 @@ export const getDesignationRequirements = (
     if (subType === "program_chair") {
       return {
         requiresCampus: true,
-        requiresDepartment: false, // Will be derived from program
+        requiresCollege: false, // Will be derived from program
         requiresProgram: true,
         requiresJobTitle: true,
         jobTitlePreset: "Program Chairperson",
@@ -65,7 +65,7 @@ export const getDesignationRequirements = (
     if (subType === "dean") {
       return {
         requiresCampus: false,
-        requiresDepartment: true,
+        requiresCollege: true,
         requiresProgram: false,
         requiresJobTitle: true,
         jobTitlePreset: "College Dean",
@@ -80,7 +80,7 @@ export const getDesignationRequirements = (
     if (subType === "higher_ups") {
       return {
         requiresCampus: false,
-        requiresDepartment: false,
+        requiresCollege: false,
         requiresProgram: false,
         requiresJobTitle: true,
         jobTitleOptions: HIGHER_UPS_JOB_TITLES,
@@ -90,7 +90,7 @@ export const getDesignationRequirements = (
     if (subType === "campus_director") {
       return {
         requiresCampus: true,
-        requiresDepartment: false,
+        requiresCollege: false,
         requiresProgram: false,
         requiresJobTitle: true,
         jobTitlePreset: "Campus Director",
@@ -100,7 +100,7 @@ export const getDesignationRequirements = (
     if (subType === "other") {
       return {
         requiresCampus: true,
-        requiresDepartment: true,
+        requiresCollege: true,
         requiresProgram: false,
         requiresJobTitle: true,
         departmentTypeFilter: "ADMINISTRATIVE",
@@ -113,7 +113,7 @@ export const getDesignationRequirements = (
   if (designationType === "student_services") {
     return {
       requiresCampus: true,
-      requiresDepartment: true,
+      requiresCollege: true,
       requiresProgram: false,
       requiresJobTitle: true,
       departmentTypeFilter: "STUDENT_SERVICES",
@@ -125,7 +125,7 @@ export const getDesignationRequirements = (
   if (designationType === "extension_services") {
     return {
       requiresCampus: true,
-      requiresDepartment: true,
+      requiresCollege: true,
       requiresProgram: false,
       requiresJobTitle: true,
       departmentTypeFilter: "EXTENSION_SERVICES",
@@ -136,7 +136,7 @@ export const getDesignationRequirements = (
   // Default (shouldn't reach here)
   return {
     requiresCampus: false,
-    requiresDepartment: false,
+    requiresCollege: false,
     requiresProgram: false,
     requiresJobTitle: false,
     allowCustomJobTitle: false,
@@ -151,7 +151,7 @@ export const validateDesignation = (
   subType: string | null,
   context: {
     campus_id?: string | null;
-    department_id?: string | null;
+    college_id?: string | null;
     program_offering_id?: string | null;
     job_title?: string | null;
   },
@@ -178,8 +178,8 @@ export const validateDesignation = (
     missing.push("campus");
   }
 
-  if (requirements.requiresDepartment && !context.department_id?.trim()) {
-    missing.push("department");
+  if (requirements.requiresCollege && !context.college_id?.trim()) {
+    missing.push("college");
   }
 
   if (requirements.requiresProgram && !context.program_offering_id?.trim()) {

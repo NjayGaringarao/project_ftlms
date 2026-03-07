@@ -4,12 +4,13 @@ import { createClient } from "@/utils/supabase/server";
 import { ExtendedBlock } from "@/models";
 
 export type BlockListItem = ExtendedBlock & {
-  curriculum: {
+  academic_term: {
     id: string;
-    major_id: string;
-    title: string;
-    series_year: number;
-    revised_year: number | null;
+    code: string;
+    academic_year_start: number;
+    academic_year_end: number;
+    term_order: string;
+    type: string;
   } | null;
   major_offering: ExtendedBlock["major_offering"] & {
     major: {
@@ -34,7 +35,7 @@ export type BlockListItem = ExtendedBlock & {
         code: string;
         name: string;
         description: string | null;
-        department_id: string;
+        college_id: string;
       } | null;
     } | null;
   };
@@ -49,16 +50,17 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
       `
       id,
       major_offering_id,
-      curriculum_id,
+      academic_term_id,
       year_level,
       section,
       student_count,
-      curriculum:curriculum_id (
+      academic_term:academic_term_id (
         id,
-        major_id,
-        title,
-        series_year,
-        revised_year
+        code,
+        academic_year_start,
+        academic_year_end,
+        term_order,
+        type
       ),
       major_offering:major_offering_id (
         id,
@@ -76,7 +78,7 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
           campus_id,
           program_id,
           campus:campus_id (id, name, address, zip_code),
-          program:program_id (id, code, name, description, department_id)
+          program:program_id (id, code, name, description, college_id)
         )
       )
       `,
@@ -90,9 +92,9 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
   }
 
   return (data ?? []).map((item) => {
-    const curriculum = Array.isArray(item.curriculum)
-      ? item.curriculum[0]
-      : item.curriculum;
+    const academicTerm = Array.isArray(item.academic_term)
+      ? item.academic_term[0]
+      : item.academic_term;
     const majorOffering = Array.isArray(item.major_offering)
       ? item.major_offering[0]
       : item.major_offering;
@@ -105,7 +107,7 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
 
     return {
       ...item,
-      curriculum,
+      academic_term: academicTerm,
       major_offering: {
         ...majorOffering,
         major,
@@ -134,16 +136,17 @@ export const getBlockById = async (
       `
       id,
       major_offering_id,
-      curriculum_id,
+      academic_term_id,
       year_level,
       section,
       student_count,
-      curriculum:curriculum_id (
+      academic_term:academic_term_id (
         id,
-        major_id,
-        title,
-        series_year,
-        revised_year
+        code,
+        academic_year_start,
+        academic_year_end,
+        term_order,
+        type
       ),
       major_offering:major_offering_id (
         id,
@@ -161,7 +164,7 @@ export const getBlockById = async (
           campus_id,
           program_id,
           campus:campus_id (id, name, address, zip_code),
-          program:program_id (id, code, name, description, department_id)
+          program:program_id (id, code, name, description, college_id)
         )
       )
       `,
@@ -179,9 +182,9 @@ export const getBlockById = async (
   const majorOffering = Array.isArray(data.major_offering)
     ? data.major_offering[0]
     : data.major_offering;
-  const curriculum = Array.isArray(data.curriculum)
-    ? data.curriculum[0]
-    : data.curriculum;
+  const academicTerm = Array.isArray(data.academic_term)
+    ? data.academic_term[0]
+    : data.academic_term;
   const major = Array.isArray(majorOffering?.major)
     ? majorOffering.major[0]
     : majorOffering?.major;
@@ -191,7 +194,7 @@ export const getBlockById = async (
 
   return {
     ...data,
-    curriculum,
+    academic_term: academicTerm,
     major_offering: {
       ...majorOffering,
       major,

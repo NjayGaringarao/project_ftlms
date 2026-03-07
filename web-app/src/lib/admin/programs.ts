@@ -7,7 +7,7 @@ export type ProgramListItem = Pick<
   Program,
   "id" | "code" | "name" | "description"
 > & {
-  department_id: string;
+  college_id: string;
 };
 
 export type ProgramCampusOffering = ExtendedProgramCampus;
@@ -23,8 +23,8 @@ export const getPrograms = async (): Promise<ExtendedProgram[]> => {
       code,
       name,
       description,
-      department_id,
-      department:department_id (id, code, name, type, description)
+      college_id,
+      college:college_id (id, code, name, description)
       `,
     )
     .order("name", { ascending: true });
@@ -36,14 +36,14 @@ export const getPrograms = async (): Promise<ExtendedProgram[]> => {
 
   const programs = (data ?? []).map((p) => ({
     ...p,
-    department: Array.isArray(p.department) ? p.department[0] : p.department,
+    college: Array.isArray(p.college) ? p.college[0] : p.college,
   })) as ExtendedProgram[];
 
   return programs;
 };
 
-export const getProgramsByDepartment = async (
-  departmentId: string,
+export const getProgramsByCollege = async (
+  collegeId: string,
 ): Promise<ExtendedProgram[]> => {
   const supabase = await createClient();
 
@@ -55,34 +55,34 @@ export const getProgramsByDepartment = async (
       code,
       name,
       description,
-      department_id,
-      department:department_id (id, code, name, type, description)
+      college_id,
+      college:college_id (id, code, name, description)
       `,
     )
-    .eq("department_id", departmentId)
+    .eq("college_id", collegeId)
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("lib.admin.programs.getProgramsByDepartment ::", error);
+    console.error("lib.admin.programs.getProgramsByCollege ::", error);
     return [];
   }
 
   const programs = (data ?? []).map((p) => ({
     ...p,
-    department: Array.isArray(p.department) ? p.department[0] : p.department,
+    college: Array.isArray(p.college) ? p.college[0] : p.college,
   })) as ExtendedProgram[];
 
   return programs;
 };
 
-export const getProgramsByDepartmentAndCampus = async (
-  departmentId: string,
+export const getProgramsByCollegeAndCampus = async (
+  collegeId: string,
   campusId: string,
 ): Promise<ExtendedProgram[]> => {
   const offerings = await getProgramCampusOfferings(campusId);
   return offerings
     .map((offering) => offering.program)
-    .filter((program) => program.department_id === departmentId);
+    .filter((program) => program.college_id === collegeId);
 };
 
 export const getProgramById = async (
@@ -98,8 +98,8 @@ export const getProgramById = async (
       code,
       name,
       description,
-      department_id,
-      department:department_id (id, code, name, type, description)
+      college_id,
+      college:college_id (id, code, name, description)
       `,
     )
     .eq("id", programId)
@@ -114,9 +114,7 @@ export const getProgramById = async (
 
   const program: ExtendedProgram = {
     ...data,
-    department: Array.isArray(data.department)
-      ? data.department[0]
-      : data.department,
+    college: Array.isArray(data.college) ? data.college[0] : data.college,
   };
 
   return program;
@@ -140,8 +138,8 @@ export const getProgramCampusOfferings = async (
         code,
         name,
         description,
-        department_id,
-        department:department_id (id, code, name, type, description)
+        college_id,
+        college:college_id (id, code, name, description)
       )
       `,
     )
@@ -167,20 +165,20 @@ export const getProgramCampusOfferings = async (
       ...(Array.isArray(offering.program)
         ? offering.program[0]
         : offering.program),
-      department: Array.isArray(
+      college: Array.isArray(
         (Array.isArray(offering.program)
           ? offering.program[0]
           : offering.program
-        )?.department,
+        )?.college,
       )
         ? (Array.isArray(offering.program)
             ? offering.program[0]
             : offering.program
-          ).department[0]
+          ).college[0]
         : (Array.isArray(offering.program)
             ? offering.program[0]
             : offering.program
-          )?.department,
+          )?.college,
     },
   })) as ProgramCampusOffering[];
 };

@@ -1,6 +1,6 @@
 "use server";
 
-import { Rank } from "@/models/rank";
+import { Rank } from "@/models/academic_rank";
 import { createClient } from "@/utils/supabase/server";
 
 export type RankListItem = Pick<

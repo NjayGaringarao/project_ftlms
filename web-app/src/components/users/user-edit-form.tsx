@@ -48,7 +48,7 @@ type ProfessionalFormState = {
     id?: string;
     campus_id?: string | null;
     job_title: string;
-    department_id?: string | null;
+    college_id?: string | null;
     program_offering_id?: string | null;
     room_id?: string | null;
     load?: number | null;
@@ -62,7 +62,7 @@ type SecurityFormState = {
 };
 
 type NewDesignationInput = {
-  department_id: string | null;
+  college_id: string | null;
   program_offering_id: string | null;
   campus_id: string | null;
   room_id: string | null;
@@ -91,7 +91,7 @@ const userToProfessionalFormState = (
       id: d.id,
       campus_id: d.campus_id,
       job_title: d.job_title,
-      department_id: d.department_id,
+      college_id: d.college_id,
       program_offering_id: d.program_offering_id,
       room_id: d.room_id,
       load: d.load,
@@ -159,7 +159,7 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
         ...prev.designations,
         {
           job_title: designation.job_title,
-          department_id: designation.department_id || null,
+          college_id: designation.college_id || null,
           program_offering_id: designation.program_offering_id || null,
           campus_id: designation.campus_id || null,
           room_id: designation.room_id || null,
@@ -633,9 +633,9 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
                           <p className="font-medium">{designation.job_title}</p>
                         </div>
                         <div className="space-y-1 mt-1">
-                          {designation.department_id && (
+                          {designation.college_id && (
                             <p className="text-xs text-foreground/60">
-                              Department: {designation.department_id}
+                              Department: {designation.college_id}
                             </p>
                           )}
                           {designation.program_offering_id && (

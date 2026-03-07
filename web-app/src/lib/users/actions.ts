@@ -229,7 +229,7 @@ type UpdateUserProfessionalInput = {
     id?: string;
     campus_id?: string | null;
     job_title: string;
-    department_id?: string | null;
+    college_id?: string | null;
     program_offering_id?: string | null;
     room_id?: string | null;
     load?: number | null;
@@ -285,7 +285,7 @@ export async function updateUserProfessional(
       const invalidDesignation = input.designations.find((d) => {
         const normalizedJobTitle = normalizeJobTitleKey(d.job_title);
         const campusId = d.campus_id?.trim() || null;
-        const departmentId = d.department_id?.trim() || null;
+        const collegeId = d.college_id?.trim() || null;
         const programOfferingId = d.program_offering_id?.trim() || null;
         const roomId = d.room_id?.trim() || null;
 
@@ -302,7 +302,7 @@ export async function updateUserProfessional(
         }
 
         if (normalizedJobTitle === "college dean") {
-          return !departmentId;
+          return !collegeId;
         }
 
         if (normalizedJobTitle === "campus director") {
@@ -313,8 +313,7 @@ export async function updateUserProfessional(
           return false;
         }
 
-        const hasContext =
-          campusId || departmentId || programOfferingId || roomId;
+        const hasContext = campusId || collegeId || programOfferingId || roomId;
         return !hasContext;
       });
 
@@ -346,7 +345,7 @@ export async function updateUserProfessional(
 
         if (normalizedJobTitle === "college dean") {
           return {
-            error: "College Dean designation requires a department.",
+            error: "College Dean designation requires a college.",
           };
         }
 
@@ -358,7 +357,7 @@ export async function updateUserProfessional(
 
         return {
           error:
-            "Each designation must include at least one context: campus, department, program offering, or room (except University President and Director for Instruction).",
+            "Each designation must include at least one context: campus, college, program offering, or room (except University President and Director for Instruction).",
         };
       }
 
@@ -366,7 +365,7 @@ export async function updateUserProfessional(
         user_id: input.user_id,
         campus_id: d.campus_id || null,
         job_title: d.job_title.trim(),
-        department_id: d.department_id?.trim() || null,
+        college_id: d.college_id?.trim() || null,
         program_offering_id: d.program_offering_id?.trim() || null,
         room_id: d.room_id?.trim() || null,
         load: d.load ?? null,

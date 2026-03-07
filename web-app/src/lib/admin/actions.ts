@@ -29,28 +29,28 @@ const mapDuplicateError = (
   return error.message ?? "Unexpected error";
 };
 
-const mapDepartmentMutationError = (error: MutationError) => {
+const mapCollegeMutationError = (error: MutationError) => {
   if (error.code === "23505") {
     const message = error.message?.toLowerCase() ?? "";
     if (message.includes("code")) {
-      return "Department code already exists";
+      return "College code already exists";
     }
     if (message.includes("name")) {
-      return "Department name already exists";
+      return "College name already exists";
     }
-    return "Department already exists";
+    return "College already exists";
   }
 
   return error.message ?? "Unexpected error";
 };
 
-const revalidateDepartmentsPaths = (id?: string) => {
-  revalidatePath("/departments");
-  revalidatePath("/departments/create");
+const revalidateCollegesPaths = (id?: string) => {
+  revalidatePath("/colleges");
+  revalidatePath("/colleges/create");
 
   if (id) {
-    revalidatePath(`/departments/${id}`);
-    revalidatePath(`/departments/${id}/edit`);
+    revalidatePath(`/colleges/${id}`);
+    revalidatePath(`/colleges/${id}/edit`);
   }
 };
 
@@ -124,16 +124,6 @@ const revalidateMajorsPaths = (id?: string) => {
   }
 };
 
-const revalidateCurriculumsPaths = (curriculumId?: string) => {
-  revalidatePath("/curriculums");
-  revalidatePath("/curriculums/create");
-
-  if (curriculumId) {
-    revalidatePath(`/curriculums/${curriculumId}`);
-    revalidatePath(`/curriculums/${curriculumId}/edit`);
-  }
-};
-
 const revalidateMajorOfferingsPaths = (id?: string) => {
   revalidatePath("/major-offerings");
   revalidatePath("/major-offerings/create");
@@ -158,7 +148,7 @@ const revalidateDepartmentProgramsPaths = (
   departmentId: string,
   programId?: string,
 ) => {
-  const basePath = `/departments/${departmentId}/programs`;
+  const basePath = `/colleges/${departmentId}/programs`;
   revalidatePath(basePath);
   revalidatePath(`${basePath}/create`);
 
@@ -175,7 +165,7 @@ const revalidateProgramMajorsPaths = (
   programId: string,
   majorId?: string,
 ) => {
-  const basePath = `/departments/${departmentId}/programs/${programId}/majors`;
+  const basePath = `/colleges/${departmentId}/programs/${programId}/majors`;
   revalidatePath(basePath);
   revalidatePath(`${basePath}/create`);
 
@@ -189,7 +179,7 @@ const revalidateDepartmentProgramDetailPath = (
   departmentId: string,
   programId: string,
 ) => {
-  const basePath = `/departments/${departmentId}/programs`;
+  const basePath = `/colleges/${departmentId}/programs`;
   revalidatePath(basePath);
   revalidatePath(`${basePath}/${programId}`);
   revalidatePath(`${basePath}/${programId}/edit`);
@@ -234,11 +224,6 @@ const revalidateCampusRoomsPaths = (campusId: string, roomId?: string) => {
 type DepartmentInput = {
   code: string;
   name: string;
-  type:
-    | "ACADEMIC"
-    | "ADMINISTRATIVE"
-    | "STUDENT_SERVICES"
-    | "EXTENSION_SERVICES";
   description?: string | null;
 };
 
@@ -249,78 +234,76 @@ type UpdateDepartmentInput = DepartmentInput & {
 export async function createDepartment(
   input: DepartmentInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.code?.trim()) return { error: "Department code is required" };
-  if (!input.name?.trim()) return { error: "Department name is required" };
+  if (!input.code?.trim()) return { error: "College code is required" };
+  if (!input.name?.trim()) return { error: "College name is required" };
 
   const supabase = await createClient();
 
   const payload = {
     code: normalizeCode(input.code),
     name: normalizeName(input.name),
-    type: input.type,
     description: normalizeDescription(input.description),
   };
 
   const { data, error } = await supabase
-    .from("department")
+    .from("college")
     .insert(payload)
     .select("id")
     .single();
 
   if (error) {
-    return { error: mapDepartmentMutationError(error) };
+    return { error: mapCollegeMutationError(error) };
   }
 
-  revalidateDepartmentsPaths(data.id);
+  revalidateCollegesPaths(data.id);
   return { data: { id: data.id } };
 }
 
 export async function updateDepartment(
   input: UpdateDepartmentInput,
 ): Promise<{ data?: boolean; error?: string }> {
-  if (!input.id?.trim()) return { error: "Department ID is required" };
-  if (!input.code?.trim()) return { error: "Department code is required" };
-  if (!input.name?.trim()) return { error: "Department name is required" };
+  if (!input.id?.trim()) return { error: "College ID is required" };
+  if (!input.code?.trim()) return { error: "College code is required" };
+  if (!input.name?.trim()) return { error: "College name is required" };
 
   const supabase = await createClient();
 
   const payload = {
     code: normalizeCode(input.code),
     name: normalizeName(input.name),
-    type: input.type,
     description: normalizeDescription(input.description),
   };
 
   const { error } = await supabase
-    .from("department")
+    .from("college")
     .update(payload)
     .eq("id", input.id);
 
   if (error) {
-    return { error: mapDepartmentMutationError(error) };
+    return { error: mapCollegeMutationError(error) };
   }
 
-  revalidateDepartmentsPaths(input.id);
+  revalidateCollegesPaths(input.id);
   return { data: true };
 }
 
 export async function deleteDepartment(
   departmentId: string,
 ): Promise<{ data?: boolean; error?: string }> {
-  if (!departmentId?.trim()) return { error: "Department ID is required" };
+  if (!departmentId?.trim()) return { error: "College ID is required" };
 
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("department")
+    .from("college")
     .delete()
     .eq("id", departmentId);
 
   if (error) {
-    return { error: mapDepartmentMutationError(error) };
+    return { error: mapCollegeMutationError(error) };
   }
 
-  revalidateDepartmentsPaths();
+  revalidateCollegesPaths();
   return { data: true };
 }
 
@@ -792,7 +775,7 @@ export async function deleteCourse(
 }
 
 type ProgramInput = {
-  department_id: string;
+  college_id: string;
   code: string;
   name: string;
   description?: string | null;
@@ -803,7 +786,7 @@ type UpdateProgramInput = ProgramInput & {
 };
 
 const normalizeProgramInput = (input: ProgramInput) => ({
-  department_id: input.department_id.trim(),
+  college_id: input.college_id.trim(),
   code: normalizeCode(input.code),
   name: normalizeName(input.name),
   description: normalizeDescription(input.description),
@@ -812,7 +795,7 @@ const normalizeProgramInput = (input: ProgramInput) => ({
 export async function createProgram(
   input: ProgramInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.department_id?.trim()) return { error: "Department is required" };
+  if (!input.college_id?.trim()) return { error: "College is required" };
   if (!input.code?.trim()) return { error: "Program code is required" };
   if (!input.name?.trim()) return { error: "Program name is required" };
 
@@ -829,7 +812,7 @@ export async function createProgram(
   }
 
   revalidateProgramsPaths(data.id);
-  revalidateDepartmentProgramsPaths(input.department_id, data.id);
+  revalidateDepartmentProgramsPaths(input.college_id, data.id);
   return { data: { id: data.id } };
 }
 
@@ -837,7 +820,7 @@ export async function updateProgram(
   input: UpdateProgramInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Program ID is required" };
-  if (!input.department_id?.trim()) return { error: "Department is required" };
+  if (!input.college_id?.trim()) return { error: "College is required" };
   if (!input.code?.trim()) return { error: "Program code is required" };
   if (!input.name?.trim()) return { error: "Program name is required" };
 
@@ -853,7 +836,7 @@ export async function updateProgram(
   }
 
   revalidateProgramsPaths(input.id);
-  revalidateDepartmentProgramsPaths(input.department_id, input.id);
+  revalidateDepartmentProgramsPaths(input.college_id, input.id);
   return { data: true };
 }
 
@@ -866,7 +849,7 @@ export async function deleteProgram(
 
   const { data: existingProgram } = await supabase
     .from("program")
-    .select("id, department_id")
+    .select("id, college_id")
     .eq("id", programId)
     .maybeSingle();
 
@@ -877,8 +860,8 @@ export async function deleteProgram(
   }
 
   revalidateProgramsPaths();
-  if (existingProgram?.department_id) {
-    revalidateDepartmentProgramsPaths(existingProgram.department_id);
+  if (existingProgram?.college_id) {
+    revalidateDepartmentProgramsPaths(existingProgram.college_id);
   }
   revalidateMajorsPaths();
   revalidateProgramOfferingsPaths();
@@ -1017,16 +1000,16 @@ export async function createMajor(
   revalidateMajorsPaths(data.id);
   const { data: parentProgram } = await supabase
     .from("program")
-    .select("id, department_id")
+    .select("id, college_id")
     .eq("id", input.program_id)
     .maybeSingle();
-  if (parentProgram?.department_id) {
+  if (parentProgram?.college_id) {
     revalidateDepartmentProgramDetailPath(
-      parentProgram.department_id,
+      parentProgram.college_id,
       input.program_id,
     );
     revalidateProgramMajorsPaths(
-      parentProgram.department_id,
+      parentProgram.college_id,
       input.program_id,
       data.id,
     );
@@ -1056,16 +1039,16 @@ export async function updateMajor(
   revalidateMajorsPaths(input.id);
   const { data: parentProgram } = await supabase
     .from("program")
-    .select("id, department_id")
+    .select("id, college_id")
     .eq("id", input.program_id)
     .maybeSingle();
-  if (parentProgram?.department_id) {
+  if (parentProgram?.college_id) {
     revalidateDepartmentProgramDetailPath(
-      parentProgram.department_id,
+      parentProgram.college_id,
       input.program_id,
     );
     revalidateProgramMajorsPaths(
-      parentProgram.department_id,
+      parentProgram.college_id,
       input.program_id,
       input.id,
     );
@@ -1090,10 +1073,10 @@ export async function deleteMajor(
   if (existingMajor?.program_id) {
     const { data: parentProgram } = await supabase
       .from("program")
-      .select("department_id")
+      .select("college_id")
       .eq("id", existingMajor.program_id)
       .maybeSingle();
-    departmentId = parentProgram?.department_id;
+    departmentId = parentProgram?.college_id;
   }
 
   const { error } = await supabase.from("major").delete().eq("id", majorId);
@@ -1111,345 +1094,6 @@ export async function deleteMajor(
     revalidateProgramMajorsPaths(departmentId, existingMajor.program_id);
   }
   revalidateMajorOfferingsPaths();
-  return { data: true };
-}
-
-type CurriculumInput = {
-  major_id: string;
-  title: string;
-  series_year: number;
-  revised_year?: number | null;
-};
-
-type UpdateCurriculumInput = CurriculumInput & {
-  id: string;
-};
-
-const normalizeCurriculumInput = (input: CurriculumInput) => ({
-  major_id: input.major_id.trim(),
-  title: normalizeName(input.title),
-  series_year: input.series_year,
-  revised_year: input.revised_year ?? null,
-});
-
-export async function createCurriculum(
-  input: CurriculumInput,
-): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.major_id?.trim()) return { error: "Major is required" };
-  if (!input.title?.trim()) return { error: "Curriculum title is required" };
-  if (!Number.isInteger(input.series_year)) {
-    return { error: "Series year is required" };
-  }
-  if (
-    input.revised_year !== undefined &&
-    input.revised_year !== null &&
-    !Number.isInteger(input.revised_year)
-  ) {
-    return { error: "Revised year must be a whole number" };
-  }
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("curriculum")
-    .insert(normalizeCurriculumInput(input))
-    .select("id")
-    .single();
-
-  if (error) {
-    return {
-      error: mapDuplicateError(
-        "Curriculum",
-        "series and revised year in this major",
-        error,
-      ),
-    };
-  }
-
-  revalidateCurriculumsPaths(data.id);
-  revalidateBlocksPaths();
-  return { data: { id: data.id } };
-}
-
-export async function updateCurriculum(
-  input: UpdateCurriculumInput,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!input.id?.trim()) return { error: "Curriculum ID is required" };
-  if (!input.major_id?.trim()) return { error: "Major is required" };
-  if (!input.title?.trim()) return { error: "Curriculum title is required" };
-  if (!Number.isInteger(input.series_year)) {
-    return { error: "Series year is required" };
-  }
-  if (
-    input.revised_year !== undefined &&
-    input.revised_year !== null &&
-    !Number.isInteger(input.revised_year)
-  ) {
-    return { error: "Revised year must be a whole number" };
-  }
-
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("curriculum")
-    .update(normalizeCurriculumInput(input))
-    .eq("id", input.id);
-
-  if (error) {
-    return {
-      error: mapDuplicateError(
-        "Curriculum",
-        "series and revised year in this major",
-        error,
-      ),
-    };
-  }
-
-  revalidateCurriculumsPaths(input.id);
-  revalidateBlocksPaths();
-  return { data: true };
-}
-
-export async function deleteCurriculum(
-  curriculumId: string,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!curriculumId?.trim()) return { error: "Curriculum ID is required" };
-
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("curriculum")
-    .select("id, major_id")
-    .eq("id", curriculumId)
-    .maybeSingle();
-
-  if (!existing?.major_id) {
-    return { error: "Curriculum not found" };
-  }
-
-  const { error } = await supabase
-    .from("curriculum")
-    .delete()
-    .eq("id", curriculumId);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidateCurriculumsPaths();
-  revalidateBlocksPaths();
-  return { data: true };
-}
-
-type CurriculumTermLinkInput = {
-  curriculum_id: string;
-  academic_term_id: string;
-};
-
-type CurriculumTermCoursesInput = {
-  curriculum_offering_id: string;
-  course_ids: string[];
-};
-
-export async function createCurriculumTermLink(
-  input: CurriculumTermLinkInput,
-): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.curriculum_id?.trim())
-    return { error: "Curriculum ID is required" };
-  if (!input.academic_term_id?.trim()) {
-    return { error: "Academic term is required" };
-  }
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("curriculum_offering")
-    .insert({
-      curriculum_id: input.curriculum_id.trim(),
-      academic_term_id: input.academic_term_id.trim(),
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    return {
-      error: mapDuplicateError(
-        "Curriculum term",
-        "link for this curriculum and term",
-        error,
-      ),
-    };
-  }
-
-  revalidateCurriculumsPaths(input.curriculum_id.trim());
-  return { data: { id: data.id } };
-}
-
-export async function deleteCurriculumTermLink(
-  curriculumAtId: string,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!curriculumAtId?.trim()) {
-    return { error: "Curriculum term ID is required" };
-  }
-
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("curriculum_offering")
-    .select("id, curriculum_id")
-    .eq("id", curriculumAtId)
-    .maybeSingle();
-
-  if (!existing?.curriculum_id) {
-    return { error: "Curriculum term link not found" };
-  }
-
-  const { error } = await supabase
-    .from("curriculum_offering")
-    .delete()
-    .eq("id", curriculumAtId);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidateCurriculumsPaths(existing.curriculum_id);
-  return { data: true };
-}
-
-export async function addCoursesToCurriculumTerm(
-  input: CurriculumTermCoursesInput,
-): Promise<{ data?: { added: number }; error?: string }> {
-  if (!input.curriculum_offering_id?.trim()) {
-    return { error: "Curriculum term ID is required" };
-  }
-
-  const normalizedCourseIds = Array.from(
-    new Set(input.course_ids.map((value) => value.trim()).filter(Boolean)),
-  );
-
-  if (normalizedCourseIds.length === 0) {
-    return { error: "Select at least one course" };
-  }
-
-  const supabase = await createClient();
-
-  const { data: parentLink } = await supabase
-    .from("curriculum_offering")
-    .select("id, curriculum_id")
-    .eq("id", input.curriculum_offering_id.trim())
-    .maybeSingle();
-
-  if (!parentLink?.curriculum_id) {
-    return { error: "Curriculum term link not found" };
-  }
-
-  const { data: curriculumTermLinks, error: curriculumTermLinksError } =
-    await supabase
-      .from("curriculum_offering")
-      .select("id")
-      .eq("curriculum_id", parentLink.curriculum_id);
-
-  if (curriculumTermLinksError) {
-    return { error: curriculumTermLinksError.message };
-  }
-
-  const curriculumTermIds = (curriculumTermLinks ?? []).map(
-    (item) => item.id as string,
-  );
-
-  if (curriculumTermIds.length === 0) {
-    return { error: "Curriculum term link not found" };
-  }
-
-  const { data: existingRows, error: existingError } = await supabase
-    .from("course_offering")
-    .select("course_id")
-    .in("curriculum_offering_id", curriculumTermIds)
-    .in("course_id", normalizedCourseIds);
-
-  if (existingError) {
-    return { error: existingError.message };
-  }
-
-  const existingCourseIds = new Set(
-    (existingRows ?? []).map((row) => row.course_id as string),
-  );
-
-  const rowsToInsert = normalizedCourseIds
-    .filter((courseId) => !existingCourseIds.has(courseId))
-    .map((courseId) => ({
-      curriculum_offering_id: input.curriculum_offering_id.trim(),
-      course_id: courseId,
-    }));
-
-  if (rowsToInsert.length !== normalizedCourseIds.length) {
-    return {
-      error:
-        "One or more selected courses are already linked in this curriculum",
-    };
-  }
-
-  if (rowsToInsert.length > 0) {
-    const { error } = await supabase
-      .from("course_offering")
-      .insert(rowsToInsert);
-
-    if (error) {
-      return {
-        error: mapDuplicateError(
-          "Curriculum course",
-          "link for this curriculum and course",
-          error,
-        ),
-      };
-    }
-  }
-
-  revalidateCurriculumsPaths(parentLink.curriculum_id);
-  return { data: { added: rowsToInsert.length } };
-}
-
-export async function deleteCurriculumTermCourseLink(
-  courseCTId: string,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!courseCTId?.trim()) {
-    return { error: "Curriculum course link ID is required" };
-  }
-
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("course_offering")
-    .select(
-      `
-      id,
-      curriculum_offering:curriculum_offering_id (
-        curriculum_id
-      )
-      `,
-    )
-    .eq("id", courseCTId)
-    .maybeSingle();
-
-  const curriculumOffering = Array.isArray(existing?.curriculum_offering)
-    ? existing.curriculum_offering[0]
-    : existing?.curriculum_offering;
-
-  if (!curriculumOffering?.curriculum_id) {
-    return { error: "Curriculum course link not found" };
-  }
-
-  const { error } = await supabase
-    .from("course_offering")
-    .delete()
-    .eq("id", courseCTId);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidateCurriculumsPaths(curriculumOffering.curriculum_id);
   return { data: true };
 }
 
@@ -1611,7 +1255,7 @@ export async function deleteMajorOffering(
 
 type BlockInput = {
   major_offering_id: string;
-  curriculum_id: string;
+  academic_term_id: string;
   year_level: number;
   section: string;
   student_count?: number | null;
@@ -1623,7 +1267,7 @@ type UpdateBlockInput = BlockInput & {
 
 const normalizeBlockInput = (input: BlockInput) => ({
   major_offering_id: input.major_offering_id.trim(),
-  curriculum_id: input.curriculum_id.trim(),
+  academic_term_id: input.academic_term_id.trim(),
   year_level: input.year_level,
   section: normalizeCode(input.section),
   student_count: input.student_count ?? null,
@@ -1634,7 +1278,8 @@ export async function createBlock(
 ): Promise<{ data?: { id: string }; error?: string }> {
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
-  if (!input.curriculum_id?.trim()) return { error: "Curriculum is required" };
+  if (!input.academic_term_id?.trim())
+    return { error: "Academic term is required" };
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
     return { error: "Year level must be greater than zero" };
   }
@@ -1649,16 +1294,16 @@ export async function createBlock(
 
   const supabase = await createClient();
 
-  const [{ data: majorOffering }, { data: curriculum }] = await Promise.all([
+  const [{ data: majorOffering }, { data: academicTerm }] = await Promise.all([
     supabase
       .from("major_offering")
-      .select("id, major_id")
+      .select("id")
       .eq("id", input.major_offering_id)
       .maybeSingle(),
     supabase
-      .from("curriculum")
-      .select("id, major_id")
-      .eq("id", input.curriculum_id)
+      .from("academic_term")
+      .select("id")
+      .eq("id", input.academic_term_id)
       .maybeSingle(),
   ]);
 
@@ -1666,15 +1311,8 @@ export async function createBlock(
     return { error: "Major offering not found" };
   }
 
-  if (!curriculum) {
-    return { error: "Curriculum not found" };
-  }
-
-  if (majorOffering.major_id !== curriculum.major_id) {
-    return {
-      error:
-        "Selected curriculum must belong to the same major as the selected major offering",
-    };
+  if (!academicTerm) {
+    return { error: "Academic term not found" };
   }
 
   const { data, error } = await supabase
@@ -1703,7 +1341,8 @@ export async function updateBlock(
   if (!input.id?.trim()) return { error: "Block ID is required" };
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
-  if (!input.curriculum_id?.trim()) return { error: "Curriculum is required" };
+  if (!input.academic_term_id?.trim())
+    return { error: "Academic term is required" };
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
     return { error: "Year level must be greater than zero" };
   }
@@ -1718,16 +1357,16 @@ export async function updateBlock(
 
   const supabase = await createClient();
 
-  const [{ data: majorOffering }, { data: curriculum }] = await Promise.all([
+  const [{ data: majorOffering }, { data: academicTerm }] = await Promise.all([
     supabase
       .from("major_offering")
-      .select("id, major_id")
+      .select("id")
       .eq("id", input.major_offering_id)
       .maybeSingle(),
     supabase
-      .from("curriculum")
-      .select("id, major_id")
-      .eq("id", input.curriculum_id)
+      .from("academic_term")
+      .select("id")
+      .eq("id", input.academic_term_id)
       .maybeSingle(),
   ]);
 
@@ -1735,15 +1374,8 @@ export async function updateBlock(
     return { error: "Major offering not found" };
   }
 
-  if (!curriculum) {
-    return { error: "Curriculum not found" };
-  }
-
-  if (majorOffering.major_id !== curriculum.major_id) {
-    return {
-      error:
-        "Selected curriculum must belong to the same major as the selected major offering",
-    };
+  if (!academicTerm) {
+    return { error: "Academic term not found" };
   }
 
   const { error } = await supabase

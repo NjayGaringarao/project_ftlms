@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Edit } from "lucide-react";
-import { Term } from "@/models/term";
+import { Term } from "@/models/academic_term";
 import { updateTerm } from "@/lib/admin/actions";
 import AdminPanel from "../admin-panel";
 import FormStatusBanner from "../form-status-banner";

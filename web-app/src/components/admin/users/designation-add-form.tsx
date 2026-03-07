@@ -14,17 +14,17 @@ import {
   getDesignationRequirements,
   validateDesignation,
 } from "@/constant/designations";
-import { getDepartmentsList } from "@/lib/admin/departments";
+import { getCollegesList } from "@/lib/admin/colleges";
 import {
   getProgramCampusOfferings,
   ProgramCampusOffering,
 } from "@/lib/admin/programs";
 import { getCampusesList } from "@/lib/admin/campuses";
-import { DepartmentListItem } from "@/lib/admin/departments";
+import { CollegeListItem } from "@/lib/admin/colleges";
 import { Campus } from "@/models/campus";
 
 type NewDesignation = {
-  department_id: string | null;
+  college_id: string | null;
   program_offering_id: string | null;
   campus_id: string | null;
   room_id: string | null;
@@ -46,7 +46,7 @@ export const DesignationAddForm = ({
   isLoading,
   error,
 }: DesignationFormProps) => {
-  const [departments, setDepartments] = useState<DepartmentListItem[]>([]);
+  const [departments, setDepartments] = useState<CollegeListItem[]>([]);
   const [programOfferings, setProgramOfferings] = useState<
     ProgramCampusOffering[]
   >([]);
@@ -70,7 +70,7 @@ export const DesignationAddForm = ({
       setIsLoadingData(true);
       try {
         const [deptsData, campusesData, programsData] = await Promise.all([
-          getDepartmentsList(),
+          getCollegesList(),
           getCampusesList(),
           getProgramCampusOfferings(),
         ]);
@@ -129,7 +129,7 @@ export const DesignationAddForm = ({
     const offering = programOfferings.find((p) => p.id === offeringId);
     if (offering) {
       setCampusId(offering.campus_id);
-      setDepartmentId(offering.program.department_id);
+      setDepartmentId(offering.program.college_id);
     }
   };
 
@@ -152,7 +152,7 @@ export const DesignationAddForm = ({
 
     const validation = validateDesignation(designationType, subType, {
       campus_id: campusId,
-      department_id: departmentId,
+      college_id: departmentId,
       program_offering_id: programOfferingId,
       job_title: jobTitle,
     });
@@ -169,7 +169,7 @@ export const DesignationAddForm = ({
 
     // Build designation object
     const designation: NewDesignation = {
-      department_id: departmentId || null,
+      college_id: departmentId || null,
       program_offering_id: programOfferingId || null,
       campus_id: campusId || null,
       room_id: null,
@@ -202,12 +202,8 @@ export const DesignationAddForm = ({
     return <div className="text-xs text-foreground/60">Loading options...</div>;
   }
 
-  const requirements = getDesignationRequirements(designationType, subType);
-
-  // Filter departments by type if needed
-  const filteredDepartments = requirements.departmentTypeFilter
-    ? departments.filter((d) => d.type === requirements.departmentTypeFilter)
-    : departments;
+  // College records no longer carry legacy department type; keep all options.
+  const filteredDepartments = departments;
 
   // Filter program offerings by campus if campus is selected
   const filteredProgramOfferings = campusId

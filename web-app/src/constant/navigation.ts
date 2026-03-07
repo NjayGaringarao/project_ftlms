@@ -22,8 +22,8 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
-    label: "Departments",
-    href: "/departments",
+    label: "Colleges",
+    href: "/colleges",
     icon: "shapes",
     allowedRoles: ["Admin"],
   },
@@ -31,12 +31,6 @@ export const NAV_ITEMS: NavigationItem[] = [
     label: "Courses",
     href: "/courses",
     icon: "notebook-tabs",
-    allowedRoles: ["Admin"],
-  },
-  {
-    label: "Curriculums",
-    href: "/curriculums",
-    icon: "book-copy",
     allowedRoles: ["Admin"],
   },
   {

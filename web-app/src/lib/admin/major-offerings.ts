@@ -34,8 +34,8 @@ export const getMajorOfferingsList = async (): Promise<
           code,
           name,
           description,
-          department_id,
-          department:department_id (id, code, name, type, description)
+          college_id,
+          college:college_id (id, code, name, description)
         )
       )
       `,
@@ -65,9 +65,9 @@ export const getMajorOfferingsList = async (): Promise<
           : programOffering?.campus,
         program: {
           ...program,
-          department: Array.isArray(program?.department)
-            ? program.department[0]
-            : program?.department,
+          college: Array.isArray(program?.college)
+            ? program.college[0]
+            : program?.college,
         },
       },
     };
@@ -103,8 +103,8 @@ export const getMajorOfferingById = async (
           code,
           name,
           description,
-          department_id,
-          department:department_id (id, code, name, type, description)
+          college_id,
+          college:college_id (id, code, name, description)
         )
       )
       `,
@@ -136,9 +136,9 @@ export const getMajorOfferingById = async (
         : programOffering?.campus,
       program: {
         ...program,
-        department: Array.isArray(program?.department)
-          ? program.department[0]
-          : program?.department,
+        college: Array.isArray(program?.college)
+          ? program.college[0]
+          : program?.college,
       },
     },
   } as MajorOfferingListItem;

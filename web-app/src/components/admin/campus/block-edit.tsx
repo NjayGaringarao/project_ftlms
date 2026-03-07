@@ -14,10 +14,7 @@ import {
 } from "@/lib/admin/major-offerings";
 import { updateBlock } from "@/lib/admin/actions";
 import { BlockListItem } from "@/lib/admin/blocks";
-import {
-  CurriculumListItem,
-  getCurriculumsByMajor,
-} from "@/lib/admin/curriculums";
+import { getTermsList, TermListItem } from "@/lib/admin/terms";
 
 type BlockEditProps = {
   block: BlockListItem;
@@ -34,14 +31,14 @@ export const BlockEdit = ({
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
   );
-  const [curriculums, setCurriculums] = useState<CurriculumListItem[]>([]);
+  const [terms, setTerms] = useState<TermListItem[]>([]);
   const [programOfferingId, setProgramOfferingId] = useState(
     block.major_offering?.program_offering_id ?? "",
   );
   const [majorOfferingId, setMajorOfferingId] = useState(
     block.major_offering_id,
   );
-  const [curriculumId, setCurriculumId] = useState(block.curriculum_id);
+  const [academicTermId, setAcademicTermId] = useState(block.academic_term_id);
   const [yearLevel, setYearLevel] = useState(block.year_level.toString());
   const [section, setSection] = useState(block.section);
   const [studentCount, setStudentCount] = useState(
@@ -50,7 +47,7 @@ export const BlockEdit = ({
   const [savedState, setSavedState] = useState({
     programOfferingId: block.major_offering?.program_offering_id ?? "",
     majorOfferingId: block.major_offering_id,
-    curriculumId: block.curriculum_id,
+    academicTermId: block.academic_term_id,
     yearLevel: block.year_level.toString(),
     section: block.section,
     studentCount:
@@ -64,15 +61,12 @@ export const BlockEdit = ({
   useEffect(() => {
     const load = async () => {
       setIsLoadingData(true);
-      const offerings = await getMajorOfferingsList();
+      const [offerings, termsData] = await Promise.all([
+        getMajorOfferingsList(),
+        getTermsList(),
+      ]);
       setMajorOfferings(offerings);
-      const uniqueMajorIds = Array.from(
-        new Set(offerings.map((offering) => offering.major_id).filter(Boolean)),
-      );
-      const curriculumGroups = await Promise.all(
-        uniqueMajorIds.map((majorId) => getCurriculumsByMajor(majorId)),
-      );
-      setCurriculums(curriculumGroups.flat());
+      setTerms(termsData);
       setIsLoadingData(false);
     };
 
@@ -83,12 +77,6 @@ export const BlockEdit = ({
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
-  const availableCurriculums = useMemo(() => {
-    const majorId = selectedOffering?.major_id;
-    if (!majorId) return [];
-    return curriculums.filter((curriculum) => curriculum.major_id === majorId);
-  }, [curriculums, selectedOffering]);
-
   const scopedOfferings = useMemo(() => {
     if (!fixedCampusId) return majorOfferings;
     return majorOfferings.filter(
@@ -136,7 +124,7 @@ export const BlockEdit = ({
 
     if (!programOfferingId) return setError("Program offering is required");
     if (!majorOfferingId) return setError("Major offering is required");
-    if (!curriculumId) return setError("Curriculum is required");
+    if (!academicTermId) return setError("Academic term is required");
     if (!Number.isFinite(parsedYearLevel) || parsedYearLevel <= 0) {
       return setError("Year level must be a positive number");
     }
@@ -155,7 +143,7 @@ export const BlockEdit = ({
     const { error: updateError } = await updateBlock({
       id: block.id,
       major_offering_id: majorOfferingId,
-      curriculum_id: curriculumId,
+      academic_term_id: academicTermId,
       year_level: parsedYearLevel,
       section,
       student_count: parsedStudentCount,
@@ -171,7 +159,7 @@ export const BlockEdit = ({
     setSavedState({
       programOfferingId,
       majorOfferingId,
-      curriculumId,
+      academicTermId,
       yearLevel: parsedYearLevel.toString(),
       section: section.trim().toUpperCase(),
       studentCount:
@@ -213,7 +201,6 @@ export const BlockEdit = ({
                 onChange={(event) => {
                   setProgramOfferingId(event.target.value);
                   setMajorOfferingId("");
-                  setCurriculumId("");
                   setError("");
                 }}
                 disabled={isSaving || isLoadingData}
@@ -237,7 +224,6 @@ export const BlockEdit = ({
                 value={majorOfferingId}
                 onChange={(event) => {
                   setMajorOfferingId(event.target.value);
-                  setCurriculumId("");
                   setError("");
                 }}
                 disabled={isSaving || isLoadingData || !programOfferingId}
@@ -259,26 +245,23 @@ export const BlockEdit = ({
             </div>
 
             <div className="md:col-span-2">
-              <Label className="text-xs" htmlFor="curriculum-id">
-                Curriculum *
+              <Label className="text-xs" htmlFor="academic-term-id">
+                Academic Term *
               </Label>
               <select
-                id="curriculum-id"
+                id="academic-term-id"
                 className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={curriculumId}
+                value={academicTermId}
                 onChange={(event) => {
-                  setCurriculumId(event.target.value);
+                  setAcademicTermId(event.target.value);
                   setError("");
                 }}
-                disabled={isSaving || isLoadingData || !selectedOffering}
+                disabled={isSaving || isLoadingData}
               >
-                <option value="">Select curriculum...</option>
-                {availableCurriculums.map((curriculum) => (
-                  <option key={curriculum.id} value={curriculum.id}>
-                    {curriculum.title} series of {curriculum.series_year}{" "}
-                    {curriculum.revised_year
-                      ? `revised on ${curriculum.revised_year}`
-                      : ""}
+                <option value="">Select academic term...</option>
+                {terms.map((term) => (
+                  <option key={term.id} value={term.id}>
+                    {term.code}
                   </option>
                 ))}
               </select>
@@ -346,7 +329,7 @@ export const BlockEdit = ({
               onClick={() => {
                 setProgramOfferingId(savedState.programOfferingId);
                 setMajorOfferingId(savedState.majorOfferingId);
-                setCurriculumId(savedState.curriculumId);
+                setAcademicTermId(savedState.academicTermId);
                 setYearLevel(savedState.yearLevel);
                 setSection(savedState.section);
                 setStudentCount(savedState.studentCount);

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Edit } from "lucide-react";
-import { Rank } from "@/models/rank";
+import { Rank } from "@/models/academic_rank";
 import { updateRank } from "@/lib/admin/actions";
 import AdminPanel from "../admin-panel";
 import FormStatusBanner from "../form-status-banner";

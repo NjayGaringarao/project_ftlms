@@ -2,7 +2,7 @@
 
 import { Briefcase, WeightTilde } from "lucide-react";
 import { ExtendedDesignation } from "@/models/designation";
-import { Rank } from "@/models/rank";
+import { Rank } from "@/models/academic_rank";
 import { User } from "@/models/user";
 import { SecurityActionCard } from "@/components/me/security-action-card";
 
@@ -57,9 +57,9 @@ const ProfessionalInformation = ({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium">{designation.job_title}</p>
-                    {designation.department?.name && (
+                    {designation.college?.name && (
                       <p className="text-sm text-foreground/60">
-                        {designation.department.name}
+                        {designation.college.name}
                       </p>
                     )}
                     {designation.campus?.name && (

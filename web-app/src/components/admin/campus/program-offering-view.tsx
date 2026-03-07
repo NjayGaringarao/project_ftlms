@@ -74,9 +74,9 @@ export const ProgramOfferingView = ({
               </p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Department</p>
+              <p className="text-xs text-foreground/60">College</p>
               <p className="font-medium">
-                {offering.program?.department?.name ?? "Unknown"}
+                {offering.program?.college?.name ?? "Unknown"}
               </p>
             </div>
           </div>

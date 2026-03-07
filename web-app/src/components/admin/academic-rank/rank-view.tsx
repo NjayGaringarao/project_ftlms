@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Info, Trophy } from "lucide-react";
-import { Rank } from "@/models/rank";
+import { Rank } from "@/models/academic_rank";
 import { deleteRank } from "@/lib/admin/actions";
 import AdminPanel from "../admin-panel";
 import DangerZone from "../danger-zone";

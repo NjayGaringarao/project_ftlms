@@ -77,10 +77,10 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
               </p>
             </div>
             <div className="md:col-span-2">
-              <p className="text-xs text-foreground/60">Curriculum</p>
+              <p className="text-xs text-foreground/60">Academic Term</p>
               <p className="font-medium">
-                {block.curriculum
-                  ? `${block.curriculum.title} (${block.curriculum.series_year})`
+                {block.academic_term
+                  ? `${block.academic_term.code}`
                   : "Unknown"}
               </p>
             </div>
