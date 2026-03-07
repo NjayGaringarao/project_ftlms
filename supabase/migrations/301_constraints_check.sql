@@ -1,22 +1,22 @@
 do $$
 begin
 
-  -- Course lecture hour and laboratory hour should be non-negative.
+  -- Course lecture unit and laboratory unit should be non-negative.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'course_lecture_hour_nonnegative'
+    where conname = 'course_lecture_unit_nonnegative'
       and conrelid = 'public.course'::regclass
   ) then
     alter table public.course
-      add constraint course_lecture_hour_nonnegative check (lecture_hour >= 0);
+      add constraint course_lecture_unit_nonnegative check (lecture_unit >= 0);
   end if;
   if not exists (
     select 1 from pg_constraint
-    where conname = 'course_laboratory_hour_nonnegative'
+    where conname = 'course_laboratory_unit_nonnegative'
       and conrelid = 'public.course'::regclass
   ) then
     alter table public.course
-      add constraint course_laboratory_hour_nonnegative check (laboratory_hour >= 0);
+      add constraint course_laboratory_unit_nonnegative check (laboratory_unit >= 0);
   end if;
 
   -- Block's student count should be non negative.

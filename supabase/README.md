@@ -73,7 +73,7 @@ migrations/
 ├── 204_schema_faculty_operations.sql
 ├── 300_constraints_unique.sql
 ├── 301_constraints_check.sql
-├── 302_constraints_exclusion.sql
+├── 302_constraints_academic_term.sql
 ├── 303_constraints_offerings.sql
 ├── 304_constraints_scheduling.sql
 ├── 305_constraints_designation.sql
@@ -98,11 +98,11 @@ migrations/
   - Canonical owner of: `program_offering_unique`, `major_offering_unique`.
 
 - `301_constraints_check.sql`
-  - General check constraints (course/term/block/room/session/evaluation).
+  - General check constraints (course/block/room/session/evaluation).
   - Canonical owner of: `session_time_range_valid`.
 
 - `302_constraints_academic_term.sql`
-  - Constraint for academic term.
+  - Academic-term constraints (exclusion and check rules).
 
 - `304_constraints_scheduling.sql`
   - Scheduling uniqueness constraints and performance indexes.

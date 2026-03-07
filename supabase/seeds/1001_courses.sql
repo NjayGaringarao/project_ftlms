@@ -1,4 +1,4 @@
-INSERT INTO course (code, title, lecture_hour, laboratory_hour) 
+INSERT INTO course (code, title, lecture_unit, laboratory_unit) 
 VALUES 
     -- 1st Year, 1st Semester
     ('GEC 3AA', 'The Contemporary World (with Peace Education)', 3, 0),
@@ -76,5 +76,5 @@ VALUES
 ON CONFLICT (code) 
 DO UPDATE SET 
     title = EXCLUDED.title,
-    lecture_hour = EXCLUDED.lecture_hour,
-    laboratory_hour = EXCLUDED.laboratory_hour;
+    lecture_unit = EXCLUDED.lecture_unit,
+    laboratory_unit = EXCLUDED.laboratory_unit;
