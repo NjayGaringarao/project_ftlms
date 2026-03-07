@@ -1,28 +1,16 @@
 do $$
 begin
-  -- Class code uniqueness scoped by instructor schedule and course.
+  -- Schedule should be unique per user and academic term.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'class_schedule_course_code_unique'
-      and conrelid = 'public.class'::regclass
+    where conname = 'schedule_user_term_unique'
+      and conrelid = 'public.schedule'::regclass
   ) then
-    alter table public.class
-      add constraint class_schedule_course_code_unique
-      unique (schedule_id, course_id, code);
+    alter table public.schedule
+      add constraint schedule_user_term_unique unique (user_id, academic_term_id);
   end if;
 
-  -- Prevent duplicate block links within the same class.
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'class_block_unique'
-      and conrelid = 'public.class_block'::regclass
-  ) then
-    alter table public.class_block
-      add constraint class_block_unique
-      unique (class_id, block_id);
-  end if;
-
-  -- Block identity is academic term aware (curriculum-independent).
+  -- Block section should be unique per major offering and academic term.
   if not exists (
     select 1 from pg_constraint
     where conname = 'block_major_term_year_section_unique'
@@ -33,16 +21,29 @@ begin
       unique (major_offering_id, academic_term_id, year_level, section);
   end if;
 
-  -- Ensure session time range remains valid.
+  -- Class code uniqueness scoped by schedule and course.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'session_time_range_valid'
-      and conrelid = 'public.session'::regclass
+    where conname = 'class_schedule_course_code_unique'
+      and conrelid = 'public.class'::regclass
   ) then
-    alter table public.session
-      add constraint session_time_range_valid
-      check (end_time > start_time);
+    alter table public.class
+      add constraint class_schedule_course_code_unique
+      unique (schedule_id, course_id, code);
   end if;
+
+  -- No duplicate block links within the same class.
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'class_block_unique'
+      and conrelid = 'public.class_block'::regclass
+  ) then
+    alter table public.class_block
+      add constraint class_block_unique
+      unique (class_id, block_id);
+  end if;
+
+  -- session_time_range_valid remains owned by 301_constraints_check.sql.
 end;
 $$;
 

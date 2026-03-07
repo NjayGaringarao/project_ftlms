@@ -74,7 +74,10 @@ migrations/
 ├── 300_constraints_unique.sql
 ├── 301_constraints_check.sql
 ├── 302_constraints_exclusion.sql
+├── 303_constraints_offerings.sql
 ├── 304_constraints_scheduling.sql
+├── 305_constraints_designation.sql
+├── 306_constraints_evaluation.sql
 ├── 400_rls_enable.sql
 ├── 500_triggers_updated_at.sql
 ├── 501_triggers_auth_signup.sql
@@ -84,6 +87,37 @@ migrations/
 ├── 602_rpc_get_user_roles.sql
 └── 603_rpc_schedule_conflict_detection.sql
 ```
+
+### Constraint Ownership (3xx)
+
+- `300_constraints_unique.sql`
+  - Unique constraints for core/master entities.
+
+- `303_constraints_offerings.sql`
+  - Offering uniqueness constraints.
+  - Canonical owner of: `program_offering_unique`, `major_offering_unique`.
+
+- `301_constraints_check.sql`
+  - General check constraints (course/term/block/room/session/evaluation).
+  - Canonical owner of: `session_time_range_valid`.
+
+- `302_constraints_academic_term.sql`
+  - Constraint for academic term.
+
+- `304_constraints_scheduling.sql`
+  - Scheduling uniqueness constraints and performance indexes.
+  - Canonical owner of: `schedule_user_term_unique`, `block_major_term_year_section_unique`, `class_schedule_course_code_unique`, `class_block_unique`.
+
+- `305_constraints_designation.sql`
+  - Designation check constraints only.
+  - Canonical owner of: `designation_load_nonnegative`, `designation_role_context_rules`.
+
+- `306_constraints_evaluation.sql`
+  - Evaluation uniqueness constraints.
+  - Canonical owner of: `evaluation_designation_schedule_unique`.
+
+- `503_triggers_designation_uniqueness.sql`
+  - Designation uniqueness enforcement logic (trigger/function), complementary to `305` checks.
 
 ## Migration Consistency Check
 
