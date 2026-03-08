@@ -14,9 +14,10 @@ import { formatDateTime } from "@/utils/time";
 
 interface SecurityInformationProps {
   user: User;
+  accountType: "Admin" | "User";
 }
 
-const SecurityInformation = ({ user }: SecurityInformationProps) => {
+const SecurityInformation = ({ user, accountType }: SecurityInformationProps) => {
   const isEmailConfirmed = !!user.email_confirmed_at;
 
   return (
@@ -94,6 +95,14 @@ const SecurityInformation = ({ user }: SecurityInformationProps) => {
               <span className="inline-block px-3 py-1 bg-green-50 text-green-900 text-sm rounded-full border border-green-200">
                 Active
               </span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-foreground/60 mt-0.5" />
+            <div>
+              <p className="text-sm text-foreground/60">Account Type</p>
+              <p className="font-medium text-sm">{accountType}</p>
             </div>
           </div>
 

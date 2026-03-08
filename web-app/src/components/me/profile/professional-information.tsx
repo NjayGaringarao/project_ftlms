@@ -62,11 +62,27 @@ const ProfessionalInformation = ({
                         {designation.college.name}
                       </p>
                     )}
+
+                    {designation.program?.name && (
+                      <p className="text-sm text-foreground/60">
+                        {designation.program.name}
+                      </p>
+                    )}
+
+                    {designation.program_offering && (
+                      <>
+                        <p className="text-sm text-foreground/60">
+                          {designation.program_offering.program.name}
+                        </p>
+                        <p className="text-sm text-foreground/60">
+                          {designation.program_offering.campus.name} Campus
+                        </p>
+                      </>
+                    )}
+
                     {designation.campus?.name && (
                       <p className="text-sm text-foreground/60">
-                        {designation.campus.name} Campus |{" "}
-                        {designation.campus.address}{" "}
-                        {designation.campus.zip_code}
+                        {designation.campus.name} Campus
                       </p>
                     )}
                   </div>

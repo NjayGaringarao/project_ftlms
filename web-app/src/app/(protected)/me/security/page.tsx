@@ -1,6 +1,6 @@
 import UpdatePasswordForm from "@/components/me/security/update-password-form";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/utils";
+import { getCurrentUser, getUserRole } from "@/lib/auth/utils";
 import SecurityInformation from "@/components/me/security/security-information";
 import EmailChangeReminder from "@/components/me/security/email-change-reminder";
 import EmailChangeStatusBanner from "@/components/me/security/email-change-status-banner";
@@ -15,11 +15,15 @@ const SecurityPage = async ({
     confirmed_email?: string;
   };
 }) => {
-  const user = await getCurrentUser();
+  const [user, userRoles] = await Promise.all([getCurrentUser(), getUserRole()]);
 
   if (!user) {
     redirect("/auth/login");
   }
+
+  const accountType: "Admin" | "User" = userRoles.includes("Admin")
+    ? "Admin"
+    : "User";
 
   return (
     <div className="p-6 bg-background w-full flex flex-col gap-6 overflow-y-auto">
@@ -31,7 +35,7 @@ const SecurityPage = async ({
 
       <EmailChangeReminder user={user} />
 
-      <SecurityInformation user={user} />
+      <SecurityInformation user={user} accountType={accountType} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpdatePasswordForm key="change-password" />

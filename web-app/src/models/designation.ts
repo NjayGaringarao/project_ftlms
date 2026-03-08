@@ -1,6 +1,6 @@
 import { Campus } from "./campus";
 import { College } from "./college";
-import { ProgramOffering } from "./program-offering";
+import { ExtendedProgramOffering } from "./program-offering";
 import { Program } from "./program";
 import { User } from "./user";
 
@@ -51,5 +51,5 @@ export type ExtendedDesignation = Designation & {
   campus: Campus | null;
   college: College | null;
   program: Program | null;
-  program_offering: ProgramOffering | null;
+  program_offering: ExtendedProgramOffering | null;
 };
