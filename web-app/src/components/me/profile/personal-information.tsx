@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertCircle, CheckCircle, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,24 +14,16 @@ type PersonalInformationProps = {
 };
 
 type FormState = {
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  extension: string;
+  fullName: string;
   birthDate: string;
   address: string;
-  zipCode: string;
   contactNumber: string;
 };
 
 const identityToFormState = (identity: Identity | null): FormState => ({
-  firstName: identity?.first_name ?? "",
-  middleName: identity?.middle_name ?? "",
-  lastName: identity?.last_name ?? "",
-  extension: identity?.extension ?? "",
+  fullName: identity?.name ?? "",
   birthDate: identity?.birth_date ?? "",
   address: identity?.address ?? "",
-  zipCode: identity?.zip_code ?? "",
   contactNumber: identity?.contact_number ?? "",
 });
 
@@ -49,6 +41,11 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const hasChanges = useMemo(
+    () => JSON.stringify(formData) !== JSON.stringify(savedData),
+    [formData, savedData],
+  );
+
   const handleChange = (field: keyof FormState, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError("");
@@ -61,18 +58,8 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
   };
 
   const handleSave = async () => {
-    if (!formData.firstName.trim()) {
-      setError("First name is required");
-      return;
-    }
-
-    if (!formData.lastName.trim()) {
-      setError("Last name is required");
-      return;
-    }
-
-    if (!formData.birthDate.trim()) {
-      setError("Birth date is required");
+    if (!formData.fullName.trim()) {
+      setError("Full name is required");
       return;
     }
 
@@ -81,13 +68,9 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
     setShowSuccess(false);
 
     const { data, error: saveError } = await upsertIdentityForCurrentUser({
-      first_name: formData.firstName.trim(),
-      middle_name: normalizeOptional(formData.middleName),
-      last_name: formData.lastName.trim(),
-      extension: normalizeOptional(formData.extension),
-      birth_date: formData.birthDate,
+      name: formData.fullName.trim(),
+      birth_date: normalizeOptional(formData.birthDate),
       address: normalizeOptional(formData.address),
-      zip_code: normalizeOptional(formData.zipCode),
       contact_number: normalizeOptional(formData.contactNumber),
     });
 
@@ -116,76 +99,15 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {showSuccess && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-green-900">Profile Updated</p>
-                <p className="text-sm text-green-800">
-                  Your personal information has been saved.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-red-900">{error}</p>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="firstName">First Name</Label>
+            <div className="md:col-span-2">
+              <Label htmlFor="fullName">Full Name</Label>
               <Input
-                id="firstName"
-                placeholder="Enter your first name"
-                value={formData.firstName}
+                id="fullName"
+                placeholder="Enter your full name"
+                value={formData.fullName}
                 onChange={(event) =>
-                  handleChange("firstName", event.target.value)
-                }
-                className="mt-1"
-                disabled={isSaving}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="middleName">Middle Name</Label>
-              <Input
-                id="middleName"
-                placeholder="Enter your middle name"
-                value={formData.middleName}
-                onChange={(event) =>
-                  handleChange("middleName", event.target.value)
-                }
-                className="mt-1"
-                disabled={isSaving}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                placeholder="Enter your last name"
-                value={formData.lastName}
-                onChange={(event) =>
-                  handleChange("lastName", event.target.value)
-                }
-                className="mt-1"
-                disabled={isSaving}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="extension">Extension</Label>
-              <Input
-                id="extension"
-                placeholder="e.g. Jr., III"
-                value={formData.extension}
-                onChange={(event) =>
-                  handleChange("extension", event.target.value)
+                  handleChange("fullName", event.target.value)
                 }
                 className="mt-1"
                 disabled={isSaving}
@@ -233,29 +155,41 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
                 disabled={isSaving}
               />
             </div>
-
-            <div>
-              <Label htmlFor="zipCode">ZIP Code</Label>
-              <Input
-                id="zipCode"
-                placeholder="Enter your ZIP code"
-                value={formData.zipCode}
-                onChange={(event) =>
-                  handleChange("zipCode", event.target.value)
-                }
-                className="mt-1"
-                disabled={isSaving}
-              />
-            </div>
           </div>
 
-          <div className="flex gap-2 justify-end pt-4">
-            <Button variant="outline" onClick={handleReset} disabled={isSaving}>
-              Reset
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
+          <div className="flex flex-wrap gap-2 justify-between items-center pt-2">
+            <div className="flex flex-1">
+              {showSuccess && (
+                <div className="w-full px-4 py-2 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-800">
+                    Your personal information has been saved.
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="w-full px-4 py-2 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  <p className="text-red-900">{error}</p>
+                </div>
+              )}
+            </div>
+
+            {hasChanges && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleReset}
+                  disabled={isSaving}
+                >
+                  Reset
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

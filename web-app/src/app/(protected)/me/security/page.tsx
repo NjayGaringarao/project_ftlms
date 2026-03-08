@@ -1,10 +1,10 @@
-import UpdatePasswordForm from "@/components/me/update-password-form";
-import UpdateEmailCard from "@/components/me/update-email-card";
+import UpdatePasswordForm from "@/components/me/security/update-password-form";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/utils";
-import SecurityInformation from "@/components/me/security-information";
-import EmailChangeReminder from "@/components/me/email-change-reminder";
-import EmailChangeStatusBanner from "@/components/me/email-change-status-banner";
+import SecurityInformation from "@/components/me/security/security-information";
+import EmailChangeReminder from "@/components/me/security/email-change-reminder";
+import EmailChangeStatusBanner from "@/components/me/security/email-change-status-banner";
+import UpdateEmailForm from "@/components/me/security/update-email-form";
 
 const SecurityPage = async ({
   searchParams,
@@ -31,12 +31,12 @@ const SecurityPage = async ({
 
       <EmailChangeReminder user={user} />
 
+      <SecurityInformation user={user} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpdatePasswordForm key="change-password" />
-        <UpdateEmailCard key="change-email" currentEmail={user.email ?? ""} />
+        <UpdateEmailForm key="change-email" currentEmail={user.email ?? ""} />
       </div>
-
-      <SecurityInformation user={user} />
     </div>
   );
 };

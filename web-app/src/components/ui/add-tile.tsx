@@ -9,6 +9,10 @@ type AddTileProps = {
   onClick: () => void;
   disabled?: boolean;
   className?: string;
+  containerClassName?: string;
+  iconClassName?: string;
+  titleClassName?: string;
+  descriptionClassName?: string;
 };
 
 export const AddTile = ({
@@ -17,6 +21,10 @@ export const AddTile = ({
   onClick,
   disabled,
   className,
+  containerClassName,
+  iconClassName,
+  titleClassName,
+  descriptionClassName,
 }: AddTileProps) => {
   return (
     <button
@@ -30,14 +38,18 @@ export const AddTile = ({
         className,
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className={cn("flex items-start gap-3", containerClassName)}>
         <div className="mt-0.5 rounded-md bg-foreground/10 p-1.5">
-          <Plus className="h-4 w-4" />
+          <Plus className={cn("h-4 w-4", iconClassName)} />
         </div>
         <div>
-          <p className="text-sm font-semibold">{title}</p>
+          <p className={cn("text-sm font-semibold", titleClassName)}>{title}</p>
           {description && (
-            <p className="text-xs text-foreground/70">{description}</p>
+            <p
+              className={cn("text-xs text-foreground/70", descriptionClassName)}
+            >
+              {description}
+            </p>
           )}
         </div>
       </div>

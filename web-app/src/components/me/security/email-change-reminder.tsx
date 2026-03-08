@@ -1,5 +1,5 @@
 import { User } from "@supabase/supabase-js";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { AlertCircle, Clock, TimerOff } from "lucide-react";
 import { formatDateTime } from "@/utils/time";
 

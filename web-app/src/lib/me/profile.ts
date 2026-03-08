@@ -9,13 +9,9 @@ import { AcademicRank } from "@/models/academic_rank";
 import { User } from "@/models/user";
 
 export type IdentityUpdateInput = {
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
-  extension?: string | null;
-  birth_date: string;
+  name: string;
+  birth_date?: string | null;
   address?: string | null;
-  zip_code?: string | null;
   contact_number?: string | null;
 };
 
@@ -56,23 +52,15 @@ export async function upsertIdentityForCurrentUser(
 
   if (!user) return { error: "Not authenticated" };
 
-  if (!input.first_name?.trim()) return { error: "First name is required" };
-
-  if (!input.last_name?.trim()) return { error: "Last name is required" };
-
-  if (!input.birth_date?.trim()) return { error: "Birth date is required" };
+  if (!input.name?.trim()) return { error: "Full name is required" };
 
   const supabase = await createClient();
 
   const payload: Identity = {
     user_id: user.id,
-    first_name: input.first_name.trim(),
-    middle_name: input.middle_name ?? null,
-    last_name: input.last_name.trim(),
-    extension: input.extension ?? null,
-    birth_date: input.birth_date,
+    name: input.name.trim(),
+    birth_date: input.birth_date?.trim() ? input.birth_date : null,
     address: input.address ?? null,
-    zip_code: input.zip_code ?? null,
     contact_number: input.contact_number ?? null,
   };
 
@@ -149,7 +137,7 @@ export const getProfessionalInfoByUserId = async (
   const { data: userData, error: userError } = await supabase
     .from("user")
     .select(
-      "id, academic_rank_id, employment_status, academic_rank ( id, number, title, description )",
+      "id, academic_rank_id, employment_status, academic_rank ( id, code, title, description )",
     )
     .eq("id", userId)
     .single();
@@ -178,7 +166,7 @@ export const getProfessionalInfoByUserId = async (
   const { data: designationData, error: designationError } = await supabase
     .from("designation")
     .select(
-      "id, user_id, campus_id, college_id, program_offering_id, room_id, job_title, load, designated_at, campus ( id, name, address, zip_code ), college:college_id ( id, code, name, description ), program_offering:program_offering_id ( id, campus_id, program_id, campus:campus_id ( id, name, address, zip_code ), program:program_id ( id, college_id, code, name, description, college:college_id ( id, code, name, description ) ) )",
+      "id, user_id, campus_id, college_id, program_offering_id, room_id, job_title, load, designated_at, campus ( id, name, address ), college:college_id ( id, code, name, description ), program_offering:program_offering_id ( id, campus_id, program_id, campus:campus_id ( id, name, address ), program:program_id ( id, college_id, code, name, description, college:college_id ( id, code, name, description ) ) )",
     )
     .eq("user_id", userId)
     .order("job_title", { ascending: true });
@@ -249,8 +237,7 @@ export async function getProfessionalInfoForCurrentUser(): Promise<ProfessionalI
 export type DegreeInput = {
   id?: string;
   academic_level: string;
-  degree_type: string;
-  field_of_study: string;
+  title: string;
   institution: string;
   country_code: string;
   year_graduated: number | null;
@@ -284,11 +271,8 @@ export async function saveDegreesForCurrentUser(
     if (!degree.academic_level?.trim()) {
       return { error: `Academic level is required (row ${index + 1})` };
     }
-    if (!degree.degree_type?.trim()) {
-      return { error: `Degree type is required (row ${index + 1})` };
-    }
-    if (!degree.field_of_study?.trim()) {
-      return { error: `Field of study is required (row ${index + 1})` };
+    if (!degree.title?.trim()) {
+      return { error: `Degree title is required (row ${index + 1})` };
     }
     if (!degree.institution?.trim()) {
       return { error: `Institution is required (row ${index + 1})` };
@@ -343,8 +327,7 @@ export async function saveDegreesForCurrentUser(
           id: degree.id,
           user_id: user.id,
           academic_level: degree.academic_level.trim(),
-          degree_type: degree.degree_type.trim(),
-          field_of_study: degree.field_of_study.trim(),
+          title: degree.title.trim(),
           institution: degree.institution.trim(),
           country_code: degree.country_code.trim().toUpperCase(),
           year_graduated: degree.year_graduated,
@@ -363,8 +346,7 @@ export async function saveDegreesForCurrentUser(
       toInsert.map((degree) => ({
         user_id: user.id,
         academic_level: degree.academic_level.trim(),
-        degree_type: degree.degree_type.trim(),
-        field_of_study: degree.field_of_study.trim(),
+        title: degree.title.trim(),
         institution: degree.institution.trim(),
         country_code: degree.country_code.trim().toUpperCase(),
         year_graduated: degree.year_graduated,

@@ -1,6 +1,6 @@
-import PersonalInformation from "@/components/me/personal-information";
-import ProfessionalInformation from "@/components/me/professional-information";
-import EducationInformation from "@/components/me/education-information";
+import PersonalInformation from "@/components/me/profile/personal-information";
+import ProfessionalInformation from "@/components/me/profile/professional-information";
+import EducationInformation from "@/components/me/profile/education-information";
 import { getCurrentUser } from "@/lib/auth/utils";
 import {
   getDegreesByUserId,

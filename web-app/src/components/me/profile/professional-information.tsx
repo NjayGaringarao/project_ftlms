@@ -4,7 +4,7 @@ import { Briefcase, WeightTilde } from "lucide-react";
 import { ExtendedDesignation } from "@/models/designation";
 import { Rank } from "@/models/academic_rank";
 import { User } from "@/models/user";
-import { SecurityActionCard } from "@/components/me/security-action-card";
+import { SecurityActionCard } from "@/components/me/security/security-action-card";
 
 type ProfessionalDesignation = Omit<ExtendedDesignation, "user">;
 
