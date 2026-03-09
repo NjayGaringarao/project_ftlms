@@ -3,10 +3,7 @@
 import { Campus } from "@/models/campus";
 import { createClient } from "@/utils/supabase/server";
 
-export type CampusListItem = Pick<
-  Campus,
-  "id" | "name" | "address" | "zip_code"
->;
+export type CampusListItem = Pick<Campus, "id" | "code" | "name" | "address">;
 
 export type DirectorOption = {
   id: string;
@@ -35,7 +32,7 @@ export const getCampusesList = async (): Promise<CampusListItem[]> => {
 
   const { data, error } = await supabase
     .from("campus")
-    .select("id, name, address, zip_code")
+    .select("id, code, name, address")
     .order("name", { ascending: true });
 
   if (error) {
@@ -53,7 +50,7 @@ export const getCampusById = async (
 
   const { data, error } = await supabase
     .from("campus")
-    .select("id, name, address, zip_code")
+    .select("id, code, name, address")
     .eq("id", campusId)
     .maybeSingle();
 

@@ -1,193 +1,158 @@
-/**
- * Primary designation type options (user selects first)
- */
-export const DESIGNATION_TYPE_OPTIONS = [
-  { value: "academic", label: "Academic" },
-  { value: "administrative", label: "Administrative" },
-  { value: "student_services", label: "Student Services" },
-  { value: "extension_services", label: "Extension Services" },
+export const DESIGNATION_TITLE_ENUM_VALUES = [
+  "University President",
+  "Director for Instruction",
+  "College Dean",
+  "Campus Director",
+  "Program Chairperson",
+  "Assistant Director-Graduate Studies",
+  "Extension Program",
+  "Research",
+  "CAA Coordinator",
+  "Campus Climate Change Coordinator",
+  "Campus Computer Laboratory in Charge",
+  "Campus Cultural and Arts Affairs Coordinator",
+  "Campus Document Control Officer",
+  "Campus Extension Coordinator",
+  "Campus NSTP Coordinator",
+  "Campus Gender and Development Coordinator",
+  "Campus Guidance Counselor",
+  "Campus HRMO Coordinator",
+  "Campus International Linkages Coordinator",
+  "College Research Coordinator",
+  "Campus Nurse",
+  "Campus School Publication Coordinator",
+  "Campus Student Affairs Coordinator",
+  "Campus SSG Adviser",
+  "Campus Student Conduct Coordinator",
+  "Campus Discipline Coordinator",
+  "Campus Sports Coordinator",
+  "Campus Student Organization Coordinator",
+  "Campus CADO Coordinator",
+  "Campus CCI Coordinator",
+  "Campus IGP Coordinator",
+  "Quality Assurance",
+  "Head",
+  "Network Administrator",
+  "Programmer",
+  "Secretary",
+  "Vice President for Academic Affairs",
+  "Website Administrator",
 ] as const;
 
-/**
- * Academic sub-types
- */
-export const ACADEMIC_SUBTYPES = [
-  { value: "program_chair", label: "Program Chair" },
-  { value: "dean", label: "Dean" },
-] as const;
-
-/**
- * Administrative sub-types
- */
-export const ADMINISTRATIVE_SUBTYPES = [
-  { value: "higher_ups", label: "Higher-ups" },
-  { value: "campus_director", label: "Campus Director" },
-  { value: "other", label: "Other" },
-] as const;
-
-/**
- * Higher-ups job title options
- */
-export const HIGHER_UPS_JOB_TITLES = [
+export const DESIGNATION_PRIMARY_OPTIONS = [
   { value: "University President", label: "University President" },
   { value: "Director for Instruction", label: "Director for Instruction" },
+  { value: "College Dean", label: "College Dean" },
+  { value: "Campus Director", label: "Campus Director" },
+  { value: "Program Chairperson", label: "Program Chairperson" },
+  {
+    value: "Vice President for Academic Affairs",
+    label: "Vice President for Academic Affairs",
+  },
+  { value: "Quality Assurance", label: "Quality Assurance" },
+  { value: "Other", label: "Other" },
 ] as const;
 
-/**
- * Field requirements by designation path
- * Returns what fields must be filled for each workflow combination
- */
-export const getDesignationRequirements = (
-  designationType: string,
-  subType?: string,
-): {
-  requiresCampus: boolean;
-  requiresCollege: boolean;
-  requiresProgram: boolean;
-  requiresJobTitle: boolean;
-  jobTitleOptions?: readonly { value: string; label: string }[];
-  jobTitlePreset?: string;
-  departmentTypeFilter?: string;
-  allowCustomJobTitle: boolean;
-} => {
-  // ACADEMIC workflows
-  if (designationType === "academic") {
-    if (subType === "program_chair") {
-      return {
-        requiresCampus: true,
-        requiresCollege: false, // Will be derived from program
-        requiresProgram: true,
-        requiresJobTitle: true,
-        jobTitlePreset: "Program Chairperson",
-        allowCustomJobTitle: false,
-      };
-    }
-    if (subType === "dean") {
-      return {
-        requiresCampus: false,
-        requiresCollege: true,
-        requiresProgram: false,
-        requiresJobTitle: true,
-        jobTitlePreset: "College Dean",
-        departmentTypeFilter: "ACADEMIC",
-        allowCustomJobTitle: false,
-      };
-    }
+export type DesignationSelectionSet = "A" | "B" | "C" | "D" | "E";
+
+const PRIMARY_TITLES_EXCLUDING_OTHER = DESIGNATION_PRIMARY_OPTIONS.filter(
+  (option) => option.value !== "Other",
+).map((option) => option.value);
+
+export const OTHER_DESIGNATION_OPTIONS = DESIGNATION_TITLE_ENUM_VALUES.filter(
+  (title) => !PRIMARY_TITLES_EXCLUDING_OTHER.includes(title),
+).map((title) => ({ value: title, label: title }));
+
+export const getDesignationSelectionSet = (
+  selectedPrimaryTitle: string,
+): DesignationSelectionSet | null => {
+  if (!selectedPrimaryTitle) {
+    return null;
   }
 
-  // ADMINISTRATIVE workflows
-  if (designationType === "administrative") {
-    if (subType === "higher_ups") {
-      return {
-        requiresCampus: false,
-        requiresCollege: false,
-        requiresProgram: false,
-        requiresJobTitle: true,
-        jobTitleOptions: HIGHER_UPS_JOB_TITLES,
-        allowCustomJobTitle: false,
-      };
-    }
-    if (subType === "campus_director") {
-      return {
-        requiresCampus: true,
-        requiresCollege: false,
-        requiresProgram: false,
-        requiresJobTitle: true,
-        jobTitlePreset: "Campus Director",
-        allowCustomJobTitle: false,
-      };
-    }
-    if (subType === "other") {
-      return {
-        requiresCampus: true,
-        requiresCollege: true,
-        requiresProgram: false,
-        requiresJobTitle: true,
-        departmentTypeFilter: "ADMINISTRATIVE",
-        allowCustomJobTitle: true,
-      };
-    }
+  if (selectedPrimaryTitle === "Other") {
+    return "E";
   }
 
-  // STUDENT SERVICES workflow
-  if (designationType === "student_services") {
-    return {
-      requiresCampus: true,
-      requiresCollege: true,
-      requiresProgram: false,
-      requiresJobTitle: true,
-      departmentTypeFilter: "STUDENT_SERVICES",
-      allowCustomJobTitle: true,
-    };
+  if (selectedPrimaryTitle === "College Dean") {
+    return "B";
   }
 
-  // EXTENSION SERVICES workflow
-  if (designationType === "extension_services") {
-    return {
-      requiresCampus: true,
-      requiresCollege: true,
-      requiresProgram: false,
-      requiresJobTitle: true,
-      departmentTypeFilter: "EXTENSION_SERVICES",
-      allowCustomJobTitle: true,
-    };
+  if (selectedPrimaryTitle === "Campus Director") {
+    return "C";
   }
 
-  // Default (shouldn't reach here)
-  return {
-    requiresCampus: false,
-    requiresCollege: false,
-    requiresProgram: false,
-    requiresJobTitle: false,
-    allowCustomJobTitle: false,
-  };
+  if (selectedPrimaryTitle === "Program Chairperson") {
+    return "D";
+  }
+
+  return "A";
 };
 
-/**
- * Validates that a designation has the required fields populated
- */
-export const validateDesignation = (
-  designationType: string,
-  subType: string | null,
-  context: {
-    campus_id?: string | null;
-    college_id?: string | null;
-    program_offering_id?: string | null;
-    job_title?: string | null;
-  },
-): { valid: boolean; missing: string[] } => {
-  const requirements = getDesignationRequirements(
-    designationType,
-    subType || undefined,
-  );
+export const resolveDesignationTitle = (
+  selectedPrimaryTitle: string,
+  selectedOtherTitle: string,
+): string => {
+  if (selectedPrimaryTitle === "Other") {
+    return selectedOtherTitle.trim();
+  }
+
+  return selectedPrimaryTitle.trim();
+};
+
+type ValidateDesignationSelectionInput = {
+  selectedPrimaryTitle: string;
+  selectedOtherTitle?: string;
+  campusId?: string;
+  collegeId?: string;
+  programOfferingId?: string;
+};
+
+export const validateDesignationSelection = ({
+  selectedPrimaryTitle,
+  selectedOtherTitle,
+  campusId,
+  collegeId,
+  programOfferingId,
+}: ValidateDesignationSelectionInput): {
+  valid: boolean;
+  missing: string[];
+} => {
   const missing: string[] = [];
+  const set = getDesignationSelectionSet(selectedPrimaryTitle);
 
-  if (!designationType) {
-    missing.push("designation type");
+  if (!selectedPrimaryTitle) {
+    missing.push("designation");
+    return { valid: false, missing };
   }
 
-  // Check sub-type for workflows that need it
-  if (
-    (designationType === "academic" || designationType === "administrative") &&
-    !subType
-  ) {
-    missing.push("role type");
-  }
-
-  if (requirements.requiresCampus && !context.campus_id?.trim()) {
-    missing.push("campus");
-  }
-
-  if (requirements.requiresCollege && !context.college_id?.trim()) {
+  if (set === "B" && !collegeId?.trim()) {
     missing.push("college");
   }
 
-  if (requirements.requiresProgram && !context.program_offering_id?.trim()) {
+  if (set === "C" && !campusId?.trim()) {
+    missing.push("campus");
+  }
+
+  if (set === "D" && !programOfferingId?.trim()) {
     missing.push("program offering");
   }
 
-  if (requirements.requiresJobTitle && !context.job_title?.trim()) {
-    missing.push("job title");
+  if (set === "E") {
+    if (!selectedOtherTitle?.trim()) {
+      missing.push("designation title");
+    }
+
+    const hasContext =
+      Boolean(campusId?.trim()) ||
+      Boolean(collegeId?.trim()) ||
+      Boolean(programOfferingId?.trim());
+
+    if (!hasContext) {
+      missing.push(
+        "at least one context (campus, college, or program offering)",
+      );
+    }
   }
 
   return {
@@ -195,3 +160,6 @@ export const validateDesignation = (
     missing,
   };
 };
+
+export const isDesignationEnumTitle = (title: string): boolean =>
+  DESIGNATION_TITLE_ENUM_VALUES.some((enumTitle) => enumTitle === title);

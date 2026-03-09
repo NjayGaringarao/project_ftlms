@@ -1,15 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AlertCircle,
-  CheckCircle,
-  Trash2,
-  Lock,
-  Briefcase,
-  Edit,
-} from "lucide-react";
+import { AlertCircle, CheckCircle, Lock, Briefcase, Edit } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { UserDetail } from "@/lib/users/types";
@@ -19,11 +12,14 @@ import {
   changeUserEmail,
   changeUserPassword,
 } from "@/lib/users/actions";
-import { DesignationAddForm } from "@/components/admin/users/designation-add-form";
 import AdminPanel from "../admin-panel";
 import PersonalEditForm from "@/components/user/personal-edit-form";
 import SecurityEmailForm from "@/components/user/security-email-form";
 import SecurityPasswordForm from "@/components/user/security-password-form";
+import { ExtendedDesignation } from "@/models/designation";
+import DesignationSection, {
+  NewDesignationInput,
+} from "@/components/user/designation-section";
 
 type UserEditProps = {
   user: UserDetail;
@@ -33,24 +29,7 @@ type UserEditProps = {
 type ProfessionalFormState = {
   academicRankId: string | null;
   employmentStatus: string;
-  designations: Array<{
-    id?: string;
-    campus_id?: string | null;
-    job_title: string;
-    college_id?: string | null;
-    program_offering_id?: string | null;
-    room_id?: string | null;
-    load?: number | null;
-  }>;
-};
-
-type NewDesignationInput = {
-  college_id: string | null;
-  program_offering_id: string | null;
-  campus_id: string | null;
-  room_id: string | null;
-  job_title: string;
-  load: number;
+  designations: Array<Omit<ExtendedDesignation, "user">>;
 };
 
 type PersonalFormValues = {
@@ -72,16 +51,7 @@ const userToProfessionalFormState = (
 ): ProfessionalFormState => ({
   academicRankId: user.rank?.id ?? null,
   employmentStatus: user.employment_status ?? "",
-  designations:
-    user.designations?.map((d) => ({
-      id: d.id,
-      campus_id: d.campus_id,
-      job_title: d.job_title,
-      college_id: d.college_id,
-      program_offering_id: d.program_offering_id,
-      room_id: d.room_id,
-      load: d.load,
-    })) ?? [],
+  designations: user.designations ?? [],
 });
 
 export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
@@ -99,6 +69,13 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
 
   const [isSecuritySaving, setIsSecuritySaving] = useState(false);
 
+  const hasProfessionalChanges = useMemo(
+    () =>
+      JSON.stringify(professionalData) !==
+      JSON.stringify(savedProfessionalData),
+    [professionalData, savedProfessionalData],
+  );
+
   const handleProfessionalChange = (
     field: keyof Omit<ProfessionalFormState, "designations">,
     value: string | null,
@@ -113,12 +90,19 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
       designations: [
         ...prev.designations,
         {
+          id: `new-${Date.now()}`,
+          user_id: user.id,
+          designated_at: new Date().toISOString(),
           job_title: designation.job_title,
           college_id: designation.college_id || null,
           program_offering_id: designation.program_offering_id || null,
           campus_id: designation.campus_id || null,
           room_id: designation.room_id || null,
           load: designation.load,
+          campus: designation.campus ?? null,
+          college: designation.college ?? null,
+          program: designation.program ?? null,
+          program_offering: designation.program_offering ?? null,
         },
       ],
     }));
@@ -291,12 +275,14 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
                 onBlur={(e) => {
                   handleProfessionalChange(
                     "employmentStatus",
-                    e.target.value.trim().toUpperCase(),
+                    e.target.value.trim(),
                   );
                 }}
               >
-                <option value="FULL_TIME">Full Time</option>
-                <option value="PART_TIME">Part Time</option>
+                <option value="Regular">Regular</option>
+                <option value="Part-time">Part Time</option>
+                <option value="Contract of Service">Contract of Service</option>
+                <option value="Temporary">Temporary</option>
               </select>
             </div>
           </div>
@@ -304,81 +290,33 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
           <div className="flex flex-col gap-1">
             <Label className="text-xs">Designations</Label>
 
-            {professionalData.designations.length > 0 && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
-                {professionalData.designations.map((designation, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 border rounded-lg bg-foreground/5 flex items-start justify-between"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{designation.job_title}</p>
-                      </div>
-                      <div className="space-y-1 mt-1">
-                        {designation.college_id && (
-                          <p className="text-xs text-foreground/60">
-                            Department: {designation.college_id}
-                          </p>
-                        )}
-                        {designation.program_offering_id && (
-                          <p className="text-xs text-foreground/60">
-                            Program Offering: {designation.program_offering_id}
-                          </p>
-                        )}
-                        {designation.campus_id && (
-                          <p className="text-xs text-foreground/60">
-                            Campus: {designation.campus_id}
-                          </p>
-                        )}
-                        {designation.room_id && (
-                          <p className="text-xs text-foreground/60">
-                            Room: {designation.room_id}
-                          </p>
-                        )}
-                        {designation.load !== null &&
-                          designation.load !== undefined && (
-                            <p className="text-xs text-foreground/60">
-                              Load: {designation.load} hours
-                            </p>
-                          )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveDesignation(idx)}
-                      disabled={isProfessionalSaving}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <DesignationAddForm
-              onAdd={handleAddDesignation}
-              isLoading={isProfessionalSaving}
+            <DesignationSection
+              mode="edit"
+              designations={professionalData.designations}
+              onAddDesignation={handleAddDesignation}
+              onRemoveDesignation={handleRemoveDesignation}
+              isMutating={isProfessionalSaving}
               error={professionalError}
             />
           </div>
         </div>
-        <div className="flex gap-2 justify-end">
-          <Button
-            variant="outline"
-            onClick={handleResetProfessional}
-            disabled={isProfessionalSaving}
-          >
-            Reset
-          </Button>
-          <Button
-            onClick={handleSaveProfessional}
-            disabled={isProfessionalSaving}
-          >
-            {isProfessionalSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
+        {hasProfessionalChanges && (
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={handleResetProfessional}
+              disabled={isProfessionalSaving}
+            >
+              Reset
+            </Button>
+            <Button
+              onClick={handleSaveProfessional}
+              disabled={isProfessionalSaving}
+            >
+              {isProfessionalSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">

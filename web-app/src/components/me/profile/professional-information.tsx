@@ -1,10 +1,11 @@
 "use client";
 
-import { Briefcase, WeightTilde } from "lucide-react";
+import { Briefcase } from "lucide-react";
 import { ExtendedDesignation } from "@/models/designation";
 import { Rank } from "@/models/academic_rank";
 import { User } from "@/models/user";
 import { SecurityActionCard } from "@/components/me/security/security-action-card";
+import DesignationSection from "@/components/user/designation-section";
 
 type ProfessionalDesignation = Omit<ExtendedDesignation, "user">;
 
@@ -43,60 +44,7 @@ const ProfessionalInformation = ({
 
       <p className="text-sm text-foreground/60">Designations</p>
       <div className="lg:max-h-96 overflow-auto">
-        {designations.length === 0 ? (
-          <p className="text-sm text-foreground/60 mt-1">
-            No designations on file.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {designations.map((designation) => (
-              <div
-                key={designation.id}
-                className="border border-border rounded-lg p-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{designation.job_title}</p>
-                    {designation.college?.name && (
-                      <p className="text-sm text-foreground/60">
-                        {designation.college.name}
-                      </p>
-                    )}
-
-                    {designation.program?.name && (
-                      <p className="text-sm text-foreground/60">
-                        {designation.program.name}
-                      </p>
-                    )}
-
-                    {designation.program_offering && (
-                      <>
-                        <p className="text-sm text-foreground/60">
-                          {designation.program_offering.program.name}
-                        </p>
-                        <p className="text-sm text-foreground/60">
-                          {designation.program_offering.campus.name} Campus
-                        </p>
-                      </>
-                    )}
-
-                    {designation.campus?.name && (
-                      <p className="text-sm text-foreground/60">
-                        {designation.campus.name} Campus
-                      </p>
-                    )}
-                  </div>
-                  {designation.load !== null && (
-                    <div className="text-base text-foreground/60 flex flex-row items-center gap-1">
-                      <p>{designation.load}</p>
-                      <WeightTilde className="w-4" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <DesignationSection mode="view" designations={designations} />
       </div>
     </SecurityActionCard>
   );

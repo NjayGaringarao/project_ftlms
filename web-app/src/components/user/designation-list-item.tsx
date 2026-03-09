@@ -1,15 +1,22 @@
 import { ExtendedDesignation } from "@/models/designation";
-import { BriefcaseBusiness, WeightTilde } from "lucide-react";
+import { BriefcaseBusiness, WeightTilde, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type DesignationListItemProps = {
   designation: Omit<ExtendedDesignation, "user">;
+  showRemove?: boolean;
+  removeDisabled?: boolean;
+  onRemove?: () => void;
 };
 
-const DesignationListItem = ({ designation }: DesignationListItemProps) => {
-  const toFixedLoad = (value: number) => value.toFixed(2);
-
+const DesignationListItem = ({
+  designation,
+  showRemove = false,
+  removeDisabled = false,
+  onRemove,
+}: DesignationListItemProps) => {
   return (
-    <div className="shadow rounded-lg flex flex-row items-center">
+    <div className="shadow rounded-lg flex flex-row items-center gap-2">
       <div className="p-3">
         <BriefcaseBusiness className="w-8 h-8 text-foreground/60" />
       </div>
@@ -29,7 +36,7 @@ const DesignationListItem = ({ designation }: DesignationListItemProps) => {
           </p>
         )}
 
-        {designation.program && (
+        {designation.program && !designation.program_offering && (
           <p className="font-medium text-foreground/60 wrap-break-word">
             {designation.program.name}
           </p>
@@ -46,11 +53,25 @@ const DesignationListItem = ({ designation }: DesignationListItemProps) => {
           </>
         )}
       </div>
-      <div className="flex flex-row items-center p-3">
-        <p className="text-sm text-foreground/70">
-          {toFixedLoad(designation.load ?? 0)}
-        </p>
-        <WeightTilde className="h-4" />
+
+      <div className="flex flex-col items-end p-3">
+        {showRemove && onRemove && (
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              disabled={removeDisabled}
+            >
+              <X className="w-4 h-4 text-foreground" />
+            </Button>
+          </div>
+        )}
+        <div className="flex items-center">
+          <p className="text-sm text-foreground/70">{designation.load ?? 0}</p>
+          <WeightTilde className="h-4" />
+        </div>
       </div>
     </div>
   );

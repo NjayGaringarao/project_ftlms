@@ -19,11 +19,35 @@ type CreateUserInput = {
   employment_status?: string | null;
 };
 
+const EMPLOYMENT_STATUS_ALIASES = new Map<string, string>([
+  ["regular", "Regular"],
+  ["part-time", "Part-time"],
+  ["part time", "Part-time"],
+  ["part_time", "Part-time"],
+  ["parttime", "Part-time"],
+  ["contract of service", "Contract of Service"],
+  ["contract_of_service", "Contract of Service"],
+  ["temporary", "Temporary"],
+  // Backward compatibility for legacy payloads.
+  ["full-time", "Regular"],
+  ["full time", "Regular"],
+  ["full_time", "Regular"],
+]);
+
 const normalizeEmploymentStatus = (value?: string | null) => {
-  const normalized = value?.trim().toUpperCase();
-  return normalized === "PART_TIME" || normalized === "FULL_TIME"
-    ? normalized
-    : "PART_TIME";
+  const normalized = value?.trim();
+  if (!normalized) return null;
+
+  const mapped = EMPLOYMENT_STATUS_ALIASES.get(normalized.toLowerCase());
+  return mapped ?? null;
+};
+
+const getEmploymentStatusValidationError = (value?: string | null) => {
+  if (!value?.trim()) return null;
+
+  return normalizeEmploymentStatus(value)
+    ? null
+    : "Invalid employment status. Allowed values: Regular, Part-time, Contract of Service, Temporary.";
 };
 
 const normalizeJobTitleKey = (value?: string | null) =>
@@ -47,7 +71,9 @@ const isHigherUpsTitle = (value?: string | null) => {
   const normalized = normalizeJobTitleKey(value);
   return (
     normalized === "university president" ||
-    normalized === "director for instruction"
+    normalized === "director for instruction" ||
+    normalized === "vice president for academic affairs" ||
+    normalized === "quality assurance"
   );
 };
 
@@ -120,6 +146,14 @@ export async function createUser(
 
   // Update user employment status if provided
   if (input.employment_status?.trim()) {
+    const employmentStatusError = getEmploymentStatusValidationError(
+      input.employment_status,
+    );
+
+    if (employmentStatusError) {
+      return { error: employmentStatusError };
+    }
+
     const { error: userError } = await supabase
       .from("user")
       .update({
@@ -228,6 +262,14 @@ export async function updateUserProfile(
   }
 
   // Update user employment status
+  const employmentStatusError = getEmploymentStatusValidationError(
+    input.employment_status,
+  );
+
+  if (employmentStatusError) {
+    return { error: employmentStatusError };
+  }
+
   const { error: userError } = await supabase
     .from("user")
     .update({
@@ -271,6 +313,14 @@ export async function updateUserProfessional(
     updatePayload.academic_rank_id = input.academic_rank_id || null;
   }
   if (input.employment_status !== undefined) {
+    const employmentStatusError = getEmploymentStatusValidationError(
+      input.employment_status,
+    );
+
+    if (employmentStatusError) {
+      return { error: employmentStatusError };
+    }
+
     updatePayload.employment_status = normalizeEmploymentStatus(
       input.employment_status,
     );
@@ -379,7 +429,7 @@ export async function updateUserProfessional(
 
         return {
           error:
-            "Each designation must include at least one context: campus, college, program offering, or room (except University President and Director for Instruction).",
+            "Each designation must include at least one context: campus, college, program offering, or room (except University President, Director for Instruction, Vice President for Academic Affairs, and Quality Assurance).",
         };
       }
 

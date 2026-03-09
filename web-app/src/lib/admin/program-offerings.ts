@@ -1,9 +1,9 @@
 "use server";
 
-import { ExtendedProgramCampus } from "@/models";
+import { ProgramCampusOffering } from "@/lib/admin/programs";
 import { createClient } from "@/utils/supabase/server";
 
-export type ProgramOfferingListItem = ExtendedProgramCampus;
+export type ProgramOfferingListItem = ProgramCampusOffering;
 
 export const getProgramOfferingsList = async (): Promise<
   ProgramOfferingListItem[]
@@ -17,7 +17,7 @@ export const getProgramOfferingsList = async (): Promise<
       id,
       campus_id,
       program_id,
-      campus:campus_id (id, name, address, zip_code),
+      campus:campus_id (id, code, name, address),
       program:program_id (
         id,
         college_id,
@@ -68,7 +68,7 @@ export const getProgramOfferingById = async (
       id,
       campus_id,
       program_id,
-      campus:campus_id (id, name, address, zip_code),
+      campus:campus_id (id, code, name, address),
       program:program_id (
         id,
         college_id,

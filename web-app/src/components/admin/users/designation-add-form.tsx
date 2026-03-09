@@ -1,27 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { AddTile } from "@/components/ui/add-tile";
+import { AppDialog } from "@/components/ui/app-dialog";
 import {
-  DESIGNATION_TYPE_OPTIONS,
-  ACADEMIC_SUBTYPES,
-  ADMINISTRATIVE_SUBTYPES,
-  HIGHER_UPS_JOB_TITLES,
-  getDesignationRequirements,
-  validateDesignation,
+  DESIGNATION_PRIMARY_OPTIONS,
+  OTHER_DESIGNATION_OPTIONS,
+  getDesignationSelectionSet,
+  resolveDesignationTitle,
+  validateDesignationSelection,
 } from "@/constant/designations";
 import { getCollegesList } from "@/lib/admin/colleges";
 import {
   getProgramCampusOfferings,
   ProgramCampusOffering,
 } from "@/lib/admin/programs";
-import { getCampusesList } from "@/lib/admin/campuses";
+import { CampusListItem, getCampusesList } from "@/lib/admin/campuses";
 import { CollegeListItem } from "@/lib/admin/colleges";
-import { Campus } from "@/models/campus";
+import DesignationProgramOfferingPicker from "./designation-program-offering-picker";
 
 type NewDesignation = {
   college_id: string | null;
@@ -30,6 +29,10 @@ type NewDesignation = {
   room_id: string | null;
   job_title: string;
   load: number;
+  campus?: CampusListItem | null;
+  college?: CollegeListItem | null;
+  program_offering?: ProgramCampusOffering | null;
+  program?: ProgramCampusOffering["program"] | null;
 };
 
 type DesignationFormProps = {
@@ -50,21 +53,20 @@ export const DesignationAddForm = ({
   const [programOfferings, setProgramOfferings] = useState<
     ProgramCampusOffering[]
   >([]);
-  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [campuses, setCampuses] = useState<CampusListItem[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Form state
-  const [designationType, setDesignationType] = useState<string>("");
-  const [subType, setSubType] = useState<string>("");
+  const [selectedPrimaryDesignation, setSelectedPrimaryDesignation] =
+    useState<string>("");
+  const [selectedOtherDesignation, setSelectedOtherDesignation] =
+    useState<string>("");
   const [campusId, setCampusId] = useState<string>("");
   const [departmentId, setDepartmentId] = useState<string>("");
   const [programOfferingId, setProgramOfferingId] = useState<string>("");
-  const [jobTitle, setJobTitle] = useState<string>("");
   const [load, setLoad] = useState<string>("");
   const [formError, setFormError] = useState<string>("");
 
-  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       setIsLoadingData(true);
@@ -77,109 +79,38 @@ export const DesignationAddForm = ({
         setDepartments(deptsData);
         setCampuses(campusesData);
         setProgramOfferings(programsData);
-      } catch (err) {
-        console.error("Error fetching designation form data:", err);
+      } catch (fetchError) {
+        console.error("Error fetching designation form data:", fetchError);
       } finally {
         setIsLoadingData(false);
       }
     };
+
     fetchData();
   }, []);
 
+  const selectionSet = getDesignationSelectionSet(selectedPrimaryDesignation);
+
+  const resolvedDesignationTitle = resolveDesignationTitle(
+    selectedPrimaryDesignation,
+    selectedOtherDesignation,
+  );
+
+  const selectedProgramOffering = useMemo(
+    () =>
+      programOfferings.find((offering) => offering.id === programOfferingId) ??
+      null,
+    [programOfferings, programOfferingId],
+  );
+
   const resetForm = () => {
-    setDesignationType("");
-    setSubType("");
+    setSelectedPrimaryDesignation("");
+    setSelectedOtherDesignation("");
     setCampusId("");
     setDepartmentId("");
     setProgramOfferingId("");
-    setJobTitle("");
     setLoad("");
     setFormError("");
-  };
-
-  // Reset form when designation type changes
-  const handleDesignationTypeChange = (type: string) => {
-    setDesignationType(type);
-    setSubType("");
-    setCampusId("");
-    setDepartmentId("");
-    setProgramOfferingId("");
-    setJobTitle("");
-    setFormError("");
-  };
-
-  // Handle sub-type change
-  const handleSubTypeChange = (st: string) => {
-    setSubType(st);
-    setFormError("");
-    const requirements = getDesignationRequirements(designationType, st);
-
-    // Auto-set job title if preset
-    if (requirements.jobTitlePreset) {
-      setJobTitle(requirements.jobTitlePreset);
-    } else {
-      setJobTitle("");
-    }
-  };
-
-  // When program offering changes, auto-fill related campus/department context
-  const handleProgramOfferingChange = (offeringId: string) => {
-    setFormError("");
-    setProgramOfferingId(offeringId);
-    const offering = programOfferings.find((p) => p.id === offeringId);
-    if (offering) {
-      setCampusId(offering.campus_id);
-      setDepartmentId(offering.program.college_id);
-    }
-  };
-
-  const handleCampusChange = (nextCampusId: string) => {
-    setFormError("");
-    setCampusId(nextCampusId);
-    if (programOfferingId) {
-      const selected = programOfferings.find(
-        (offering) => offering.id === programOfferingId,
-      );
-      if (selected && selected.campus_id !== nextCampusId) {
-        setProgramOfferingId("");
-      }
-    }
-  };
-
-  // Handle form submission
-  const handleAddDesignation = () => {
-    setFormError("");
-
-    const validation = validateDesignation(designationType, subType, {
-      campus_id: campusId,
-      college_id: departmentId,
-      program_offering_id: programOfferingId,
-      job_title: jobTitle,
-    });
-
-    if (!validation.valid) {
-      setFormError(`Missing required fields: ${validation.missing.join(", ")}`);
-      return;
-    }
-
-    if (!load || parseInt(load) < 0) {
-      setFormError("Load must be a non-negative number");
-      return;
-    }
-
-    // Build designation object
-    const designation: NewDesignation = {
-      college_id: departmentId || null,
-      program_offering_id: programOfferingId || null,
-      campus_id: campusId || null,
-      room_id: null,
-      job_title: jobTitle.trim(),
-      load: parseInt(load),
-    };
-
-    onAdd(designation);
-    resetForm();
-    setIsOpen(false);
   };
 
   const handleCancel = () => {
@@ -187,473 +118,357 @@ export const DesignationAddForm = ({
     setIsOpen(false);
   };
 
-  if (!isOpen) {
-    return (
+  const handlePrimaryDesignationChange = (nextValue: string) => {
+    setSelectedPrimaryDesignation(nextValue);
+    setSelectedOtherDesignation("");
+    setCampusId("");
+    setDepartmentId("");
+    setProgramOfferingId("");
+    setFormError("");
+  };
+
+  const handleProgramOfferingChange = (offeringId: string) => {
+    setProgramOfferingId(offeringId);
+    setFormError("");
+  };
+
+  const handleAddDesignation = () => {
+    setFormError("");
+
+    const validation = validateDesignationSelection({
+      selectedPrimaryTitle: selectedPrimaryDesignation,
+      selectedOtherTitle: selectedOtherDesignation,
+      campusId,
+      collegeId: departmentId,
+      programOfferingId,
+    });
+
+    if (!validation.valid) {
+      setFormError(`Missing required fields: ${validation.missing.join(", ")}`);
+      return;
+    }
+
+    const parsedLoad = Number.parseInt(load, 10);
+    if (!load || Number.isNaN(parsedLoad) || parsedLoad < 0) {
+      setFormError("Load must be a non-negative number");
+      return;
+    }
+
+    let nextCampusId = campusId.trim() || null;
+    let nextCollegeId = departmentId.trim() || null;
+    let nextProgramOfferingId = programOfferingId.trim() || null;
+
+    if (selectionSet === "A") {
+      nextCampusId = null;
+      nextCollegeId = null;
+      nextProgramOfferingId = null;
+    }
+
+    if (selectionSet === "B") {
+      nextCampusId = null;
+      nextProgramOfferingId = null;
+    }
+
+    if (selectionSet === "C") {
+      nextCollegeId = null;
+      nextProgramOfferingId = null;
+    }
+
+    if (selectionSet === "D") {
+      nextCampusId = null;
+      nextCollegeId = null;
+    }
+
+    const designation: NewDesignation = {
+      college_id: nextCollegeId,
+      program_offering_id: nextProgramOfferingId,
+      campus_id: nextCampusId,
+      room_id: null,
+      job_title: resolvedDesignationTitle,
+      load: parsedLoad,
+      campus: campuses.find((campus) => campus.id === nextCampusId) ?? null,
+      college:
+        departments.find((college) => college.id === nextCollegeId) ?? null,
+      program_offering:
+        programOfferings.find(
+          (offering) => offering.id === nextProgramOfferingId,
+        ) ?? null,
+      program:
+        programOfferings.find(
+          (offering) => offering.id === nextProgramOfferingId,
+        )?.program ?? null,
+    };
+
+    onAdd(designation);
+    resetForm();
+    setIsOpen(false);
+  };
+
+  return (
+    <>
       <AddTile
         title="Add Designation"
         description="Assign a role, department, campus, or program to this user"
         onClick={() => setIsOpen(true)}
         disabled={isLoading}
       />
-    );
-  }
 
-  if (isLoadingData) {
-    return <div className="text-xs text-foreground/60">Loading options...</div>;
-  }
+      <AppDialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          setIsOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}
+        title="Add Designation"
+        description="Select a designation and provide required context."
+      >
+        {isLoadingData ? (
+          <div className="text-xs text-foreground/60">Loading options...</div>
+        ) : (
+          <div className="space-y-4">
+            <select
+              id="designation-step-1"
+              value={selectedPrimaryDesignation}
+              onChange={(event) =>
+                handlePrimaryDesignationChange(event.target.value)
+              }
+              disabled={isLoading}
+              className={selectClass}
+            >
+              <option value="">Select designation...</option>
+              {DESIGNATION_PRIMARY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
 
-  // College records no longer carry legacy department type; keep all options.
-  const filteredDepartments = departments;
-
-  // Filter program offerings by campus if campus is selected
-  const filteredProgramOfferings = campusId
-    ? programOfferings.filter((p) => p.campus_id === campusId)
-    : programOfferings;
-
-  const showFormFields =
-    designationType &&
-    (subType ||
-      designationType === "student_services" ||
-      designationType === "extension_services");
-
-  return (
-    <div className="rounded-md border border-foreground/20 bg-foreground/2 p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">New Designation</p>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={handleCancel}
-          disabled={isLoading}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Step 1: Select Designation Type */}
-        <div>
-          <Label htmlFor="designation-type" className="text-xs">
-            Designation Type *
-          </Label>
-          <select
-            id="designation-type"
-            value={designationType}
-            onChange={(e) => handleDesignationTypeChange(e.target.value)}
-            disabled={isLoading}
-            className={selectClass}
-          >
-            <option value="">Select designation type...</option>
-            {DESIGNATION_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* ACADEMIC Tree */}
-        {designationType === "academic" && (
-          <>
-            <div>
-              <Label htmlFor="academic-subtype" className="text-xs">
-                Role *
-              </Label>
-              <select
-                id="academic-subtype"
-                value={subType}
-                onChange={(e) => handleSubTypeChange(e.target.value)}
-                disabled={isLoading}
-                className={selectClass}
-              >
-                <option value="">Select role...</option>
-                {ACADEMIC_SUBTYPES.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Program Chair: Campus → Program */}
-            {subType === "program_chair" && (
+            {Boolean(selectionSet) && (
               <>
-                <div>
-                  <Label htmlFor="campus" className="text-xs">
-                    Campus *
-                  </Label>
-                  <select
-                    id="campus"
-                    value={campusId}
-                    onChange={(e) => handleCampusChange(e.target.value)}
-                    disabled={isLoading}
-                    className={selectClass}
-                  >
-                    <option value="">Select campus...</option>
-                    {campuses.map((campus) => (
-                      <option key={campus.id} value={campus.id}>
-                        {campus.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {selectionSet === "A" && (
+                  <p className="text-xs text-foreground/70">
+                    No additional selection is required for this designation.
+                  </p>
+                )}
 
-                {campusId && (
+                {selectionSet === "B" && (
                   <div>
-                    <Label htmlFor="program" className="text-xs">
-                      Program Offering *
+                    <Label htmlFor="designation-college" className="text-xs">
+                      College *
                     </Label>
                     <select
-                      id="program"
-                      value={programOfferingId}
-                      onChange={(e) =>
-                        handleProgramOfferingChange(e.target.value)
-                      }
+                      id="designation-college"
+                      value={departmentId}
+                      onChange={(event) => {
+                        setDepartmentId(event.target.value);
+                        setFormError("");
+                      }}
                       disabled={isLoading}
                       className={selectClass}
                     >
-                      <option value="">Select program offering...</option>
-                      {filteredProgramOfferings.map((offering) => (
-                        <option key={offering.id} value={offering.id}>
-                          {offering.program.name}
+                      <option value="">Select college...</option>
+                      {departments.map((college) => (
+                        <option key={college.id} value={college.id}>
+                          {college.name}
                         </option>
                       ))}
                     </select>
-                    <p className="text-xs text-foreground/60 mt-1">
-                      Job title: Program Chairperson
-                    </p>
+                  </div>
+                )}
+
+                {selectionSet === "C" && (
+                  <div>
+                    <Label htmlFor="designation-campus" className="text-xs">
+                      Campus *
+                    </Label>
+                    <select
+                      id="designation-campus"
+                      value={campusId}
+                      onChange={(event) => {
+                        setCampusId(event.target.value);
+                        setFormError("");
+                      }}
+                      disabled={isLoading}
+                      className={selectClass}
+                    >
+                      <option value="">Select campus...</option>
+                      {campuses.map((campus) => (
+                        <option key={campus.id} value={campus.id}>
+                          {campus.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {selectionSet === "D" && (
+                  <DesignationProgramOfferingPicker
+                    offerings={programOfferings}
+                    value={programOfferingId}
+                    onChange={handleProgramOfferingChange}
+                    disabled={isLoading}
+                    label="Program Offering *"
+                  />
+                )}
+
+                {selectionSet === "E" && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label
+                        htmlFor="designation-other-title"
+                        className="text-xs"
+                      >
+                        Designation Title *
+                      </Label>
+                      <select
+                        id="designation-other-title"
+                        value={selectedOtherDesignation}
+                        onChange={(event) => {
+                          setSelectedOtherDesignation(event.target.value);
+                          setFormError("");
+                        }}
+                        disabled={isLoading}
+                        className={selectClass}
+                      >
+                        <option value="">Select designation title...</option>
+                        {OTHER_DESIGNATION_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label
+                          htmlFor="designation-other-campus"
+                          className="text-xs"
+                        >
+                          Campus (Optional)
+                        </Label>
+                        <select
+                          id="designation-other-campus"
+                          value={campusId}
+                          onChange={(event) => {
+                            setCampusId(event.target.value);
+                            setFormError("");
+                          }}
+                          disabled={isLoading}
+                          className={selectClass}
+                        >
+                          <option value="">Select campus...</option>
+                          {campuses.map((campus) => (
+                            <option key={campus.id} value={campus.id}>
+                              {campus.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label
+                          htmlFor="designation-other-college"
+                          className="text-xs"
+                        >
+                          College (Optional)
+                        </Label>
+                        <select
+                          id="designation-other-college"
+                          value={departmentId}
+                          onChange={(event) => {
+                            setDepartmentId(event.target.value);
+                            setFormError("");
+                          }}
+                          disabled={isLoading}
+                          className={selectClass}
+                        >
+                          <option value="">Select college...</option>
+                          {departments.map((college) => (
+                            <option key={college.id} value={college.id}>
+                              {college.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <DesignationProgramOfferingPicker
+                      offerings={programOfferings}
+                      value={programOfferingId}
+                      onChange={handleProgramOfferingChange}
+                      disabled={isLoading}
+                      label="Program Offering (Optional)"
+                    />
                   </div>
                 )}
               </>
             )}
 
-            {/* Dean: Department (ACADEMIC type only) */}
-            {subType === "dean" && (
-              <div>
-                <Label htmlFor="department" className="text-xs">
-                  Department (Academic) *
-                </Label>
-                <select
-                  id="department"
-                  value={departmentId}
-                  onChange={(e) => setDepartmentId(e.target.value)}
-                  disabled={isLoading}
-                  className={selectClass}
-                >
-                  <option value="">Select department...</option>
-                  {filteredDepartments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-foreground/60 mt-1">
-                  Job title: College Dean
-                </p>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ADMINISTRATIVE Tree */}
-        {designationType === "administrative" && (
-          <>
-            <div>
-              <Label htmlFor="admin-subtype" className="text-xs">
-                Role *
-              </Label>
-              <select
-                id="admin-subtype"
-                value={subType}
-                onChange={(e) => handleSubTypeChange(e.target.value)}
-                disabled={isLoading}
-                className={selectClass}
-              >
-                <option value="">Select role...</option>
-                {ADMINISTRATIVE_SUBTYPES.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Higher-ups: Job Title dropdown only — no campus needed */}
-            {subType === "higher_ups" && (
-              <div>
-                <Label htmlFor="job-title-higher-ups" className="text-xs">
-                  Job Title *
-                </Label>
-                <select
-                  id="job-title-higher-ups"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  disabled={isLoading}
-                  className={selectClass}
-                >
-                  <option value="">Select job title...</option>
-                  {HIGHER_UPS_JOB_TITLES.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Campus Director: Campus only */}
-            {subType === "campus_director" && (
-              <div>
-                <Label htmlFor="campus-director" className="text-xs">
-                  Campus *
-                </Label>
-                <select
-                  id="campus-director"
-                  value={campusId}
-                  onChange={(e) => handleCampusChange(e.target.value)}
-                  disabled={isLoading}
-                  className={selectClass}
-                >
-                  <option value="">Select campus...</option>
-                  {campuses.map((campus) => (
-                    <option key={campus.id} value={campus.id}>
-                      {campus.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-foreground/60 mt-1">
-                  Job title: Campus Director
-                </p>
-              </div>
-            )}
-
-            {/* Other: Campus + Department (ADMINISTRATIVE) + Custom Job Title */}
-            {subType === "other" && (
-              <>
+            {selectedPrimaryDesignation && (
+              <div className="space-y-2">
                 <div>
-                  <Label htmlFor="campus-other" className="text-xs">
-                    Campus *
-                  </Label>
-                  <select
-                    id="campus-other"
-                    value={campusId}
-                    onChange={(e) => handleCampusChange(e.target.value)}
-                    disabled={isLoading}
-                    className={selectClass}
-                  >
-                    <option value="">Select campus...</option>
-                    {campuses.map((campus) => (
-                      <option key={campus.id} value={campus.id}>
-                        {campus.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="department-other" className="text-xs">
-                    Department (Administrative) *
-                  </Label>
-                  <select
-                    id="department-other"
-                    value={departmentId}
-                    onChange={(e) => setDepartmentId(e.target.value)}
-                    disabled={isLoading}
-                    className={selectClass}
-                  >
-                    <option value="">Select department...</option>
-                    {filteredDepartments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="job-title-other" className="text-xs">
-                    Job Title *
+                  <Label htmlFor="load" className="text-xs">
+                    Load (hours) *
                   </Label>
                   <Input
-                    id="job-title-other"
-                    placeholder="Enter job title"
-                    value={jobTitle}
-                    onChange={(e) => setJobTitle(e.target.value)}
+                    id="load"
+                    type="number"
+                    min="0"
+                    placeholder="Enter teaching/work load"
+                    value={load}
+                    onChange={(event) => {
+                      setLoad(event.target.value);
+                      setFormError("");
+                    }}
                     disabled={isLoading}
                     className="mt-1"
                   />
                 </div>
-              </>
+
+                {selectedProgramOffering && selectionSet === "D" && (
+                  <p className="text-xs text-foreground/70">
+                    Selected: {selectedProgramOffering.campus.name} -{" "}
+                    {selectedProgramOffering.program.name}
+                  </p>
+                )}
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleAddDesignation}
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
+                    Add Designation
+                  </Button>
+                </div>
+
+                {(formError || error) && (
+                  <p className="text-xs text-destructive">
+                    {formError || error}
+                  </p>
+                )}
+              </div>
             )}
-          </>
-        )}
 
-        {/* STUDENT SERVICES Tree */}
-        {designationType === "student_services" && (
-          <>
-            <div>
-              <Label htmlFor="campus-ss" className="text-xs">
-                Campus *
-              </Label>
-              <select
-                id="campus-ss"
-                value={campusId}
-                onChange={(e) => handleCampusChange(e.target.value)}
-                disabled={isLoading}
-                className={selectClass}
-              >
-                <option value="">Select campus...</option>
-                {campuses.map((campus) => (
-                  <option key={campus.id} value={campus.id}>
-                    {campus.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label htmlFor="department-ss" className="text-xs">
-                Department (Student Services) *
-              </Label>
-              <select
-                id="department-ss"
-                value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-                disabled={isLoading}
-                className={selectClass}
-              >
-                <option value="">Select department...</option>
-                {filteredDepartments.map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label htmlFor="job-title-ss" className="text-xs">
-                Job Title *
-              </Label>
-              <Input
-                id="job-title-ss"
-                placeholder="Enter job title"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                disabled={isLoading}
-                className="mt-1"
-              />
-            </div>
-          </>
-        )}
-
-        {/* EXTENSION SERVICES Tree */}
-        {designationType === "extension_services" && (
-          <>
-            <div>
-              <Label htmlFor="campus-ext" className="text-xs">
-                Campus *
-              </Label>
-              <select
-                id="campus-ext"
-                value={campusId}
-                onChange={(e) => handleCampusChange(e.target.value)}
-                disabled={isLoading}
-                className={selectClass}
-              >
-                <option value="">Select campus...</option>
-                {campuses.map((campus) => (
-                  <option key={campus.id} value={campus.id}>
-                    {campus.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label htmlFor="department-ext" className="text-xs">
-                Department (Extension Services) *
-              </Label>
-              <select
-                id="department-ext"
-                value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-                disabled={isLoading}
-                className={selectClass}
-              >
-                <option value="">Select department...</option>
-                {filteredDepartments.map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label htmlFor="job-title-ext" className="text-xs">
-                Job Title *
-              </Label>
-              <Input
-                id="job-title-ext"
-                placeholder="Enter job title"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                disabled={isLoading}
-                className="mt-1"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Load field (shown once workflow is selected) */}
-        {showFormFields && (
-          <div>
-            <Label htmlFor="load" className="text-xs">
-              Load (hours) *
-            </Label>
-            <Input
-              id="load"
-              type="number"
-              min="0"
-              placeholder="Enter teaching/work load"
-              value={load}
-              onChange={(e) => setLoad(e.target.value)}
-              disabled={isLoading}
-              className="mt-1"
-            />
+            {!selectedPrimaryDesignation && (formError || error) && (
+              <p className="text-xs text-destructive">{formError || error}</p>
+            )}
           </div>
         )}
-      </div>
-
-      {/* Actions */}
-      {showFormFields && (
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleAddDesignation}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              Add Designation
-            </Button>
-          </div>
-          {(formError || error) && (
-            <p className="text-xs text-destructive">{formError || error}</p>
-          )}
-        </div>
-      )}
-    </div>
+      </AppDialog>
+    </>
   );
 };
