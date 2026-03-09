@@ -64,17 +64,20 @@ schema_paths = []
 # If enabled, seeds the database after migrations during a db reset.
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
+# Keep this list dependency-ordered and synchronized with supabase/README.md.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = [
+  "./seeds/1000_academic_ranks.sql",
   "./seeds/1001_courses.sql",
   "./seeds/1002_colleges.sql",
-  "./seeds/1003_programs.sql",
-  "./seeds/1004_campuses.sql",
-  "./seeds/1005_academic_ranks.sql",
-  "./seeds/1006_academic_terms.sql",
-  "./seeds/1007_majors.sql",
-  "./seeds/1008_rooms.sql",
-  "./seeds/1009_blocks.sql"
+  "./seeds/1003_campuses.sql",
+  "./seeds/1004_programs.sql",
+  "./seeds/1005_majors.sql",
+  "./seeds/1006_program_offerings.sql",
+  "./seeds/1007_major_offerings.sql",
+  "./seeds/1008_academic_terms.sql",
+  "./seeds/1009_blocks.sql",
+  "./seeds/1010_rooms.sql"
 ]
 
 [db.network_restrictions]

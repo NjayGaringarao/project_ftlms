@@ -66,6 +66,7 @@ migrations/
 ├── 104_enum_academic_terms_term_order.sql
 ├── 106_enum_designation_title.sql
 ├── 107_enum_academic_level.sql
+├── 108_enum_session_type.sql
 ├── 200_schema_core.sql             # Part 1/5: Key entities
 ├── 201_schema_programs_curriculum.sql
 ├── 202_schema_offerings_availability.sql
@@ -83,9 +84,10 @@ migrations/
 ├── 501_triggers_auth_signup.sql
 ├── 503_triggers_designation_uniqueness.sql
 ├── 600_rpc_is_admin_exists.sql
-├── 601_rpc_get_users_with_identity.sql
+├── 601_rpc_get_user_overview.sql
 ├── 602_rpc_get_user_roles.sql
-└── 603_rpc_schedule_conflict_detection.sql
+├── 603_rpc_schedule_conflict_detection.sql
+└── 604_constraints_designation_context_v2.sql
 ```
 
 ### Constraint Ownership (3xx)
@@ -173,15 +175,17 @@ When updating migrations in this repository:
 
 Seed SQL files are stored in `seeds/` and loaded during `db reset` based on `config.toml`:
 
-- `001_courses.sql`
-- `002_departments.sql`
-- `003_programs.sql`
-- `004_campuses.sql`
-- `005_academic_ranks.sql`
-- `006_academic_terms.sql`
-- `007_majors.sql`
-- `008_rooms.sql`
-- `009_blocks.sql`
+- `1000_academic_ranks.sql`
+- `1001_courses.sql`
+- `1002_colleges.sql`
+- `1003_campuses.sql`
+- `1004_programs.sql`
+- `1005_majors.sql`
+- `1006_program_offerings.sql`
+- `1007_major_offerings.sql`
+- `1008_academic_terms.sql`
+- `1009_blocks.sql`
+- `1010_rooms.sql`
 
 ## Useful Commands
 
