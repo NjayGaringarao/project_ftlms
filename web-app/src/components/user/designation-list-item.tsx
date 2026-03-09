@@ -1,17 +1,8 @@
-import { ProfessionalDesignation } from "@/lib/me/profile";
-import { ExtendedDesignation } from "@/models";
-import { Degree } from "@/models/degree";
-import { cn } from "@/utils/style";
-import {
-  Book,
-  BookOpen,
-  BriefcaseBusiness,
-  GraduationCap,
-  WeightTilde,
-} from "lucide-react";
+import { ExtendedDesignation } from "@/models/designation";
+import { BriefcaseBusiness, WeightTilde } from "lucide-react";
 
 type DesignationListItemProps = {
-  designation: ProfessionalDesignation;
+  designation: Omit<ExtendedDesignation, "user">;
 };
 
 const DesignationListItem = ({ designation }: DesignationListItemProps) => {

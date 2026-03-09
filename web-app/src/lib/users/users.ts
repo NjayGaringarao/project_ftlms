@@ -8,6 +8,7 @@ import { Degree } from "@/models/degree";
 
 export type UsersListItem = {
   id: string;
+  name: string | null;
   email: string | null;
   employment_status: string | null;
   identity: Identity | null;
@@ -24,17 +25,13 @@ type UsersRpcRow = {
   email: string | null;
   employment_status: string | null;
   academic_rank_id: string | null;
-  academic_rank_number: number | null;
+  academic_rank_code: number | null;
   academic_rank_title: string | null;
   academic_rank_description: string | null;
   identity_user_id: string | null;
-  first_name: string | null;
-  middle_name: string | null;
-  last_name: string | null;
-  extension: string | null;
+  name: string | null;
   birth_date: string | null;
   address: string | null;
-  zip_code: string | null;
   contact_number: string | null;
   designations: string; // JSON string
   degrees: string; // JSON string
@@ -44,19 +41,16 @@ const mapRowToUser = (row: UsersRpcRow): UsersListItem => {
   const identity = row.identity_user_id
     ? {
         user_id: row.identity_user_id,
-        first_name: row.first_name ?? "",
-        middle_name: row.middle_name ?? null,
-        last_name: row.last_name ?? "",
-        extension: row.extension ?? null,
+        name: row.name ?? "",
         birth_date: row.birth_date ?? "",
         address: row.address ?? null,
-        zip_code: row.zip_code ?? null,
         contact_number: row.contact_number ?? null,
       }
     : null;
 
   return {
     id: row.id,
+    name: identity?.name ?? null,
     email: row.email ?? null,
     employment_status: row.employment_status ?? null,
     identity: identity as Identity | null,
@@ -69,7 +63,7 @@ const mapRowToUserDetail = (row: UsersRpcRow): UserDetail => {
   const rank: AcademicRank | null = row.academic_rank_id
     ? {
         id: row.academic_rank_id,
-        number: row.academic_rank_number ?? 0,
+        code: String(row.academic_rank_code ?? "UNKWN"),
         title: row.academic_rank_title ?? "",
         description: row.academic_rank_description ?? "",
       }

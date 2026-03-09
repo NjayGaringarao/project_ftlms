@@ -10,18 +10,6 @@ import AdminListContainer from "../admin-list-container";
 import ListItem from "../list-item";
 import { User } from "lucide-react";
 
-const getFullName = (user: UsersListItem) => {
-  const identity = user.identity;
-  if (!identity) return "Unknown User";
-  const parts = [
-    identity.first_name,
-    identity.middle_name,
-    identity.last_name,
-    identity.extension,
-  ].filter(Boolean);
-  return parts.join(" ");
-};
-
 const formatStatus = (status: string | null) => {
   if (!status) return "Unspecified";
   return status
@@ -63,7 +51,7 @@ export const UsersList = ({ users }: UsersListProps) => {
         statusFilter === "all" || user.employment_status === statusFilter;
       if (!matchesStatus) return false;
       if (!q) return true;
-      const name = getFullName(user).toLowerCase();
+      const name = user.identity?.name!;
       const email = user.email?.toLowerCase() ?? "";
       return name.includes(q) || email.includes(q);
     });
@@ -105,7 +93,7 @@ export const UsersList = ({ users }: UsersListProps) => {
         </div>
       )}
       {filteredUsers.map((user) => {
-        const name = getFullName(user);
+        const name = user.identity?.name ?? "Unknown User";
         const status = formatStatus(user.employment_status);
         const isSelected = selectedUserId === user.id;
         return (

@@ -1,7 +1,7 @@
-import UserSummary from "@/components/me/overview/user-summary";
-import WorkingLoadMetrics from "@/components/me/overview/working-load-metrics";
-import DesignationInformation from "@/components/me/overview/designation-information";
-import AssignedClassesInformation from "@/components/me/overview/assigned-classes-information";
+import AssignedClassesCard from "@/components/me/overview/assigned-classes-card";
+import DesignationListCard from "@/components/me/overview/designation-list-card";
+import UserSummaryCard from "@/components/me/overview/user-summary-card";
+import WorkingLoadMetrics from "@/components/user/working-load-metrics";
 import { getCurrentUser, getUserRole } from "@/lib/auth/utils";
 import {
   getCurrentTermTeachingLoadByUserId,
@@ -48,7 +48,7 @@ const MePage = async () => {
         "xl:grid xl:grid-cols-2 2xl:grid-cols-3",
       )}
     >
-      <UserSummary
+      <UserSummaryCard
         user={authUser}
         identity={identity}
         employmentStatus={professionalInfo.user?.employment_status ?? null}
@@ -64,9 +64,9 @@ const MePage = async () => {
           totalWorkingLoad={totalWorkingLoad}
         />
 
-        <DesignationInformation designations={professionalInfo.designations} />
+        <DesignationListCard designations={professionalInfo.designations} />
 
-        <AssignedClassesInformation
+        <AssignedClassesCard
           term={teachingLoadInfo.term}
           classes={teachingLoadInfo.classes}
         />

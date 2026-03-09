@@ -6,17 +6,14 @@ import {
 import { CurrentTermClassLoad } from "@/lib/me/profile";
 import { AcademicTerm } from "@/models/academic_term";
 
-type AssignedClassesInformationProps = {
+type AssignedClassesCardProps = {
   term: AcademicTerm | null;
   classes: CurrentTermClassLoad[];
 };
 
 const toFixedLoad = (value: number) => value.toFixed(2);
 
-const AssignedClassesInformation = ({
-  term,
-  classes,
-}: AssignedClassesInformationProps) => {
+const AssignedClassesCard = ({ term, classes }: AssignedClassesCardProps) => {
   return (
     <Card>
       <CardHeader>
@@ -65,4 +62,4 @@ const AssignedClassesInformation = ({
   );
 };
 
-export default AssignedClassesInformation;
+export default AssignedClassesCard;
