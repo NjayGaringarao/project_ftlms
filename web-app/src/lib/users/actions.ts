@@ -8,9 +8,11 @@ import { revalidatePath } from "next/cache";
 type CreateUserInput = {
   email: string;
   password: string;
-  first_name: string;
+  is_admin?: boolean;
+  name?: string;
+  first_name?: string;
   middle_name?: string | null;
-  last_name: string;
+  last_name?: string;
   extension?: string | null;
   birth_date: string;
   address?: string | null;
@@ -96,8 +98,17 @@ export async function createUser(
   // Validate required fields
   if (!input.email?.trim()) return { error: "Email is required" };
   if (!input.password?.trim()) return { error: "Password is required" };
-  if (!input.first_name?.trim()) return { error: "First name is required" };
-  if (!input.last_name?.trim()) return { error: "Last name is required" };
+
+  const resolvedName = input.name?.trim()
+    ? normalizeFullName(input.name)
+    : composeFullName(
+        input.first_name ?? "",
+        input.middle_name,
+        input.last_name,
+        input.extension,
+      );
+
+  if (!resolvedName) return { error: "Full name is required" };
   if (!input.birth_date?.trim()) return { error: "Birth date is required" };
 
   // Create admin client for user creation
@@ -109,6 +120,7 @@ export async function createUser(
       email: input.email.trim(),
       password: input.password.trim(),
       email_confirm: true,
+      user_metadata: input.is_admin ? { user_role: "ADMIN" } : {},
     });
 
   if (authError || !authData.user) {
@@ -123,12 +135,7 @@ export async function createUser(
   // Insert identity record
   const identityPayload: Identity = {
     user_id: userId,
-    name: composeFullName(
-      input.first_name,
-      input.middle_name,
-      input.last_name,
-      input.extension,
-    ),
+    name: resolvedName,
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
     contact_number: input.contact_number?.trim() || null,
