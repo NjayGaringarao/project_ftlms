@@ -5,6 +5,7 @@ import AssignedClassesInformation from "@/components/me/overview/assigned-classe
 import { getCurrentUser, getUserRole } from "@/lib/auth/utils";
 import {
   getCurrentTermTeachingLoadByUserId,
+  getDegreesByUserId,
   getIdentityByUserId,
   getProfessionalInfoByUserId,
 } from "@/lib/me/profile";
@@ -19,12 +20,13 @@ const MePage = async () => {
     redirect("/auth/login");
   }
 
-  const [identity, professionalInfo, teachingLoadInfo, userRoles] =
+  const [identity, professionalInfo, teachingLoadInfo, userRoles, degrees] =
     await Promise.all([
       getIdentityByUserId(authUser.id),
       getProfessionalInfoByUserId(authUser.id),
       getCurrentTermTeachingLoadByUserId(authUser.id),
       getUserRole(),
+      getDegreesByUserId(authUser.id),
     ]);
 
   const accountType: "Admin" | "User" = userRoles.includes("Admin")
@@ -43,7 +45,7 @@ const MePage = async () => {
       className={cn(
         "bg-background h-full w-full p-6 overflow-y-auto",
         "flex flex-col gap-4",
-        "lg:grid lg:grid-cols-3",
+        "xl:grid xl:grid-cols-2 2xl:grid-cols-3",
       )}
     >
       <UserSummary
@@ -52,9 +54,10 @@ const MePage = async () => {
         employmentStatus={professionalInfo.user?.employment_status ?? null}
         academicRank={professionalInfo.rank}
         accountType={accountType}
+        degrees={degrees}
       />
 
-      <div className="lg:col-span-2 space-y-4">
+      <div className="2xl:col-span-2 space-y-4">
         <WorkingLoadMetrics
           designationLoad={designationLoad}
           actualTeachingLoad={teachingLoadInfo.actual_teaching_load}
