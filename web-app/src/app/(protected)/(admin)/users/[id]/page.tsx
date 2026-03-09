@@ -18,7 +18,7 @@ const ViewPage = async ({ params }: ViewPageProps) => {
 
   return (
     <div className="flex w-2/3 flex-col">
-      <UserView user={user} />;
+      <UserView user={user} />
     </div>
   );
 };

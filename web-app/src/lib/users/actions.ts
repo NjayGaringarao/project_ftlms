@@ -29,6 +29,17 @@ const normalizeEmploymentStatus = (value?: string | null) => {
 const normalizeJobTitleKey = (value?: string | null) =>
   value?.trim().toLowerCase() ?? "";
 
+const composeFullName = (
+  firstName: string,
+  middleName?: string | null,
+  lastName?: string | null,
+  extension?: string | null,
+) =>
+  [firstName, middleName, lastName, extension]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+
 const isHigherUpsTitle = (value?: string | null) => {
   const normalized = normalizeJobTitleKey(value);
   return (
@@ -83,13 +94,14 @@ export async function createUser(
   // Insert identity record
   const identityPayload: Identity = {
     user_id: userId,
-    first_name: input.first_name.trim(),
-    middle_name: input.middle_name?.trim() || null,
-    last_name: input.last_name.trim(),
-    extension: input.extension?.trim() || null,
+    name: composeFullName(
+      input.first_name,
+      input.middle_name,
+      input.last_name,
+      input.extension,
+    ),
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
-    zip_code: input.zip_code?.trim() || null,
     contact_number: input.contact_number?.trim() || null,
   };
 
@@ -149,13 +161,14 @@ export async function updateUserPersonalInfo(
   // Update identity
   const identityPayload: Identity = {
     user_id: input.user_id,
-    first_name: input.first_name.trim(),
-    middle_name: input.middle_name?.trim() || null,
-    last_name: input.last_name.trim(),
-    extension: input.extension?.trim() || null,
+    name: composeFullName(
+      input.first_name,
+      input.middle_name,
+      input.last_name,
+      input.extension,
+    ),
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
-    zip_code: input.zip_code?.trim() || null,
     contact_number: input.contact_number?.trim() || null,
   };
 
@@ -187,13 +200,14 @@ export async function updateUserProfile(
   // Update identity
   const identityPayload: Identity = {
     user_id: input.user_id,
-    first_name: input.first_name.trim(),
-    middle_name: input.middle_name?.trim() || null,
-    last_name: input.last_name.trim(),
-    extension: input.extension?.trim() || null,
+    name: composeFullName(
+      input.first_name,
+      input.middle_name,
+      input.last_name,
+      input.extension,
+    ),
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
-    zip_code: input.zip_code?.trim() || null,
     contact_number: input.contact_number?.trim() || null,
   };
 

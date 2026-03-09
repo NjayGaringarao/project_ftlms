@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { UsersListItem } from "@/lib/users/users";
+import type { UsersListItem } from "@/lib/users/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import AdminListContainer from "../admin-list-container";
@@ -51,7 +51,7 @@ export const UsersList = ({ users }: UsersListProps) => {
         statusFilter === "all" || user.employment_status === statusFilter;
       if (!matchesStatus) return false;
       if (!q) return true;
-      const name = user.identity?.name!;
+      const name = (user.identity?.name ?? "").toLowerCase();
       const email = user.email?.toLowerCase() ?? "";
       return name.includes(q) || email.includes(q);
     });

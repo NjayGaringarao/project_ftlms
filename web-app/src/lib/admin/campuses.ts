@@ -17,20 +17,13 @@ export type DirectorOption = {
 type UserIdentityRpcRow = {
   id: string;
   email: string | null;
-  first_name: string | null;
-  middle_name: string | null;
-  last_name: string | null;
-  extension: string | null;
+  identity: {
+    name: string | null;
+  } | null;
 };
 
 const mapDirectorDisplayName = (row: UserIdentityRpcRow) => {
-  const parts = [
-    row.first_name,
-    row.middle_name,
-    row.last_name,
-    row.extension,
-  ].filter(Boolean);
-  const name = parts.join(" ").trim();
+  const name = row.identity?.name?.trim() ?? "";
 
   if (name) return name;
   if (row.email) return row.email;
@@ -75,7 +68,7 @@ export const getCampusById = async (
 export const getDirectorOptions = async (): Promise<DirectorOption[]> => {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("get_users_with_identity");
+  const { data, error } = await supabase.rpc("get_user_overview_v1");
 
   if (error) {
     console.error("lib.admin.campuses.getDirectorOptions ::", error);

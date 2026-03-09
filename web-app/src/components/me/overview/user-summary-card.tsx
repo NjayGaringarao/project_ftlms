@@ -4,16 +4,19 @@ import { AcademicRank } from "@/models/academic_rank";
 import { Degree } from "@/models/degree";
 import { EmploymentStatus } from "@/models/user";
 import { Mail } from "lucide-react";
-import { User as AuthUser } from "@supabase/supabase-js";
 import PersonalInformation from "@/components/user/personal-information";
 import EducationInformation from "@/components/user/education-information";
 import EmploymentInformation from "@/components/user/employment-information";
 import AccountInformation from "@/components/user/account-information";
 
 type UserSummaryCardProps = {
-  user: AuthUser;
+  userId: string;
+  email: string | null;
+  emailConfirmedAt?: string | null;
+  accountCreatedAt?: string | null;
+  lastSignInAt?: string | null;
   identity: Identity | null;
-  employmentStatus: EmploymentStatus | null;
+  employmentStatus: EmploymentStatus | string | null;
   academicRank: AcademicRank | null;
   accountType: "Admin" | "User";
   degrees: Degree[];
@@ -32,7 +35,11 @@ const toInitials = (name: string, email?: string) => {
 };
 
 const UserSummaryCard = ({
-  user,
+  userId,
+  email,
+  emailConfirmedAt,
+  accountCreatedAt,
+  lastSignInAt,
   identity,
   employmentStatus,
   academicRank,
@@ -40,9 +47,9 @@ const UserSummaryCard = ({
   degrees,
 }: UserSummaryCardProps) => {
   const displayName = identity?.name?.trim() || "No name set";
-  const initials = toInitials(identity?.name ?? "", user.email);
-  const email = user.email || "Not set";
-  const emailStatus = user.email_confirmed_at ? "Verified" : "Not verified";
+  const initials = toInitials(identity?.name ?? "", email ?? undefined);
+  const displayEmail = email || "Not set";
+  const emailStatus = emailConfirmedAt ? "Verified" : "Not verified";
 
   return (
     <Card className="h-auto xl:h-full xl:overflow-hidden gap-0 pb-0">
@@ -57,7 +64,7 @@ const UserSummaryCard = ({
           <h1 className="text-2xl font-bold truncate">{displayName}</h1>
           <div className="flex items-center gap-2 text-sm text-foreground/70 mt-1">
             <Mail className="w-4 h-4" />
-            <span className="truncate">{email}</span>
+            <span className="truncate">{displayEmail}</span>
           </div>
         </div>
       </div>
@@ -69,12 +76,12 @@ const UserSummaryCard = ({
           academicRank={academicRank}
         />
         <AccountInformation
-          userId={user.id}
-          email={user.email ?? null}
+          userId={userId}
+          email={email}
           emailStatus={emailStatus}
           accountType={accountType}
-          accountCreatedAt={user.created_at}
-          lastSignInAt={user.last_sign_in_at}
+          accountCreatedAt={accountCreatedAt}
+          lastSignInAt={lastSignInAt}
         />
       </CardContent>
     </Card>

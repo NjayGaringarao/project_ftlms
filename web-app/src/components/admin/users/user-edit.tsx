@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { UserDetail } from "@/lib/users/users";
+import type { UserDetail } from "@/lib/users/types";
 import {
   updateUserPersonalInfo,
   updateUserProfessional,
@@ -62,19 +62,52 @@ type SecurityFormState = {
   confirmPassword: string;
 };
 
-const userToPersonalFormState = (user: UserDetail): UserInitialFormState => ({
-  email: "",
-  password: "",
-  firstName: user.identity?.first_name ?? "",
-  middleName: user.identity?.middle_name ?? "",
-  lastName: user.identity?.last_name ?? "",
-  extension: user.identity?.extension ?? "",
-  birthDate: user.identity?.birth_date ?? "",
-  address: user.identity?.address ?? "",
-  zipCode: user.identity?.zip_code ?? "",
-  contactNumber: user.identity?.contact_number ?? "",
-  employmentStatus: "",
-});
+const splitIdentityName = (name: string | null | undefined) => {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      extension: "",
+    };
+  }
+
+  if (parts.length === 1) {
+    return {
+      firstName: parts[0],
+      middleName: "",
+      lastName: "",
+      extension: "",
+    };
+  }
+
+  return {
+    firstName: parts[0],
+    middleName: parts.slice(1, -1).join(" "),
+    lastName: parts[parts.length - 1],
+    extension: "",
+  };
+};
+
+const userToPersonalFormState = (user: UserDetail): UserInitialFormState => {
+  const name = splitIdentityName(user.identity?.name);
+
+  return {
+    email: "",
+    password: "",
+    firstName: name.firstName,
+    middleName: name.middleName,
+    lastName: name.lastName,
+    extension: name.extension,
+    birthDate: user.identity?.birth_date ?? "",
+    address: user.identity?.address ?? "",
+    zipCode: "",
+    contactNumber: user.identity?.contact_number ?? "",
+    employmentStatus: "",
+  };
+};
 
 const userToProfessionalFormState = (
   user: UserDetail,

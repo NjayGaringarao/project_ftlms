@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, Trash2, AlertTriangle, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserDetail } from "@/lib/users/users";
+import type { UserDetail } from "@/lib/users/types";
 import { deleteUser } from "@/lib/users/actions";
 import AdminPanel from "../admin-panel";
 import WorkingLoadMetrics from "@/components/user/working-load-metrics";
@@ -48,8 +48,9 @@ export const UserView = ({ user }: UserViewProps) => {
     0,
   );
 
-  const actualTeachingLoad = 0;
-  const totalWorkingLoad = actualTeachingLoad + designationLoad;
+  const actualTeachingLoad = user.actual_teaching_load ?? 0;
+  const totalWorkingLoad =
+    user.total_working_load ?? actualTeachingLoad + designationLoad;
 
   return (
     <AdminPanel
@@ -79,10 +80,10 @@ export const UserView = ({ user }: UserViewProps) => {
       <AccountInformation
         userId={user.id}
         email={user.email ?? null}
-        emailStatus="Not available"
-        accountType="User"
-        accountCreatedAt={null}
-        lastSignInAt={null}
+        emailStatus={user.email_confirmed_at ? "Verified" : "Not verified"}
+        accountType={user.account_type ?? "User"}
+        accountCreatedAt={user.account_created_at}
+        lastSignInAt={user.last_sign_in_at}
       />
 
       {/* Working Load */}

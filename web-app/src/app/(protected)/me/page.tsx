@@ -2,43 +2,17 @@ import AssignedClassesCard from "@/components/me/overview/assigned-classes-card"
 import DesignationListCard from "@/components/me/overview/designation-list-card";
 import UserSummaryCard from "@/components/me/overview/user-summary-card";
 import WorkingLoadMetrics from "@/components/user/working-load-metrics";
-import { getCurrentUser, getUserRole } from "@/lib/auth/utils";
-import {
-  getCurrentTermTeachingLoadByUserId,
-  getDegreesByUserId,
-  getIdentityByUserId,
-  getProfessionalInfoByUserId,
-} from "@/lib/me/profile";
+import { getCurrentUserOverview } from "@/lib/user-overview";
 import { cn } from "@/utils/style";
 
 import { redirect } from "next/navigation";
 
 const MePage = async () => {
-  const authUser = await getCurrentUser();
+  const overview = await getCurrentUserOverview();
 
-  if (!authUser) {
+  if (!overview) {
     redirect("/auth/login");
   }
-
-  const [identity, professionalInfo, teachingLoadInfo, userRoles, degrees] =
-    await Promise.all([
-      getIdentityByUserId(authUser.id),
-      getProfessionalInfoByUserId(authUser.id),
-      getCurrentTermTeachingLoadByUserId(authUser.id),
-      getUserRole(),
-      getDegreesByUserId(authUser.id),
-    ]);
-
-  const accountType: "Admin" | "User" = userRoles.includes("Admin")
-    ? "Admin"
-    : "User";
-
-  const designationLoad = professionalInfo.designations.reduce(
-    (sum, designation) => sum + (designation.load ?? 0),
-    0,
-  );
-  const totalWorkingLoad =
-    teachingLoadInfo.actual_teaching_load + designationLoad;
 
   return (
     <div
@@ -49,27 +23,28 @@ const MePage = async () => {
       )}
     >
       <UserSummaryCard
-        user={authUser}
-        identity={identity}
-        employmentStatus={professionalInfo.user?.employment_status ?? null}
-        academicRank={professionalInfo.rank}
-        accountType={accountType}
-        degrees={degrees}
+        userId={overview.id}
+        email={overview.email}
+        emailConfirmedAt={overview.emailConfirmedAt}
+        accountCreatedAt={overview.accountCreatedAt}
+        lastSignInAt={overview.lastSignInAt}
+        identity={overview.identity}
+        employmentStatus={overview.employmentStatus}
+        academicRank={overview.rank}
+        accountType={overview.accountType}
+        degrees={overview.degrees}
       />
 
       <div className="2xl:col-span-2 space-y-4">
         <WorkingLoadMetrics
-          designationLoad={designationLoad}
-          actualTeachingLoad={teachingLoadInfo.actual_teaching_load}
-          totalWorkingLoad={totalWorkingLoad}
+          designationLoad={overview.designationLoad}
+          actualTeachingLoad={overview.actualTeachingLoad}
+          totalWorkingLoad={overview.totalWorkingLoad}
         />
 
-        <DesignationListCard designations={professionalInfo.designations} />
+        <DesignationListCard designations={overview.designations} />
 
-        <AssignedClassesCard
-          term={teachingLoadInfo.term}
-          classes={teachingLoadInfo.classes}
-        />
+        <AssignedClassesCard term={overview.term} classes={overview.classes} />
       </div>
     </div>
   );

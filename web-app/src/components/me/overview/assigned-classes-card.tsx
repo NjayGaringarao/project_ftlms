@@ -3,12 +3,12 @@ import {
   getTermOrderLabel,
   getTermTypeLabel,
 } from "@/lib/admin/academic-terms";
-import { CurrentTermClassLoad } from "@/lib/me/profile";
+import { OverviewClassLoad } from "@/lib/user-overview";
 import { AcademicTerm } from "@/models/academic_term";
 
 type AssignedClassesCardProps = {
   term: AcademicTerm | null;
-  classes: CurrentTermClassLoad[];
+  classes: OverviewClassLoad[];
 };
 
 const toFixedLoad = (value: number) => value.toFixed(2);
