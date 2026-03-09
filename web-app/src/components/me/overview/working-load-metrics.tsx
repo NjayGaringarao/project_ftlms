@@ -20,7 +20,7 @@ const WorkingLoadMetrics = ({
   totalWorkingLoad,
 }: WorkingLoadMetricsProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
