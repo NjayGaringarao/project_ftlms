@@ -6,12 +6,10 @@ import {
   AlertCircle,
   CheckCircle,
   Trash2,
-  Mail,
   Lock,
   Briefcase,
   Edit,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { UserDetail } from "@/lib/users/types";
@@ -23,10 +21,9 @@ import {
 } from "@/lib/users/actions";
 import { DesignationAddForm } from "@/components/admin/users/designation-add-form";
 import AdminPanel from "../admin-panel";
-import {
-  UserInitialForm,
-  UserInitialFormState,
-} from "@/components/admin/users/user-initial-form";
+import PersonalEditForm from "@/components/user/personal-edit-form";
+import SecurityEmailForm from "@/components/user/security-email-form";
+import SecurityPasswordForm from "@/components/user/security-password-form";
 
 type UserEditProps = {
   user: UserDetail;
@@ -56,58 +53,19 @@ type NewDesignationInput = {
   load: number;
 };
 
-type SecurityFormState = {
-  newEmail: string;
-  newPassword: string;
-  confirmPassword: string;
+type PersonalFormValues = {
+  name: string;
+  birthDate: string;
+  address: string;
+  contactNumber: string;
 };
 
-const splitIdentityName = (name: string | null | undefined) => {
-  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) {
-    return {
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      extension: "",
-    };
-  }
-
-  if (parts.length === 1) {
-    return {
-      firstName: parts[0],
-      middleName: "",
-      lastName: "",
-      extension: "",
-    };
-  }
-
-  return {
-    firstName: parts[0],
-    middleName: parts.slice(1, -1).join(" "),
-    lastName: parts[parts.length - 1],
-    extension: "",
-  };
-};
-
-const userToPersonalFormState = (user: UserDetail): UserInitialFormState => {
-  const name = splitIdentityName(user.identity?.name);
-
-  return {
-    email: "",
-    password: "",
-    firstName: name.firstName,
-    middleName: name.middleName,
-    lastName: name.lastName,
-    extension: name.extension,
-    birthDate: user.identity?.birth_date ?? "",
-    address: user.identity?.address ?? "",
-    zipCode: "",
-    contactNumber: user.identity?.contact_number ?? "",
-    employmentStatus: "",
-  };
-};
+const userToPersonalFormValues = (user: UserDetail): PersonalFormValues => ({
+  name: user.identity?.name ?? "",
+  birthDate: user.identity?.birth_date ?? "",
+  address: user.identity?.address ?? "",
+  contactNumber: user.identity?.contact_number ?? "",
+});
 
 const userToProfessionalFormState = (
   user: UserDetail,
@@ -129,40 +87,17 @@ const userToProfessionalFormState = (
 export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
   const router = useRouter();
 
-  const [personalData, setPersonalData] = useState<UserInitialFormState>(() =>
-    userToPersonalFormState(user),
-  );
-  const [savedPersonalData, setSavedPersonalData] =
-    useState<UserInitialFormState>(() => userToPersonalFormState(user));
-
   const [professionalData, setProfessionalData] =
     useState<ProfessionalFormState>(() => userToProfessionalFormState(user));
   const [savedProfessionalData, setSavedProfessionalData] =
     useState<ProfessionalFormState>(() => userToProfessionalFormState(user));
 
-  const [securityData, setSecurityData] = useState<SecurityFormState>({
-    newEmail: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
   const [isPersonalSaving, setIsPersonalSaving] = useState(false);
-  const [personalError, setPersonalError] = useState("");
-  const [personalSuccess, setPersonalSuccess] = useState(false);
-
   const [isProfessionalSaving, setIsProfessionalSaving] = useState(false);
   const [professionalError, setProfessionalError] = useState("");
   const [professionalSuccess, setProfessionalSuccess] = useState(false);
 
   const [isSecuritySaving, setIsSecuritySaving] = useState(false);
-
-  const handlePersonalChange = (
-    field: keyof UserInitialFormState,
-    value: string,
-  ) => {
-    setPersonalData((prev) => ({ ...prev, [field]: value }));
-    setPersonalError("");
-  };
 
   const handleProfessionalChange = (
     field: keyof Omit<ProfessionalFormState, "designations">,
@@ -197,51 +132,19 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
     }));
   };
 
-  const handleResetPersonal = () => {
-    setPersonalData(savedPersonalData);
-    setPersonalError("");
-    setPersonalSuccess(false);
-  };
-
-  const handleSavePersonal = async () => {
-    if (!personalData.firstName.trim()) {
-      setPersonalError("First name is required");
-      return;
-    }
-    if (!personalData.lastName.trim()) {
-      setPersonalError("Last name is required");
-      return;
-    }
-    if (!personalData.birthDate.trim()) {
-      setPersonalError("Birth date is required");
-      return;
-    }
-
+  const handleSavePersonal = async (values: PersonalFormValues) => {
     setIsPersonalSaving(true);
-    setPersonalError("");
-    setPersonalSuccess(false);
 
     try {
       const { error } = await updateUserPersonalInfo({
         user_id: user.id,
-        first_name: personalData.firstName.trim(),
-        middle_name: personalData.middleName.trim() || null,
-        last_name: personalData.lastName.trim(),
-        extension: personalData.extension.trim() || null,
-        birth_date: personalData.birthDate,
-        address: personalData.address.trim() || null,
-        zip_code: personalData.zipCode.trim() || null,
-        contact_number: personalData.contactNumber.trim() || null,
+        name: values.name,
+        birth_date: values.birthDate,
+        address: values.address || null,
+        contact_number: values.contactNumber || null,
       });
 
-      if (error) {
-        setPersonalError(error);
-        return;
-      }
-
-      setSavedPersonalData({ ...personalData });
-      setPersonalSuccess(true);
-      setTimeout(() => setPersonalSuccess(false), 3000);
+      return { error };
     } finally {
       setIsPersonalSaving(false);
     }
@@ -279,70 +182,30 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
     }
   };
 
-  const handleChangeEmail = async () => {
-    if (!securityData.newEmail.trim()) {
-      setProfessionalError("New email is required");
-      return;
-    }
-
+  const handleChangeEmail = async (newEmail: string) => {
     setIsSecuritySaving(true);
-    setProfessionalError("");
 
     const { error: emailError } = await changeUserEmail({
       user_id: user.id,
-      new_email: securityData.newEmail.trim(),
+      new_email: newEmail,
     });
 
     setIsSecuritySaving(false);
 
-    if (emailError) {
-      setProfessionalError(emailError);
-      return;
-    }
-
-    setSecurityData((prev) => ({ ...prev, newEmail: "" }));
-    setProfessionalSuccess(true);
-    setTimeout(() => setProfessionalSuccess(false), 3000);
+    return { error: emailError };
   };
 
-  const handleChangePassword = async () => {
-    if (!securityData.newPassword.trim()) {
-      setProfessionalError("New password is required");
-      return;
-    }
-
-    if (securityData.newPassword !== securityData.confirmPassword) {
-      setProfessionalError("Passwords do not match");
-      return;
-    }
-
-    if (securityData.newPassword.length < 6) {
-      setProfessionalError("Password must be at least 6 characters");
-      return;
-    }
-
+  const handleChangePassword = async (newPassword: string) => {
     setIsSecuritySaving(true);
-    setProfessionalError("");
 
     const { error: passwordError } = await changeUserPassword({
       user_id: user.id,
-      new_password: securityData.newPassword.trim(),
+      new_password: newPassword,
     });
 
     setIsSecuritySaving(false);
 
-    if (passwordError) {
-      setProfessionalError(passwordError);
-      return;
-    }
-
-    setSecurityData((prev) => ({
-      ...prev,
-      newPassword: "",
-      confirmPassword: "",
-    }));
-    setProfessionalSuccess(true);
-    setTimeout(() => setProfessionalSuccess(false), 3000);
+    return { error: passwordError };
   };
 
   return (
@@ -351,18 +214,19 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
       icon={Edit}
       onClose={() => router.back()}
     >
-      <UserInitialForm
-        formData={personalData}
-        onChange={handlePersonalChange}
-        onReset={handleResetPersonal}
-        onSubmit={handleSavePersonal}
-        isSaving={isPersonalSaving}
-        error={personalError}
-        success={personalSuccess}
-        successMessage="Personal information saved successfully"
-        submitText="Save Changes"
-        savingText="Saving..."
-      />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <Edit className="w-5 h-5" />
+          <h3 className="font-semibold">Personal Information</h3>
+        </div>
+        <PersonalEditForm
+          initialValues={userToPersonalFormValues(user)}
+          onSave={handleSavePersonal}
+          isSaving={isPersonalSaving}
+          submitText="Save Changes"
+          savingText="Saving..."
+        />
+      </div>
 
       <div className="space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b">
@@ -529,119 +393,27 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div className="p-4 border rounded-lg">
-            <div className="flex items-center gap-2 mb-4">
-              <Mail className="w-5 h-5" />
-              <Label className="text-base">Change Email</Label>
-            </div>
-
-            {professionalSuccess && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2 mb-4">
-                <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-green-900">
-                  Email updated successfully
-                </p>
-              </div>
-            )}
-
             <div className="space-y-3">
-              <div>
-                <Label htmlFor="newEmail" className="text-xs">
-                  New Email Address
-                </Label>
-                <Input
-                  id="newEmail"
-                  type="email"
-                  placeholder="Enter new email"
-                  value={securityData.newEmail}
-                  onChange={(e) =>
-                    setSecurityData((prev) => ({
-                      ...prev,
-                      newEmail: e.target.value,
-                    }))
-                  }
-                  className="mt-1"
-                  disabled={isSecuritySaving}
-                />
-              </div>
-              <Button
-                onClick={handleChangeEmail}
-                disabled={isSecuritySaving || !securityData.newEmail.trim()}
-                className="w-full"
-                variant="outline"
-              >
-                {isSecuritySaving ? "Updating..." : "Update Email"}
-              </Button>
+              <Label className="text-base">Change Email</Label>
+              <SecurityEmailForm
+                currentEmail={user.email ?? undefined}
+                requireConfirmation
+                submitText="Update Email"
+                loadingText="Updating..."
+                onSubmit={handleChangeEmail}
+              />
             </div>
           </div>
 
           <div className="p-4 border rounded-lg">
-            <div className="flex items-center gap-2 mb-4">
-              <Lock className="w-5 h-5" />
-              <Label className="text-base">Change Password</Label>
-            </div>
-
-            {professionalSuccess && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2 mb-4">
-                <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-green-900">
-                  Password updated successfully
-                </p>
-              </div>
-            )}
-
             <div className="space-y-3">
-              <div>
-                <Label htmlFor="newPassword" className="text-xs">
-                  New Password
-                </Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  placeholder="Enter new password"
-                  value={securityData.newPassword}
-                  onChange={(e) =>
-                    setSecurityData((prev) => ({
-                      ...prev,
-                      newPassword: e.target.value,
-                    }))
-                  }
-                  className="mt-1"
-                  disabled={isSecuritySaving}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="confirmPassword" className="text-xs">
-                  Confirm Password
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={securityData.confirmPassword}
-                  onChange={(e) =>
-                    setSecurityData((prev) => ({
-                      ...prev,
-                      confirmPassword: e.target.value,
-                    }))
-                  }
-                  className="mt-1"
-                  disabled={isSecuritySaving}
-                />
-              </div>
-
-              <Button
-                onClick={handleChangePassword}
-                disabled={
-                  isSecuritySaving ||
-                  !securityData.newPassword.trim() ||
-                  !securityData.confirmPassword.trim()
-                }
-                className="w-full"
-                variant="outline"
-              >
-                {isSecuritySaving ? "Updating..." : "Update Password"}
-              </Button>
+              <Label className="text-base">Change Password</Label>
+              <SecurityPasswordForm
+                minLength={8}
+                submitText="Update Password"
+                loadingText="Updating..."
+                onSubmit={handleChangePassword}
+              />
             </div>
           </div>
         </div>

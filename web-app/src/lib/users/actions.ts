@@ -40,6 +40,9 @@ const composeFullName = (
     .filter(Boolean)
     .join(" ");
 
+const normalizeFullName = (name: string) =>
+  name.trim().split(/\s+/).filter(Boolean).join(" ");
+
 const isHigherUpsTitle = (value?: string | null) => {
   const normalized = normalizeJobTitleKey(value);
   return (
@@ -137,9 +140,10 @@ export async function createUser(
 // PERSONAL INFORMATION ONLY
 type UpdateUserPersonalInfoInput = {
   user_id: string;
-  first_name: string;
+  name?: string;
+  first_name?: string;
   middle_name?: string | null;
-  last_name: string;
+  last_name?: string;
   extension?: string | null;
   birth_date: string;
   address?: string | null;
@@ -152,8 +156,17 @@ export async function updateUserPersonalInfo(
 ): Promise<{ data?: boolean; error?: string }> {
   // Validate required fields
   if (!input.user_id?.trim()) return { error: "User ID is required" };
-  if (!input.first_name?.trim()) return { error: "First name is required" };
-  if (!input.last_name?.trim()) return { error: "Last name is required" };
+
+  const resolvedName = input.name?.trim()
+    ? normalizeFullName(input.name)
+    : composeFullName(
+        input.first_name ?? "",
+        input.middle_name,
+        input.last_name,
+        input.extension,
+      );
+
+  if (!resolvedName) return { error: "Full name is required" };
   if (!input.birth_date?.trim()) return { error: "Birth date is required" };
 
   const supabase = await createClient();
@@ -161,12 +174,7 @@ export async function updateUserPersonalInfo(
   // Update identity
   const identityPayload: Identity = {
     user_id: input.user_id,
-    name: composeFullName(
-      input.first_name,
-      input.middle_name,
-      input.last_name,
-      input.extension,
-    ),
+    name: resolvedName,
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
     contact_number: input.contact_number?.trim() || null,
