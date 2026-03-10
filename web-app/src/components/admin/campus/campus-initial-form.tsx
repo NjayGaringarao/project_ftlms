@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { ReactNode } from "react";
 
 type CampusFormState = {
+  code: string;
   name: string;
   address: string;
-  zip_code: string;
 };
 
 type CampusInitialFormProps = {
@@ -47,6 +47,23 @@ export const CampusInitialForm = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
+            <Label className="text-xs" htmlFor="code">
+              Campus Code *
+            </Label>
+            <Input
+              id="code"
+              placeholder="e.g. MAIN"
+              value={formData.code}
+              onChange={(event) => onChange("code", event.target.value)}
+              onBlur={(event) =>
+                onChange("code", event.target.value.trim().toUpperCase())
+              }
+              className="mt-1"
+              disabled={isSaving}
+            />
+          </div>
+
+          <div>
             <Label className="text-xs" htmlFor="name">
               Campus Name *
             </Label>
@@ -71,20 +88,6 @@ export const CampusInitialForm = ({
               value={formData.address}
               onChange={(event) => onChange("address", event.target.value)}
               onBlur={(event) => onChange("address", event.target.value.trim())}
-              className="mt-1"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs" htmlFor="zip_code">
-              ZIP Code
-            </Label>
-            <Input
-              id="zip_code"
-              placeholder="Enter ZIP code"
-              value={formData.zip_code}
-              onChange={(event) => onChange("zip_code", event.target.value)}
               className="mt-1"
               disabled={isSaving}
             />

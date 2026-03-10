@@ -15,7 +15,7 @@ export const getRooms = async (): Promise<ExtendedRoom[]> => {
       name,
       capacity,
       campus_id,
-      campus:campus_id (id, name, address, zip_code)
+      campus:campus_id (id, code, name, address)
       `,
     )
     .order("code", { ascending: true });
@@ -47,7 +47,7 @@ export const getRoomsByCampus = async (
       name,
       capacity,
       campus_id,
-      campus:campus_id (id, name, address, zip_code)
+      campus:campus_id (id, code, name, address)
       `,
     )
     .eq("campus_id", campusId)
@@ -80,7 +80,7 @@ export const getRoomById = async (
       name,
       capacity,
       campus_id,
-      campus:campus_id (id, name, address, zip_code)
+      campus:campus_id (id, code, name, address)
       `,
     )
     .eq("id", roomId)

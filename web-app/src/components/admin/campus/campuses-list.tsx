@@ -24,10 +24,10 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
       if (!q) return items;
 
       return items.filter((campus) => {
+        const code = campus.code.toLowerCase();
         const name = campus.name.toLowerCase();
         const address = campus.address?.toLowerCase() ?? "";
-        const zipCode = campus.zip_code?.toLowerCase() ?? "";
-        return name.includes(q) || address.includes(q) || zipCode.includes(q);
+        return code.includes(q) || name.includes(q) || address.includes(q);
       });
     },
   });
@@ -37,7 +37,7 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
       header={
         <>
           <Input
-            placeholder="Search by name, address, or ZIP"
+            placeholder="Search by code, name, or address"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -62,9 +62,14 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
             key={campus.id}
             onClick={() => router.push(`/campuses/${campus.id}`)}
             title={campus.name.concat(" Campus")}
-            subtitle={[`${campus.address} | ${campus.zip_code}`]}
+            subtitle={[campus.address || "No address provided"]}
             isSelected={isSelected}
             icon={<Landmark className="h-14 w-14 text-background" />}
+            annotations={
+              <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
+                {campus.code}
+              </span>
+            }
           />
         );
       })}

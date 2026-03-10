@@ -14,9 +14,9 @@ type CampusEditFormProps = {
 };
 
 const campusToFormState = (campus: Campus): CampusFormState => ({
+  code: campus.code,
   name: campus.name,
   address: campus.address ?? "",
-  zip_code: campus.zip_code ?? "",
 });
 
 export const CampusEdit = ({ campus }: CampusEditFormProps) => {
@@ -43,6 +43,11 @@ export const CampusEdit = ({ campus }: CampusEditFormProps) => {
   };
 
   const handleSave = async () => {
+    if (!formData.code.trim()) {
+      setError("Campus code is required");
+      return;
+    }
+
     if (!formData.name.trim()) {
       setError("Campus name is required");
       return;
@@ -54,9 +59,9 @@ export const CampusEdit = ({ campus }: CampusEditFormProps) => {
 
     const { error: updateError } = await updateCampus({
       id: campus.id,
+      code: formData.code,
       name: formData.name,
       address: formData.address,
-      zip_code: formData.zip_code,
     });
 
     setIsSaving(false);
@@ -67,9 +72,9 @@ export const CampusEdit = ({ campus }: CampusEditFormProps) => {
     }
 
     const newSavedState = {
+      code: formData.code.trim().toUpperCase(),
       name: formData.name.trim(),
       address: formData.address.trim(),
-      zip_code: formData.zip_code.trim(),
     };
 
     setSavedFormData(newSavedState);

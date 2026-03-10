@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ReactNode } from "react";
 
 type RankFormState = {
-  number: string;
+  code: string;
   title: string;
   description: string;
 };
@@ -47,15 +47,17 @@ export const RankInitialForm = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label className="text-xs" htmlFor="number">
-              Rank Number *
+            <Label className="text-xs" htmlFor="code">
+              Rank Code *
             </Label>
             <Input
-              id="number"
-              type="number"
-              placeholder="e.g. 1"
-              value={formData.number}
-              onChange={(event) => onChange("number", event.target.value)}
+              id="code"
+              placeholder="e.g. PROF-1"
+              value={formData.code}
+              onChange={(event) => onChange("code", event.target.value)}
+              onBlur={(event) =>
+                onChange("code", event.target.value.trim().toUpperCase())
+              }
               className="mt-1"
               disabled={isSaving}
             />

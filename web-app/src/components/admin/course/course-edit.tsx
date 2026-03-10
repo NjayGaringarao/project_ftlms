@@ -19,33 +19,33 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
   const router = useRouter();
   const [code, setCode] = useState(course.code);
   const [title, setTitle] = useState(course.title);
-  const [lectureHour, setLectureHour] = useState(
-    (course.lecture_hour ?? 0).toString(),
+  const [lectureUnit, setLectureUnit] = useState(
+    (course.lecture_unit ?? 0).toString(),
   );
-  const [laboratoryHour, setLaboratoryHour] = useState(
-    (course.laboratory_hour ?? 0).toString(),
+  const [laboratoryUnit, setLaboratoryUnit] = useState(
+    (course.laboratory_unit ?? 0).toString(),
   );
   const [savedState, setSavedState] = useState({
     code: course.code,
     title: course.title,
-    lectureHour: (course.lecture_hour ?? 0).toString(),
-    laboratoryHour: (course.laboratory_hour ?? 0).toString(),
+    lectureUnit: (course.lecture_unit ?? 0).toString(),
+    laboratoryUnit: (course.laboratory_unit ?? 0).toString(),
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const handleSave = async () => {
-    const parsedLecture = Number(lectureHour);
-    const parsedLaboratory = Number(laboratoryHour);
+    const parsedLecture = Number(lectureUnit);
+    const parsedLaboratory = Number(laboratoryUnit);
 
     if (!code.trim()) return setError("Course code is required");
     if (!title.trim()) return setError("Course title is required");
     if (!Number.isFinite(parsedLecture) || parsedLecture < 0) {
-      return setError("Lecture hour must be zero or greater");
+      return setError("Lecture unit must be zero or greater");
     }
     if (!Number.isFinite(parsedLaboratory) || parsedLaboratory < 0) {
-      return setError("Laboratory hour must be zero or greater");
+      return setError("Laboratory unit must be zero or greater");
     }
 
     setIsSaving(true);
@@ -56,8 +56,8 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
       id: course.id,
       code,
       title,
-      lecture_hour: parsedLecture,
-      laboratory_hour: parsedLaboratory,
+      lecture_unit: parsedLecture,
+      laboratory_unit: parsedLaboratory,
     });
 
     setIsSaving(false);
@@ -70,8 +70,8 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
     setSavedState({
       code: code.trim().toUpperCase(),
       title: title.trim(),
-      lectureHour: parsedLecture.toString(),
-      laboratoryHour: parsedLaboratory.toString(),
+      lectureUnit: parsedLecture.toString(),
+      laboratoryUnit: parsedLaboratory.toString(),
     });
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
@@ -135,17 +135,17 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="lecture-hour">
-                Lecture Hour
+              <Label className="text-xs" htmlFor="lecture-unit">
+                Lecture Unit
               </Label>
               <Input
-                id="lecture-hour"
+                id="lecture-unit"
                 type="number"
                 min="0"
                 step="0.25"
-                value={lectureHour}
+                value={lectureUnit}
                 onChange={(event) => {
-                  setLectureHour(event.target.value);
+                  setLectureUnit(event.target.value);
                   setError("");
                 }}
                 className="mt-1"
@@ -154,17 +154,17 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="laboratory-hour">
-                Laboratory Hour
+              <Label className="text-xs" htmlFor="laboratory-unit">
+                Laboratory Unit
               </Label>
               <Input
-                id="laboratory-hour"
+                id="laboratory-unit"
                 type="number"
                 min="0"
                 step="0.25"
-                value={laboratoryHour}
+                value={laboratoryUnit}
                 onChange={(event) => {
-                  setLaboratoryHour(event.target.value);
+                  setLaboratoryUnit(event.target.value);
                   setError("");
                 }}
                 className="mt-1"
@@ -179,8 +179,8 @@ export const CourseEdit = ({ course }: CourseEditProps) => {
               onClick={() => {
                 setCode(savedState.code);
                 setTitle(savedState.title);
-                setLectureHour(savedState.lectureHour);
-                setLaboratoryHour(savedState.laboratoryHour);
+                setLectureUnit(savedState.lectureUnit);
+                setLaboratoryUnit(savedState.laboratoryUnit);
                 setError("");
                 setSuccess(false);
               }}

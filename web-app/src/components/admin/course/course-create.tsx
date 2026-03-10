@@ -14,23 +14,23 @@ export const CourseCreate = () => {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
-  const [lectureHour, setLectureHour] = useState("0");
-  const [laboratoryHour, setLaboratoryHour] = useState("0");
+  const [lectureUnit, setLectureUnit] = useState("0");
+  const [laboratoryUnit, setLaboratoryUnit] = useState("0");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleCreate = async () => {
-    const parsedLecture = Number(lectureHour);
-    const parsedLaboratory = Number(laboratoryHour);
+    const parsedLecture = Number(lectureUnit);
+    const parsedLaboratory = Number(laboratoryUnit);
 
     if (!code.trim()) return setError("Course code is required");
     if (!title.trim()) return setError("Course title is required");
     if (!Number.isFinite(parsedLecture) || parsedLecture < 0) {
-      return setError("Lecture hour must be zero or greater");
+      return setError("Lecture unit must be zero or greater");
     }
     if (!Number.isFinite(parsedLaboratory) || parsedLaboratory < 0) {
-      return setError("Laboratory hour must be zero or greater");
+      return setError("Laboratory unit must be zero or greater");
     }
 
     setIsSaving(true);
@@ -40,8 +40,8 @@ export const CourseCreate = () => {
     const { data, error: createError } = await createCourse({
       code,
       title,
-      lecture_hour: parsedLecture,
-      laboratory_hour: parsedLaboratory,
+      lecture_unit: parsedLecture,
+      laboratory_unit: parsedLaboratory,
     });
 
     setIsSaving(false);
@@ -124,17 +124,17 @@ export const CourseCreate = () => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="lecture-hour">
-                Lecture Hour
+              <Label className="text-xs" htmlFor="lecture-unit">
+                Lecture Unit
               </Label>
               <Input
-                id="lecture-hour"
+                id="lecture-unit"
                 type="number"
                 min="0"
                 step="0.25"
-                value={lectureHour}
+                value={lectureUnit}
                 onChange={(event) => {
-                  setLectureHour(event.target.value);
+                  setLectureUnit(event.target.value);
                   setError("");
                 }}
                 className="mt-1"
@@ -143,17 +143,17 @@ export const CourseCreate = () => {
             </div>
 
             <div>
-              <Label className="text-xs" htmlFor="laboratory-hour">
-                Laboratory Hour
+              <Label className="text-xs" htmlFor="laboratory-unit">
+                Laboratory Unit
               </Label>
               <Input
-                id="laboratory-hour"
+                id="laboratory-unit"
                 type="number"
                 min="0"
                 step="0.25"
-                value={laboratoryHour}
+                value={laboratoryUnit}
                 onChange={(event) => {
-                  setLaboratoryHour(event.target.value);
+                  setLaboratoryUnit(event.target.value);
                   setError("");
                 }}
                 className="mt-1"
@@ -168,8 +168,8 @@ export const CourseCreate = () => {
               onClick={() => {
                 setCode("");
                 setTitle("");
-                setLectureHour("0");
-                setLaboratoryHour("0");
+                setLectureUnit("0");
+                setLaboratoryUnit("0");
                 setError("");
                 setShowSuccess(false);
               }}

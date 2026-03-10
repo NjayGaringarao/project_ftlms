@@ -38,6 +38,7 @@ export const BlocksList = ({
       if (!q) return items;
 
       return items.filter((block) => {
+        const code = block.code.toLowerCase();
         const major = block.major_offering?.major?.name?.toLowerCase() ?? "";
         const campus =
           block.major_offering?.program_offering?.campus?.name?.toLowerCase() ??
@@ -49,6 +50,7 @@ export const BlocksList = ({
         const yearLevel = `year ${block.year_level}`;
 
         return (
+          code.includes(q) ||
           major.includes(q) ||
           campus.includes(q) ||
           program.includes(q) ||
@@ -64,7 +66,7 @@ export const BlocksList = ({
       header={
         <>
           <Input
-            placeholder="Search Blocks by major, program, campus, year level, or section"
+            placeholder="Search Blocks by code, major, program, campus, year level, or section"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -94,7 +96,7 @@ export const BlocksList = ({
           icon={<Blocks className="h-14 w-14 text-background" />}
           annotations={
             <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-              {block.student_count ?? 0} students
+              {block.code}
             </span>
           }
         />

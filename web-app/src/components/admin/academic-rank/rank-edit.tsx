@@ -14,7 +14,7 @@ type RankEditFormProps = {
 };
 
 const rankToFormState = (rank: Rank): RankFormState => ({
-  number: rank.number.toString(),
+  code: rank.code,
   title: rank.title,
   description: rank.description ?? "",
 });
@@ -43,10 +43,8 @@ export const RankEdit = ({ rank }: RankEditFormProps) => {
   };
 
   const handleSave = async () => {
-    const parsedNumber = Number(formData.number);
-
-    if (!Number.isFinite(parsedNumber)) {
-      setError("Rank number is required");
+    if (!formData.code.trim()) {
+      setError("Rank code is required");
       return;
     }
 
@@ -61,7 +59,7 @@ export const RankEdit = ({ rank }: RankEditFormProps) => {
 
     const { error: updateError } = await updateRank({
       id: rank.id,
-      number: parsedNumber,
+      code: formData.code,
       title: formData.title,
       description: formData.description,
     });
@@ -74,7 +72,7 @@ export const RankEdit = ({ rank }: RankEditFormProps) => {
     }
 
     const newSavedState = {
-      number: parsedNumber.toString(),
+      code: formData.code.trim().toUpperCase(),
       title: formData.title.trim(),
       description: formData.description.trim(),
     };

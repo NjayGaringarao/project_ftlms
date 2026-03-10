@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Edit } from "lucide-react";
-import { Term } from "@/models/academic_term";
+import { AcademicTerm } from "@/models/academic_term";
 import { updateTerm } from "@/lib/admin/actions";
 import AdminPanel from "../admin-panel";
 import FormStatusBanner from "../form-status-banner";
@@ -14,10 +14,10 @@ import {
 } from "@/lib/admin/academic-terms";
 
 type TermEditFormProps = {
-  term: Term;
+  term: AcademicTerm;
 };
 
-const termToFormState = (term: Term): TermFormState => ({
+const termToFormState = (term: AcademicTerm): TermFormState => ({
   academic_year_start: String(term.academic_year_start),
   academic_year_end: String(term.academic_year_end),
   type: term.type,

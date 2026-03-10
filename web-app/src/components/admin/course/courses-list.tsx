@@ -26,8 +26,8 @@ export const CoursesList = ({ courses }: CoursesListProps) => {
       return items.filter((course) => {
         const code = course.code.toLowerCase();
         const title = course.title.toLowerCase();
-        const lecture = String(course.lecture_hour ?? 0);
-        const laboratory = String(course.laboratory_hour ?? 0);
+        const lecture = String(course.lecture_unit ?? 0);
+        const laboratory = String(course.laboratory_unit ?? 0);
 
         return (
           code.includes(q) ||
@@ -44,7 +44,7 @@ export const CoursesList = ({ courses }: CoursesListProps) => {
       header={
         <>
           <Input
-            placeholder="Search by code, title, lecture hour, or laboratory hour"
+            placeholder="Search by code, title, lecture unit, or laboratory unit"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -67,7 +67,7 @@ export const CoursesList = ({ courses }: CoursesListProps) => {
           onClick={() => router.push(`/courses/${course.id}`)}
           title={course.title}
           subtitle={[
-            `Lecture: ${course.lecture_hour ?? 0}h | Laboratory: ${course.laboratory_hour ?? 0}h`,
+            `Lecture: ${course.lecture_unit ?? 0} | Laboratory: ${course.laboratory_unit ?? 0}`,
           ]}
           isSelected={selectedId === course.id}
           icon={<NotebookTabs className="h-14 w-14 text-background" />}

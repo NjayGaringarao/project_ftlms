@@ -10,7 +10,7 @@ export const getCoursesList = async (): Promise<CourseListItem[]> => {
 
   const { data, error } = await supabase
     .from("course")
-    .select("id, code, title, lecture_hour, laboratory_hour")
+    .select("id, code, title, lecture_unit, laboratory_unit")
     .order("title", { ascending: true });
 
   if (error) {
@@ -28,7 +28,7 @@ export const getCourseById = async (
 
   const { data, error } = await supabase
     .from("course")
-    .select("id, code, title, lecture_hour, laboratory_hour")
+    .select("id, code, title, lecture_unit, laboratory_unit")
     .eq("id", courseId)
     .maybeSingle();
 

@@ -9,9 +9,9 @@ import FormStatusBanner from "../form-status-banner";
 import { CampusInitialForm, type CampusFormState } from "./campus-initial-form";
 
 const initialFormState: CampusFormState = {
+  code: "",
   name: "",
   address: "",
-  zip_code: "",
 };
 
 export const CampusCreate = () => {
@@ -33,6 +33,11 @@ export const CampusCreate = () => {
   };
 
   const handleCreate = async () => {
+    if (!formData.code.trim()) {
+      setError("Campus code is required");
+      return;
+    }
+
     if (!formData.name.trim()) {
       setError("Campus name is required");
       return;
@@ -43,9 +48,9 @@ export const CampusCreate = () => {
     setShowSuccess(false);
 
     const { data, error: createError } = await createCampus({
+      code: formData.code,
       name: formData.name,
       address: formData.address,
-      zip_code: formData.zip_code,
     });
 
     setIsSaving(false);

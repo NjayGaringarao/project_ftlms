@@ -59,12 +59,12 @@ export const CourseView = ({ course }: CourseViewProps) => {
               <p className="font-medium">{course.title}</p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Lecture Hour</p>
-              <p className="font-medium">{course.lecture_hour ?? 0}</p>
+              <p className="text-xs text-foreground/60">Lecture Unit</p>
+              <p className="font-medium">{course.lecture_unit ?? 0}</p>
             </div>
             <div>
-              <p className="text-xs text-foreground/60">Laboratory Hour</p>
-              <p className="font-medium">{course.laboratory_hour ?? 0}</p>
+              <p className="text-xs text-foreground/60">Laboratory Unit</p>
+              <p className="font-medium">{course.laboratory_unit ?? 0}</p>
             </div>
           </div>
         </div>

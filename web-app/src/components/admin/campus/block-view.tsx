@@ -52,6 +52,10 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <p className="text-xs text-foreground/60">Code</p>
+              <p className="font-medium">{block.code}</p>
+            </div>
+            <div>
               <p className="text-xs text-foreground/60">Year Level</p>
               <p className="font-medium">{block.year_level}</p>
             </div>

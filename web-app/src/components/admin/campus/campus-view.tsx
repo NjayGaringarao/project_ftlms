@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Info, MapPin } from "lucide-react";
+import {
+  ArrowUpRight,
+  Blocks,
+  Building2,
+  DoorOpen,
+  GraduationCap,
+  Info,
+  MapPin,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Campus } from "@/models/campus";
 import { deleteCampus } from "@/lib/admin/actions";
 import AdminPanel from "../admin-panel";
 import DangerZone from "../danger-zone";
 import DeleteConfirmModal from "../delete-confirm-modal";
+import { cn } from "@/utils/style";
 
 type CampusViewProps = {
   campus: Campus;
@@ -54,6 +63,14 @@ export const CampusView = ({ campus }: CampusViewProps) => {
             <div className="flex items-start gap-3">
               <Building2 className="w-5 h-5 text-foreground/60 mt-0.5" />
               <div>
+                <p className="text-xs text-foreground/60">Code</p>
+                <p className="font-medium">{campus.code}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Building2 className="w-5 h-5 text-foreground/60 mt-0.5" />
+              <div>
                 <p className="text-xs text-foreground/60">Name</p>
                 <p className="font-medium">{campus.name}</p>
               </div>
@@ -68,41 +85,65 @@ export const CampusView = ({ campus }: CampusViewProps) => {
                 </p>
               </div>
             </div>
-
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-foreground/60 mt-0.5" />
-              <div>
-                <p className="text-xs text-foreground/60">ZIP Code</p>
-                <p className="font-medium">
-                  {campus.zip_code || "Not provided"}
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="space-y-3 pt-2 border-t">
             <h4 className="text-sm font-semibold">Campus Entities</h4>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                className={cn(
+                  "relative h-20 rounded-md p-4",
+                  "flex flex-row justify-start items-center gap-2",
+                  "shadow border",
+                  "hover:bg-foreground/5 hover:border-foreground/30",
+                )}
                 onClick={() =>
                   router.push(`/campuses/${campus.id}/program-offerings`)
                 }
               >
-                Program Offerings
-              </Button>
-              <Button
-                variant="outline"
+                <GraduationCap className="w-10 h-10" />
+                <span className="text-foreground font-medium">
+                  Program Offerings
+                </span>
+                {/* <p className="min-w-10 p-2 bg-foreground/15 rounded-full text-xs">
+                  {campus.rooms?.length || 0}
+                </p> */}
+                <ArrowUpRight className="w-6 h-6 absolute right-2 top-2 text-foreground/60" />
+              </button>
+
+              <button
+                className={cn(
+                  "relative h-20 rounded-md p-4",
+                  "flex flex-row justify-start items-center gap-2",
+                  "shadow border",
+                  "hover:bg-foreground/5 hover:border-foreground/30",
+                )}
                 onClick={() => router.push(`/campuses/${campus.id}/blocks`)}
               >
-                Blocks
-              </Button>
-              <Button
-                variant="outline"
+                <Blocks className="w-10 h-10" />
+                <span className="text-foreground font-medium">Blocks</span>
+                {/* <p className="min-w-10 p-2 bg-foreground/15 rounded-full text-xs">
+                  {campus.rooms?.length || 0}
+                </p> */}
+                <ArrowUpRight className="w-6 h-6 absolute right-2 top-2 text-foreground/60" />
+              </button>
+
+              <button
+                className={cn(
+                  "relative h-20 rounded-md p-4",
+                  "flex flex-row justify-start items-center gap-2",
+                  "shadow border",
+                  "hover:bg-foreground/5 hover:border-foreground/30",
+                )}
                 onClick={() => router.push(`/campuses/${campus.id}/rooms`)}
               >
-                Rooms
-              </Button>
+                <DoorOpen className="w-10 h-10" />
+                <span className="text-foreground font-medium">Rooms</span>
+                {/* <p className="min-w-10 p-2 bg-foreground/15 rounded-full text-xs">
+                  {campus.rooms?.length || 0}
+                </p> */}
+                <ArrowUpRight className="w-6 h-6 absolute right-2 top-2 text-foreground/60" />
+              </button>
             </div>
           </div>
         </div>

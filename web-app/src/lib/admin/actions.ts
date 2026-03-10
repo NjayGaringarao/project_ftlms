@@ -308,9 +308,9 @@ export async function deleteDepartment(
 }
 
 type CampusInput = {
+  code: string;
   name: string;
   address?: string | null;
-  zip_code?: string | null;
 };
 
 type UpdateCampusInput = CampusInput & {
@@ -318,14 +318,15 @@ type UpdateCampusInput = CampusInput & {
 };
 
 const normalizeCampusInput = (input: CampusInput) => ({
+  code: normalizeCode(input.code),
   name: normalizeName(input.name),
   address: normalizeDescription(input.address),
-  zip_code: normalizeDescription(input.zip_code),
 });
 
 export async function createCampus(
   input: CampusInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.code?.trim()) return { error: "Campus code is required" };
   if (!input.name?.trim()) return { error: "Campus name is required" };
 
   const supabase = await createClient();
@@ -348,6 +349,7 @@ export async function updateCampus(
   input: UpdateCampusInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Campus ID is required" };
+  if (!input.code?.trim()) return { error: "Campus code is required" };
   if (!input.name?.trim()) return { error: "Campus name is required" };
 
   const supabase = await createClient();
@@ -552,7 +554,7 @@ export async function deleteTerm(
 }
 
 type RankInput = {
-  number: number;
+  code: string;
   title: string;
   description?: string | null;
 };
@@ -562,7 +564,7 @@ type UpdateRankInput = RankInput & {
 };
 
 const normalizeRankInput = (input: RankInput) => ({
-  number: input.number,
+  code: normalizeCode(input.code),
   title: normalizeName(input.title),
   description: normalizeDescription(input.description),
 });
@@ -570,8 +572,7 @@ const normalizeRankInput = (input: RankInput) => ({
 export async function createRank(
   input: RankInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!Number.isFinite(input.number))
-    return { error: "Rank number is required" };
+  if (!input.code?.trim()) return { error: "Rank code is required" };
   if (!input.title?.trim()) return { error: "Rank title is required" };
 
   const supabase = await createClient();
@@ -585,8 +586,8 @@ export async function createRank(
   if (error) {
     if (error.code === "23505") {
       const message = error.message?.toLowerCase() ?? "";
-      if (message.includes("number")) {
-        return { error: "Rank number already exists" };
+      if (message.includes("code")) {
+        return { error: "Rank code already exists" };
       }
       if (message.includes("title")) {
         return { error: "Rank title already exists" };
@@ -605,8 +606,7 @@ export async function updateRank(
   input: UpdateRankInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Rank ID is required" };
-  if (!Number.isFinite(input.number))
-    return { error: "Rank number is required" };
+  if (!input.code?.trim()) return { error: "Rank code is required" };
   if (!input.title?.trim()) return { error: "Rank title is required" };
 
   const supabase = await createClient();
@@ -619,8 +619,8 @@ export async function updateRank(
   if (error) {
     if (error.code === "23505") {
       const message = error.message?.toLowerCase() ?? "";
-      if (message.includes("number")) {
-        return { error: "Rank number already exists" };
+      if (message.includes("code")) {
+        return { error: "Rank code already exists" };
       }
       if (message.includes("title")) {
         return { error: "Rank title already exists" };
@@ -658,8 +658,8 @@ export async function deleteRank(
 type CourseInput = {
   code: string;
   title: string;
-  lecture_hour?: number | null;
-  laboratory_hour?: number | null;
+  lecture_unit?: number | null;
+  laboratory_unit?: number | null;
 };
 
 type UpdateCourseInput = CourseInput & {
@@ -669,8 +669,8 @@ type UpdateCourseInput = CourseInput & {
 const normalizeCourseInput = (input: CourseInput) => ({
   code: normalizeCode(input.code),
   title: normalizeName(input.title),
-  lecture_hour: input.lecture_hour ?? 0,
-  laboratory_hour: input.laboratory_hour ?? 0,
+  lecture_unit: input.lecture_unit ?? 0,
+  laboratory_unit: input.laboratory_unit ?? 0,
 });
 
 const mapCourseMutationError = (error: MutationError) => {
@@ -691,18 +691,18 @@ export async function createCourse(
   if (!input.code?.trim()) return { error: "Course code is required" };
   if (!input.title?.trim()) return { error: "Course title is required" };
   if (
-    input.lecture_hour !== undefined &&
-    input.lecture_hour !== null &&
-    (!Number.isFinite(input.lecture_hour) || input.lecture_hour < 0)
+    input.lecture_unit !== undefined &&
+    input.lecture_unit !== null &&
+    (!Number.isFinite(input.lecture_unit) || input.lecture_unit < 0)
   ) {
-    return { error: "Lecture hour must be zero or greater" };
+    return { error: "Lecture unit must be zero or greater" };
   }
   if (
-    input.laboratory_hour !== undefined &&
-    input.laboratory_hour !== null &&
-    (!Number.isFinite(input.laboratory_hour) || input.laboratory_hour < 0)
+    input.laboratory_unit !== undefined &&
+    input.laboratory_unit !== null &&
+    (!Number.isFinite(input.laboratory_unit) || input.laboratory_unit < 0)
   ) {
-    return { error: "Laboratory hour must be zero or greater" };
+    return { error: "Laboratory unit must be zero or greater" };
   }
 
   const supabase = await createClient();
@@ -728,18 +728,18 @@ export async function updateCourse(
   if (!input.code?.trim()) return { error: "Course code is required" };
   if (!input.title?.trim()) return { error: "Course title is required" };
   if (
-    input.lecture_hour !== undefined &&
-    input.lecture_hour !== null &&
-    (!Number.isFinite(input.lecture_hour) || input.lecture_hour < 0)
+    input.lecture_unit !== undefined &&
+    input.lecture_unit !== null &&
+    (!Number.isFinite(input.lecture_unit) || input.lecture_unit < 0)
   ) {
-    return { error: "Lecture hour must be zero or greater" };
+    return { error: "Lecture unit must be zero or greater" };
   }
   if (
-    input.laboratory_hour !== undefined &&
-    input.laboratory_hour !== null &&
-    (!Number.isFinite(input.laboratory_hour) || input.laboratory_hour < 0)
+    input.laboratory_unit !== undefined &&
+    input.laboratory_unit !== null &&
+    (!Number.isFinite(input.laboratory_unit) || input.laboratory_unit < 0)
   ) {
-    return { error: "Laboratory hour must be zero or greater" };
+    return { error: "Laboratory unit must be zero or greater" };
   }
 
   const supabase = await createClient();
@@ -1254,6 +1254,7 @@ export async function deleteMajorOffering(
 }
 
 type BlockInput = {
+  code: string;
   major_offering_id: string;
   academic_term_id: string;
   year_level: number;
@@ -1266,6 +1267,7 @@ type UpdateBlockInput = BlockInput & {
 };
 
 const normalizeBlockInput = (input: BlockInput) => ({
+  code: normalizeCode(input.code),
   major_offering_id: input.major_offering_id.trim(),
   academic_term_id: input.academic_term_id.trim(),
   year_level: input.year_level,
@@ -1276,6 +1278,7 @@ const normalizeBlockInput = (input: BlockInput) => ({
 export async function createBlock(
   input: BlockInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.code?.trim()) return { error: "Block code is required" };
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
   if (!input.academic_term_id?.trim())
@@ -1339,6 +1342,7 @@ export async function updateBlock(
   input: UpdateBlockInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Block ID is required" };
+  if (!input.code?.trim()) return { error: "Block code is required" };
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
   if (!input.academic_term_id?.trim())

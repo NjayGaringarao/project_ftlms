@@ -51,8 +51,8 @@ export const RankView = ({ rank }: RankViewProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-foreground/60">Rank Number</p>
-              <p className="font-medium">{rank.number}</p>
+              <p className="text-xs text-foreground/60">Rank Code</p>
+              <p className="font-medium">{rank.code}</p>
             </div>
             <div>
               <p className="text-xs text-foreground/60">Title</p>

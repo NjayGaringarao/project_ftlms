@@ -26,9 +26,9 @@ export type BlockListItem = ExtendedBlock & {
       program_id: string;
       campus: {
         id: string;
+        code: string;
         name: string;
         address: string | null;
-        zip_code: string | null;
       } | null;
       program: {
         id: string;
@@ -49,6 +49,7 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
     .select(
       `
       id,
+      code,
       major_offering_id,
       academic_term_id,
       year_level,
@@ -77,7 +78,7 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
           id,
           campus_id,
           program_id,
-          campus:campus_id (id, name, address, zip_code),
+          campus:campus_id (id, code, name, address),
           program:program_id (id, code, name, description, college_id)
         )
       )
@@ -135,6 +136,7 @@ export const getBlockById = async (
     .select(
       `
       id,
+      code,
       major_offering_id,
       academic_term_id,
       year_level,
@@ -163,7 +165,7 @@ export const getBlockById = async (
           id,
           campus_id,
           program_id,
-          campus:campus_id (id, name, address, zip_code),
+          campus:campus_id (id, code, name, address),
           program:program_id (id, code, name, description, college_id)
         )
       )

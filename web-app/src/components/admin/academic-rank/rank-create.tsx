@@ -9,7 +9,7 @@ import FormStatusBanner from "../form-status-banner";
 import { RankInitialForm, type RankFormState } from "./rank-initial-form";
 
 const initialFormState: RankFormState = {
-  number: "",
+  code: "",
   title: "",
   description: "",
 };
@@ -33,10 +33,8 @@ export const RankCreate = () => {
   };
 
   const handleCreate = async () => {
-    const parsedNumber = Number(formData.number);
-
-    if (!Number.isFinite(parsedNumber)) {
-      setError("Rank number is required");
+    if (!formData.code.trim()) {
+      setError("Rank code is required");
       return;
     }
 
@@ -50,7 +48,7 @@ export const RankCreate = () => {
     setShowSuccess(false);
 
     const { data, error: createError } = await createRank({
-      number: parsedNumber,
+      code: formData.code,
       title: formData.title,
       description: formData.description,
     });

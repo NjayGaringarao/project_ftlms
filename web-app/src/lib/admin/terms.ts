@@ -1,10 +1,10 @@
 "use server";
 
-import { Term } from "@/models/academic_term";
+import { AcademicTerm } from "@/models/academic_term";
 import { createClient } from "@/utils/supabase/server";
 
 export type TermListItem = Pick<
-  Term,
+  AcademicTerm,
   | "id"
   | "academic_year_start"
   | "academic_year_end"
@@ -36,7 +36,9 @@ export const getTermsList = async (): Promise<TermListItem[]> => {
   return (data ?? []) as TermListItem[];
 };
 
-export const getTermById = async (termId: string): Promise<Term | null> => {
+export const getTermById = async (
+  termId: string,
+): Promise<AcademicTerm | null> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -52,5 +54,5 @@ export const getTermById = async (termId: string): Promise<Term | null> => {
     return null;
   }
 
-  return (data ?? null) as Term | null;
+  return (data ?? null) as AcademicTerm | null;
 };

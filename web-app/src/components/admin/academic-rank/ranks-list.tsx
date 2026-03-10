@@ -24,12 +24,10 @@ export const RanksList = ({ ranks }: RanksListProps) => {
       if (!q) return items;
 
       return items.filter((rank) => {
-        const number = rank.number.toString().toLowerCase();
+        const code = rank.code.toLowerCase();
         const title = rank.title.toLowerCase();
         const description = rank.description?.toLowerCase() ?? "";
-        return (
-          number.includes(q) || title.includes(q) || description.includes(q)
-        );
+        return code.includes(q) || title.includes(q) || description.includes(q);
       });
     },
   });
@@ -39,7 +37,7 @@ export const RanksList = ({ ranks }: RanksListProps) => {
       header={
         <>
           <Input
-            placeholder="Search by number, title, or description"
+            placeholder="Search by code, title, or description"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -69,7 +67,7 @@ export const RanksList = ({ ranks }: RanksListProps) => {
             icon={<Award className="h-14 w-14 text-background" />}
             annotations={
               <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-                #{rank.number}
+                {rank.code}
               </span>
             }
           />

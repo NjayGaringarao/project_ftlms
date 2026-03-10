@@ -3,18 +3,15 @@
 import { Rank } from "@/models/academic_rank";
 import { createClient } from "@/utils/supabase/server";
 
-export type RankListItem = Pick<
-  Rank,
-  "id" | "number" | "title" | "description"
->;
+export type RankListItem = Pick<Rank, "id" | "code" | "title" | "description">;
 
 export const getUniversityRanksList = async (): Promise<RankListItem[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("academic_rank")
-    .select("id, number, title, description")
-    .order("number", { ascending: true });
+    .select("id, code, title, description")
+    .order("code", { ascending: true });
 
   if (error) {
     console.error("lib.admin.ranks.getUniversityRanksList ::", error);
@@ -29,7 +26,7 @@ export const getRankById = async (rankId: string): Promise<Rank | null> => {
 
   const { data, error } = await supabase
     .from("academic_rank")
-    .select("id, number, title, description")
+    .select("id, code, title, description")
     .eq("id", rankId)
     .maybeSingle();
 
