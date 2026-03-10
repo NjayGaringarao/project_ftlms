@@ -29,7 +29,7 @@ export const UserView = ({ user }: UserViewProps) => {
     setIsDeleting(true);
     setDeleteError("");
 
-    const { error } = await deleteUser(user.id);
+    const { error, deletedCurrentUser } = await deleteUser(user.id);
 
     if (error) {
       setDeleteError(error);
@@ -38,7 +38,7 @@ export const UserView = ({ user }: UserViewProps) => {
     }
 
     setShowDeleteConfirm(false);
-    router.push("/users");
+    router.push(deletedCurrentUser ? "/auth/login" : "/users");
   };
 
   const fullName = user.identity?.name || "this user";

@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createClient as createAdminClient } from "@/utils/supabase/admin";
 import { Identity } from "@/models/identity";
 import { revalidatePath } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 type CreateUserInput = {
   email: string;
@@ -114,14 +115,36 @@ export async function createUser(
   // Create admin client for user creation
   const adminClient = await createAdminClient();
 
-  // Create auth user
-  const { data: authData, error: authError } =
-    await adminClient.auth.admin.createUser({
-      email: input.email.trim(),
-      password: input.password.trim(),
-      email_confirm: true,
-      user_metadata: input.is_admin ? { user_role: "ADMIN" } : {},
-    });
+  // Create auth user.
+  // Admin accounts must go through sign-up confirmation email flow.
+  const authResponse = input.is_admin
+    ? await createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY!,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+        },
+      ).auth.signUp({
+        email: input.email.trim(),
+        password: input.password.trim(),
+        options: {
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/confirm?next=/home`,
+          data: {
+            user_role: "ADMIN",
+          },
+        },
+      })
+    : await adminClient.auth.admin.createUser({
+        email: input.email.trim(),
+        password: input.password.trim(),
+        email_confirm: true,
+        user_metadata: {},
+      });
+
+  const { data: authData, error: authError } = authResponse;
 
   if (authError || !authData.user) {
     return { error: authError?.message ?? "Failed to create auth user" };
@@ -528,10 +551,16 @@ export async function changeUserPassword(
 
 export async function deleteUser(
   userId: string,
-): Promise<{ data?: boolean; error?: string }> {
+): Promise<{ data?: boolean; error?: string; deletedCurrentUser?: boolean }> {
   if (!userId?.trim()) return { error: "User ID is required" };
 
+  const supabase = await createClient();
   const adminClient = await createAdminClient();
+
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+  const isDeletingCurrentUser = currentUser?.id === userId;
 
   // Delete auth user (cascade delete in database handles identity, designations, degrees)
   const { error } = await adminClient.auth.admin.deleteUser(userId);
@@ -540,6 +569,11 @@ export async function deleteUser(
     return { error: error.message };
   }
 
+  if (isDeletingCurrentUser) {
+    // Prevent stale JWT cookies after self-deletion.
+    await supabase.auth.signOut();
+  }
+
   revalidatePath("/users");
-  return { data: true };
+  return { data: true, deletedCurrentUser: isDeletingCurrentUser };
 }
