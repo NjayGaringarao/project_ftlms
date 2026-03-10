@@ -6,7 +6,7 @@ export default async function Page() {
   if (await getCurrentUser()) redirect("/home");
 
   if (!(await isAdminExists())) {
-    redirect("/auth/initialize-admin");
+    redirect("/auth/create-admin");
   }
   return <LoginForm />;
 }

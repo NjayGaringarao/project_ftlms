@@ -1,6 +1,6 @@
 "use client";
 
-import { initializeAdmin } from "@/lib/auth/actions";
+import { createAdmin } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { cn } from "@/utils/style";
 
-export function InitializeAdminForm({
+export function CreateAdminForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
@@ -24,7 +24,7 @@ export function InitializeAdminForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleInitialize = async (e: React.FormEvent) => {
+  const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -36,7 +36,7 @@ export function InitializeAdminForm({
     }
 
     try {
-      const result = await initializeAdmin(email, password);
+      const result = await createAdmin(email, password);
       if (result?.error) {
         setError(result.error);
       }
@@ -51,11 +51,11 @@ export function InitializeAdminForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="bg-transparent rounded-none flex flex-col justify-center border-none shadow-none">
         <CardHeader>
-          <CardTitle className="text-2xl">Initialize Administrator</CardTitle>
+          <CardTitle className="text-2xl">Create Administrator</CardTitle>
           <CardDescription>Create an Admin Account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleInitialize}>
+          <form onSubmit={handleCreateAdmin}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -102,7 +102,7 @@ export function InitializeAdminForm({
 
                 <ul className="list-disc list-inside text-sm">
                   <li>
-                    This action can only be performed once to create the initial
+                    This action can only be performed once to create the first
                     admin account.
                   </li>
 

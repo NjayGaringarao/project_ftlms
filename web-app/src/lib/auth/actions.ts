@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
-export async function initializeAdmin(email: string, password: string) {
+export async function createAdmin(email: string, password: string) {
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signUp({
@@ -21,7 +21,7 @@ export async function initializeAdmin(email: string, password: string) {
     return { error: error.message };
   }
 
-  redirect("/auth/initialize-admin-success");
+  redirect("/auth/create-admin-success");
 }
 
 export async function signIn(email: string, password: string) {

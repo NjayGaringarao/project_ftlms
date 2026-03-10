@@ -16,8 +16,8 @@ export default function Page() {
       </CardHeader>
       <CardContent className="flex flex-col gap-12">
         <p className="text-sm text-muted-foreground">
-          You&apos;ve successfully created admin account. You are one step away
-          from implementing Faculty Teaching Load Management System.
+          You&apos;ve successfully created an admin account. You are one step
+          away from using Faculty Teaching Load Management System.
         </p>
         <Link
           href="/auth/login"
