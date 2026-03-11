@@ -1,4 +1,4 @@
-import { TopBarNav } from "@/components/me/topbar-nav";
+import { TopBarNav } from "@/components/ui/topbar-nav";
 import React from "react";
 
 const layout = ({ children }: { children: React.ReactNode }) => {
