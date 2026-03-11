@@ -55,7 +55,7 @@ export const DESIGNATION_PRIMARY_OPTIONS = [
 
 export type DesignationSelectionSet = "A" | "B" | "C" | "D" | "E";
 
-const PRIMARY_TITLES_EXCLUDING_OTHER = DESIGNATION_PRIMARY_OPTIONS.filter(
+const PRIMARY_TITLES_EXCLUDING_OTHER: ReadonlyArray<string> = DESIGNATION_PRIMARY_OPTIONS.filter(
   (option) => option.value !== "Other",
 ).map((option) => option.value);
 

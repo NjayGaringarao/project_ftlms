@@ -15,7 +15,7 @@ const DAY_ORDER: Record<string, number> = {
 };
 
 export const formatTermLabel = (term: ScheduleAcademicTermOption): string => {
-  return `${term.code} | AY ${term.academic_year_start}-${term.academic_year_end}`;
+  return `${term.code} | AY ${term.academic_year.start_year}-${term.academic_year.end_year}`;
 };
 
 export const dayLabel = (value: string): string => {

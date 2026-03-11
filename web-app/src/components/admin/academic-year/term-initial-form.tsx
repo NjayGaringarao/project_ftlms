@@ -5,19 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ReactNode } from "react";
-import { AcademicTermOrder, AcademicTermType } from "@/models";
+import { AcademicTermName } from "@/models";
 import {
-  ACADEMIC_TERM_TYPES,
-  TERM_ORDERS_BY_TYPE,
-  getTermOrderLabel,
-  getTermTypeLabel,
+  ACADEMIC_TERM_NAMES,
+  getAcademicTermNameLabel,
 } from "@/lib/admin/academic-terms";
+import { AcademicYearListItem } from "@/lib/admin/academic-years";
 
 type TermFormState = {
-  academic_year_start: string;
-  academic_year_end: string;
-  type: AcademicTermType;
-  term_order: AcademicTermOrder;
+  academic_year_id: string;
+  name: AcademicTermName;
   start: string;
   end: string;
 };
@@ -31,6 +28,7 @@ type TermInitialFormProps = {
   submitLabel: string;
   submitLoadingLabel: string;
   generatedCode: string;
+  academicYears: AcademicYearListItem[];
   statusSlot?: ReactNode;
   extraFields?: ReactNode;
 };
@@ -44,11 +42,10 @@ export const TermInitialForm = ({
   submitLabel,
   submitLoadingLabel,
   generatedCode,
+  academicYears,
   statusSlot,
   extraFields,
 }: TermInitialFormProps) => {
-  const validTermOrders = TERM_ORDERS_BY_TYPE[formData.type];
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
@@ -61,82 +58,41 @@ export const TermInitialForm = ({
 
         <div className="flex flex-col gap-4">
           <div>
-            <Label className="text-xs" htmlFor="academic_year_start">
-              Academic Year Start *
-            </Label>
-            <Input
-              id="academic_year_start"
-              type="number"
-              placeholder="e.g. 2025"
-              value={formData.academic_year_start}
-              onChange={(event) =>
-                onChange("academic_year_start", event.target.value)
-              }
-              onBlur={(event) =>
-                onChange("academic_year_start", event.target.value.trim())
-              }
-              className="mt-1"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs" htmlFor="academic_year_end">
-              Academic Year End *
-            </Label>
-            <Input
-              id="academic_year_end"
-              type="number"
-              placeholder="e.g. 2026"
-              value={formData.academic_year_end}
-              onChange={(event) =>
-                onChange("academic_year_end", event.target.value)
-              }
-              onBlur={(event) =>
-                onChange("academic_year_end", event.target.value.trim())
-              }
-              className="mt-1"
-              disabled={isSaving}
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs" htmlFor="term-type">
-              Term Type *
+            <Label className="text-xs" htmlFor="academic_year_id">
+              Academic Year *
             </Label>
             <select
-              id="term-type"
+              id="academic_year_id"
               className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-              value={formData.type}
-              onChange={(event) =>
-                onChange("type", event.target.value as AcademicTermType)
-              }
+              value={formData.academic_year_id}
+              onChange={(event) => onChange("academic_year_id", event.target.value)}
               disabled={isSaving}
             >
-              {ACADEMIC_TERM_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {getTermTypeLabel(type)}
+              <option value="" disabled>
+                Select academic year
+              </option>
+              {academicYears.map((academicYear) => (
+                <option key={academicYear.id} value={academicYear.id}>
+                  {academicYear.code}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <Label className="text-xs" htmlFor="term-order">
-              Term Order *
+            <Label className="text-xs" htmlFor="term-name">
+              Term Name *
             </Label>
             <select
-              id="term-order"
+              id="term-name"
               className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-              value={formData.term_order}
-              onChange={(event) =>
-                onChange("term_order", event.target.value as AcademicTermOrder)
-              }
+              value={formData.name}
+              onChange={(event) => onChange("name", event.target.value as AcademicTermName)}
               disabled={isSaving}
             >
-              {validTermOrders.map((termOrder) => (
-                <option key={termOrder} value={termOrder}>
-                  {getTermOrderLabel(termOrder)}
+              {ACADEMIC_TERM_NAMES.map((termName) => (
+                <option key={termName} value={termName}>
+                  {getAcademicTermNameLabel(termName)}
                 </option>
               ))}
             </select>

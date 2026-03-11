@@ -40,8 +40,8 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
-    label: "Academic Terms",
-    href: "/academic-terms",
+    label: "Academic Years",
+    href: "/academic-years",
     icon: "calendar-days",
     allowedRoles: ["Admin"],
   },

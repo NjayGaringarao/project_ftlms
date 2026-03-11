@@ -1,9 +1,38 @@
 "use server";
 
-import { ExtendedMajorPC } from "@/models";
+import { ExtendedMajorOffering } from "@/models";
 import { createClient } from "@/utils/supabase/server";
 
-export type MajorOfferingListItem = ExtendedMajorPC;
+export type MajorOfferingListItem = ExtendedMajorOffering & {
+  major: ExtendedMajorOffering["major"] & {
+    description: string | null;
+    program_id: string;
+  };
+  program_offering: {
+    id: string;
+    campus_id: string;
+    program_id: string;
+    campus: {
+      id: string;
+      name: string;
+      address: string | null;
+      zip_code: string | null;
+    } | null;
+    program: {
+      id: string;
+      code: string;
+      name: string;
+      description: string | null;
+      college_id: string;
+      college: {
+        id: string;
+        code: string;
+        name: string;
+        description: string | null;
+      } | null;
+    } | null;
+  };
+};
 
 export const getMajorOfferingsList = async (): Promise<
   MajorOfferingListItem[]
@@ -15,6 +44,7 @@ export const getMajorOfferingsList = async (): Promise<
     .select(
       `
       id,
+      code,
       program_offering_id,
       major_id,
       major:major_id (
@@ -84,6 +114,7 @@ export const getMajorOfferingById = async (
     .select(
       `
       id,
+      code,
       program_offering_id,
       major_id,
       major:major_id (

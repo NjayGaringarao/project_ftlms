@@ -1,91 +1,52 @@
-import { AcademicTerm, AcademicTermOrder, AcademicTermType } from "@/models";
+import { AcademicTermName, ExtendedAcademicTerm } from "@/models";
 
-export const ACADEMIC_TERM_TYPES: AcademicTermType[] = [
-  "SEMESTER",
-  "TRIMESTER",
-  "QUARTER",
+export const ACADEMIC_TERM_NAMES: AcademicTermName[] = [
+  "FIRST SEMESTER",
+  "SECOND SEMESTER",
+  "MIDYEAR",
 ];
 
-export const ACADEMIC_TERM_ORDERS: AcademicTermOrder[] = [
-  "FIRST",
-  "SECOND",
-  "THIRD",
-  "FOURTH",
-];
-
-export const TERM_ORDERS_BY_TYPE: Record<
-  AcademicTermType,
-  AcademicTermOrder[]
-> = {
-  SEMESTER: ["FIRST", "SECOND"],
-  TRIMESTER: ["FIRST", "SECOND", "THIRD"],
-  QUARTER: ["FIRST", "SECOND", "THIRD", "FOURTH"],
+const TERM_NAME_SHORT_LABELS: Record<AcademicTermName, string> = {
+  "FIRST SEMESTER": "FIRST SEM",
+  "SECOND SEMESTER": "SECOND SEM",
+  MIDYEAR: "MIDYEAR",
 };
-
-const TERM_TYPE_LABELS: Record<AcademicTermType, string> = {
-  SEMESTER: "Semester",
-  TRIMESTER: "Trimester",
-  QUARTER: "Quarter",
-};
-
-const TERM_ORDER_LABELS: Record<AcademicTermOrder, string> = {
-  FIRST: "1st",
-  SECOND: "2nd",
-  THIRD: "3rd",
-  FOURTH: "4th",
-};
-
-export const isTermOrderAllowedForType = (
-  type: AcademicTermType,
-  termOrder: AcademicTermOrder,
-) => TERM_ORDERS_BY_TYPE[type].includes(termOrder);
 
 export const getAcademicYearLabel = (
   academicYearStart: number,
   academicYearEnd: number,
 ) => `${academicYearStart}-${academicYearEnd}`;
 
-export const getTermTypeLabel = (type: AcademicTermType) =>
-  TERM_TYPE_LABELS[type];
-
-export const getTermOrderLabel = (termOrder: AcademicTermOrder) =>
-  TERM_ORDER_LABELS[termOrder];
+export const getAcademicTermNameLabel = (name: AcademicTermName) => name;
 
 export const getAcademicTermDisplayLabel = (term: {
-  academic_year_start: number;
-  academic_year_end: number;
-  type: AcademicTermType;
-  term_order: AcademicTermOrder;
+  name: AcademicTermName;
+  academic_year: {
+    start_year: number;
+    end_year: number;
+  };
 }) =>
-  `${getTermOrderLabel(term.term_order)} ${getTermTypeLabel(term.type)}, A.Y. ${getAcademicYearLabel(term.academic_year_start, term.academic_year_end)}`;
+  `${getAcademicTermNameLabel(term.name)}, A.Y. ${getAcademicYearLabel(term.academic_year.start_year, term.academic_year.end_year)}`;
 
 export const generateAcademicTermCode = (term: {
-  academic_year_start: number;
-  academic_year_end: number;
-  type: AcademicTermType;
-  term_order: AcademicTermOrder;
+  name: AcademicTermName;
+  academic_year_code: string;
 }) =>
-  `${getTermOrderLabel(term.term_order).toUpperCase()} ${getTermTypeLabel(term.type).toUpperCase()} AY ${getAcademicYearLabel(term.academic_year_start, term.academic_year_end)}`;
+  `${TERM_NAME_SHORT_LABELS[term.name]} - AY ${term.academic_year_code}`;
 
-export const sortAcademicTermsDesc = (terms: AcademicTerm[]) =>
+export const sortAcademicTermsDesc = (terms: ExtendedAcademicTerm[]) =>
   [...terms].sort((left, right) => {
-    if (left.academic_year_start !== right.academic_year_start) {
-      return right.academic_year_start - left.academic_year_start;
+    if (left.academic_year.start_year !== right.academic_year.start_year) {
+      return right.academic_year.start_year - left.academic_year.start_year;
     }
 
-    if (left.academic_year_end !== right.academic_year_end) {
-      return right.academic_year_end - left.academic_year_end;
+    if (left.academic_year.end_year !== right.academic_year.end_year) {
+      return right.academic_year.end_year - left.academic_year.end_year;
     }
 
-    if (left.type !== right.type) {
-      return (
-        ACADEMIC_TERM_TYPES.indexOf(left.type) -
-        ACADEMIC_TERM_TYPES.indexOf(right.type)
-      );
+    if (left.name !== right.name) {
+      return ACADEMIC_TERM_NAMES.indexOf(left.name) - ACADEMIC_TERM_NAMES.indexOf(right.name);
     }
 
-    return (
-      ACADEMIC_TERM_ORDERS.indexOf(left.term_order) -
-      ACADEMIC_TERM_ORDERS.indexOf(right.term_order)
-    );
+    return left.start.localeCompare(right.start);
   });

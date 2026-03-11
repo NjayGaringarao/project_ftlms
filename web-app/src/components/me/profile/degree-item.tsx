@@ -58,8 +58,8 @@ const DegreeItem = ({
             className="mt-1"
             disabled={isSaving}
           >
-            <option value="Bachelor's Degree">Bachelor's Degree</option>
-            <option value="Master's Degree">Master's Degree</option>
+            <option value="Bachelor&apos;s Degree">Bachelor&apos;s Degree</option>
+            <option value="Master&apos;s Degree">Master&apos;s Degree</option>
             <option value="Doctorate Degree">Doctorate Degree</option>
           </Select>
         </div>

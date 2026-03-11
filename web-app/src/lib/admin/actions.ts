@@ -2,11 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import {
-  generateAcademicTermCode,
-  isTermOrderAllowedForType,
-} from "@/lib/admin/academic-terms";
-import { AcademicTermOrder, AcademicTermType } from "@/models";
+import { generateAcademicTermCode } from "@/lib/admin/academic-terms";
+import { AcademicTermName } from "@/models";
 
 type MutationError = {
   code?: string;
@@ -64,13 +61,22 @@ const revalidateCampusesPaths = (id?: string) => {
   }
 };
 
-const revalidateTermsPaths = (id?: string) => {
-  revalidatePath("/academic-terms");
-  revalidatePath("/academic-terms/create");
+const revalidateTermsPaths = (yearId?: string) => {
+  revalidatePath("/academic-years");
+
+  if (yearId) {
+    revalidatePath(`/academic-years/${yearId}`);
+    revalidatePath(`/academic-years/${yearId}/edit`);
+  }
+};
+
+const revalidateAcademicYearsPaths = (id?: string) => {
+  revalidatePath("/academic-years");
+  revalidatePath("/academic-years/create");
 
   if (id) {
-    revalidatePath(`/academic-terms/${id}`);
-    revalidatePath(`/academic-terms/${id}/edit`);
+    revalidatePath(`/academic-years/${id}`);
+    revalidatePath(`/academic-years/${id}/edit`);
   }
 };
 
@@ -384,11 +390,123 @@ export async function deleteCampus(
   return { data: true };
 }
 
+type AcademicYearInput = {
+  code: string;
+  start_year: number;
+  end_year: number;
+};
+
+type UpdateAcademicYearInput = AcademicYearInput & {
+  id: string;
+};
+
+const normalizeAcademicYearInput = (input: AcademicYearInput) => ({
+  code: normalizeName(input.code),
+  start_year: input.start_year,
+  end_year: input.end_year,
+});
+
+export async function createAcademicYear(
+  input: AcademicYearInput,
+): Promise<{ data?: { id: string }; error?: string }> {
+  if (!input.code?.trim()) return { error: "Academic year code is required" };
+  if (!Number.isInteger(input.start_year)) {
+    return { error: "Academic year start year is required" };
+  }
+  if (!Number.isInteger(input.end_year)) {
+    return { error: "Academic year end year is required" };
+  }
+  if (input.end_year < input.start_year) {
+    return {
+      error: "Academic year end must be greater than or equal to start year",
+    };
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("academic_year")
+    .insert(normalizeAcademicYearInput(input))
+    .select("id")
+    .single();
+
+  if (error) {
+    return { error: mapDuplicateError("Academic year", "code", error) };
+  }
+
+  revalidateAcademicYearsPaths(data.id);
+  return { data: { id: data.id } };
+}
+
+export async function updateAcademicYear(
+  input: UpdateAcademicYearInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.id?.trim()) return { error: "Academic year ID is required" };
+  if (!input.code?.trim()) return { error: "Academic year code is required" };
+  if (!Number.isInteger(input.start_year)) {
+    return { error: "Academic year start year is required" };
+  }
+  if (!Number.isInteger(input.end_year)) {
+    return { error: "Academic year end year is required" };
+  }
+  if (input.end_year < input.start_year) {
+    return {
+      error: "Academic year end must be greater than or equal to start year",
+    };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("academic_year")
+    .update(normalizeAcademicYearInput(input))
+    .eq("id", input.id);
+
+  if (error) {
+    return { error: mapDuplicateError("Academic year", "code", error) };
+  }
+
+  revalidateAcademicYearsPaths(input.id);
+  return { data: true };
+}
+
+export async function deleteAcademicYear(
+  yearId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!yearId?.trim()) return { error: "Academic year ID is required" };
+
+  const supabase = await createClient();
+
+  const { count, error: countError } = await supabase
+    .from("academic_term")
+    .select("id", { count: "exact", head: true })
+    .eq("academic_year_id", yearId);
+
+  if (countError) {
+    return { error: countError.message };
+  }
+
+  if ((count ?? 0) > 0) {
+    return {
+      error:
+        "Cannot delete academic year while academic terms are attached. Remove terms first.",
+    };
+  }
+
+  const { error } = await supabase.from("academic_year").delete().eq("id", yearId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidateAcademicYearsPaths();
+  return { data: true };
+}
+
 type TermInput = {
-  academic_year_start: number;
-  academic_year_end: number;
-  type: AcademicTermType;
-  term_order: AcademicTermOrder;
+  academic_year_id: string;
+  academic_year_code: string;
+  name: AcademicTermName;
   start: string;
   end: string;
 };
@@ -398,10 +516,8 @@ type UpdateTermInput = TermInput & {
 };
 
 const normalizeTermInput = (input: TermInput) => ({
-  academic_year_start: input.academic_year_start,
-  academic_year_end: input.academic_year_end,
-  type: input.type,
-  term_order: input.term_order,
+  academic_year_id: input.academic_year_id,
+  name: input.name,
   code: generateAcademicTermCode(input),
   start: input.start,
   end: input.end,
@@ -410,28 +526,9 @@ const normalizeTermInput = (input: TermInput) => ({
 export async function createTerm(
   input: TermInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!Number.isInteger(input.academic_year_start)) {
-    return { error: "Academic year start is required" };
-  }
-  if (!Number.isInteger(input.academic_year_end)) {
-    return { error: "Academic year end is required" };
-  }
-  if (input.academic_year_start < 2000) {
-    return { error: "Academic year start must be 2000 or later" };
-  }
-  if (input.academic_year_end < input.academic_year_start) {
-    return {
-      error:
-        "Academic year end must be greater than or equal to academic year start",
-    };
-  }
-
-  if (!isTermOrderAllowedForType(input.type, input.term_order)) {
-    return {
-      error:
-        "Selected term order is not valid for the selected academic term type",
-    };
-  }
+  if (!input.academic_year_id?.trim()) return { error: "Academic year is required" };
+  if (!input.academic_year_code?.trim()) return { error: "Academic year code is required" };
+  if (!input.name) return { error: "Academic term name is required" };
 
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
@@ -450,15 +547,11 @@ export async function createTerm(
 
   if (error) {
     return {
-      error: mapDuplicateError(
-        "Term",
-        "academic year range, code, and term order",
-        error,
-      ),
+      error: mapDuplicateError("Term", "code within academic year", error),
     };
   }
 
-  revalidateTermsPaths(data.id);
+  revalidateTermsPaths(input.academic_year_id);
   return { data: { id: data.id } };
 }
 
@@ -466,28 +559,9 @@ export async function updateTerm(
   input: UpdateTermInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Term ID is required" };
-  if (!Number.isInteger(input.academic_year_start)) {
-    return { error: "Academic year start is required" };
-  }
-  if (!Number.isInteger(input.academic_year_end)) {
-    return { error: "Academic year end is required" };
-  }
-  if (input.academic_year_start < 2000) {
-    return { error: "Academic year start must be 2000 or later" };
-  }
-  if (input.academic_year_end < input.academic_year_start) {
-    return {
-      error:
-        "Academic year end must be greater than or equal to academic year start",
-    };
-  }
-
-  if (!isTermOrderAllowedForType(input.type, input.term_order)) {
-    return {
-      error:
-        "Selected term order is not valid for the selected academic term type",
-    };
-  }
+  if (!input.academic_year_id?.trim()) return { error: "Academic year is required" };
+  if (!input.academic_year_code?.trim()) return { error: "Academic year code is required" };
+  if (!input.name) return { error: "Academic term name is required" };
 
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
@@ -505,15 +579,11 @@ export async function updateTerm(
 
   if (error) {
     return {
-      error: mapDuplicateError(
-        "Term",
-        "academic year range, code, and term order",
-        error,
-      ),
+      error: mapDuplicateError("Term", "code within academic year", error),
     };
   }
 
-  revalidateTermsPaths(input.id);
+  revalidateTermsPaths(input.academic_year_id);
   return { data: true };
 }
 

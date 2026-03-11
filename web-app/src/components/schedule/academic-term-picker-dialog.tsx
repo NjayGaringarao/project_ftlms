@@ -6,7 +6,6 @@ import ListItemSmall from "@/components/admin/list-item-small";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import { ScheduleAcademicTermOption } from "@/lib/schedule/types";
-import { formatTermLabel } from "@/lib/schedule/utils";
 import { formatAcademicTermLabel } from "@/utils/string";
 
 type AcademicTermPickerDialogProps = {
@@ -32,7 +31,7 @@ export const AcademicTermPickerDialog = ({
 
     return terms.filter((term) => {
       const searchable =
-        `${term.code} ${term.academic_year_start}-${term.academic_year_end} ${term.term_order} ${term.type}`.toLowerCase();
+        `${term.code} ${term.academic_year.start_year}-${term.academic_year.end_year} ${term.name}`.toLowerCase();
       return searchable.includes(normalizedQuery);
     });
   }, [query, terms]);

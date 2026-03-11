@@ -1,19 +1,53 @@
 "use server";
 
-import { AcademicTerm } from "@/models/academic_term";
+import { ExtendedAcademicTerm } from "@/models/academic_term";
 import { createClient } from "@/utils/supabase/server";
+import { sortAcademicTermsDesc } from "./academic-terms";
 
-export type TermListItem = Pick<
-  AcademicTerm,
-  | "id"
-  | "academic_year_start"
-  | "academic_year_end"
-  | "code"
-  | "term_order"
-  | "type"
-  | "start"
-  | "end"
->;
+export type TermListItem = ExtendedAcademicTerm;
+
+type RawTermRow = {
+  id: string;
+  code: string;
+  academic_year_id: string;
+  name: ExtendedAcademicTerm["name"];
+  start: string;
+  end: string;
+  academic_year:
+    | {
+        id: string;
+        code: string;
+        start_year: number;
+        end_year: number;
+      }
+    | Array<{
+        id: string;
+        code: string;
+        start_year: number;
+        end_year: number;
+      }>;
+};
+
+const normalizeTerm = (value: RawTermRow): ExtendedAcademicTerm => {
+  const yearValue = Array.isArray(value.academic_year)
+    ? value.academic_year[0]
+    : value.academic_year;
+
+  return {
+    id: value.id,
+    code: value.code,
+    academic_year_id: value.academic_year_id,
+    name: value.name,
+    start: value.start,
+    end: value.end,
+    academic_year: {
+      id: yearValue?.id,
+      code: yearValue?.code,
+      start_year: yearValue?.start_year,
+      end_year: yearValue?.end_year,
+    },
+  };
+};
 
 export const getTermsList = async (): Promise<TermListItem[]> => {
   const supabase = await createClient();
@@ -21,30 +55,27 @@ export const getTermsList = async (): Promise<TermListItem[]> => {
   const { data, error } = await supabase
     .from("academic_term")
     .select(
-      "id, academic_year_start, academic_year_end, code, term_order, type, start, end",
+      "id, code, academic_year_id, name, start, end, academic_year:academic_year_id (id, code, start_year, end_year)",
     )
-    .order("academic_year_start", { ascending: false })
-    .order("academic_year_end", { ascending: false })
-    .order("type", { ascending: true })
-    .order("term_order", { ascending: true });
+    .order("start", { ascending: true });
 
   if (error) {
     console.error("lib.admin.terms.getTermsList ::", error);
     return [];
   }
 
-  return (data ?? []) as TermListItem[];
+  return sortAcademicTermsDesc((data ?? []).map(normalizeTerm));
 };
 
 export const getTermById = async (
   termId: string,
-): Promise<AcademicTerm | null> => {
+): Promise<ExtendedAcademicTerm | null> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("academic_term")
     .select(
-      "id, academic_year_start, academic_year_end, code, term_order, type, start, end",
+      "id, code, academic_year_id, name, start, end, academic_year:academic_year_id (id, code, start_year, end_year)",
     )
     .eq("id", termId)
     .maybeSingle();
@@ -54,5 +85,14 @@ export const getTermById = async (
     return null;
   }
 
-  return (data ?? null) as AcademicTerm | null;
+  if (!data) return null;
+
+  return normalizeTerm(data);
+};
+
+export const getTermsByAcademicYearId = async (
+  academicYearId: string,
+): Promise<TermListItem[]> => {
+  const terms = await getTermsList();
+  return terms.filter((term) => term.academic_year_id === academicYearId);
 };

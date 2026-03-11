@@ -1,8 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  getTermOrderLabel,
-  getTermTypeLabel,
-} from "@/lib/admin/academic-terms";
 import { OverviewClassLoad } from "@/lib/user-overview";
 import { AcademicTerm } from "@/models/academic_term";
 
@@ -20,8 +16,7 @@ const AssignedClassesCard = ({ term, classes }: AssignedClassesCardProps) => {
         <CardTitle className="text-base">Currently Assigned Classes</CardTitle>
         {term && (
           <p className="text-sm text-foreground/60">
-            {getTermOrderLabel(term.term_order)} {getTermTypeLabel(term.type)} (
-            {term.code})
+            {term.name} ({term.code})
           </p>
         )}
       </CardHeader>

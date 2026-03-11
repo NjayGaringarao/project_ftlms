@@ -1,8 +1,8 @@
-import { AcademicTerm, SessionDay, SessionType } from "@/models";
+import { ExtendedAcademicTerm, SessionDay, SessionType } from "@/models";
 
 export const ACADEMIC_TERM_QUERY_PARAM = "academic-term_id";
 
-export type ScheduleAcademicTermOption = AcademicTerm & {
+export type ScheduleAcademicTermOption = ExtendedAcademicTerm & {
   is_active: boolean;
 };
 

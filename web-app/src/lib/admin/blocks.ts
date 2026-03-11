@@ -7,10 +7,8 @@ export type BlockListItem = ExtendedBlock & {
   academic_term: {
     id: string;
     code: string;
-    academic_year_start: number;
-    academic_year_end: number;
-    term_order: string;
-    type: string;
+    academic_year_id: string;
+    name: string;
   } | null;
   major_offering: ExtendedBlock["major_offering"] & {
     major: {
@@ -58,10 +56,8 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
       academic_term:academic_term_id (
         id,
         code,
-        academic_year_start,
-        academic_year_end,
-        term_order,
-        type
+        academic_year_id,
+        name
       ),
       major_offering:major_offering_id (
         id,
@@ -145,10 +141,8 @@ export const getBlockById = async (
       academic_term:academic_term_id (
         id,
         code,
-        academic_year_start,
-        academic_year_end,
-        term_order,
-        type
+        academic_year_id,
+        name
       ),
       major_offering:major_offering_id (
         id,

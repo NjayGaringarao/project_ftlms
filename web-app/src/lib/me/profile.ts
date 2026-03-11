@@ -7,7 +7,7 @@ import { ExtendedDesignation } from "@/models/designation";
 import { Degree } from "@/models/degree";
 import { AcademicRank } from "@/models/academic_rank";
 import { User } from "@/models/user";
-import { AcademicTerm } from "@/models/academic_term";
+import { ExtendedAcademicTerm } from "@/models/academic_term";
 
 export type IdentityUpdateInput = {
   name: string;
@@ -284,9 +284,31 @@ export type CurrentTermClassLoad = {
 };
 
 export type CurrentTermTeachingLoad = {
-  term: AcademicTerm | null;
+  term: ExtendedAcademicTerm | null;
   classes: CurrentTermClassLoad[];
   actual_teaching_load: number;
+};
+
+type RawCurrentTermRow = {
+  id: string;
+  code: string;
+  academic_year_id: string;
+  name: ExtendedAcademicTerm["name"];
+  start: string;
+  end: string;
+  academic_year:
+    | {
+        id: string;
+        code: string;
+        start_year: number;
+        end_year: number;
+      }
+    | Array<{
+        id: string;
+        code: string;
+        start_year: number;
+        end_year: number;
+      }>;
 };
 
 export const getCurrentTermTeachingLoadByUserId = async (
@@ -298,7 +320,7 @@ export const getCurrentTermTeachingLoadByUserId = async (
   const { data: currentTermData, error: currentTermError } = await supabase
     .from("academic_term")
     .select(
-      "id, code, academic_year_start, academic_year_end, term_order, type, start, end",
+      "id, code, academic_year_id, name, start, end, academic_year:academic_year_id(id, code, start_year, end_year)",
     )
     .lte("start", today)
     .gte("end", today)
@@ -313,7 +335,19 @@ export const getCurrentTermTeachingLoadByUserId = async (
     );
   }
 
-  const term = (currentTermData as AcademicTerm | null) ?? null;
+  const term = currentTermData
+    ? (() => {
+        const rawTerm = currentTermData as RawCurrentTermRow;
+        const academicYear = Array.isArray(rawTerm.academic_year)
+          ? rawTerm.academic_year[0]
+          : rawTerm.academic_year;
+
+        return {
+          ...rawTerm,
+          academic_year: academicYear,
+        } as ExtendedAcademicTerm;
+      })()
+    : null;
 
   if (!term) {
     return {

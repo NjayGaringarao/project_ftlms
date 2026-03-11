@@ -13,11 +13,20 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createUser } from "@/lib/users/actions";
 import Link from "next/link";
-import { UserInitialFormState } from "@/components/admin/users/user-initial-form";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Lock } from "lucide-react";
+
+type UserInitialFormState = {
+  email: string;
+  password: string;
+  name: string;
+  birthDate: string;
+  address: string;
+  contactNumber: string;
+  employmentStatus: string;
+};
 
 const initialFormState: UserInitialFormState = {
   email: "",

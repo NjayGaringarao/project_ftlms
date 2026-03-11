@@ -1,5 +1,7 @@
-import { AcademicTerm } from "@/models";
+import { ExtendedAcademicTerm } from "@/models";
 
-export const formatAcademicTermLabel = (academicTerm: AcademicTerm): string => {
-  return `${academicTerm.term_order} ${academicTerm.type} | AY ${academicTerm.academic_year_start}-${academicTerm.academic_year_end}`;
+export const formatAcademicTermLabel = (
+  academicTerm: ExtendedAcademicTerm,
+): string => {
+  return `${academicTerm.name} | AY ${academicTerm.academic_year.start_year}-${academicTerm.academic_year.end_year}`;
 };

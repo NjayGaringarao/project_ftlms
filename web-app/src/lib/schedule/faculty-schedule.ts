@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { AcademicTerm, SessionDay, SessionType } from "@/models";
+import { SessionDay, SessionType } from "@/models";
 import {
   FacultySchedulePageData,
   FacultyScheduleRow,
@@ -57,6 +57,28 @@ type ClassDeliveryRow = {
   session?: ClassDeliverySessionRow[] | null;
 };
 
+type RawScheduleTermRow = {
+  id: string;
+  code: string;
+  academic_year_id: string;
+  name: ScheduleAcademicTermOption["name"];
+  start: string;
+  end: string;
+  academic_year:
+    | {
+        id: string;
+        code: string;
+        start_year: number;
+        end_year: number;
+      }
+    | Array<{
+        id: string;
+        code: string;
+        start_year: number;
+        end_year: number;
+      }>;
+};
+
 const getAcademicTerms = async (): Promise<ScheduleAcademicTermOption[]> => {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
@@ -64,21 +86,26 @@ const getAcademicTerms = async (): Promise<ScheduleAcademicTermOption[]> => {
   const { data, error } = await supabase
     .from("academic_term")
     .select(
-      "id, code, academic_year_start, academic_year_end, term_order, type, start, end",
+      "id, code, academic_year_id, name, start, end, academic_year:academic_year_id(id, code, start_year, end_year)",
     )
-    .order("academic_year_start", { ascending: false })
-    .order("academic_year_end", { ascending: false })
-    .order("term_order", { ascending: true });
+    .order("start", { ascending: false });
 
   if (error) {
     console.error("lib.schedule.getAcademicTerms ::", error);
     return [];
   }
 
-  return (data ?? []).map((term) => ({
-    ...(term as AcademicTerm),
-    is_active: today >= term.start && today <= term.end,
-  }));
+  return ((data ?? []) as RawScheduleTermRow[]).map((term) => {
+    const academicYear = Array.isArray(term.academic_year)
+      ? term.academic_year[0]
+      : term.academic_year;
+
+    return {
+      ...term,
+      academic_year: academicYear,
+      is_active: today >= term.start && today <= term.end,
+    };
+  });
 };
 
 const resolveSelectedTerm = (
