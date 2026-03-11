@@ -2,6 +2,7 @@ import { TopBarNav } from "@/components/ui/topbar-nav";
 import { CourseLoadingTermSwitcher } from "@/components/course-loading/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
 import { redirect } from "next/navigation";
+import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
 
 type AcademicTermIdLayoutProps = {
@@ -30,7 +31,7 @@ const AcademicTermIdLayout = async ({
   const basePath = `/course-loading/${academic_term_id}`;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="relative h-full flex flex-col overflow-hidden">
       <TopBarNav
         title="Course Loading"
         items={[
@@ -52,11 +53,10 @@ const AcademicTermIdLayout = async ({
           selectedTermId={selectedTerm.id}
         />
       </TopBarNav>
-      <div className="relative flex flex-col h-full overflow-hidden">
-      
- 
-        
-        {children}</div>
+      <div className="flex flex-col h-full overflow-hidden">{children}</div>
+      <div className="absolute  h-full w-full bg-background z-100 lg:hidden flex flex-col items-center justify-center px-16">
+        <SmallDisplayOverlay />
+      </div>
     </div>
   );
 };
