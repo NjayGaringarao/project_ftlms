@@ -3,6 +3,7 @@ import { ProgramOffering } from "./program-offering";
 
 export type MajorOffering = {
   id: string;
+  code: string;
   program_offering_id: string;
   major_id: string;
 };

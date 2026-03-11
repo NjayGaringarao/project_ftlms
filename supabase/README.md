@@ -171,21 +171,28 @@ When updating migrations in this repository:
 - Never leave duplicate final-state constraints/triggers under different names.
 - Keep this README migration list synchronized with actual files in `supabase/migrations/`.
 
+
 ## Seeds
 
 Seed SQL files are stored in `seeds/` and loaded during `db reset` based on `config.toml`:
 
-- `1000_academic_ranks.sql`
-- `1001_courses.sql`
-- `1002_colleges.sql`
-- `1003_campuses.sql`
-- `1004_programs.sql`
-- `1005_majors.sql`
-- `1006_program_offerings.sql`
-- `1007_major_offerings.sql`
-- `1008_academic_terms.sql`
-- `1009_blocks.sql`
-- `1010_rooms.sql`
+* `1000_academic_ranks.sql`
+* `1001_courses.sql`
+* `1002_colleges.sql`
+* `1003_campuses.sql`
+* `1004_programs.sql`
+* `1005_majors.sql`
+* `1006_program_offerings.sql`
+* `1007_major_offerings.sql`
+* `1008_academic_years.sql`
+* `1009_academic_terms.sql`
+* `1010_blocks.sql`
+* `1011_rooms.sql`
+
+> **Note:**
+> - `1008_academic_years.sql` and `1009_academic_terms.sql` replace the old `1008_academic_terms.sql`.
+> - `1010_blocks.sql` and `1011_rooms.sql` replace the old `1009_blocks.sql` and `1010_rooms.sql`.
+> - The order in this list must match the `sql_paths` in `config.toml` for correct dependency loading.
 
 ## Useful Commands
 

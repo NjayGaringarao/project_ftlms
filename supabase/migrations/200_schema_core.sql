@@ -44,13 +44,18 @@ create table if not exists public.course (
   laboratory_unit numeric(4,2) not null default 0
 );
 
+create table if not exists public.academic_year (
+  id uuid primary key default gen_random_uuid(),
+  code text not null,
+  start_year integer not null,
+  end_year integer not null
+);
+
 create table if not exists public.academic_term (
   id uuid primary key default gen_random_uuid(),
-  academic_year_start integer not null,
-  academic_year_end integer not null,
   code text not null,
-  term_order public.academic_terms_term_order not null,
-  type public.academic_terms_type_enum not null,
-  start date not null,
+  academic_year_id uuid not null references public.academic_year(id) on delete cascade,
+  "name" public.academic_term_name not null,
+  "start" date not null,
   "end" date not null
 );

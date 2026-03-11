@@ -7,12 +7,14 @@
 
 create table if not exists public.program_offering (
   id uuid primary key default gen_random_uuid(),
+  code text not null,
   campus_id uuid not null references public.campus(id) on delete cascade,
   program_id uuid not null references public.program(id) on delete cascade
 );
 
 create table if not exists public.major_offering (
   id uuid primary key default gen_random_uuid(),
+  code text not null,
   program_offering_id uuid not null references public.program_offering(id) on delete cascade,
   major_id uuid not null references public.major(id) on delete cascade
 );

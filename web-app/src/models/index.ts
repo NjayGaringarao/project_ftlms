@@ -1,4 +1,5 @@
 export * from "./academic_rank";
+export * from "./academic_year";
 export * from "./academic_term";
 export * from "./block";
 export * from "./campus";

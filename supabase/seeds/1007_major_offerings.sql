@@ -1,6 +1,7 @@
-INSERT INTO major_offering (program_offering_id, major_id)
+INSERT INTO major_offering (code, program_offering_id, major_id)
 VALUES
 	(
+		'BSCS-GEN-CST',
 		(
 			SELECT po.id
 			FROM program_offering po
@@ -16,6 +17,7 @@ VALUES
 		)
 	),
 	(
+		'BSIT-GEN-CST',
 		(
 			SELECT po.id
 			FROM program_offering po
@@ -31,6 +33,7 @@ VALUES
 		)
 	),
 	(
+		'BSIS-GEN-CST',
 		(
 			SELECT po.id
 			FROM program_offering po

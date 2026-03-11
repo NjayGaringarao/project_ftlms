@@ -75,9 +75,10 @@ sql_paths = [
   "./seeds/1005_majors.sql",
   "./seeds/1006_program_offerings.sql",
   "./seeds/1007_major_offerings.sql",
-  "./seeds/1008_academic_terms.sql",
-  "./seeds/1009_blocks.sql",
-  "./seeds/1010_rooms.sql"
+  "./seeds/1008_academic_years.sql",
+  "./seeds/1009_academic_terms.sql",
+  "./seeds/1010_blocks.sql",
+  "./seeds/1011_rooms.sql"
 ]
 
 [db.network_restrictions]

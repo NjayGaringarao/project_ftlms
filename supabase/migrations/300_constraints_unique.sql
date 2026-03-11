@@ -68,15 +68,15 @@ begin
       add constraint course_code_unique unique (code);
   end if;
 
-  -- Academic term should be unique across the university.
+  -- Academic term code should be unique within the same academic year.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'academic_term_year_term_code_unique'
+    where conname = 'academic_term_code_unique'
       and conrelid = 'public.academic_term'::regclass
   ) then
     alter table public.academic_term
-      add constraint academic_term_year_term_code_unique
-      unique (academic_year_start, academic_year_end, type, term_order, code);
+      add constraint academic_term_code_unique
+      unique (code, academic_year_id);
   end if;
 
 
