@@ -26,13 +26,15 @@ as $$
     select
       at.id,
       at.code,
-      at.academic_year_start,
-      at.academic_year_end,
-      at.term_order,
-      at.type,
+      at.academic_year_id,
+      ay.code as academic_year_code,
+      ay.start_year as academic_year_start,
+      ay.end_year as academic_year_end,
+      at.name,
       at.start,
       at."end"
     from public.academic_term at
+    join public.academic_year ay on ay.id = at.academic_year_id
     where current_date between at.start and at."end"
     order by at.start desc
     limit 1
@@ -246,10 +248,11 @@ as $$
       else jsonb_build_object(
         'id', ct.id,
         'code', ct.code,
+        'academic_year_id', ct.academic_year_id,
+        'academic_year_code', ct.academic_year_code,
         'academic_year_start', ct.academic_year_start,
         'academic_year_end', ct.academic_year_end,
-        'term_order', ct.term_order,
-        'type', ct.type,
+        'name', ct.name,
         'start', ct.start,
         'end', ct."end"
       )
