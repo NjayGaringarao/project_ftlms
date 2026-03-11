@@ -8,25 +8,36 @@ import { iconMap, type IconName } from "@/utils/icon";
 interface TopBarNavItem {
   label: string;
   href: string;
+  activeMatch?: "exact" | "prefix";
 }
 
 interface TopBarNavProps {
   title: string;
   items: TopBarNavItem[];
   icon?: IconName; // Icon identifier for lucide-react
+  children?: React.ReactNode;
 }
 
-export function TopBarNav({ title, items, icon }: TopBarNavProps) {
+export function TopBarNav({ title, items, icon, children }: TopBarNavProps) {
   const Icon = icon ? iconMap[icon] : null;
   const pathname = usePathname();
+
+  const isItemActive = (item: TopBarNavItem) => {
+    if (item.activeMatch === "prefix") {
+      return pathname === item.href || pathname.startsWith(`${item.href}/`);
+    }
+
+    return pathname === item.href;
+  };
 
   return (
     <div className="flex flex-row items-center bg-foreground/80 backdrop-blur-xs z-10 sticky top-0 w-full py-4 px-6 gap-2">
       {Icon && <Icon className="w-8 h-8 text-background" />}
       <p className="text-background text-2xl font-semibold">{title}</p>
       <div className="flex flex-row gap-1 flex-1 h-12 items-center justify-end">
+        {children}
         {items.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = isItemActive(item);
           return (
             <Link
               key={item.href}

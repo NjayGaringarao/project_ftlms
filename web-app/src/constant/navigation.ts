@@ -46,6 +46,12 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
+    label: "Course Loading",
+    href: "/course-loading",
+    icon: "weight-tilde",
+    allowedRoles: ["Admin"],
+  },
+  {
     label: "Scheduler",
     href: "/scheduler",
     icon: "file-text",
