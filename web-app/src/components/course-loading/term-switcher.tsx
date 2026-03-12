@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Calendar, ChevronDown } from "lucide-react";
-import ListItemSmall from "@/components/admin/list-item-small";
+import ListItemSmall from "@/components/ui/list-item-small";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

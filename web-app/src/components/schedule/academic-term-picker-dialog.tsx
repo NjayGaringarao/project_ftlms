@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Calendar } from "lucide-react";
-import ListItemSmall from "@/components/admin/list-item-small";
+import ListItemSmall from "@/components/ui/list-item-small";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import { ScheduleAcademicTermOption } from "@/lib/schedule/types";

@@ -5,11 +5,11 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import ListItem from "../list-item";
+import ListItem from "../../ui/list-item";
 import { Network } from "lucide-react";
 import { useListState } from "@/hooks/useListState";
 import { ProgramOfferingListItem } from "@/lib/admin/program-offerings";
-import AdminListContainer from "../admin-list-container";
+import ListContainer from "@/components/ui/list-container";
 
 type ProgramOfferingsListProps = {
   offerings: ProgramOfferingListItem[];
@@ -52,7 +52,7 @@ export const ProgramOfferingsList = ({
   });
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <Input
@@ -87,6 +87,6 @@ export const ProgramOfferingsList = ({
           icon={<Network className="h-14 w-14 text-background" />}
         />
       ))}
-    </AdminListContainer>
+    </ListContainer>
   );
 };

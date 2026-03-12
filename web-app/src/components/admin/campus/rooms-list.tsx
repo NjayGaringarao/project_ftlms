@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ExtendedRoom } from "@/models";
 import { useListState } from "@/hooks/useListState";
-import ListItem from "../list-item";
-import AdminListContainer from "../admin-list-container";
+import ListItem from "../../ui/list-item";
+import ListContainer from "@/components/ui/list-container";
 
 type RoomsListProps = {
   rooms: ExtendedRoom[];
@@ -54,7 +54,7 @@ export const RoomsList = ({
   });
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <Input
@@ -91,6 +91,6 @@ export const RoomsList = ({
           }
         />
       ))}
-    </AdminListContainer>
+    </ListContainer>
   );
 };

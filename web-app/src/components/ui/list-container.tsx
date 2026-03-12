@@ -2,19 +2,19 @@ import React from "react";
 import { CardContent, CardHeader } from "../ui/card";
 import { cn } from "@/utils/style";
 
-type AdminListProps = {
+type ListProps = {
   header: React.ReactNode;
   children: React.ReactNode;
   isItemSelected?: boolean;
   directoryLevel?: "FIRST" | "SECOND" | "THIRD";
 };
 
-const AdminListContainer = ({
+const ListContainer = ({
   header,
   children,
   isItemSelected,
   directoryLevel = "FIRST",
-}: React.PropsWithChildren<AdminListProps>) => {
+}: React.PropsWithChildren<ListProps>) => {
   return (
     <div className="relative h-full flex flex-col gap-4">
       <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm p-0 z-50 top-0">
@@ -39,4 +39,4 @@ const AdminListContainer = ({
   );
 };
 
-export default AdminListContainer;
+export default ListContainer;

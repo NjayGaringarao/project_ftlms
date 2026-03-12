@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RankListItem } from "@/lib/admin/ranks";
-import ListItem from "../list-item";
+import ListItem from "../../ui/list-item";
 import { Award } from "lucide-react";
 import { useListState } from "../../../hooks/useListState";
-import AdminListContainer from "../admin-list-container";
+import ListContainer from "@/components/ui/list-container";
 
 type RanksListProps = {
   ranks: RankListItem[];
@@ -33,7 +33,7 @@ export const RanksList = ({ ranks }: RanksListProps) => {
   });
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <Input
@@ -73,6 +73,6 @@ export const RanksList = ({ ranks }: RanksListProps) => {
           />
         );
       })}
-    </AdminListContainer>
+    </ListContainer>
   );
 };

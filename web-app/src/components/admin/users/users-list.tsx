@@ -6,8 +6,8 @@ import Link from "next/link";
 import type { UsersListItem } from "@/lib/users/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import AdminListContainer from "../admin-list-container";
-import ListItem from "../list-item";
+import ListContainer from "@/components/ui/list-container";
+import ListItem from "../../ui/list-item";
 import { User } from "lucide-react";
 
 const formatStatus = (status: string | null) => {
@@ -58,7 +58,7 @@ export const UsersList = ({ users }: UsersListProps) => {
   }, [query, statusFilter, users]);
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <div className="flex flex-1 flex-col gap-3 sm:flex-row">
@@ -107,6 +107,6 @@ export const UsersList = ({ users }: UsersListProps) => {
           />
         );
       })}
-    </AdminListContainer>
+    </ListContainer>
   );
 };

@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useListState } from "@/hooks/useListState";
-import ListItem from "../list-item";
+import ListItem from "../../ui/list-item";
 import { Blocks } from "lucide-react";
 import { BlockListItem } from "@/lib/admin/blocks";
-import AdminListContainer from "../admin-list-container";
+import ListContainer from "@/components/ui/list-container";
 
 type BlocksListProps = {
   blocks: BlockListItem[];
@@ -62,7 +62,7 @@ export const BlocksList = ({
   });
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <Input
@@ -101,6 +101,6 @@ export const BlocksList = ({
           }
         />
       ))}
-    </AdminListContainer>
+    </ListContainer>
   );
 };

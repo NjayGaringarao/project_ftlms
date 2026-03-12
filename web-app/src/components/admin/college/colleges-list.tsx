@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CollegeListItem } from "@/lib/admin/colleges";
-import ListItem from "../list-item";
+import ListItem from "../../ui/list-item";
 import { GraduationCap } from "lucide-react";
 import { useListState } from "../../../hooks/useListState";
-import AdminListContainer from "../admin-list-container";
+import ListContainer from "@/components/ui/list-container";
 
 type CollegesListProps = {
   colleges: CollegeListItem[];
@@ -34,7 +34,7 @@ export const CollegesList = ({ colleges }: CollegesListProps) => {
   });
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <Input
@@ -74,7 +74,7 @@ export const CollegesList = ({ colleges }: CollegesListProps) => {
           />
         );
       })}
-    </AdminListContainer>
+    </ListContainer>
   );
 };
 

@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useListState } from "@/hooks/useListState";
-import ListItem from "../list-item";
+import ListItem from "../../ui/list-item";
 import { BookOpen } from "lucide-react";
 import { ExtendedProgram } from "@/models";
-import AdminListContainer from "../admin-list-container";
+import ListContainer from "@/components/ui/list-container";
 
 type ProgramsListProps = {
   programs: ExtendedProgram[];
@@ -48,7 +48,7 @@ export const ProgramsList = ({
   });
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <Input
@@ -85,6 +85,6 @@ export const ProgramsList = ({
           }
         />
       ))}
-    </AdminListContainer>
+    </ListContainer>
   );
 };

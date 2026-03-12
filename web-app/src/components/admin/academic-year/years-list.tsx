@@ -6,9 +6,9 @@ import { CalendarRange } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AcademicYearListItem } from "@/lib/admin/academic-years";
-import AdminListContainer from "../admin-list-container";
-import ListItem from "../list-item";
+import ListItem from "../../ui/list-item";
 import { useListState } from "@/hooks/useListState";
+import ListContainer from "@/components/ui/list-container";
 
 type YearsListProps = {
   years: AcademicYearListItem[];
@@ -32,7 +32,7 @@ export const YearsList = ({ years }: YearsListProps) => {
   });
 
   return (
-    <AdminListContainer
+    <ListContainer
       header={
         <>
           <Input
@@ -64,6 +64,6 @@ export const YearsList = ({ years }: YearsListProps) => {
           icon={<CalendarRange className="h-14 w-14 text-background" />}
         />
       ))}
-    </AdminListContainer>
+    </ListContainer>
   );
 };
