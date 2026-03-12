@@ -11,6 +11,7 @@ type DesignationInformationContentProps = {
   removeDisabled?: boolean;
   trailingContent?: ReactNode;
   emptyMessage?: string;
+  size?: "Default" | "Compact";
 };
 
 const DesignationInformationContent = ({
@@ -19,6 +20,7 @@ const DesignationInformationContent = ({
   removeDisabled = false,
   trailingContent,
   emptyMessage = "No designation assigned.",
+  size = "Default",
 }: DesignationInformationContentProps) => {
   if (designations.length === 0 && !trailingContent) {
     return <p className="text-sm text-foreground/60">{emptyMessage}</p>;
@@ -28,8 +30,8 @@ const DesignationInformationContent = ({
     <div
       className={cn(
         "flex flex-col gap-4",
-        "md:grid grid-cols-2",
-        "xl:grid xl:grid-cols-2 2xl:grid-cols-3",
+        size === "Default" &&
+          "md:grid grid-cols-2 xl:grid xl:grid-cols-2 2xl:grid-cols-3",
       )}
     >
       {designations.map((designation, index) => (

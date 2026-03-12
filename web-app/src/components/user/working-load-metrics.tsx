@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/utils/style";
 import {
   BriefcaseBusiness,
   Calculator,
@@ -10,6 +11,7 @@ type WorkingLoadMetricsProps = {
   designationLoad: number;
   actualTeachingLoad: number;
   totalWorkingLoad: number;
+  size?: "Default" | "Compact";
 };
 
 const toFixedLoad = (value: number) => value.toFixed(2);
@@ -18,9 +20,34 @@ const WorkingLoadMetrics = ({
   designationLoad,
   actualTeachingLoad,
   totalWorkingLoad,
+  size = "Default",
 }: WorkingLoadMetricsProps) => {
   return (
-    <div className="grid md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+    <div
+      className={cn(
+        "grid gap-4",
+        size === "Default" && "md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3",
+        size === "Compact" && "grid-cols-1",
+      )}
+    >
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Calculator className="w-4 h-4" />
+            Total Working Load
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-row gap-2 items-center">
+            <p className="text-3xl font-semibold">
+              {toFixedLoad(totalWorkingLoad)}
+            </p>
+            <WeightTilde />
+          </div>
+          <p className="text-xs text-foreground/60 mt-1">ATL + ETL</p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -58,24 +85,6 @@ const WorkingLoadMetrics = ({
           <p className="text-xs text-foreground/60 mt-1">
             Lecture + (Laboratory * 0.75)
           </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Calculator className="w-4 h-4" />
-            Total Working Load
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-row gap-2 items-center">
-            <p className="text-3xl font-semibold">
-              {toFixedLoad(totalWorkingLoad)}
-            </p>
-            <WeightTilde />
-          </div>
-          <p className="text-xs text-foreground/60 mt-1">ATL + ETL</p>
         </CardContent>
       </Card>
     </div>
