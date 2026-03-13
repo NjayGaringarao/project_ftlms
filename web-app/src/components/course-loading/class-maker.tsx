@@ -9,7 +9,10 @@ import { cn } from "@/utils/style";
 import { createClass, updateClass } from "@/lib/course-loading/actions";
 import type { CampusListItem } from "@/lib/admin/campuses";
 import type { CourseListItem } from "@/lib/admin/courses";
-import type { CourseLoadingBlockListItem } from "@/lib/course-loading/types";
+import type {
+  CourseLoadingBlockListItem,
+  FacultyListItem,
+} from "@/lib/course-loading/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 type ClassMakerProps = {
@@ -33,6 +36,7 @@ type PickerListProps<T> = {
   getId: (item: T) => string;
   getLabel: (item: T) => string;
   getSubLabel?: (item: T) => string;
+  getAnnotation?: (item: T) => React.ReactNode;
   selected: Set<string>;
   onToggle: (id: string) => void;
   placeholder?: string;
@@ -46,6 +50,7 @@ function PickerList<T>({
   getId,
   getLabel,
   getSubLabel,
+  getAnnotation,
   selected,
   onToggle,
   placeholder = "Search…",
@@ -113,6 +118,9 @@ function PickerList<T>({
                   </p>
                 )}
               </div>
+              {getAnnotation && (
+                <div className="shrink-0">{getAnnotation(item)}</div>
+              )}
             </button>
           );
         })}
@@ -144,9 +152,7 @@ const ClassMaker = ({
   const [campuses, setCampuses] = useState<CampusListItem[]>([]);
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [blocks, setBlocks] = useState<CourseLoadingBlockListItem[]>([]);
-  const [facultyOptions, setFacultyOptions] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [facultyOptions, setFacultyOptions] = useState<FacultyListItem[]>([]);
 
   // Selections
   const [selectedCampusId, setSelectedCampusId] = useState(
@@ -178,7 +184,7 @@ const ClassMaker = ({
           campusModule.getCampusesList(),
           courseModule.getCoursesList(),
           blockModule.getBlockListByTerm(academicTermId),
-          facultyModule.getAllFacultyForPicker(),
+          facultyModule.getFacultyListByTerm(academicTermId),
         ]);
 
       setCampuses(campusData);
@@ -257,6 +263,8 @@ const ClassMaker = ({
     setSelectedFacultyId((prev) => (prev === id ? "" : id));
   };
 
+  const toFixedLoad = (value: number) => value.toFixed(2);
+
   // Summary
   const selectedCourse = courses.find((c) => c.id === selectedCourseId);
   const resolvedFacultyId = facultyId ?? selectedFacultyId;
@@ -285,6 +293,7 @@ const ClassMaker = ({
         const result = await updateClass({
           class_id: classId,
           academic_term_id: academicTermId,
+          faculty_id: resolvedFacultyId,
           course_id: selectedCourseId,
           block_ids: Array.from(selectedBlockIds),
         });
@@ -420,6 +429,14 @@ const ClassMaker = ({
                   items={facultyOptions}
                   getId={(f) => f.id}
                   getLabel={(f) => f.name}
+                  getSubLabel={(f) =>
+                    f.latest_degree_title ?? "No degree on file"
+                  }
+                  getAnnotation={(f) => (
+                    <span className="rounded-md bg-foreground/10 px-1 py-1 text-xs text-foreground">
+                      TWL: {toFixedLoad(f.total_working_load)}
+                    </span>
+                  )}
                   selected={
                     new Set(selectedFacultyId ? [selectedFacultyId] : [])
                   }

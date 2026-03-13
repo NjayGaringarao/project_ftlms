@@ -68,9 +68,11 @@ export const FacultyClassTable = ({
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="flex items-center justify-between">
-        <CardTitle className="text-lg">Actual Teaching Load</CardTitle>
+        <CardTitle className="text-lg">Teaching Designation</CardTitle>
         <div className="flex items-center gap-1">
-          <p className="px-3 py-2 text-right font-bold">{toFixed(totalAtl)}</p>
+          <p className="px-3 py-2 text-right">
+            Actual Teaching Load: <b>{toFixed(totalAtl)}</b>{" "}
+          </p>
         </div>
       </CardHeader>
       <CardContent className="overflow-hidden">

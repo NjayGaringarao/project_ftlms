@@ -26,11 +26,12 @@ export const BlockList = ({ blocks, academicTermId }: BlockListProps) => {
 
   // Derive unique filter options
   const campusOptions = useMemo(() => {
-    const set = new Map<string, string>();
+    const set = new Map<string, { code: string; name: string }>();
     for (const b of blocks) {
-      if (b.campus_id && b.campus_code) set.set(b.campus_id, b.campus_code);
+      if (b.campus_id && b.campus_code && b.campus_name)
+        set.set(b.campus_id, { code: b.campus_code, name: b.campus_name });
     }
-    return Array.from(set, ([id, code]) => ({ id, code }));
+    return Array.from(set, ([id, { code, name }]) => ({ id, code, name }));
   }, [blocks]);
 
   const yearOptions = useMemo(() => {
@@ -70,7 +71,7 @@ export const BlockList = ({ blocks, academicTermId }: BlockListProps) => {
         className="shrink-0"
       />
 
-      <div className="flex gap-2 shrink-0">
+      <div className="flex gap-2">
         <select
           value={campusFilter}
           onChange={(e) => setCampusFilter(e.target.value)}
@@ -79,7 +80,7 @@ export const BlockList = ({ blocks, academicTermId }: BlockListProps) => {
           <option value="">All Campuses</option>
           {campusOptions.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.code}
+              {c.name}
             </option>
           ))}
         </select>
@@ -89,7 +90,7 @@ export const BlockList = ({ blocks, academicTermId }: BlockListProps) => {
           onChange={(e) => setYearFilter(e.target.value)}
           className="flex-1 rounded-md border bg-background px-2 py-1.5 text-xs"
         >
-          <option value="">All Years</option>
+          <option value="">All Year Level</option>
           {yearOptions.map((y) => (
             <option key={y} value={y}>
               Year {y}
@@ -109,15 +110,15 @@ export const BlockList = ({ blocks, academicTermId }: BlockListProps) => {
           <ListItemSmall
             key={b.id}
             title={b.code}
-            subtitle={[b.program_offering_code]}
+            subtitle={[`${b.student_count} Student(s)`]}
             isSelected={selectedId === b.id}
             onClick={() =>
               router.push(`/course-loading/${academicTermId}/block/${b.id}`)
             }
             icon={<Blocks className="h-6 w-6 text-background/70" />}
             annotations={
-              <span className="text-xs text-foreground/60">
-                {b.total_unit}u
+              <span className="text-xs bg-foreground/10 p-1 rounded-md">
+                Unit: {b.total_unit.toFixed(2)}
               </span>
             }
           />

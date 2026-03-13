@@ -250,11 +250,26 @@ export async function updateClass(
   }
 
   const nextCourseId = input.course_id ?? currentClass.course_id;
+  let nextScheduleId = currentClass.schedule_id;
+
+  if (input.faculty_id?.trim()) {
+    const nextSchedule = await ensureSchedule(
+      input.faculty_id,
+      input.academic_term_id,
+    );
+    if (!nextSchedule) {
+      return {
+        error: "Failed to create or find schedule for selected faculty",
+      };
+    }
+    nextScheduleId = nextSchedule.id;
+  }
+
   const nextBlockIds =
     input.block_ids ?? (existingClassBlocks ?? []).map((cb) => cb.block_id);
 
   const conflictingBlocks = await findConflictingBlockAssignments(
-    currentClass.schedule_id,
+    nextScheduleId,
     nextCourseId,
     nextBlockIds,
     input.class_id,
@@ -267,15 +282,33 @@ export async function updateClass(
     };
   }
 
-  // Update course if changed
-  if (input.course_id) {
+  const scheduleChanged = nextScheduleId !== currentClass.schedule_id;
+  const courseChanged = nextCourseId !== currentClass.course_id;
+
+  if (scheduleChanged || courseChanged) {
+    const { data: course } = await supabase
+      .from("course")
+      .select("code")
+      .eq("id", nextCourseId)
+      .single();
+
+    const nextClassCode = await generateClassCode(
+      nextScheduleId,
+      nextCourseId,
+      course?.code ?? "CLS",
+    );
+
     const { error } = await supabase
       .from("class")
-      .update({ course_id: input.course_id })
+      .update({
+        schedule_id: nextScheduleId,
+        course_id: nextCourseId,
+        code: nextClassCode,
+      })
       .eq("id", input.class_id);
 
     if (error) {
-      console.error("lib.course-loading.updateClass.course ::", error);
+      console.error("lib.course-loading.updateClass.class ::", error);
       return { error: error.message };
     }
   }

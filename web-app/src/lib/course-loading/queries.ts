@@ -152,12 +152,13 @@ export const getBlockListByTerm = async (
       id,
       code,
       year_level,
+      student_count,
       major_offering:major_offering_id (
         program_offering:program_offering_id (
           id,
           code,
           campus_id,
-          campus:campus_id (id, code)
+          campus:campus_id (id, code, name)
         )
       ),
       class_block (
@@ -207,9 +208,11 @@ export const getBlockListByTerm = async (
     return {
       id: row.id,
       code: row.code,
+      student_count: toNumber(row.student_count),
       program_offering_code: programOffering?.code ?? "",
       campus_id: programOffering?.campus_id ?? "",
       campus_code: campus?.code ?? "",
+      campus_name: campus?.name ?? "",
       year_level: row.year_level,
       total_unit: totalUnit,
     };

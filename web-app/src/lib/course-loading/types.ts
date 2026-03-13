@@ -68,8 +68,10 @@ export type CourseLoadingBlockListItem = {
   program_offering_code: string;
   campus_id: string;
   campus_code: string;
+  campus_name: string;
   year_level: number;
   total_unit: number;
+  student_count: number;
 };
 
 // ── Action inputs ──
@@ -84,6 +86,7 @@ export type ClassInsertInput = {
 export type ClassUpdateInput = {
   class_id: string;
   academic_term_id: string;
+  faculty_id?: string;
   course_id?: string;
   block_ids?: string[];
 };

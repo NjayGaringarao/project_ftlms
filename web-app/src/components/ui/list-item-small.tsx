@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/style";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import React from "react";
 
 type ListItemSmallProps = {
@@ -30,28 +30,26 @@ const ListItemSmall = ({
       onClick={onClick}
       className={cn(
         "flex flex-row rounded-lg border transition items-center",
-        "h-14 overflow-hidden",
+        "min-h-14 overflow-hidden",
         "hover:bg-foreground/5 hover:border-foreground/30 ",
         isSelected && "bg-foreground/10 border-foreground/40 font-semibold",
       )}
     >
       <div
         className={cn(
-          "h-14 w-14 bg-foreground/80 ",
+          "h-full min-h-14 min-w-14 bg-foreground/80 ",
           "flex items-center justify-center",
         )}
       >
         {icon && icon}
       </div>
 
-      <div className="flex-1 flex flex-col items-start px-4">
+      <div className="flex-1 flex flex-col items-start px-4 ">
         {/* Title and annotations row */}
-        <div className="flex flex-row items-center justify-between gap-3">
-          <p className="text-base font-semibold text-start line-clamp-1">
-            {title}
-          </p>
-          {annotations && annotations}
-        </div>
+
+        <p className="flex-1 text-base font-semibold text-start line-clamp-1">
+          {title}
+        </p>
 
         {/* Subtitle rows */}
         {isSubtitleArray && (
@@ -59,7 +57,7 @@ const ListItemSmall = ({
             {subtitle.map((item, index) => (
               <p
                 key={index}
-                className="text-sm text-foreground/70 line-clamp-1"
+                className="text-xs text-foreground/70 line-clamp-1"
               >
                 {item}
               </p>
@@ -68,8 +66,12 @@ const ListItemSmall = ({
         )}
         {isSubtitleAnElement && subtitle}
       </div>
-
-      {isSelected && <ChevronRight className="h-10 w-10 text-foreground/70" />}
+      <div className="h-full flex flex-col items-center p-2">
+        {annotations && annotations}
+        {isSelected && (
+          <ArrowRight className="h-6 w-6 text-foreground/70 border border-red" />
+        )}
+      </div>
     </button>
   );
 };
