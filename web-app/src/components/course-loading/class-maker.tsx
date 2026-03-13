@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { AppDialog } from "@/components/ui/app-dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
-import { cn } from "@/utils/style";
 import { createClass, updateClass } from "@/lib/course-loading/actions";
 import type { CampusListItem } from "@/lib/admin/campuses";
 import type { CourseListItem } from "@/lib/admin/courses";
@@ -13,7 +10,9 @@ import type {
   CourseLoadingBlockListItem,
   FacultyListItem,
 } from "@/lib/course-loading/types";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { PickerList } from "./picker-list";
+import ClassMakerFacultyPane from "./class-maker-faculty-pane";
+import ClassMakerBlockPane from "./class-maker-block-pane";
 
 type ClassMakerProps = {
   academicTermId: string;
@@ -28,106 +27,6 @@ type ClassMakerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
-
-// ─── Searchable single/multi-select list ────────────────
-
-type PickerListProps<T> = {
-  items: T[];
-  getId: (item: T) => string;
-  getLabel: (item: T) => string;
-  getSubLabel?: (item: T) => string;
-  getAnnotation?: (item: T) => React.ReactNode;
-  selected: Set<string>;
-  onToggle: (id: string) => void;
-  placeholder?: string;
-  multi?: boolean;
-  pickerComponents?: React.ReactNode;
-  title: string;
-};
-
-function PickerList<T>({
-  items,
-  getId,
-  getLabel,
-  getSubLabel,
-  getAnnotation,
-  selected,
-  onToggle,
-  placeholder = "Search…",
-  multi = false,
-  pickerComponents,
-  title,
-}: PickerListProps<T>) {
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) => getLabel(item).toLowerCase().includes(q));
-  }, [items, query, getLabel]);
-
-  return (
-    <Card className="h-full overflow-hidden px-4 py-2 gap-0">
-      <CardHeader className="px-0 py-2">
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-
-      <Input
-        placeholder={placeholder}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="shrink-0 text-sm"
-      />
-
-      {pickerComponents}
-      <CardContent className="flex flex-1 flex-col p-0 overflow-y-auto">
-        {filtered.length === 0 && (
-          <p className="py-3 text-center text-sm text-foreground/60">
-            No results.
-          </p>
-        )}
-        {filtered.map((item) => {
-          const id = getId(item);
-          const isSelected = selected.has(id);
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onToggle(id)}
-              className={cn(
-                "flex items-center gap-2 rounded px-2 py-1.5 text-left text-sm transition",
-                "hover:bg-foreground/5",
-                isSelected && "bg-foreground/10 font-semibold",
-              )}
-            >
-              <div
-                className={cn(
-                  "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
-                  isSelected
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-foreground/30",
-                )}
-              >
-                {isSelected && <Check className="h-3 w-3" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate">{getLabel(item)}</p>
-                {getSubLabel && (
-                  <p className="truncate text-foreground/60 text-xs">
-                    {getSubLabel(item)}
-                  </p>
-                )}
-              </div>
-              {getAnnotation && (
-                <div className="shrink-0">{getAnnotation(item)}</div>
-              )}
-            </button>
-          );
-        })}
-      </CardContent>
-    </Card>
-  );
-}
 
 // ─── ClassMaker component ────────────────────────────────
 
@@ -263,8 +162,6 @@ const ClassMaker = ({
     setSelectedFacultyId((prev) => (prev === id ? "" : id));
   };
 
-  const toFixedLoad = (value: number) => value.toFixed(2);
-
   // Summary
   const selectedCourse = courses.find((c) => c.id === selectedCourseId);
   const resolvedFacultyId = facultyId ?? selectedFacultyId;
@@ -365,85 +262,30 @@ const ClassMaker = ({
           {/* Faculty-aware: Block(s) picker / Block-aware: Faculty picker */}
           <div className="flex flex-col gap-1 overflow-hidden">
             {isFacultyAware ? (
-              <>
-                {!selectedCampusId ? (
-                  <div className="flex items-center justify-center rounded-md border p-8 text-sm text-foreground/50">
-                    Select a campus first to view blocks.
-                  </div>
-                ) : (
-                  <>
-                    <PickerList
-                      title="Block(s)"
-                      items={filteredBlocks}
-                      getId={(b) => b.id}
-                      getLabel={(b) => b.code}
-                      getSubLabel={(b) =>
-                        `${b.program_offering_code} · Year Level ${b.year_level}`
-                      }
-                      selected={selectedBlockIds}
-                      onToggle={toggleBlock}
-                      placeholder="Search blocks…"
-                      multi
-                      pickerComponents={
-                        <div className="flex gap-2 pt-2">
-                          <select
-                            value={programOfferingFilter}
-                            onChange={(e) => {
-                              setProgramOfferingFilter(e.target.value);
-                              setSelectedBlockIds(new Set());
-                            }}
-                            className="flex-1 rounded-md border bg-background px-2 py-1 text-sm"
-                          >
-                            <option value="">All Programs</option>
-                            {programOfferingOptions.map((code) => (
-                              <option key={code} value={code}>
-                                {code}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            value={yearLevelFilter}
-                            onChange={(e) => {
-                              setYearLevelFilter(e.target.value);
-                              setSelectedBlockIds(new Set());
-                            }}
-                            className="w-32 rounded-md border bg-background px-2 py-1 text-sm"
-                          >
-                            <option value="">All Year Level</option>
-                            {yearLevelOptions.map((y) => (
-                              <option key={y} value={y}>
-                                Year {y}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      }
-                    />
-                  </>
-                )}
-              </>
+              <ClassMakerFacultyPane
+                selectedCampusId={selectedCampusId}
+                filteredBlocks={filteredBlocks}
+                selectedBlockIds={selectedBlockIds}
+                toggleBlock={toggleBlock}
+                programOfferingFilter={programOfferingFilter}
+                onProgramOfferingFilterChange={(value) => {
+                  setProgramOfferingFilter(value);
+                  setSelectedBlockIds(new Set());
+                }}
+                yearLevelFilter={yearLevelFilter}
+                onYearLevelFilterChange={(value) => {
+                  setYearLevelFilter(value);
+                  setSelectedBlockIds(new Set());
+                }}
+                programOfferingOptions={programOfferingOptions}
+                yearLevelOptions={yearLevelOptions}
+              />
             ) : (
-              <>
-                <PickerList
-                  title="Faculty"
-                  items={facultyOptions}
-                  getId={(f) => f.id}
-                  getLabel={(f) => f.name}
-                  getSubLabel={(f) =>
-                    f.latest_degree_title ?? "No degree on file"
-                  }
-                  getAnnotation={(f) => (
-                    <span className="rounded-md bg-foreground/10 px-1 py-1 text-xs text-foreground">
-                      TWL: {toFixedLoad(f.total_working_load)}
-                    </span>
-                  )}
-                  selected={
-                    new Set(selectedFacultyId ? [selectedFacultyId] : [])
-                  }
-                  onToggle={toggleFaculty}
-                  placeholder="Search faculty…"
-                />
-              </>
+              <ClassMakerBlockPane
+                facultyOptions={facultyOptions}
+                selectedFacultyId={selectedFacultyId}
+                toggleFaculty={toggleFaculty}
+              />
             )}
           </div>
         </div>

@@ -3,130 +3,17 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ClassInsertInput, ClassUpdateInput } from "./types";
-
-// ─── helpers ────────────────────────────────────────────
-
-/**
- * Find-or-create a schedule for a given user + academic term.
- * The unique constraint (user_id, academic_term_id) prevents duplicates.
- */
-const ensureSchedule = async (
-  userId: string,
-  academicTermId: string,
-): Promise<{ id: string } | null> => {
-  const supabase = await createClient();
-
-  // Try to find existing
-  const { data: existing } = await supabase
-    .from("schedule")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("academic_term_id", academicTermId)
-    .maybeSingle();
-
-  if (existing) return existing;
-
-  // Create new
-  const { data: created, error } = await supabase
-    .from("schedule")
-    .insert({ user_id: userId, academic_term_id: academicTermId })
-    .select("id")
-    .single();
-
-  if (error) {
-    console.error("lib.course-loading.ensureSchedule ::", error);
-    return null;
-  }
-
-  return created;
-};
-
-/**
- * Auto-generate a class code: "{courseCode}-{n}" where n is the next sequential
- * suffix for that course within the schedule.
- *
- * This must not rely on row count because merges/deletes can leave gaps
- * in the numbering sequence while existing codes still remain in use.
- */
-const generateClassCode = async (
-  scheduleId: string,
-  courseId: string,
-  courseCode: string,
-): Promise<string> => {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("class")
-    .select("code")
-    .eq("schedule_id", scheduleId)
-    .eq("course_id", courseId);
-
-  if (error) {
-    console.error("lib.course-loading.generateClassCode ::", error);
-  }
-
-  const escapedCourseCode = courseCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`^${escapedCourseCode}-(\\d+)$`);
-
-  const maxSuffix = (data ?? []).reduce((max, row) => {
-    const match = pattern.exec(row.code ?? "");
-    if (!match) return max;
-
-    const suffix = Number(match[1]);
-    if (!Number.isFinite(suffix)) return max;
-
-    return Math.max(max, suffix);
-  }, 0);
-
-  const next = maxSuffix + 1;
-  return `${courseCode}-${next}`;
-};
+import {
+  diffBlockIds,
+  ensureSchedule,
+  findConflictingBlockAssignments,
+  generateClassCode,
+  getCourseCode,
+  validateClassInsertInput,
+} from "./action-helpers";
 
 const revalidateCourseLoading = (academicTermId: string) => {
   revalidatePath(`/course-loading/${academicTermId}`, "layout");
-};
-
-const findConflictingBlockAssignments = async (
-  scheduleId: string,
-  courseId: string,
-  blockIds: string[],
-  excludedClassId?: string,
-): Promise<string[]> => {
-  if (blockIds.length === 0) return [];
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("class_block")
-    .select("block_id, class_id, class:class_id (id, schedule_id, course_id)")
-    .in("block_id", blockIds);
-
-  if (error) {
-    console.error(
-      "lib.course-loading.findConflictingBlockAssignments ::",
-      error,
-    );
-    // Let DB constraints/trigger be the final guard if this check cannot run.
-    return [];
-  }
-
-  return [
-    ...new Set(
-      (data ?? [])
-        .filter((row) => {
-          const cls = Array.isArray(row.class) ? row.class[0] : row.class;
-          const clsId = (cls as { id?: string })?.id ?? row.class_id;
-          const clsScheduleId = (cls as { schedule_id?: string })?.schedule_id;
-          const clsCourseId = (cls as { course_id?: string })?.course_id;
-
-          return (
-            clsScheduleId === scheduleId &&
-            clsCourseId === courseId &&
-            clsId !== excludedClassId
-          );
-        })
-        .map((row) => row.block_id),
-    ),
-  ];
 };
 
 // ─── createClass ────────────────────────────────────────
@@ -134,36 +21,31 @@ const findConflictingBlockAssignments = async (
 export async function createClass(
   input: ClassInsertInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.faculty_id?.trim()) return { error: "Faculty is required" };
-  if (!input.course_id?.trim()) return { error: "Course is required" };
-  if (!input.academic_term_id?.trim())
-    return { error: "Academic term is required" };
-  if (!input.block_ids || input.block_ids.length === 0)
-    return { error: "At least one block is required" };
+  const validation = validateClassInsertInput(input);
+  if (validation.error) return { error: validation.error };
 
   const supabase = await createClient();
 
   // 1. Ensure schedule exists
   const schedule = await ensureSchedule(
+    supabase,
     input.faculty_id,
     input.academic_term_id,
   );
   if (!schedule) return { error: "Failed to create or find schedule" };
 
   // 2. Look up course code for auto-generated class code
-  const { data: course } = await supabase
-    .from("course")
-    .select("code")
-    .eq("id", input.course_id)
-    .single();
+  const courseCode = await getCourseCode(supabase, input.course_id);
 
   const classCode = await generateClassCode(
+    supabase,
     schedule.id,
     input.course_id,
-    course?.code ?? "CLS",
+    courseCode,
   );
 
   const conflictingBlocks = await findConflictingBlockAssignments(
+    supabase,
     schedule.id,
     input.course_id,
     input.block_ids,
@@ -254,6 +136,7 @@ export async function updateClass(
 
   if (input.faculty_id?.trim()) {
     const nextSchedule = await ensureSchedule(
+      supabase,
       input.faculty_id,
       input.academic_term_id,
     );
@@ -269,6 +152,7 @@ export async function updateClass(
     input.block_ids ?? (existingClassBlocks ?? []).map((cb) => cb.block_id);
 
   const conflictingBlocks = await findConflictingBlockAssignments(
+    supabase,
     nextScheduleId,
     nextCourseId,
     nextBlockIds,
@@ -286,16 +170,13 @@ export async function updateClass(
   const courseChanged = nextCourseId !== currentClass.course_id;
 
   if (scheduleChanged || courseChanged) {
-    const { data: course } = await supabase
-      .from("course")
-      .select("code")
-      .eq("id", nextCourseId)
-      .single();
+    const courseCode = await getCourseCode(supabase, nextCourseId);
 
     const nextClassCode = await generateClassCode(
+      supabase,
       nextScheduleId,
       nextCourseId,
-      course?.code ?? "CLS",
+      courseCode,
     );
 
     const { error } = await supabase
@@ -316,14 +197,8 @@ export async function updateClass(
   // Diff class_blocks if provided
   if (input.block_ids) {
     const existing = existingClassBlocks ?? [];
+    const { toRemove, toAdd } = diffBlockIds(existing, input.block_ids);
 
-    const existingBlockIds = new Set((existing ?? []).map((cb) => cb.block_id));
-    const desiredBlockIds = new Set(input.block_ids);
-
-    // Remove blocks no longer in desired set
-    const toRemove = (existing ?? []).filter(
-      (cb) => !desiredBlockIds.has(cb.block_id),
-    );
     if (toRemove.length > 0) {
       const { error: removeErr } = await supabase
         .from("class_block")
@@ -339,8 +214,6 @@ export async function updateClass(
       }
     }
 
-    // Add new blocks
-    const toAdd = input.block_ids.filter((bid) => !existingBlockIds.has(bid));
     if (toAdd.length > 0) {
       const { error: addErr } = await supabase.from("class_block").insert(
         toAdd.map((blockId) => ({
@@ -537,17 +410,14 @@ export async function unmergeClass(
     return { error: "This class is not merged" };
   }
 
-  const { data: course } = await supabase
-    .from("course")
-    .select("code")
-    .eq("id", cls.course_id)
-    .single();
+  const courseCode = await getCourseCode(supabase, cls.course_id);
 
   for (const classBlock of classBlocks.slice(1)) {
     const classCode = await generateClassCode(
+      supabase,
       cls.schedule_id,
       cls.course_id,
-      course?.code ?? "CLS",
+      courseCode,
     );
 
     const { data: newClass, error: newClassErr } = await supabase
