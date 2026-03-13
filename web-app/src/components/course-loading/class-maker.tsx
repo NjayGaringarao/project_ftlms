@@ -165,11 +165,16 @@ const ClassMaker = ({
   // Summary
   const selectedCourse = courses.find((c) => c.id === selectedCourseId);
   const resolvedFacultyId = facultyId ?? selectedFacultyId;
+  const resolvedBlockIds = useMemo(() => {
+    if (selectedBlockIds.size > 0) return Array.from(selectedBlockIds);
+    if (!isFacultyAware && blockId) return [blockId];
+    return [];
+  }, [selectedBlockIds, isFacultyAware, blockId]);
 
   const canSubmit =
     resolvedFacultyId &&
     selectedCourseId &&
-    selectedBlockIds.size > 0 &&
+    resolvedBlockIds.length > 0 &&
     !isPending;
 
   const handleSubmit = () => {
@@ -180,7 +185,7 @@ const ClassMaker = ({
           academic_term_id: academicTermId,
           faculty_id: resolvedFacultyId,
           course_id: selectedCourseId,
-          block_ids: Array.from(selectedBlockIds),
+          block_ids: resolvedBlockIds,
         });
         if (result.error) {
           setError(result.error);
@@ -192,7 +197,7 @@ const ClassMaker = ({
           academic_term_id: academicTermId,
           faculty_id: resolvedFacultyId,
           course_id: selectedCourseId,
-          block_ids: Array.from(selectedBlockIds),
+          block_ids: resolvedBlockIds,
         });
         if (result.error) {
           setError(result.error);
