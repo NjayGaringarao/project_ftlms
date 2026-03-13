@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { ArrowUp, Check } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { mergeClasses } from "@/lib/course-loading/actions";
 import { formatFacultyBlockLabel } from "@/lib/course-loading/formatters";
 import type { FacultyClassRow } from "@/lib/course-loading/types";
@@ -27,25 +26,7 @@ const MergeClassDialog = ({
 }: MergeClassDialogProps) => {
   const [isPending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [query, setQuery] = useState("");
   const [error, setError] = useState("");
-
-  const available = useMemo(() => {
-    let result = candidates;
-    const q = query.trim().toLowerCase();
-    if (q) {
-      result = result.filter(
-        (candidate) =>
-          candidate.class_code.toLowerCase().includes(q) ||
-          candidate.course_code.toLowerCase().includes(q) ||
-          candidate.blocks
-            .map((block) => formatFacultyBlockLabel(block).toLowerCase())
-            .join(" ")
-            .includes(q),
-      );
-    }
-    return result;
-  }, [candidates, query]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -81,20 +62,13 @@ const MergeClassDialog = ({
       contentClassName="flex max-h-[70vh] w-full max-w-md flex-col overflow-hidden"
     >
       <div className="flex flex-col gap-3 overflow-hidden">
-        <Input
-          placeholder="Search classes..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="shrink-0 text-xs"
-        />
-
         <div className="flex max-h-56 flex-1 flex-col gap-1 overflow-y-auto">
-          {available.length === 0 && (
+          {candidates.length === 0 && (
             <p className="py-3 text-center text-xs text-foreground/60">
               No classes available to merge.
             </p>
           )}
-          {available.map((candidate) => {
+          {candidates.map((candidate) => {
             const isSelected = selected.has(candidate.id);
             return (
               <button
@@ -118,12 +92,22 @@ const MergeClassDialog = ({
                   {isSelected && <Check className="h-3 w-3" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate">{candidate.class_code}</p>
-                  <p className="truncate text-foreground/60">
+                  <p className="truncate text-base text-foreground">
                     {candidate.blocks
                       .map((block) => formatFacultyBlockLabel(block))
                       .join(", ")}
                   </p>
+                  <div className="flex flex-row gap-2">
+                    <p>Students: {candidate.student_count}</p>
+                    {candidate.student_count > 50 && (
+                      <span
+                        className="inline-flex items-center text-red-600"
+                        title="Class size is above 50"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             );
