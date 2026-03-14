@@ -54,7 +54,7 @@ export const NAV_ITEMS: NavigationItem[] = [
   {
     label: "Scheduler",
     href: "/scheduler",
-    icon: "file-text",
+    icon: "clock",
     allowedRoles: ["Admin", "Program Chairperson", "College Dean"],
   },
   {

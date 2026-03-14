@@ -1,26 +1,22 @@
-import SchedulerUI from "@/components/schedule/scheduler/scheduler-ui";
-import { PageHeader } from "@/components/ui/page-header";
-import { getUserRole } from "@/lib/auth/utils";
-import { UserRole } from "@/models";
-
-const getAccessLabel = (roles: UserRole[]) => {
-  if (roles.includes("Admin")) return "Administrator Access";
-  if (roles.includes("Program Chairperson")) return "Program Chair Access";
-  if (roles.includes("College Dean")) return "Dean Access";
-  if (roles.includes("Campus Director")) return "Campus Director Access";
-  if (roles.includes("University President"))
-    return "University President Access";
-  return "Faculty Access";
-};
+import { getTermsList } from "@/lib/admin/terms";
+import { redirect } from "next/navigation";
 
 const SchedulerPage = async () => {
-  const userRole: UserRole[] = await getUserRole();
-  const accessLabel = getAccessLabel(userRole);
+  const terms = await getTermsList();
+
+  if (terms.length > 0) {
+    redirect(`/scheduler/${terms[0].id}`);
+  }
 
   return (
-    <div className="relative flex h-full flex-col">
-      <PageHeader accessLabel={accessLabel} />
-      {userRole.includes("Program Chairperson") ? <SchedulerUI /> : null}
+    <div className="flex h-full items-center justify-center p-6">
+      <div className="w-full max-w-xl rounded-lg border border-dashed p-6 text-center">
+        <h1 className="text-lg font-semibold">Scheduler</h1>
+        <p className="mt-2 text-sm text-foreground/70">
+          No academic terms are available yet. Create or activate a term before
+          using scheduler.
+        </p>
+      </div>
     </div>
   );
 };
