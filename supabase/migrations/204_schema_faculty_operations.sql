@@ -30,6 +30,7 @@ create table if not exists public.class_block (
 
 create table if not exists public.session (
   id uuid primary key default gen_random_uuid(),
+  code text not null,
   class_id uuid not null references public.class(id) on delete cascade,
   room_id uuid references public.room(id) on delete set null,
   day public.day_of_week_enum not null,

@@ -109,6 +109,16 @@ begin
     alter table public.room
       add constraint room_campus_code_unique unique (campus_id, code);
   end if;
-  
+
+  -- Session code should be unique within a class.
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'session_class_code_unique'
+      and conrelid = 'public.session'::regclass
+  ) then
+    alter table public.session
+      add constraint session_class_code_unique unique (class_id, code);
+  end if;
+
 end;
 $$;
