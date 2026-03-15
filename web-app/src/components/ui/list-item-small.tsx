@@ -12,6 +12,7 @@ type ListItemSmallProps = {
   isSelected?: boolean;
   icon?: React.ReactNode;
   annotations?: React.ReactNode;
+  className?: string;
 };
 
 const ListItemSmall = ({
@@ -21,6 +22,7 @@ const ListItemSmall = ({
   isSelected,
   icon,
   annotations,
+  className
 }: ListItemSmallProps) => {
   const isSubtitleArray = Array.isArray(subtitle);
   const isSubtitleAnElement = React.isValidElement(subtitle);
@@ -33,6 +35,7 @@ const ListItemSmall = ({
         "min-h-14 overflow-hidden",
         "hover:bg-foreground/5 hover:border-foreground/30 ",
         isSelected && "bg-foreground/10 border-foreground/40 font-semibold",
+        className
       )}
     >
       <div
