@@ -15,35 +15,14 @@ import SelectBlockDialog from "./select-block-dialog";
 import SelectFacultyDialog from "./select-faculty-dialog";
 import SelectRoomDialog from "./select-room-dialog";
 import ClassList from "./class-list";
+import { ActiveContext, ContextKey, getActiveContextFromSearchParams } from "./utils";
 
 type MapperLeftPaneProps = {
   academicTermId: string;
-  blocks: CourseLoadingBlockListItem[];
 };
 
-type ContextKey = "facultyId" | "blockId" | "roomId";
-type ActiveContext = { key: ContextKey; value: string } | null;
 
-const getActiveContextFromSearchParams = (
-  params: Pick<URLSearchParams, "get">,
-): ActiveContext => {
-  const facultyId = params.get("facultyId");
-  const blockId = params.get("blockId");
-  const roomId = params.get("roomId");
-
-  const activeCount =
-    Number(Boolean(facultyId)) +
-    Number(Boolean(blockId)) +
-    Number(Boolean(roomId));
-
-  if (activeCount !== 1) return null;
-  if (facultyId) return { key: "facultyId", value: facultyId };
-  if (blockId) return { key: "blockId", value: blockId };
-  if (roomId) return { key: "roomId", value: roomId };
-  return null;
-};
-
-const MapperLeftPane = ({ academicTermId, blocks }: MapperLeftPaneProps) => {
+const MapperLeftPane = ({ academicTermId }: MapperLeftPaneProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,6 +32,7 @@ const MapperLeftPane = ({ academicTermId, blocks }: MapperLeftPaneProps) => {
   const [classes, setClasses] = useState<SchedulerMapperClassListItem[]>([]);
   const [faculty, setFaculty] = useState<FacultyListItem[]>([]);
   const [rooms, setRooms] = useState<ExtendedRoom[]>([]);
+  const [blocks, setBlocks] = useState<CourseLoadingBlockListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showFacultyDialog, setShowFacultyDialog] = useState(false);
@@ -114,12 +94,13 @@ const MapperLeftPane = ({ academicTermId, blocks }: MapperLeftPaneProps) => {
       import("@/lib/admin/rooms"),
     ]);
 
-    const [facultyRows, roomRows] = await Promise.all([
+    const [facultyRows, roomRows, blockRows] = await Promise.all([
       courseLoadingModule.getFacultyListByTerm(academicTermId),
       roomModule.getRooms(),
+      courseLoadingModule.getBlockListByTerm(academicTermId),
     ]);
 
-    return { facultyRows, roomRows };
+    return { facultyRows, roomRows, blockRows };
   };
 
   //#region Effects
@@ -130,12 +111,13 @@ const MapperLeftPane = ({ academicTermId, blocks }: MapperLeftPaneProps) => {
     const load = async () => {
       setLoading(true);
 
-      const { facultyRows, roomRows } = await fetchLookups(academicTermId);
+      const { facultyRows, roomRows, blockRows } = await fetchLookups(academicTermId);
 
       if (cancelled) return;
 
       setFaculty(facultyRows);
       setRooms(roomRows);
+      setBlocks(blockRows);
       setLoading(false);
     };
 
