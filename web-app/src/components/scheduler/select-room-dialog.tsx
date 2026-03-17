@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { DoorOpen } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
@@ -9,11 +10,6 @@ import type { ExtendedRoom } from "@/models";
 type SelectRoomDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  roomQuery: string;
-  onRoomQueryChange: (value: string) => void;
-  roomCampusFilter: string;
-  onRoomCampusFilterChange: (value: string) => void;
-  roomCampusOptions: Array<{ id: string; name: string }>;
   rooms: ExtendedRoom[];
   selectedRoomId: string | null;
   onSelectRoom: (roomId: string) => void;
@@ -22,15 +18,41 @@ type SelectRoomDialogProps = {
 const SelectRoomDialog = ({
   open,
   onOpenChange,
-  roomQuery,
-  onRoomQueryChange,
-  roomCampusFilter,
-  onRoomCampusFilterChange,
-  roomCampusOptions,
   rooms,
   selectedRoomId,
   onSelectRoom,
 }: SelectRoomDialogProps) => {
+  const [roomQuery, setRoomQuery] = useState("");
+  const [roomCampusFilter, setRoomCampusFilter] = useState("");
+
+  const roomCampusOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    rooms.forEach((item) => {
+      if (item.campus?.id && item.campus?.name) {
+        map.set(item.campus.id, item.campus.name);
+      }
+    });
+
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [rooms]);
+
+  const filteredRooms = useMemo(() => {
+    const normalized = roomQuery.trim().toLowerCase();
+
+    return rooms.filter((item) => {
+      if (roomCampusFilter && item.campus_id !== roomCampusFilter) {
+        return false;
+      }
+
+      if (!normalized) return true;
+
+      return (
+        item.code.toLowerCase().includes(normalized) ||
+        item.name?.toLowerCase().includes(normalized)
+      );
+    });
+  }, [rooms, roomQuery, roomCampusFilter]);
+
   return (
     <AppDialog
       open={open}
@@ -43,12 +65,12 @@ const SelectRoomDialog = ({
         <Input
           placeholder="Search rooms"
           value={roomQuery}
-          onChange={(event) => onRoomQueryChange(event.target.value)}
+          onChange={(event) => setRoomQuery(event.target.value)}
         />
 
         <select
           value={roomCampusFilter}
-          onChange={(event) => onRoomCampusFilterChange(event.target.value)}
+          onChange={(event) => setRoomCampusFilter(event.target.value)}
           className="rounded-md border bg-background px-2 py-1.5 text-sm"
         >
           <option value="">All Campuses</option>
@@ -60,7 +82,7 @@ const SelectRoomDialog = ({
         </select>
 
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-          {rooms.map((item) => (
+          {filteredRooms.map((item) => (
             <ListItemSmall
               key={item.id}
               title={item.code}

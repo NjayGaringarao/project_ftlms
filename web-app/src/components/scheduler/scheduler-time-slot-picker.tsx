@@ -27,7 +27,7 @@ const toTimeValue = (minutes: number): string => {
   return `${hour}:${minute}:00`;
 };
 
-const overlaps = (
+const isOverlaps = (
   leftStart: string,
   leftEnd: string,
   rightStart: string,
@@ -56,7 +56,7 @@ const SchedulerTimeSlotPicker = ({
 
   const getConflictReason = (slotStart: string, slotEnd: string): string | null => {
     const matched = conflicts.find((conflict) =>
-      overlaps(slotStart, slotEnd, conflict.start_time, conflict.end_time),
+      isOverlaps(slotStart, slotEnd, conflict.start_time, conflict.end_time),
     );
     return matched?.reason ?? null;
   };

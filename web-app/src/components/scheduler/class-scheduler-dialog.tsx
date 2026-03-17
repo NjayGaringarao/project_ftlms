@@ -18,6 +18,7 @@ import {
 } from "@/lib/schedule/session-actions";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import TimePicker from "./time-picker";
+import { numberToHourDuration } from "@/utils/time";
 
 type ClassSchedulerDialogProps = {
   open: boolean;
@@ -190,8 +191,7 @@ const ClassSchedulerDialog = ({
             <CardHeader className="flex items-center justify-between">
               <h3 className="font-semibold">Session Management</h3>
               <span className="text-xs text-foreground/70">
-                Unscheduled Lec: {toFixed(details.unscheduled_lecture_hours)}h
-                Lab: {toFixed(details.unscheduled_laboratory_hours)}h
+                Unscheduled Lec: {numberToHourDuration(details.unscheduled_lecture_hours)} Lab: {numberToHourDuration(details.unscheduled_laboratory_hours)}
               </span>
             </CardHeader>
 
@@ -327,7 +327,7 @@ const ClassSchedulerDialog = ({
 
                 <div className="flex justify-end items-center gap-2">
                 <p className="flex-1 text-xs text-foreground/70">
-                  Expected duration for {type}: {toFixed(expectedHours)}h
+                  Expected duration for {type}: {numberToHourDuration(expectedHours)}
                 </p>
                   <Button
                     variant="outline"
@@ -360,9 +360,9 @@ const ClassSchedulerDialog = ({
                   {details.course_code} - {details.course_title}
                 </p>
                 <p className="text-xs text-foreground/70">
-                  Total Hours: {toFixed(details.total_hours)} (Lec{" "}
-                  {toFixed(details.lecture_unit)} + Lab{" "}
-                  {toFixed(details.laboratory_unit * 3)})
+                  Total Hours: {numberToHourDuration(details.total_hours)} (Lec{" "}
+                  {numberToHourDuration(details.lecture_unit)} + Lab{" "}
+                  {numberToHourDuration(details.laboratory_unit * 3)})
                 </p>
               </div>
             </div>

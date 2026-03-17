@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { User } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
@@ -9,8 +10,6 @@ import type { FacultyListItem } from "@/lib/course-loading/types";
 type SelectFacultyDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  facultyQuery: string;
-  onFacultyQueryChange: (value: string) => void;
   faculty: FacultyListItem[];
   selectedFacultyId: string | null;
   onSelectFaculty: (facultyId: string) => void;
@@ -21,12 +20,21 @@ const toFixed = (value: number) => value.toFixed(2);
 const SelectFacultyDialog = ({
   open,
   onOpenChange,
-  facultyQuery,
-  onFacultyQueryChange,
   faculty,
   selectedFacultyId,
   onSelectFaculty,
 }: SelectFacultyDialogProps) => {
+  const [facultyQuery, setFacultyQuery] = useState("");
+
+  const filteredFaculty = useMemo(() => {
+    const normalized = facultyQuery.trim().toLowerCase();
+    if (!normalized) return faculty;
+
+    return faculty.filter((item) =>
+      item.name.toLowerCase().includes(normalized),
+    );
+  }, [faculty, facultyQuery]);
+
   return (
     <AppDialog
       open={open}
@@ -39,10 +47,10 @@ const SelectFacultyDialog = ({
         <Input
           placeholder="Search faculty"
           value={facultyQuery}
-          onChange={(event) => onFacultyQueryChange(event.target.value)}
+          onChange={(event) => setFacultyQuery(event.target.value)}
         />
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-          {faculty.map((item) => (
+          {filteredFaculty.map((item) => (
             <ListItemSmall
               key={item.id}
               title={item.name}

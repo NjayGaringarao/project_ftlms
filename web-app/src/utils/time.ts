@@ -45,3 +45,11 @@ export const calculateAge = (birthDate: string | Date) => {
 
   return age;
 };
+
+export const numberToHourDuration = (hours : number) => {
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours - wholeHours) * 60);
+  const hourPart = wholeHours > 0 ? `${wholeHours}h` : "";
+  const minutePart = minutes > 0 ? `${minutes}m` : "";
+  return hourPart + (hourPart && minutePart ? " " : "") + minutePart || "0m";
+}

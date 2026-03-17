@@ -28,8 +28,7 @@ const ListItemSmall = ({
   const isSubtitleAnElement = React.isValidElement(subtitle);
 
   return (
-    <button
-      onClick={onClick}
+    <div
       className={cn(
         "flex flex-row rounded-lg border transition items-center",
         "min-h-14 overflow-hidden",
@@ -38,6 +37,8 @@ const ListItemSmall = ({
         className
       )}
     >
+      <button onClick={onClick} className="flex-1 flex flex-row items-center">
+
       <div
         className={cn(
           "h-full min-h-14 min-w-14 bg-foreground/80 ",
@@ -69,13 +70,14 @@ const ListItemSmall = ({
         )}
         {isSubtitleAnElement && subtitle}
       </div>
+      </button>
       <div className="h-full flex flex-col items-center p-2">
         {annotations && annotations}
         {isSelected && (
           <ArrowRight className="h-6 w-6 text-foreground/70 border border-red" />
         )}
       </div>
-    </button>
+    </div>
   );
 };
 

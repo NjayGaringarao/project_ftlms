@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Blocks } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
@@ -9,14 +10,6 @@ import type { CourseLoadingBlockListItem } from "@/lib/course-loading/types";
 type SelectBlockDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  blockQuery: string;
-  onBlockQueryChange: (value: string) => void;
-  blockCampusFilter: string;
-  onBlockCampusFilterChange: (value: string) => void;
-  blockCampusOptions: Array<{ id: string; name: string }>;
-  blockYearFilter: string;
-  onBlockYearFilterChange: (value: string) => void;
-  blockYearOptions: number[];
   blocks: CourseLoadingBlockListItem[];
   selectedBlockId: string | null;
   onSelectBlock: (blockId: string) => void;
@@ -27,18 +20,59 @@ const toFixed = (value: number) => value.toFixed(2);
 const SelectBlockDialog = ({
   open,
   onOpenChange,
-  blockQuery,
-  onBlockQueryChange,
-  blockCampusFilter,
-  onBlockCampusFilterChange,
-  blockCampusOptions,
-  blockYearFilter,
-  onBlockYearFilterChange,
-  blockYearOptions,
   blocks,
   selectedBlockId,
   onSelectBlock,
 }: SelectBlockDialogProps) => {
+  const [blockQuery, setBlockQuery] = useState("");
+  const [blockCampusFilter, setBlockCampusFilter] = useState("");
+  const [blockYearFilter, setBlockYearFilter] = useState("");
+
+  const blockCampusOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    blocks.forEach((item) => {
+      if (item.campus_id && item.campus_name) {
+        map.set(item.campus_id, item.campus_name);
+      }
+    });
+
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [blocks]);
+
+  const blockYearOptions = useMemo(() => {
+    const set = new Set<number>();
+    blocks.forEach((item) => set.add(item.year_level));
+    return Array.from(set).sort((a, b) => a - b);
+  }, [blocks]);
+
+  const filteredBlocks = useMemo(() => {
+    const normalized = blockQuery.trim().toLowerCase();
+
+    return blocks.filter((item) => {
+      if (blockCampusFilter && item.campus_id !== blockCampusFilter) {
+        return false;
+      }
+
+      if (blockYearFilter && item.year_level !== Number(blockYearFilter)) {
+        return false;
+      }
+
+      if (!normalized) return true;
+
+      return (
+        item.code.toLowerCase().includes(normalized) ||
+        item.program_offering_code.toLowerCase().includes(normalized)
+      );
+    });
+  }, [blocks, blockQuery, blockCampusFilter, blockYearFilter]);
+
+  useEffect(() => {
+    if (!open) return;
+    setBlockQuery("");
+    setBlockCampusFilter("");
+    setBlockYearFilter("");
+  }, [open]);
+
   return (
     <AppDialog
       open={open}
@@ -51,13 +85,13 @@ const SelectBlockDialog = ({
         <Input
           placeholder="Search blocks"
           value={blockQuery}
-          onChange={(event) => onBlockQueryChange(event.target.value)}
+          onChange={(event) => setBlockQuery(event.target.value)}
         />
 
         <div className="flex gap-2">
           <select
             value={blockCampusFilter}
-            onChange={(event) => onBlockCampusFilterChange(event.target.value)}
+            onChange={(event) => setBlockCampusFilter(event.target.value)}
             className="flex-1 rounded-md border bg-background px-2 py-1.5 text-sm"
           >
             <option value="">All Campuses</option>
@@ -70,7 +104,7 @@ const SelectBlockDialog = ({
 
           <select
             value={blockYearFilter}
-            onChange={(event) => onBlockYearFilterChange(event.target.value)}
+            onChange={(event) => setBlockYearFilter(event.target.value)}
             className="rounded-md border bg-background px-2 py-1.5 text-sm"
           >
             <option value="">All Years</option>
@@ -83,13 +117,13 @@ const SelectBlockDialog = ({
         </div>
 
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-          {blocks.length === 0 && (
+          {filteredBlocks.length === 0 && (
             <p className="p-4 text-center text-sm text-foreground/70">
               No blocks found.
             </p>
           )}
 
-          {blocks.map((item) => (
+          {filteredBlocks.map((item) => (
             <ListItemSmall
               key={item.id}
               title={item.code}
