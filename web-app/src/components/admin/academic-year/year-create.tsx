@@ -9,20 +9,8 @@ import FormStatusBanner from "../form-status-banner";
 import { YearFormState, YearInitialForm } from "./year-initial-form";
 
 const initialFormState: YearFormState = {
-  code: "",
   start_year: "",
   end_year: "",
-};
-
-const generateAcademicYearCode = (startYear: string, endYear: string) => {
-  const start = Number(startYear);
-  const end = Number(endYear);
-
-  if (!Number.isInteger(start) || !Number.isInteger(end)) {
-    return "";
-  }
-
-  return `${start}-${end}`;
 };
 
 export const YearCreate = () => {
@@ -33,18 +21,7 @@ export const YearCreate = () => {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const handleChange = (field: keyof YearFormState, value: string) => {
-    setFormData((prev) => {
-      const nextState = { ...prev, [field]: value };
-
-      if (field !== "code") {
-        nextState.code = generateAcademicYearCode(
-          nextState.start_year,
-          nextState.end_year,
-        );
-      }
-
-      return nextState;
-    });
+    setFormData((prev) => ({ ...prev, [field]: value }));
     setError("");
   };
 
@@ -57,11 +34,6 @@ export const YearCreate = () => {
   const handleCreate = async () => {
     const startYear = Number(formData.start_year);
     const endYear = Number(formData.end_year);
-
-    if (!formData.code.trim()) {
-      setError("Academic year code is required");
-      return;
-    }
 
     if (!Number.isInteger(startYear)) {
       setError("Start year is required");
@@ -78,7 +50,6 @@ export const YearCreate = () => {
     setShowSuccess(false);
 
     const { data, error: createError } = await createAcademicYear({
-      code: formData.code,
       start_year: startYear,
       end_year: endYear,
     });
@@ -120,16 +91,15 @@ export const YearCreate = () => {
           error={error}
         />
 
-        <YearInitialForm
-          formData={formData}
-          onChange={handleChange}
-          onReset={handleReset}
-          onSubmit={handleCreate}
-          isSaving={isSaving}
-          submitLabel="Create Academic Year"
-          submitLoadingLabel="Creating..."
-          isCodeReadOnly
-        />
+      <YearInitialForm
+        formData={formData}
+        onChange={handleChange}
+        onReset={handleReset}
+        onSubmit={handleCreate}
+        isSaving={isSaving}
+        submitLabel="Create Academic Year"
+        submitLoadingLabel="Creating..."
+      />
       </div>
     </AdminPanel>
   );

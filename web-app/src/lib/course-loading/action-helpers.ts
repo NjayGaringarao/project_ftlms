@@ -45,51 +45,6 @@ export const ensureSchedule = async (
   return created;
 };
 
-export const getCourseCode = async (
-  supabase: CourseLoadingSupabase,
-  courseId: string,
-): Promise<string> => {
-  const { data } = await supabase
-    .from("course")
-    .select("code")
-    .eq("id", courseId)
-    .single();
-
-  return data?.code ?? "CLS";
-};
-
-export const generateClassCode = async (
-  supabase: CourseLoadingSupabase,
-  scheduleId: string,
-  courseId: string,
-  courseCode: string,
-): Promise<string> => {
-  const { data, error } = await supabase
-    .from("class")
-    .select("code")
-    .eq("schedule_id", scheduleId)
-    .eq("course_id", courseId);
-
-  if (error) {
-    console.error("lib.course-loading.generateClassCode ::", error);
-  }
-
-  const escapedCourseCode = courseCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`^${escapedCourseCode}-(\\d+)$`);
-
-  const maxSuffix = (data ?? []).reduce((max, row) => {
-    const match = pattern.exec(row.code ?? "");
-    if (!match) return max;
-
-    const suffix = Number(match[1]);
-    if (!Number.isFinite(suffix)) return max;
-
-    return Math.max(max, suffix);
-  }, 0);
-
-  return `${courseCode}-${maxSuffix + 1}`;
-};
-
 export const findConflictingBlockAssignments = async (
   supabase: CourseLoadingSupabase,
   scheduleId: string,

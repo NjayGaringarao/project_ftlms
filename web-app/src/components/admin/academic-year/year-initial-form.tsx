@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 export type YearFormState = {
-  code: string;
   start_year: string;
   end_year: string;
 };
@@ -21,7 +20,6 @@ type YearInitialFormProps = {
   submitLabel: string;
   submitLoadingLabel: string;
   statusSlot?: ReactNode;
-  isCodeReadOnly?: boolean;
   isReadOnly?: boolean;
   hideActions?: boolean;
 };
@@ -35,7 +33,6 @@ export const YearInitialForm = ({
   submitLabel,
   submitLoadingLabel,
   statusSlot,
-  isCodeReadOnly = false,
   isReadOnly = false,
   hideActions = false,
 }: YearInitialFormProps) => {
@@ -48,20 +45,7 @@ export const YearInitialForm = ({
 
       {statusSlot}
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <Label className="text-xs" htmlFor="year-code">
-            Code *
-          </Label>
-          <Input
-            id="year-code"
-            value={formData.code}
-            onChange={(event) => onChange("code", event.target.value)}
-            className="mt-1"
-            disabled={isSaving || isCodeReadOnly || isReadOnly}
-          />
-        </div>
-
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label className="text-xs" htmlFor="year-start">
             Start Year *

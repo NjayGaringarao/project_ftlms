@@ -27,7 +27,6 @@ type TermInitialFormProps = {
   isSaving: boolean;
   submitLabel: string;
   submitLoadingLabel: string;
-  generatedCode: string;
   academicYears: AcademicYearListItem[];
   statusSlot?: ReactNode;
   extraFields?: ReactNode;
@@ -41,7 +40,6 @@ export const TermInitialForm = ({
   isSaving,
   submitLabel,
   submitLoadingLabel,
-  generatedCode,
   academicYears,
   statusSlot,
   extraFields,
@@ -96,19 +94,6 @@ export const TermInitialForm = ({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="md:col-span-2">
-            <Label className="text-xs" htmlFor="term-code">
-              Generated Code
-            </Label>
-            <Input
-              id="term-code"
-              value={generatedCode}
-              readOnly
-              className="mt-1"
-              disabled
-            />
           </div>
 
           <div>

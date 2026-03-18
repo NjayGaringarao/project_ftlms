@@ -17,7 +17,6 @@ export const YearEdit = ({ year, terms }: YearEditProps) => {
   const router = useRouter();
 
   const formData = {
-    code: year.code,
     start_year: String(year.start_year),
     end_year: String(year.end_year),
   };

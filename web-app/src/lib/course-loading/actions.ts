@@ -7,8 +7,6 @@ import {
   diffBlockIds,
   ensureSchedule,
   findConflictingBlockAssignments,
-  generateClassCode,
-  getCourseCode,
   validateClassInsertInput,
 } from "./action-helpers";
 
@@ -34,16 +32,6 @@ export async function createClass(
   );
   if (!schedule) return { error: "Failed to create or find schedule" };
 
-  // 2. Look up course code for auto-generated class code
-  const courseCode = await getCourseCode(supabase, input.course_id);
-
-  const classCode = await generateClassCode(
-    supabase,
-    schedule.id,
-    input.course_id,
-    courseCode,
-  );
-
   const conflictingBlocks = await findConflictingBlockAssignments(
     supabase,
     schedule.id,
@@ -63,7 +51,6 @@ export async function createClass(
     .insert({
       schedule_id: schedule.id,
       course_id: input.course_id,
-      code: classCode,
     })
     .select("id")
     .single();
@@ -170,21 +157,11 @@ export async function updateClass(
   const courseChanged = nextCourseId !== currentClass.course_id;
 
   if (scheduleChanged || courseChanged) {
-    const courseCode = await getCourseCode(supabase, nextCourseId);
-
-    const nextClassCode = await generateClassCode(
-      supabase,
-      nextScheduleId,
-      nextCourseId,
-      courseCode,
-    );
-
     const { error } = await supabase
       .from("class")
       .update({
         schedule_id: nextScheduleId,
         course_id: nextCourseId,
-        code: nextClassCode,
       })
       .eq("id", input.class_id);
 
@@ -410,22 +387,12 @@ export async function unmergeClass(
     return { error: "This class is not merged" };
   }
 
-  const courseCode = await getCourseCode(supabase, cls.course_id);
-
   for (const classBlock of classBlocks.slice(1)) {
-    const classCode = await generateClassCode(
-      supabase,
-      cls.schedule_id,
-      cls.course_id,
-      courseCode,
-    );
-
     const { data: newClass, error: newClassErr } = await supabase
       .from("class")
       .insert({
         schedule_id: cls.schedule_id,
         course_id: cls.course_id,
-        code: classCode,
       })
       .select("id")
       .single();

@@ -32,7 +32,6 @@ export const BlockEdit = ({
     [],
   );
   const [terms, setTerms] = useState<TermListItem[]>([]);
-  const [code, setCode] = useState(block.code);
   const [programOfferingId, setProgramOfferingId] = useState(
     block.major_offering?.program_offering_id ?? "",
   );
@@ -46,7 +45,6 @@ export const BlockEdit = ({
     block.student_count !== null ? block.student_count.toString() : "",
   );
   const [savedState, setSavedState] = useState({
-    code: block.code,
     programOfferingId: block.major_offering?.program_offering_id ?? "",
     majorOfferingId: block.major_offering_id,
     academicTermId: block.academic_term_id,
@@ -124,7 +122,6 @@ export const BlockEdit = ({
       ? Number(studentCount)
       : null;
 
-    if (!code.trim()) return setError("Block code is required");
     if (!programOfferingId) return setError("Program offering is required");
     if (!majorOfferingId) return setError("Major offering is required");
     if (!academicTermId) return setError("Academic term is required");
@@ -145,7 +142,6 @@ export const BlockEdit = ({
 
     const { error: updateError } = await updateBlock({
       id: block.id,
-      code,
       major_offering_id: majorOfferingId,
       academic_term_id: academicTermId,
       year_level: parsedYearLevel,
@@ -161,7 +157,6 @@ export const BlockEdit = ({
     }
 
     setSavedState({
-      code: code.trim().toUpperCase(),
       programOfferingId,
       majorOfferingId,
       academicTermId,
@@ -195,25 +190,6 @@ export const BlockEdit = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="code">
-                Code *
-              </Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(event) => {
-                  setCode(event.target.value);
-                  setError("");
-                }}
-                onBlur={(event) =>
-                  setCode(event.target.value.trim().toUpperCase())
-                }
-                className="mt-1"
-                disabled={isSaving}
-              />
-            </div>
-
             <div className="md:col-span-2">
               <Label className="text-xs" htmlFor="program-offering-id">
                 Program Offering *
@@ -351,7 +327,6 @@ export const BlockEdit = ({
             <Button
               variant="outline"
               onClick={() => {
-                setCode(savedState.code);
                 setProgramOfferingId(savedState.programOfferingId);
                 setMajorOfferingId(savedState.majorOfferingId);
                 setAcademicTermId(savedState.academicTermId);

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { generateAcademicTermCode } from "@/lib/admin/academic-terms";
 import { AcademicTermName } from "@/models";
 
 type MutationError = {
@@ -10,7 +9,7 @@ type MutationError = {
   message?: string;
 };
 
-const normalizeCode = (value: string) => value.trim().toUpperCase();
+const normalizeCode = (value: string) => value.trim()
 const normalizeName = (value: string) => value.trim();
 const normalizeDescription = (value?: string | null) => value?.trim() || null;
 
@@ -391,7 +390,6 @@ export async function deleteCampus(
 }
 
 type AcademicYearInput = {
-  code: string;
   start_year: number;
   end_year: number;
 };
@@ -401,7 +399,6 @@ type UpdateAcademicYearInput = AcademicYearInput & {
 };
 
 const normalizeAcademicYearInput = (input: AcademicYearInput) => ({
-  code: normalizeName(input.code),
   start_year: input.start_year,
   end_year: input.end_year,
 });
@@ -409,7 +406,6 @@ const normalizeAcademicYearInput = (input: AcademicYearInput) => ({
 export async function createAcademicYear(
   input: AcademicYearInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.code?.trim()) return { error: "Academic year code is required" };
   if (!Number.isInteger(input.start_year)) {
     return { error: "Academic year start year is required" };
   }
@@ -442,7 +438,6 @@ export async function updateAcademicYear(
   input: UpdateAcademicYearInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Academic year ID is required" };
-  if (!input.code?.trim()) return { error: "Academic year code is required" };
   if (!Number.isInteger(input.start_year)) {
     return { error: "Academic year start year is required" };
   }
@@ -505,7 +500,6 @@ export async function deleteAcademicYear(
 
 type TermInput = {
   academic_year_id: string;
-  academic_year_code: string;
   name: AcademicTermName;
   start: string;
   end: string;
@@ -518,7 +512,6 @@ type UpdateTermInput = TermInput & {
 const normalizeTermInput = (input: TermInput) => ({
   academic_year_id: input.academic_year_id,
   name: input.name,
-  code: generateAcademicTermCode(input),
   start: input.start,
   end: input.end,
 });
@@ -527,7 +520,6 @@ export async function createTerm(
   input: TermInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
   if (!input.academic_year_id?.trim()) return { error: "Academic year is required" };
-  if (!input.academic_year_code?.trim()) return { error: "Academic year code is required" };
   if (!input.name) return { error: "Academic term name is required" };
 
   if (!input.start?.trim()) return { error: "Start date is required" };
@@ -560,7 +552,6 @@ export async function updateTerm(
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Term ID is required" };
   if (!input.academic_year_id?.trim()) return { error: "Academic year is required" };
-  if (!input.academic_year_code?.trim()) return { error: "Academic year code is required" };
   if (!input.name) return { error: "Academic term name is required" };
 
   if (!input.start?.trim()) return { error: "Start date is required" };
@@ -1324,7 +1315,6 @@ export async function deleteMajorOffering(
 }
 
 type BlockInput = {
-  code: string;
   major_offering_id: string;
   academic_term_id: string;
   year_level: number;
@@ -1337,7 +1327,6 @@ type UpdateBlockInput = BlockInput & {
 };
 
 const normalizeBlockInput = (input: BlockInput) => ({
-  code: normalizeCode(input.code),
   major_offering_id: input.major_offering_id.trim(),
   academic_term_id: input.academic_term_id.trim(),
   year_level: input.year_level,
@@ -1348,7 +1337,6 @@ const normalizeBlockInput = (input: BlockInput) => ({
 export async function createBlock(
   input: BlockInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
-  if (!input.code?.trim()) return { error: "Block code is required" };
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
   if (!input.academic_term_id?.trim())
@@ -1412,7 +1400,6 @@ export async function updateBlock(
   input: UpdateBlockInput,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.id?.trim()) return { error: "Block ID is required" };
-  if (!input.code?.trim()) return { error: "Block code is required" };
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
   if (!input.academic_term_id?.trim())

@@ -142,7 +142,6 @@ export const TermsListEdit = ({
       const result = await updateTerm({
         id: row.id!,
         academic_year_id: year.id,
-        academic_year_code: year.code,
         name: row.name as AcademicTermName,
         start: row.start,
         end: row.end,
@@ -158,7 +157,6 @@ export const TermsListEdit = ({
     for (const row of newRows) {
       const result = await createTerm({
         academic_year_id: year.id,
-        academic_year_code: year.code,
         name: row.name as AcademicTermName,
         start: row.start,
         end: row.end,

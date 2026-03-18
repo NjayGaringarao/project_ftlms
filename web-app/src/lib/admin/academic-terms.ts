@@ -6,12 +6,6 @@ export const ACADEMIC_TERM_NAMES: AcademicTermName[] = [
   "MIDYEAR",
 ];
 
-const TERM_NAME_SHORT_LABELS: Record<AcademicTermName, string> = {
-  "FIRST SEMESTER": "FIRST SEM",
-  "SECOND SEMESTER": "SECOND SEM",
-  MIDYEAR: "MIDYEAR",
-};
-
 export const getAcademicYearLabel = (
   academicYearStart: number,
   academicYearEnd: number,
@@ -27,12 +21,6 @@ export const getAcademicTermDisplayLabel = (term: {
   };
 }) =>
   `${getAcademicTermNameLabel(term.name)}, A.Y. ${getAcademicYearLabel(term.academic_year.start_year, term.academic_year.end_year)}`;
-
-export const generateAcademicTermCode = (term: {
-  name: AcademicTermName;
-  academic_year_code: string;
-}) =>
-  `${TERM_NAME_SHORT_LABELS[term.name]} - AY ${term.academic_year_code}`;
 
 export const sortAcademicTermsDesc = (terms: ExtendedAcademicTerm[]) =>
   [...terms].sort((left, right) => {
