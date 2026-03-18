@@ -437,7 +437,7 @@ const overlaps = (
 };
 
 const normalizeDay = (value: SessionDay | null | undefined): SessionDay => {
-  return value ?? "MONDAY";
+  return value ?? "Monday";
 };
 
 const normalizeType = (value: SessionType | null | undefined): SessionType => {
