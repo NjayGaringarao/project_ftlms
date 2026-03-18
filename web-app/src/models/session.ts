@@ -2,13 +2,14 @@ import { Class } from "./class";
 import { Room } from "./room";
 
 export type SessionDay =
-  | "SUNDAY"
-  | "MONDAY"
-  | "TUESDAY"
-  | "WEDNESDAY"
-  | "THURSDAY"
-  | "FRIDAY"
-  | "SATURDAY";
+| "Monday"
+| "Tuesday"
+| "Wednesday"
+| "Thursday"
+| "Friday"
+| "Saturday"
+| "Sunday";
+
 export type SessionType = "Lecture" | "Laboratory";
 export type Session = {
   id: string;

@@ -40,7 +40,7 @@ const SelectFacultyDialog = ({
       open={open}
       onOpenChange={onOpenChange}
       title="Select Faculty"
-      description="Select one context at a time. Choosing a faculty clears block and room context."
+      description="Select faculty to map. You can select block and room independently."
       contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
     >
       <div className="flex h-full flex-col gap-3 overflow-hidden">

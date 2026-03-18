@@ -1,21 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type {
-  CourseLoadingBlockListItem,
-  FacultyListItem,
-} from "@/lib/course-loading/types";
-import type { ExtendedRoom } from "@/models";
+import { useSearchParams } from "next/navigation";
 import {
-  getSchedulerMapperClassList,
+  getSchedulerMapperClassListByBlock,
+  getSchedulerMapperClassListByFaculty,
+  getSchedulerMapperClassListByRoom,
   type SchedulerMapperClassListItem,
 } from "@/lib/schedule/mapper";
-import SelectBlockDialog from "./select-block-dialog";
-import SelectFacultyDialog from "./select-faculty-dialog";
-import SelectRoomDialog from "./select-room-dialog";
 import ClassList from "./class-list";
-import { ActiveContext, ContextKey, getActiveContextFromSearchParams } from "./utils";
+import { getSelectedContextsFromSearchParams } from "./utils";
 
 type MapperLeftPaneProps = {
   academicTermId: string;
@@ -23,114 +17,44 @@ type MapperLeftPaneProps = {
 
 
 const MapperLeftPane = ({ academicTermId }: MapperLeftPaneProps) => {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [activeContext, setActiveContext] = useState<ActiveContext>(() =>
-    getActiveContextFromSearchParams(searchParams),
-  );
   const [classes, setClasses] = useState<SchedulerMapperClassListItem[]>([]);
-  const [faculty, setFaculty] = useState<FacultyListItem[]>([]);
-  const [rooms, setRooms] = useState<ExtendedRoom[]>([]);
-  const [blocks, setBlocks] = useState<CourseLoadingBlockListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [showFacultyDialog, setShowFacultyDialog] = useState(false);
-  const [showBlockDialog, setShowBlockDialog] = useState(false);
-  const [showRoomDialog, setShowRoomDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   //#region Precomputed values
-  const selectedFacultyId =
-    activeContext?.key === "facultyId" ? activeContext.value : null;
-  const selectedBlockId =
-    activeContext?.key === "blockId" ? activeContext.value : null;
-  const selectedRoomId =
-    activeContext?.key === "roomId" ? activeContext.value : null;
-
-  const selectedFaculty =
-    faculty.find((item) => item.id === selectedFacultyId) ?? null;
-  const selectedBlock = blocks.find((item) => item.id === selectedBlockId) ?? null;
-  const selectedRoom = rooms.find((item) => item.id === selectedRoomId) ?? null;
-
-  //#region Handlers
-
-  const setQueryParams = (mutate: (next: URLSearchParams) => void) => {
-    const next = new URLSearchParams(searchParams.toString());
-    mutate(next);
-    const queryString = next.toString();
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
-  };
-
-  const setContextParam = (key: ContextKey, value: string) => {
-    setActiveContext({ key, value });
-    setQueryParams((next) => {
-      next.delete("facultyId");
-      next.delete("blockId");
-      next.delete("roomId");
-      next.set(key, value);
-    });
-  };
-
-  const clearContext = () => {
-    setActiveContext(null);
-    setQueryParams((next) => {
-      next.delete("facultyId");
-      next.delete("blockId");
-      next.delete("roomId");
-    });
-  };
+  const selectedContexts = getSelectedContextsFromSearchParams(searchParams);
+  const selectedFacultyId = selectedContexts.facultyId ?? null;
+  const selectedBlockId = selectedContexts.blockId ?? null;
+  const selectedRoomId = selectedContexts.roomId ?? null;
 
   const fetchClassList = async () => {
-    return getSchedulerMapperClassList(academicTermId, {
-      facultyId: selectedFacultyId,
-      blockId: selectedBlockId,
-      roomId: selectedRoomId,
+    const requests: Array<Promise<SchedulerMapperClassListItem[]>> = [];
+
+    if (selectedFacultyId) {
+      requests.push(getSchedulerMapperClassListByFaculty(academicTermId, selectedFacultyId));
+    }
+    if (selectedBlockId) {
+      requests.push(getSchedulerMapperClassListByBlock(academicTermId, selectedBlockId));
+    }
+    if (selectedRoomId) {
+      requests.push(getSchedulerMapperClassListByRoom(academicTermId, selectedRoomId));
+    }
+
+    if (requests.length === 0) return [];
+
+    if (requests.length === 1) {
+      return requests[0];
+    }
+
+    const results = await Promise.all(requests);
+
+    const map = new Map<string, SchedulerMapperClassListItem>();
+    results.flat().forEach((item) => {
+      map.set(item.id, item);
     });
+
+    return Array.from(map.values());
   };
-
-  const fetchLookups = async (academicTermId: string) => {
-    const [courseLoadingModule, roomModule] = await Promise.all([
-      import("@/lib/course-loading/queries"),
-      import("@/lib/admin/rooms"),
-    ]);
-
-    const [facultyRows, roomRows, blockRows] = await Promise.all([
-      courseLoadingModule.getFacultyListByTerm(academicTermId),
-      roomModule.getRooms(),
-      courseLoadingModule.getBlockListByTerm(academicTermId),
-    ]);
-
-    return { facultyRows, roomRows, blockRows };
-  };
-
-  //#region Effects
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-
-      const { facultyRows, roomRows, blockRows } = await fetchLookups(academicTermId);
-
-      if (cancelled) return;
-
-      setFaculty(facultyRows);
-      setRooms(roomRows);
-      setBlocks(blockRows);
-      setLoading(false);
-    };
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [academicTermId]);
-
-  useEffect(() => {
-    setActiveContext(getActiveContextFromSearchParams(searchParams));
-  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,8 +63,10 @@ const MapperLeftPane = ({ academicTermId }: MapperLeftPaneProps) => {
       const rows = await fetchClassList();
       if (cancelled) return;
       setClasses(rows);
+      setLoading(false);
     };
 
+    setLoading(true);
     void load();
 
     return () => {
@@ -151,51 +77,11 @@ const MapperLeftPane = ({ academicTermId }: MapperLeftPaneProps) => {
   return (
     <>
       <ClassList
-        selectedFaculty={selectedFaculty}
-        selectedBlock={selectedBlock}
-        selectedRoom={selectedRoom}
-        onFacultyClick={() => setShowFacultyDialog(true)}
-        onBlockClick={() => setShowBlockDialog(true)}
-        onRoomClick={() => setShowRoomDialog(true)}
         classes={classes}
-        onClearContext={clearContext}
         loading={loading}
         onClassScheduleChange={async () => {
           const rows = await fetchClassList();
           setClasses(rows);
-        }}
-      />
-
-      <SelectFacultyDialog
-        open={showFacultyDialog}
-        onOpenChange={setShowFacultyDialog}
-        faculty={faculty}
-        selectedFacultyId={selectedFacultyId}
-        onSelectFaculty={(facultyId) => {
-          setContextParam("facultyId", facultyId);
-          setShowFacultyDialog(false);
-        }}
-      />
-
-      <SelectBlockDialog
-        open={showBlockDialog}
-        onOpenChange={setShowBlockDialog}
-        blocks={blocks}
-        selectedBlockId={selectedBlockId}
-        onSelectBlock={(blockId: string) => {
-          setContextParam("blockId", blockId);
-          setShowBlockDialog(false);
-        }}
-      />
-
-      <SelectRoomDialog
-        open={showRoomDialog}
-        onOpenChange={setShowRoomDialog}
-        rooms={rooms}
-        selectedRoomId={selectedRoomId}
-        onSelectRoom={(roomId: string) => {
-          setContextParam("roomId", roomId);
-          setShowRoomDialog(false);
         }}
       />
     </>

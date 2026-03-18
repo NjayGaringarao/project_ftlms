@@ -2,25 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import {
-  ArrowUpDown,
-  Blocks,
-  DoorOpen,
-  SlidersHorizontal,
-  User,
-  X,
-} from "lucide-react";
-import { Button } from "../ui/button";
+import { ArrowUpDown, Blocks, Search } from "lucide-react";
 import ListItemSmall from "../ui/list-item-small";
-import { cn } from "@/utils/style";
-import {
-  CourseLoadingBlockListItem,
-  FacultyListItem,
-} from "@/lib/course-loading";
-import { ExtendedRoom } from "@/models";
 import { SchedulerMapperClassListItem } from "@/lib/schedule/mapper";
 import ClassSchedulerDialog from "./class-scheduler-dialog";
 import { numberToHourDuration } from "@/utils/time";
+import { Input } from "../ui/input";
 
 type SortKey = "classCode" | "totalHours" | "unscheduledHours";
 type SortDirection = "asc" | "desc";
@@ -50,26 +37,12 @@ const mapperCompare = (
 };
 
 interface ClassListProps {
-  selectedFaculty: FacultyListItem | null;
-  selectedBlock: CourseLoadingBlockListItem | null;
-  selectedRoom: ExtendedRoom | null;
-  onFacultyClick: () => void;
-  onBlockClick: () => void;
-  onRoomClick: () => void;
-  onClearContext: () => void;
   loading: boolean;
   classes: SchedulerMapperClassListItem[];
   onClassScheduleChange: () => void;
 }
 
 const ClassList = ({
-  selectedFaculty,
-  selectedBlock,
-  selectedRoom,
-  onFacultyClick,
-  onBlockClick,
-  onRoomClick,
-  onClearContext,
   onClassScheduleChange,
   loading,
   classes,
@@ -78,15 +51,19 @@ const ClassList = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [selectedClass, setSelectedClass] =
     useState<SchedulerMapperClassListItem | null>(null);
+  const [query, setQuery] = useState("");
 
-  const selectedContextLabel =
-    selectedFaculty?.name ?? selectedBlock?.code ?? selectedRoom?.code ?? null;
+  const normalizedQuery = query.trim().toLowerCase();
 
   const filteredClasses: SchedulerMapperClassListItem[] = useMemo(() => {
-    return [...classes].sort((left, right) =>
+    const sorted = [...classes].sort((left, right) =>
       mapperCompare(left, right, sortKey, sortDirection),
     );
-  }, [classes, sortKey, sortDirection]);
+    if (!normalizedQuery) return sorted;
+    return sorted.filter((item) =>
+      item.class_code.toLowerCase().includes(normalizedQuery),
+    );
+  }, [classes, sortKey, sortDirection, normalizedQuery]);
 
   const parseSortKey = (value: string | null): SortKey => {
     if (value === "totalHours" || value === "unscheduledHours") return value;
@@ -105,77 +82,14 @@ const ClassList = ({
           <CardTitle>Classes</CardTitle>
         </CardHeader>
         <CardContent className="px-2 flex flex-col gap-2 w-full">
-          <div className="flex min-w-0 flex-row items-center gap-1 px-4">
-            <SlidersHorizontal className="h-4 min-w-4 -ml-1" />
-            {!selectedFaculty && !selectedBlock && !selectedRoom && (
-              <p className="text-sm text-foreground mr-1">Set Context</p>
-            )}
-            <Button
-              title={
-                selectedFaculty
-                  ? "Change Faculty Context"
-                  : "Select Faculty Context"
-              }
-              variant="outline"
-              className={cn(
-                "min-w-0",
-                selectedFaculty ? "flex-1" : "",
-                !selectedRoom && !selectedBlock && !selectedFaculty && "flex-1",
-              )}
-              onClick={onFacultyClick}
-            >
-              <User className="h-4 w-4" />
-              {selectedFaculty && (
-                <span className="truncate text-sm">{selectedFaculty.name}</span>
-              )}
-            </Button>
-
-            <Button
-              title={
-                selectedBlock ? "Change Block Context" : "Select Block Context"
-              }
-              variant="outline"
-              className={cn(
-                "min-w-0",
-                selectedBlock ? "flex-1" : "",
-                !selectedRoom && !selectedBlock && !selectedFaculty && "flex-1",
-              )}
-              onClick={onBlockClick}
-            >
-              <Blocks className="h-4 w-4" />
-              {selectedBlock && (
-                <span className="truncate text-sm">{selectedBlock.code}</span>
-              )}
-            </Button>
-
-            <Button
-              title={
-                selectedRoom ? "Change Room Context" : "Select Room Context"
-              }
-              variant="outline"
-              className={cn(
-                "min-w-0",
-                selectedRoom ? "flex-1" : "",
-                !selectedRoom && !selectedBlock && !selectedFaculty && "flex-1",
-              )}
-              onClick={onRoomClick}
-            >
-              <DoorOpen className="h-4 w-4" />
-
-              {selectedRoom && (
-                <span className="truncate text-sm">{selectedRoom.code}</span>
-              )}
-            </Button>
-
-            {(selectedFaculty || selectedBlock || selectedRoom) && (
-              <Button
-                title="Clear Context"
-                variant="outline"
-                onClick={onClearContext}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex min-w-0 flex-row items-center gap-2 px-4">
+            <Search className="h-4 min-w-4 text-foreground/60" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search class code"
+              className="h-8"
+            />
           </div>
           <div className="flex min-w-0 flex-row gap-2 px-4 items-center">
             <ArrowUpDown className="h-4 w-4" />
@@ -214,15 +128,9 @@ const ClassList = ({
             </p>
           )}
 
-          {!loading && !selectedContextLabel && (
+          {!loading && filteredClasses.length === 0 && (
             <p className="p-4 text-center text-sm text-foreground/70">
-              Select a faculty, block, or room to load classes.
-            </p>
-          )}
-
-          {!loading && selectedContextLabel && filteredClasses.length === 0 && (
-            <p className="p-4 text-center text-sm text-foreground/70">
-              No classes found.
+              {normalizedQuery ? "No classes match your search." : "No classes found."}
             </p>
           )}
 

@@ -58,7 +58,7 @@ const SelectRoomDialog = ({
       open={open}
       onOpenChange={onOpenChange}
       title="Select Room"
-      description="Select one context at a time. Choosing a room clears faculty and block context."
+      description="Select room to map. You can select faculty and block independently."
       contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
     >
       <div className="flex h-full flex-col gap-3 overflow-hidden">
