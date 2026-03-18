@@ -88,13 +88,7 @@ const buildMatrix = (
 };
 
 const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
-  if (!academic_term_id?.trim()) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-md border border-dashed p-6 text-sm text-foreground/70">
-        Academic term not set.
-      </div>
-    );
-  }
+
 
   const router = useRouter();
   const pathname = usePathname();
@@ -321,6 +315,14 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       ) : null}
     </>
   );
+
+    if (!academic_term_id?.trim()) {
+    return (
+      <div className="flex h-full items-center justify-center rounded-md border border-dashed p-6 text-sm text-foreground/70">
+        Academic term not set.
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-auto">
