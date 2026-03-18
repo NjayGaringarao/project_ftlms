@@ -49,7 +49,7 @@ export const NAV_ITEMS: NavigationItem[] = [
     label: "Course Loading",
     href: "/course-loading",
     icon: "weight-tilde",
-    allowedRoles: ["Admin"],
+    allowedRoles: ["Admin", "Program Chairperson", "College Dean"],
   },
   {
     label: "Scheduler",
