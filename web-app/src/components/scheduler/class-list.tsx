@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { ArrowUpDown, Blocks, Search } from "lucide-react";
+import { ArrowUpDown, Blocks, Presentation, Search } from "lucide-react";
 import ListItemSmall from "../ui/list-item-small";
 import { SchedulerMapperClassListItem } from "@/lib/schedule/mapper";
 import ClassSchedulerDialog from "./class-scheduler-dialog";
@@ -82,7 +82,7 @@ const ClassList = ({
           <CardTitle>Classes</CardTitle>
         </CardHeader>
         <CardContent className="px-2 flex flex-col gap-2 w-full">
-          <div className="flex min-w-0 flex-row items-center gap-2 px-4">
+          <div className="flex min-w-0 flex-row items-center gap-2  px-4">
             <Search className="h-4 min-w-4 text-foreground/60" />
             <Input
               value={query}
@@ -92,7 +92,7 @@ const ClassList = ({
             />
           </div>
           <div className="flex min-w-0 flex-row gap-2 px-4 items-center">
-            <ArrowUpDown className="h-4 w-4" />
+            <ArrowUpDown className="h-4 min-w-5" />
             <select
               value={sortKey}
               onChange={(event) => {
@@ -142,7 +142,7 @@ const ClassList = ({
                 `Unsched: Lec ${numberToHourDuration(item.unscheduled_lecture_hours)} Lab ${numberToHourDuration(item.unscheduled_laboratory_hours)}`,
               ]}
               onClick={() => setSelectedClass(item)}
-              icon={<Blocks className="h-8 w-8 text-background/80" />}
+              icon={<Presentation className="h-8 w-8 text-background/80" />}
               annotations={
                 <span className="rounded-md bg-foreground/10 px-1.5 py-1 text-xs">
                   Total: {numberToHourDuration(item.total_hours)}

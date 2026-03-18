@@ -12,7 +12,7 @@ const MapperLayout = async ({ children, params }: MapperLayoutProps) => {
   
   return (
     <div className="flex w-full h-full gap-4 overflow-hidden p-4">
-      <div className="flex w-1/4">
+      <div className="flex max-w-82">
         <MapperLeftPane academicTermId={academic_term_id}/>
       </div>
       <div className="min-w-0 flex-1 overflow-hidden">{children}</div>

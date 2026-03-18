@@ -2,14 +2,16 @@ import React from "react";
 import { dayLabel } from "@/lib/schedule/utils";
 import type { SessionDay } from "@/models";
 import type { SchedulerMatrixSession } from "@/lib/schedule/mapper";
+import { cn } from "@/utils/style";
 
 type MatrixRendererProps = {
   title: string;
-  subtitle?: string | null;
   headerAction?: React.ReactNode;
   days: SessionDay[];
   timeSlots: string[];
   matrix: Record<SessionDay, Record<number, SchedulerMatrixSession[]>>;
+  hoveredRow: number | null;
+  onHoverRow: (rowIndex: number | null) => void;
   loading?: boolean;
   emptyHint?: string | null;
   startColumn: number;
@@ -17,58 +19,73 @@ type MatrixRendererProps = {
 
 const MatrixRenderer = ({
   title,
-  subtitle,
   headerAction,
   days,
   timeSlots,
   matrix,
+  hoveredRow,
+  onHoverRow,
   loading = false,
   emptyHint,
   startColumn,
 }: MatrixRendererProps) => {
   return (
     <>
+      {/* ROW 1: SECTION HEADER (STICKY TOP) */}
       <div
-        className="flex flex-col border-b border-r border-foreground/10 px-2 py-1.5 text-xs font-semibold"
-        style={{ gridColumn: `${startColumn} / span ${days.length}`, gridRow: 1 }}
+        className="sticky top-0 z-40 bg-foreground/80 flex flex-col border-b border-r-4 border-foreground/10 px-2 py-1.5 text-xs font-semibold"
+        style={{
+          gridColumn: `${startColumn} / span ${days.length}`,
+          gridRow: 1,
+        }}
       >
-        <div className="flex items-center justify-between gap-2">
-          <span>{title}</span>
+        <div className="flex items-center gap-2 text-sm text-background">
+          <span>{title}</span>  
           {headerAction ? (
-            <div className="flex items-center gap-1">{headerAction}</div>
+            <div className="flex items-center gap-1 flex-1 text-foreground">{headerAction}</div>
           ) : null}
         </div>
-        {subtitle ? (
-          <span className="text-[10px] font-normal text-foreground/70">
-            {subtitle}
-          </span>
-        ) : null}
+        
       </div>
 
+      {/* ROW 2: DAY HEADERS (STICKY BELOW ROW 1) */}
       {days.map((day, dayIndex) => (
         <div
           key={`header-${title}-${day}`}
-          className="border-b border-r border-foreground/10 px-2 py-1 text-[11px] font-medium text-foreground/70"
-          style={{ gridColumn: startColumn + dayIndex, gridRow: 2 }}
+          className={cn("sticky z-30 bg-background flex items-center justify-center border-b-4 border-r border-foreground/10 px-2 py-1 text-xs font-medium text-foreground/70", dayIndex === 6 && "border-r-4")}  
+          style={{
+            gridColumn: startColumn + dayIndex,
+            gridRow: 2,
+            top: "2.5rem", // height of row 1
+          }}
         >
           {dayLabel(day)}
         </div>
       ))}
 
+      {/* BODY */}
       {timeSlots.map((slot, rowIndex) =>
         days.map((day, dayIndex) => {
           const items = matrix[day]?.[rowIndex] ?? [];
           return (
             <div
               key={`${title}-${day}-${slot}`}
-              className="border-b border-r border-foreground/10 px-1 py-1 text-[10px] leading-tight"
-              style={{ gridColumn: startColumn + dayIndex, gridRow: 3 + rowIndex }}
+              className={cn(
+                "border-b border-r border-foreground/10 text-xs leading-tight",
+                dayIndex === 6 && "border-r-4",
+                hoveredRow === rowIndex && "bg-foreground/5 border-y-foreground/20",
+              )}
+              style={{
+                gridColumn: startColumn + dayIndex,
+                gridRow: 3 + rowIndex,
+              }}
+              onMouseEnter={() => onHoverRow(rowIndex)}
             >
               <div className="flex h-full flex-col gap-1">
                 {items.map((item) => (
                   <span
                     key={item.id}
-                    className="rounded-sm bg-foreground/10 px-1 py-0.5 text-[10px] font-medium text-foreground"
+                    className="bg-yellow-200 px-1 h-full flex items-center justify-center font-medium text-foreground"
                     title={item.class_code}
                   >
                     {item.class_code}

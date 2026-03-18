@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Blocks, DoorOpen, User, X } from "lucide-react";
+import { Blocks, ChevronDown, DoorOpen, User, X } from "lucide-react";
 import type { SessionDay } from "@/models";
 import { toDisplayTime, toMinutes } from "@/lib/schedule/utils";
 import {
@@ -88,8 +88,6 @@ const buildMatrix = (
 };
 
 const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
-
-
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -98,9 +96,15 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const selectedBlockId = selectedContexts.blockId ?? null;
   const selectedRoomId = selectedContexts.roomId ?? null;
 
-  const [blockSessions, setBlockSessions] = useState<SchedulerMatrixSession[]>([]);
-  const [facultySessions, setFacultySessions] = useState<SchedulerMatrixSession[]>([]);
-  const [roomSessions, setRoomSessions] = useState<SchedulerMatrixSession[]>([]);
+  const [blockSessions, setBlockSessions] = useState<SchedulerMatrixSession[]>(
+    [],
+  );
+  const [facultySessions, setFacultySessions] = useState<
+    SchedulerMatrixSession[]
+  >([]);
+  const [roomSessions, setRoomSessions] = useState<SchedulerMatrixSession[]>(
+    [],
+  );
   const [blockLoading, setBlockLoading] = useState(false);
   const [facultyLoading, setFacultyLoading] = useState(false);
   const [roomLoading, setRoomLoading] = useState(false);
@@ -111,6 +115,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const [showFacultyDialog, setShowFacultyDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showRoomDialog, setShowRoomDialog] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
   const setQueryParams = (mutate: (next: URLSearchParams) => void) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -119,7 +124,10 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     router.replace(queryString ? `${pathname}?${queryString}` : pathname);
   };
 
-  const setContextParam = (key: "facultyId" | "blockId" | "roomId", value: string) => {
+  const setContextParam = (
+    key: "facultyId" | "blockId" | "roomId",
+    value: string,
+  ) => {
     setQueryParams((next) => {
       next.set(key, value);
     });
@@ -133,7 +141,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   const selectedFaculty =
     faculty.find((item) => item.id === selectedFacultyId) ?? null;
-  const selectedBlock = blocks.find((item) => item.id === selectedBlockId) ?? null;
+  const selectedBlock =
+    blocks.find((item) => item.id === selectedBlockId) ?? null;
   const selectedRoom = rooms.find((item) => item.id === selectedRoomId) ?? null;
 
   useEffect(() => {
@@ -168,7 +177,11 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   const timeSlots = useMemo(() => {
     const slots: { start: string; end: string; startMinute: number }[] = [];
-    for (let minute = START_MINUTE; minute <= END_MINUTE - SLOT_MINUTES; minute += SLOT_MINUTES) {
+    for (
+      let minute = START_MINUTE;
+      minute <= END_MINUTE - SLOT_MINUTES;
+      minute += SLOT_MINUTES
+    ) {
       const start = toTimeValue(minute);
       const end = toTimeValue(minute + SLOT_MINUTES);
       slots.push({ start, end, startMinute: minute });
@@ -192,7 +205,10 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       }
 
       setBlockLoading(true);
-      const rows = await getSchedulerMapperMatrixByBlock(academic_term_id, selectedBlockId);
+      const rows = await getSchedulerMapperMatrixByBlock(
+        academic_term_id,
+        selectedBlockId,
+      );
       if (cancelled) return;
       setBlockSessions(rows);
       setBlockLoading(false);
@@ -243,7 +259,10 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       }
 
       setRoomLoading(true);
-      const rows = await getSchedulerMapperMatrixByRoom(academic_term_id, selectedRoomId);
+      const rows = await getSchedulerMapperMatrixByRoom(
+        academic_term_id,
+        selectedRoomId,
+      );
       if (cancelled) return;
       setRoomSessions(rows);
       setRoomLoading(false);
@@ -269,20 +288,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     [roomSessions, slotStarts],
   );
 
-  const resolveSubtitle = (
-    selectedId: string | null,
-    loading: boolean,
-    count: number,
-    emptyLabel: string,
-  ): string | null => {
-    if (loading) return "Loading...";
-    if (!selectedId) return emptyLabel;
-    if (count === 0) return "No sessions";
-    return null;
-  };
-
   const getHeaderButtonClass = (hasSelection: boolean) =>
-    cn("min-w-0 h-7 px-2 text-[11px]", hasSelection ? "font-semibold" : "");
+    cn("min-w-0 h-7 px-2 text-sm", hasSelection ? "font-semibold flex-1" : "");
 
   const renderHeaderButton = (
     label: string,
@@ -301,22 +308,23 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       >
         {icon}
         <span className="truncate">{selectedLabel ?? `Pick ${label}`}</span>
+        <ChevronDown className="h-3 w-3 text-foreground/60" />
       </Button>
       {selectedLabel ? (
         <Button
           title={`Clear ${label}`}
-          variant="outline"
-          className="h-7 w-7 p-0"
+          variant="ghost"
+          className="h-7 w-7 p-0 hover:bg-transparent"
           onClick={onClear}
           disabled={lookupLoading}
         >
-          <X className="h-3 w-3" />
+          <X className="h-3 w-3 text-background" />
         </Button>
       ) : null}
     </>
   );
 
-    if (!academic_term_id?.trim()) {
+  if (!academic_term_id?.trim()) {
     return (
       <div className="flex h-full items-center justify-center rounded-md border border-dashed p-6 text-sm text-foreground/70">
         Academic term not set.
@@ -325,38 +333,45 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   }
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="min-w-[1100px]">
-        <div className="grid auto-rows-[2.5rem] grid-cols-[minmax(7.5rem,9rem)_repeat(21,minmax(4.5rem,1fr))] border border-foreground/10 text-xs">
+    <div className="flex h-full border rounded-md overflow-hidden">
+      <div className="flex-1 overflow-auto">
+        <div
+          className="grid auto-rows-[2.5rem] grid-cols-[minmax(9rem,10rem)_repeat(21,minmax(4rem,1fr))] min-w-max border border-foreground/10 text-xs"
+          onMouseLeave={() => setHoveredRow(null)}
+        >
+          {/* TOP-LEFT */}
           <div
-            className="border-b border-r border-foreground/10 px-2 py-1.5 text-xs font-semibold"
+            className="sticky top-0 left-0 z-50 bg-foreground/70 border-r-4 border-foreground/10 backdrop-blur-xs"
             style={{ gridColumn: 1, gridRow: 1 }}
+          />
+
+          {/* TIME HEADER */}
+          <div
+            className="sticky text-sm text-background top-10 left-0 z-50 bg-foreground/80 flex items-center justify-center border-b-4 border-r-4 border-foreground/10 font-semibold backdrop-blur-xs"
+            style={{ gridColumn: 1, gridRow: 2 }}
           >
             Time
           </div>
-          <div
-            className="border-b border-r border-foreground/10 px-2 py-1.5"
-            style={{ gridColumn: 1, gridRow: 2 }}
-          />
 
+          {/* TIME SLOTS */}
           {timeSlots.map((slot, index) => (
             <div
               key={`time-${slot.start}`}
-              className="border-b border-r border-foreground/10 px-2 py-1 text-[11px] text-foreground/80"
+              className={cn(
+                "sticky left-0 z-20 bg-background flex items-center justify-center border-b border-r-4 border-foreground/10 px-2 text-xs",
+                hoveredRow === index && "bg-foreground/5 border-y-foreground/20 backdrop-blur-xs",
+              )}
               style={{ gridColumn: 1, gridRow: 3 + index }}
+              onMouseEnter={() => setHoveredRow(index)}
             >
               {toDisplayTime(slot.start)} - {toDisplayTime(slot.end)}
             </div>
           ))}
 
+          {/* MATRIX RENDERERS */}
           <MatrixRenderer
             title="Block"
-            subtitle={resolveSubtitle(
-              selectedBlockId,
-              blockLoading,
-              blockSessions.length,
-              "Pick Block",
-            )}
+     
             headerAction={renderHeaderButton(
               "Block",
               <Blocks className="h-3 w-3" />,
@@ -367,18 +382,15 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
             days={DAYS}
             timeSlots={timeSlots.map((slot) => slot.start)}
             matrix={blockMatrix}
+            hoveredRow={hoveredRow}
+            onHoverRow={setHoveredRow}
             loading={blockLoading}
             startColumn={2}
           />
 
           <MatrixRenderer
             title="Faculty"
-            subtitle={resolveSubtitle(
-              selectedFacultyId,
-              facultyLoading,
-              facultySessions.length,
-              "Pick Faculty",
-            )}
+           
             headerAction={renderHeaderButton(
               "Faculty",
               <User className="h-3 w-3" />,
@@ -389,18 +401,15 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
             days={DAYS}
             timeSlots={timeSlots.map((slot) => slot.start)}
             matrix={facultyMatrix}
+            hoveredRow={hoveredRow}
+            onHoverRow={setHoveredRow}
             loading={facultyLoading}
             startColumn={9}
           />
 
           <MatrixRenderer
             title="Room"
-            subtitle={resolveSubtitle(
-              selectedRoomId,
-              roomLoading,
-              roomSessions.length,
-              "Pick Room",
-            )}
+          
             headerAction={renderHeaderButton(
               "Room",
               <DoorOpen className="h-3 w-3" />,
@@ -411,12 +420,13 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
             days={DAYS}
             timeSlots={timeSlots.map((slot) => slot.start)}
             matrix={roomMatrix}
+            hoveredRow={hoveredRow}
+            onHoverRow={setHoveredRow}
             loading={roomLoading}
             startColumn={16}
           />
         </div>
       </div>
-
       <SelectFacultyDialog
         open={showFacultyDialog}
         onOpenChange={setShowFacultyDialog}
@@ -439,7 +449,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         }}
       />
 
-      <SelectRoomDialog
+       <SelectRoomDialog
         open={showRoomDialog}
         onOpenChange={setShowRoomDialog}
         rooms={rooms}

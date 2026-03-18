@@ -20,7 +20,7 @@ export const formatTermLabel = (term: ScheduleAcademicTermOption): string => {
 
 export const dayLabel = (value: string): string => {
   const normalized = value.toUpperCase();
-  return `${normalized.slice(0, 1)}${normalized.slice(1).toLowerCase()}`;
+  return `${normalized.slice(0, 1)}${normalized.slice(1).toLowerCase().slice(0, 2)}`;
 };
 
 export const toMinutes = (value: string): number => {
