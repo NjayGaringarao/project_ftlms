@@ -29,13 +29,13 @@ type ClassSchedulerDialogProps = {
 };
 
 const SESSION_DAYS: SessionDay[] = [
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-  "SUNDAY",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
 ];
 
 const durationHours = (startTime: string, endTime: string): number => {
@@ -60,7 +60,7 @@ const ClassSchedulerDialog = ({
 
   const [type, setType] = useState<SessionType>("Lecture");
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [day, setDay] = useState<SessionDay>("MONDAY");
+  const [day, setDay] = useState<SessionDay>("Monday");
   const [startTime, setStartTime] = useState<string | null>(null);
   const [endTime, setEndTime] = useState<string | null>(null);
   const [conflicts, setConflicts] = useState<
@@ -243,7 +243,7 @@ const ClassSchedulerDialog = ({
                 description="Add lecture or laboratory schedule for this class"
                 onClick={() => {
                   setType("Lecture");
-                  setDay("MONDAY");
+                  setDay("Monday");
                   setRoomId(null);
                   setStartTime(null);
                   setEndTime(null);
