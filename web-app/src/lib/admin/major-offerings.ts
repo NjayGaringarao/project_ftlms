@@ -16,7 +16,6 @@ export type MajorOfferingListItem = ExtendedMajorOffering & {
       id: string;
       name: string;
       address: string | null;
-      zip_code: string | null;
     } | null;
     program: {
       id: string;
@@ -58,7 +57,7 @@ export const getMajorOfferingsList = async (): Promise<
         id,
         campus_id,
         program_id,
-        campus:campus_id (id, name, address, zip_code),
+        campus:campus_id (id, name, address),
         program:program_id (
           id,
           code,
@@ -128,7 +127,7 @@ export const getMajorOfferingById = async (
         id,
         campus_id,
         program_id,
-        campus:campus_id (id, name, address, zip_code),
+        campus:campus_id (id, name, address),
         program:program_id (
           id,
           code,

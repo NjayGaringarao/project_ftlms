@@ -13,6 +13,7 @@ import {
   BookCopy,
   WeightTilde,
   Clock,
+  Blocks,
 } from "lucide-react";
 
 export type IconName =
@@ -28,7 +29,7 @@ export type IconName =
   | "notebook-tabs"
   | "book-copy"
   | "weight-tilde"
-  | "clock";
+  | "clock" | "blocks";
 
 export const iconMap: Record<string, LucideIcon> = {
   home: Home,
@@ -44,6 +45,7 @@ export const iconMap: Record<string, LucideIcon> = {
   "book-copy": BookCopy,
   "weight-tilde": WeightTilde,
   clock: Clock,
+  "blocks" : Blocks
 };
 
 export const mapIcon = (name?: IconName) => {

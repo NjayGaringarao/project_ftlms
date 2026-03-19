@@ -81,8 +81,14 @@ export const ProgramOfferingsList = ({
           title={offering.program?.name ?? "Unknown Program"}
           subtitle={[
             `Campus: ${offering.campus?.name ?? "Unknown Campus"}`,
-            `Code: ${offering.program?.code ?? "N/A"}`,
+           
           ]}
+
+          annotations={
+            <span className="text-xs text-foreground bg-foreground/10 py-2 px-3 rounded-xl">
+              {offering.program?.code ?? "No Program Code"}
+            </span>
+          }
           isSelected={selectedId === offering.id}
           icon={<Network className="h-14 w-14 text-background" />}
         />

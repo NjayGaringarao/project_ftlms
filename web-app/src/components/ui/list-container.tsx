@@ -16,13 +16,13 @@ const ListContainer = ({
   directoryLevel = "FIRST",
 }: React.PropsWithChildren<ListProps>) => {
   return (
-    <div className="relative h-full flex flex-col gap-4">
+    <div className="relative h-full flex flex-col gap-4 overflow-hidden">
       <CardHeader className="flex flex-col gap-4 bg-background/50 backdrop-blur-sm p-0 z-50 top-0">
         <div className="w-full flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {header}
         </div>
       </CardHeader>
-      <CardContent className="p-0 flex">
+      <CardContent className="p-0 flex-1 overflow-y-auto">
         <div
           className={cn(
             "grid gap-4 flex-1",

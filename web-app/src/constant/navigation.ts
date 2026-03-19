@@ -28,6 +28,12 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
+    label: "Block",
+    href: "/blocks",
+    icon: "blocks",
+    allowedRoles: ["Admin"],
+  },
+  {
     label: "Courses",
     href: "/courses",
     icon: "notebook-tabs",

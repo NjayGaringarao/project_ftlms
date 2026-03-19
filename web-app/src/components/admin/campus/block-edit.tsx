@@ -9,12 +9,17 @@ import { Button } from "@/components/ui/button";
 import AdminPanel from "../admin-panel";
 import FormStatusBanner from "../form-status-banner";
 import {
-  getMajorOfferingsList,
+  getMajorOfferingsByProgramOffering,
   MajorOfferingListItem,
 } from "@/lib/admin/major-offerings";
 import { updateBlock } from "@/lib/admin/actions";
 import { BlockListItem } from "@/lib/admin/blocks";
 import { getTermsList, TermListItem } from "@/lib/admin/terms";
+import {
+  getProgramOfferingsByCampus,
+  getProgramOfferingsList,
+  ProgramOfferingListItem,
+} from "@/lib/admin/program-offerings";
 
 type BlockEditProps = {
   block: BlockListItem;
@@ -28,6 +33,9 @@ export const BlockEdit = ({
   fixedCampusId,
 }: BlockEditProps) => {
   const router = useRouter();
+  const [programOfferings, setProgramOfferings] = useState<
+    ProgramOfferingListItem[]
+  >([]);
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
   );
@@ -62,59 +70,49 @@ export const BlockEdit = ({
     const load = async () => {
       setIsLoadingData(true);
       const [offerings, termsData] = await Promise.all([
-        getMajorOfferingsList(),
+        fixedCampusId
+          ? getProgramOfferingsByCampus(fixedCampusId)
+          : getProgramOfferingsList(),
         getTermsList(),
       ]);
-      setMajorOfferings(offerings);
+      setProgramOfferings(offerings);
       setTerms(termsData);
       setIsLoadingData(false);
     };
 
     load();
-  }, []);
+  }, [fixedCampusId]);
+
+  useEffect(() => {
+    const loadMajorOfferings = async () => {
+      if (!programOfferingId) {
+        setMajorOfferings([]);
+        return;
+      }
+      const offerings = await getMajorOfferingsByProgramOffering(
+        programOfferingId,
+      );
+      setMajorOfferings(offerings);
+    };
+
+    loadMajorOfferings();
+  }, [programOfferingId]);
 
   const selectedOffering = useMemo(
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
-  const scopedOfferings = useMemo(() => {
-    if (!fixedCampusId) return majorOfferings;
-    return majorOfferings.filter(
-      (offering) => offering.program_offering?.campus_id === fixedCampusId,
-    );
-  }, [fixedCampusId, majorOfferings]);
-
   const programOfferingOptions = useMemo(() => {
-    const optionMap = new Map<
-      string,
-      { id: string; programName: string; campusName: string }
-    >();
-
-    scopedOfferings.forEach((offering) => {
-      if (
-        !offering.program_offering_id ||
-        optionMap.has(offering.program_offering_id)
-      ) {
-        return;
-      }
-
-      optionMap.set(offering.program_offering_id, {
-        id: offering.program_offering_id,
-        programName:
-          offering.program_offering?.program?.name ?? "Unknown Program",
-        campusName: offering.program_offering?.campus?.name ?? "Unknown Campus",
-      });
-    });
-
-    return Array.from(optionMap.values());
-  }, [scopedOfferings]);
+    return programOfferings.map((offering) => ({
+      id: offering.id,
+      programName: offering.program?.name ?? "Unknown Program",
+      campusName: offering.campus?.name ?? "Unknown Campus",
+    }));
+  }, [programOfferings]);
 
   const availableMajorOfferings = useMemo(() => {
-    if (!programOfferingId) return [];
-    return scopedOfferings.filter(
-      (offering) => offering.program_offering_id === programOfferingId,
-    );
-  }, [programOfferingId, scopedOfferings]);
+    return majorOfferings;
+  }, [majorOfferings]);
 
   const handleSave = async () => {
     const parsedYearLevel = Number(yearLevel);
@@ -201,6 +199,7 @@ export const BlockEdit = ({
                 onChange={(event) => {
                   setProgramOfferingId(event.target.value);
                   setMajorOfferingId("");
+                  setMajorOfferings([]);
                   setError("");
                 }}
                 disabled={isSaving || isLoadingData}

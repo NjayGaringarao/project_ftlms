@@ -29,7 +29,7 @@ const ListItem = ({
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-row rounded-lg border transition items-center",
+        "flex flex-row rounded-lg border transition items-center min-h-20",
         "overflow-hidden",
         "hover:bg-foreground/5 hover:border-foreground/30 ",
         isSelected && "bg-foreground/10 border-foreground/40 font-semibold",
@@ -37,7 +37,7 @@ const ListItem = ({
     >
       <div
         className={cn(
-          "h-20 w-20 bg-foreground/80 ",
+          "h-20 min-w-20 bg-foreground/80 ",
           "flex items-center justify-center",
         )}
       >
