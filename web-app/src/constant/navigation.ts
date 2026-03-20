@@ -28,7 +28,7 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
-    label: "Block",
+    label: "Blocks",
     href: "/blocks",
     icon: "blocks",
     allowedRoles: ["Admin"],

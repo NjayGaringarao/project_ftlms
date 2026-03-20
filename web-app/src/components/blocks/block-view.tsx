@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Blocks } from "lucide-react";
-import AdminPanel from "../admin-panel";
-import DangerZone from "../danger-zone";
-import DeleteConfirmModal from "../delete-confirm-modal";
+import AdminPanel from "../admin/admin-panel";
+import DangerZone from "../admin/danger-zone";
+import DeleteConfirmModal from "../admin/delete-confirm-modal";
 import { deleteBlock } from "@/lib/admin/actions";
 import { BlockListItem } from "@/lib/admin/blocks";
 
@@ -19,6 +19,10 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [pathBase, queryString] = basePath.split("?");
+
+  const withQuery = (suffix: string) =>
+    queryString ? `${pathBase}${suffix}?${queryString}` : `${pathBase}${suffix}`;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -41,7 +45,7 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
       title="Block Information"
       icon={Blocks}
       onClose={() => router.push(basePath)}
-      onEdit={() => router.push(`${basePath}/${block.id}/edit`)}
+      onEdit={() => router.push(withQuery(`/${block.id}/edit`))}
     >
       <>
         <div className="space-y-4">
@@ -50,7 +54,7 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
             <h3 className="text-base font-semibold">Block Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <p className="text-xs text-foreground/60">Code</p>
               <p className="font-medium">{block.code}</p>

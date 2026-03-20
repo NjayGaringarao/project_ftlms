@@ -2,7 +2,6 @@
 
 import { ExtendedAcademicTerm } from "@/models/academic_term";
 import { createClient } from "@/utils/supabase/server";
-import { sortAcademicTermsDesc } from "./academic-terms";
 
 export type TermListItem = ExtendedAcademicTerm;
 
@@ -57,14 +56,14 @@ export const getTermsList = async (): Promise<TermListItem[]> => {
     .select(
       "id, code, academic_year_id, name, start, end, academic_year:academic_year_id (id, code, start_year, end_year)",
     )
-    .order("start", { ascending: true });
+    .order("end", { ascending: false });
 
   if (error) {
     console.error("lib.admin.terms.getTermsList ::", error);
     return [];
   }
 
-  return sortAcademicTermsDesc((data ?? []).map(normalizeTerm));
+  return (data ?? []).map(normalizeTerm);
 };
 
 export const getTermById = async (
@@ -95,4 +94,9 @@ export const getTermsByAcademicYearId = async (
 ): Promise<TermListItem[]> => {
   const terms = await getTermsList();
   return terms.filter((term) => term.academic_year_id === academicYearId);
+};
+
+export const getDefaultAcademicTerm = async (): Promise<TermListItem | null> => {
+  const terms = await getTermsList();
+  return terms[0] ?? null;
 };

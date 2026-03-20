@@ -1,24 +1,28 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, Plus } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import AdminPanel from "../admin-panel";
-import FormStatusBanner from "../form-status-banner";
+import AdminPanel from "../admin/admin-panel";
+import FormStatusBanner from "../admin/form-status-banner";
 import {
   getMajorOfferingsByProgramOffering,
   MajorOfferingListItem,
 } from "@/lib/admin/major-offerings";
-import { getTermsList, TermListItem } from "@/lib/admin/terms";
+import { getTermsList, type TermListItem } from "@/lib/admin/terms";
 import { createBlock } from "@/lib/admin/actions";
+import { getCampusesList, CampusListItem } from "@/lib/admin/campuses";
 import {
   getProgramOfferingsByCampus,
-  getProgramOfferingsList,
   ProgramOfferingListItem,
 } from "@/lib/admin/program-offerings";
+import { formatAcademicTermLabel } from "@/utils/string";
+import CampusPickerDialog from "@/components/blocks/campus-picker-dialog";
+import ProgramOfferingPickerDialog from "@/components/blocks/program-offering-picker-dialog";
+import { cn } from "@/utils/style";
 
 type BlockCreateProps = {
   basePath?: string;
@@ -30,6 +34,10 @@ export const BlockCreate = ({
   fixedCampusId,
 }: BlockCreateProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [pathBase, queryString] = basePath.split("?");
+  const withQuery = (suffix: string) =>
+    queryString ? `${pathBase}${suffix}?${queryString}` : `${pathBase}${suffix}`;
   const [programOfferings, setProgramOfferings] = useState<
     ProgramOfferingListItem[]
   >([]);
@@ -37,6 +45,8 @@ export const BlockCreate = ({
     [],
   );
   const [terms, setTerms] = useState<TermListItem[]>([]);
+  const [campuses, setCampuses] = useState<CampusListItem[]>([]);
+  const [campusId, setCampusId] = useState(fixedCampusId ?? "");
   const [programOfferingId, setProgramOfferingId] = useState("");
   const [majorOfferingId, setMajorOfferingId] = useState("");
   const [academicTermId, setAcademicTermId] = useState("");
@@ -47,23 +57,47 @@ export const BlockCreate = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const selectedAcademicTermId = searchParams.get("academic_term_id") ?? "";
+  const [campusDialogOpen, setCampusDialogOpen] = useState(false);
+  const [campusQuery, setCampusQuery] = useState("");
+  const [programOfferingDialogOpen, setProgramOfferingDialogOpen] =
+    useState(false);
+  const [programOfferingQuery, setProgramOfferingQuery] = useState("");
 
   useEffect(() => {
     const load = async () => {
       setIsLoadingData(true);
-      const [offerings, termsData] = await Promise.all([
-        fixedCampusId
-          ? getProgramOfferingsByCampus(fixedCampusId)
-          : getProgramOfferingsList(),
+      const [campusRows, termsData] = await Promise.all([
+        getCampusesList(),
         getTermsList(),
       ]);
-      setProgramOfferings(offerings);
+      setCampuses(campusRows);
       setTerms(termsData);
       setIsLoadingData(false);
     };
 
     load();
   }, [fixedCampusId]);
+
+  useEffect(() => {
+    const loadOfferings = async () => {
+      if (!campusId) {
+        setProgramOfferings([]);
+        setProgramOfferingId("");
+        setMajorOfferingId("");
+        setMajorOfferings([]);
+        return;
+      }
+
+      const offerings = await getProgramOfferingsByCampus(campusId);
+      setProgramOfferings(offerings);
+      setProgramOfferingId("");
+      setMajorOfferingId("");
+      setMajorOfferings([]);
+    };
+
+    loadOfferings();
+  }, [campusId]);
 
   useEffect(() => {
     const loadMajorOfferings = async () => {
@@ -84,17 +118,35 @@ export const BlockCreate = ({
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
-  const programOfferingOptions = useMemo(() => {
-    return programOfferings.map((offering) => ({
-      id: offering.id,
-      programName: offering.program?.name ?? "Unknown Program",
-      campusName: offering.campus?.name ?? "Unknown Campus",
-    }));
-  }, [programOfferings]);
-
+  const selectedCampus = useMemo(
+    () => campuses.find((campus) => campus.id === campusId) ?? null,
+    [campusId, campuses],
+  );
+  const selectedProgramOffering = useMemo(
+    () =>
+      programOfferings.find((offering) => offering.id === programOfferingId) ??
+      null,
+    [programOfferingId, programOfferings],
+  );
+  const selectedTerm = useMemo(
+    () =>
+      terms.find((term) => term.id === selectedAcademicTermId) ?? null,
+    [selectedAcademicTermId, terms],
+  );
   const availableMajorOfferings = useMemo(() => {
     return majorOfferings;
   }, [majorOfferings]);
+
+  const programOfferingsForCampus = useMemo(() => {
+    if (!campusId) return [];
+    return programOfferings.filter(
+      (offering) => offering.campus_id === campusId,
+    );
+  }, [campusId, programOfferings]);
+
+  useEffect(() => {
+    setAcademicTermId(selectedAcademicTermId);
+  }, [selectedAcademicTermId]);
 
   const handleCreate = async () => {
     const parsedYearLevel = Number(yearLevel);
@@ -139,7 +191,7 @@ export const BlockCreate = ({
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`${basePath}/${data.id}`);
+        router.push(withQuery(`/${data.id}`));
       } else {
         router.push(basePath);
       }
@@ -148,7 +200,7 @@ export const BlockCreate = ({
 
   return (
     <AdminPanel
-      title="Block Information"
+      title="Create Block"
       icon={Plus}
       onClose={() => router.push(basePath)}
     >
@@ -170,34 +222,74 @@ export const BlockCreate = ({
             <h3 className="font-semibold">Block Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-xs" htmlFor="academic-term-id">
+                Academic Term *
+              </Label>
+              <Button
+                id="academic-term-id"
+                type="button"
+                variant="outline"
+                className="mt-1 w-full justify-between text-sm"
+                disabled
+              >
+                <span className="truncate">
+                  {selectedTerm
+                    ? formatAcademicTermLabel(selectedTerm)
+                    : "Select academic term..."}
+                </span>
+              </Button>
+            </div>
+            <div>
+              <Label className="text-xs" htmlFor="campus-id">
+                Campus *
+              </Label>
+              <Button
+                id="campus-id"
+                type="button"
+                variant="outline"
+                className={cn(
+                  "mt-1 w-full justify-between text-sm",
+                  !selectedCampus && "text-foreground/60",
+                )}
+                onClick={() => setCampusDialogOpen(true)}
+                disabled={isSaving || isLoadingData}
+              >
+                <span className="truncate">
+                  {selectedCampus ? selectedCampus.name : "Select campus..."}
+                </span>
+                <ChevronDown className="h-4 w-4 text-foreground/60" />
+              </Button>
+            </div>
+
+            
+
+            <div>
               <Label className="text-xs" htmlFor="program-offering-id">
                 Program Offering *
               </Label>
-              <select
+              <Button
                 id="program-offering-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={programOfferingId}
-                onChange={(event) => {
-                  setProgramOfferingId(event.target.value);
-                  setMajorOfferingId("");
-                  setMajorOfferings([]);
-                  setAcademicTermId("");
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
+                type="button"
+                variant="outline"
+                className={cn(
+                  "mt-1 w-full justify-between text-sm",
+                  !selectedProgramOffering && "text-foreground/60",
+                )}
+                onClick={() => setProgramOfferingDialogOpen(true)}
+                disabled={isSaving || isLoadingData || !campusId}
               >
-                <option value="">Select program offering...</option>
-                {programOfferingOptions.map((offering) => (
-                  <option key={offering.id} value={offering.id}>
-                    {offering.programName} - {offering.campusName}
-                  </option>
-                ))}
-              </select>
+                <span className="truncate">
+                  {selectedProgramOffering
+                    ? selectedProgramOffering.program?.name ?? "Unknown Program"
+                    : "Select program offering..."}
+                </span>
+                <ChevronDown className="h-4 w-4 text-foreground/60" />
+              </Button>
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <Label className="text-xs" htmlFor="major-offering-id">
                 Major Offering *
               </Label>
@@ -209,14 +301,13 @@ export const BlockCreate = ({
                   setMajorOfferingId(event.target.value);
                   setError("");
                 }}
-                disabled={isSaving || isLoadingData || !programOfferingId}
+                disabled={isSaving || isLoadingData || !campusId || !programOfferingId}
               >
                 <option value="">Select major offering...</option>
                 {availableMajorOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
-                    {offering.major?.name} -{" "}
-                    {offering.program_offering?.program?.name} -{" "}
-                    {offering.program_offering?.campus?.name}
+                    {offering.major?.name}
+                 
                   </option>
                 ))}
               </select>
@@ -228,28 +319,7 @@ export const BlockCreate = ({
               )}
             </div>
 
-            <div className="md:col-span-2">
-              <Label className="text-xs" htmlFor="academic-term-id">
-                Academic Term *
-              </Label>
-              <select
-                id="academic-term-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={academicTermId}
-                onChange={(event) => {
-                  setAcademicTermId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select academic term...</option>
-                {terms.map((term) => (
-                  <option key={term.id} value={term.id}>
-                    {term.code}
-                  </option>
-                ))}
-              </select>
-            </div>
+            
 
             <div>
               <Label className="text-xs" htmlFor="year-level">
@@ -311,6 +381,7 @@ export const BlockCreate = ({
             <Button
               variant="outline"
               onClick={() => {
+                setCampusId(fixedCampusId ?? "");
                 setProgramOfferingId("");
                 setMajorOfferingId("");
                 setAcademicTermId("");
@@ -330,6 +401,40 @@ export const BlockCreate = ({
           </div>
         </div>
       </div>
+
+      <CampusPickerDialog
+        open={campusDialogOpen}
+        onOpenChange={setCampusDialogOpen}
+        campuses={campuses}
+        selectedCampusId={campusId}
+        query={campusQuery}
+        onQueryChange={setCampusQuery}
+        onSelect={(nextCampusId) => {
+          setCampusId(nextCampusId);
+          setProgramOfferings([]);
+          setProgramOfferingId("");
+          setMajorOfferingId("");
+          setMajorOfferings([]);
+          setError("");
+          setCampusDialogOpen(false);
+        }}
+      />
+
+      <ProgramOfferingPickerDialog
+        open={programOfferingDialogOpen}
+        onOpenChange={setProgramOfferingDialogOpen}
+        programOfferings={programOfferingsForCampus}
+        selectedProgramOfferingId={programOfferingId}
+        query={programOfferingQuery}
+        onQueryChange={setProgramOfferingQuery}
+        onSelect={(offeringId) => {
+          setProgramOfferingId(offeringId);
+          setMajorOfferingId("");
+          setMajorOfferings([]);
+          setError("");
+          setProgramOfferingDialogOpen(false);
+        }}
+      />
     </AdminPanel>
   );
 };

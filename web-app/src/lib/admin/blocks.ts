@@ -1,15 +1,10 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { ExtendedBlock } from "@/models";
+import { ExtendedAcademicTerm, ExtendedBlock } from "@/models";
 
 export type BlockListItem = ExtendedBlock & {
-  academic_term: {
-    id: string;
-    code: string;
-    academic_year_id: string;
-    name: string;
-  } | null;
+  academic_term: ExtendedAcademicTerm | null;
   major_offering: ExtendedBlock["major_offering"] & {
     major: {
       id: string;
@@ -142,7 +137,13 @@ export const getBlockById = async (
         id,
         code,
         academic_year_id,
-        name
+        name,
+        academic_year:academic_year_id (
+          id,
+          code,
+          start_year,
+          end_year
+        )
       ),
       major_offering:major_offering_id (
         id,
@@ -190,7 +191,14 @@ export const getBlockById = async (
 
   return {
     ...data,
-    academic_term: academicTerm,
+    academic_term: {
+      ...academicTerm,
+      academic_year: academicTerm
+        ? Array.isArray(academicTerm.academic_year)
+          ? academicTerm.academic_year[0]
+          : academicTerm.academic_year
+        : null,
+    },
     major_offering: {
       ...majorOffering,
       major,

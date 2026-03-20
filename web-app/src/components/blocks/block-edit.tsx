@@ -2,24 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Edit } from "lucide-react";
+import { ChevronDown, Edit } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import AdminPanel from "../admin-panel";
-import FormStatusBanner from "../form-status-banner";
+import AdminPanel from "../admin/admin-panel";
+import FormStatusBanner from "../admin/form-status-banner";
 import {
   getMajorOfferingsByProgramOffering,
   MajorOfferingListItem,
 } from "@/lib/admin/major-offerings";
 import { updateBlock } from "@/lib/admin/actions";
 import { BlockListItem } from "@/lib/admin/blocks";
-import { getTermsList, TermListItem } from "@/lib/admin/terms";
 import {
   getProgramOfferingsByCampus,
-  getProgramOfferingsList,
   ProgramOfferingListItem,
 } from "@/lib/admin/program-offerings";
+import { getCampusesList, CampusListItem } from "@/lib/admin/campuses";
+import { formatAcademicTermLabel } from "@/utils/string";
+import CampusPickerDialog from "@/components/blocks/campus-picker-dialog";
+import ProgramOfferingPickerDialog from "@/components/blocks/program-offering-picker-dialog";
+import { cn } from "@/utils/style";
 
 type BlockEditProps = {
   block: BlockListItem;
@@ -33,13 +36,21 @@ export const BlockEdit = ({
   fixedCampusId,
 }: BlockEditProps) => {
   const router = useRouter();
+  const [pathBase, queryString] = basePath.split("?");
+  const withQuery = (suffix: string) =>
+    queryString ? `${pathBase}${suffix}?${queryString}` : `${pathBase}${suffix}`;
   const [programOfferings, setProgramOfferings] = useState<
     ProgramOfferingListItem[]
   >([]);
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
   );
-  const [terms, setTerms] = useState<TermListItem[]>([]);
+  const [campuses, setCampuses] = useState<CampusListItem[]>([]);
+  const initialCampusId =
+    fixedCampusId ??
+    block.major_offering?.program_offering?.campus_id ??
+    "";
+  const [campusId, setCampusId] = useState(initialCampusId);
   const [programOfferingId, setProgramOfferingId] = useState(
     block.major_offering?.program_offering_id ?? "",
   );
@@ -53,6 +64,7 @@ export const BlockEdit = ({
     block.student_count !== null ? block.student_count.toString() : "",
   );
   const [savedState, setSavedState] = useState({
+    campusId: initialCampusId,
     programOfferingId: block.major_offering?.program_offering_id ?? "",
     majorOfferingId: block.major_offering_id,
     academicTermId: block.academic_term_id,
@@ -65,24 +77,55 @@ export const BlockEdit = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [campusDialogOpen, setCampusDialogOpen] = useState(false);
+  const [campusQuery, setCampusQuery] = useState("");
+  const [programOfferingDialogOpen, setProgramOfferingDialogOpen] =
+    useState(false);
+  const [programOfferingQuery, setProgramOfferingQuery] = useState("");
 
   useEffect(() => {
     const load = async () => {
       setIsLoadingData(true);
-      const [offerings, termsData] = await Promise.all([
-        fixedCampusId
-          ? getProgramOfferingsByCampus(fixedCampusId)
-          : getProgramOfferingsList(),
-        getTermsList(),
-      ]);
-      setProgramOfferings(offerings);
-      setTerms(termsData);
+      const campusRows = await getCampusesList();
+      setCampuses(campusRows);
       setIsLoadingData(false);
     };
 
     load();
   }, [fixedCampusId]);
 
+  useEffect(() => {
+    const loadOfferings = async () => {
+      if (!campusId) {
+        setProgramOfferings([]);
+        setProgramOfferingId("");
+        setMajorOfferingId("");
+        setMajorOfferings([]);
+        return;
+      }
+
+      const offerings = await getProgramOfferingsByCampus(campusId);
+      setProgramOfferings(offerings);
+
+      if (!programOfferingId) {
+        setMajorOfferingId("");
+        setMajorOfferings([]);
+        return;
+      }
+
+      const matchesCampus = offerings.some(
+        (offering) => offering.id === programOfferingId,
+      );
+
+      if (!matchesCampus) {
+        setProgramOfferingId("");
+        setMajorOfferingId("");
+        setMajorOfferings([]);
+      }
+    };
+
+    loadOfferings();
+  }, [campusId, programOfferingId]);
   useEffect(() => {
     const loadMajorOfferings = async () => {
       if (!programOfferingId) {
@@ -102,17 +145,29 @@ export const BlockEdit = ({
     () => majorOfferings.find((item) => item.id === majorOfferingId),
     [majorOfferingId, majorOfferings],
   );
-  const programOfferingOptions = useMemo(() => {
-    return programOfferings.map((offering) => ({
-      id: offering.id,
-      programName: offering.program?.name ?? "Unknown Program",
-      campusName: offering.campus?.name ?? "Unknown Campus",
-    }));
-  }, [programOfferings]);
+  const selectedCampus = useMemo(
+    () => campuses.find((campus) => campus.id === campusId) ?? null,
+    [campusId, campuses],
+  );
+  const selectedProgramOffering = useMemo(
+    () =>
+      programOfferings.find((offering) => offering.id === programOfferingId) ??
+      null,
+    [programOfferingId, programOfferings],
+  );
+  const selectedTerm = block.academic_term ?? null;
 
   const availableMajorOfferings = useMemo(() => {
     return majorOfferings;
   }, [majorOfferings]);
+
+  const programOfferingsForCampus = useMemo(() => {
+    if (!campusId) return [];
+    return programOfferings.filter(
+      (offering) => offering.campus_id === campusId,
+    );
+  }, [campusId, programOfferings]);
+
 
   const handleSave = async () => {
     const parsedYearLevel = Number(yearLevel);
@@ -155,6 +210,7 @@ export const BlockEdit = ({
     }
 
     setSavedState({
+      campusId,
       programOfferingId,
       majorOfferingId,
       academicTermId,
@@ -171,7 +227,7 @@ export const BlockEdit = ({
     <AdminPanel
       title="Edit Block"
       icon={Edit}
-      onClose={() => router.push(`${basePath}/${block.id}`)}
+      onClose={() => router.push(withQuery(`/${block.id}`))}
     >
       <div className="space-y-4">
         <FormStatusBanner
@@ -187,33 +243,73 @@ export const BlockEdit = ({
             <h3 className="font-semibold">Block Profile</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-xs" htmlFor="academic-term-id">
+                Academic Term *
+              </Label>
+              <Button
+                id="academic-term-id"
+                type="button"
+                variant="outline"
+                className="mt-1 w-full justify-between text-sm text-foreground/60"
+                disabled
+              >
+                <span className="truncate">
+                  {selectedTerm
+                    ? formatAcademicTermLabel(selectedTerm)
+                    : "No academic term"}
+                </span>
+              </Button>
+            </div>
+
+            <div>
+              <Label className="text-xs" htmlFor="campus-id">
+                Campus *
+              </Label>
+              <Button
+                id="campus-id"
+                type="button"
+                variant="outline"
+                className={cn(
+                  "mt-1 w-full justify-between text-sm",
+                  !selectedCampus && "text-foreground/60",
+                )}
+                onClick={() => setCampusDialogOpen(true)}
+                disabled={isSaving || isLoadingData}
+              >
+                <span className="truncate">
+                  {selectedCampus ? selectedCampus.name : "Select campus..."}
+                </span>
+                <ChevronDown className="h-4 w-4 text-foreground/60" />
+              </Button>
+            </div>
+
+            <div>
               <Label className="text-xs" htmlFor="program-offering-id">
                 Program Offering *
               </Label>
-              <select
+              <Button
                 id="program-offering-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={programOfferingId}
-                onChange={(event) => {
-                  setProgramOfferingId(event.target.value);
-                  setMajorOfferingId("");
-                  setMajorOfferings([]);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
+                type="button"
+                variant="outline"
+                className={cn(
+                  "mt-1 w-full justify-between text-sm",
+                  !selectedProgramOffering && "text-foreground/60",
+                )}
+                onClick={() => setProgramOfferingDialogOpen(true)}
+                disabled={isSaving || isLoadingData || !campusId}
               >
-                <option value="">Select program offering...</option>
-                {programOfferingOptions.map((offering) => (
-                  <option key={offering.id} value={offering.id}>
-                    {offering.programName}
-                  </option>
-                ))}
-              </select>
+                <span className="truncate">
+                  {selectedProgramOffering
+                    ? selectedProgramOffering.program?.name ?? "Unknown Program"
+                    : "Select program offering..."}
+                </span>
+                <ChevronDown className="h-4 w-4 text-foreground/60" />
+              </Button>
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <Label className="text-xs" htmlFor="major-offering-id">
                 Major Offering *
               </Label>
@@ -225,13 +321,12 @@ export const BlockEdit = ({
                   setMajorOfferingId(event.target.value);
                   setError("");
                 }}
-                disabled={isSaving || isLoadingData || !programOfferingId}
+                disabled={isSaving || isLoadingData || !campusId || !programOfferingId}
               >
                 <option value="">Select major offering...</option>
                 {availableMajorOfferings.map((offering) => (
                   <option key={offering.id} value={offering.id}>
-                    {offering.major?.name} -{" "}
-                    {offering.program_offering?.program?.name}
+                    {offering.major?.name}
                   </option>
                 ))}
               </select>
@@ -241,29 +336,6 @@ export const BlockEdit = ({
                   {selectedOffering.program_offering?.program?.code})
                 </p>
               )}
-            </div>
-
-            <div className="md:col-span-2">
-              <Label className="text-xs" htmlFor="academic-term-id">
-                Academic Term *
-              </Label>
-              <select
-                id="academic-term-id"
-                className="w-full mt-1 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm"
-                value={academicTermId}
-                onChange={(event) => {
-                  setAcademicTermId(event.target.value);
-                  setError("");
-                }}
-                disabled={isSaving || isLoadingData}
-              >
-                <option value="">Select academic term...</option>
-                {terms.map((term) => (
-                  <option key={term.id} value={term.id}>
-                    {term.code}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div>
@@ -326,6 +398,7 @@ export const BlockEdit = ({
             <Button
               variant="outline"
               onClick={() => {
+                setCampusId(savedState.campusId);
                 setProgramOfferingId(savedState.programOfferingId);
                 setMajorOfferingId(savedState.majorOfferingId);
                 setAcademicTermId(savedState.academicTermId);
@@ -345,6 +418,40 @@ export const BlockEdit = ({
           </div>
         </div>
       </div>
+
+      <CampusPickerDialog
+        open={campusDialogOpen}
+        onOpenChange={setCampusDialogOpen}
+        campuses={campuses}
+        selectedCampusId={campusId}
+        query={campusQuery}
+        onQueryChange={setCampusQuery}
+        onSelect={(nextCampusId) => {
+          setCampusId(nextCampusId);
+          setProgramOfferings([]);
+          setProgramOfferingId("");
+          setMajorOfferingId("");
+          setMajorOfferings([]);
+          setError("");
+          setCampusDialogOpen(false);
+        }}
+      />
+
+      <ProgramOfferingPickerDialog
+        open={programOfferingDialogOpen}
+        onOpenChange={setProgramOfferingDialogOpen}
+        programOfferings={programOfferingsForCampus}
+        selectedProgramOfferingId={programOfferingId}
+        query={programOfferingQuery}
+        onQueryChange={setProgramOfferingQuery}
+        onSelect={(offeringId) => {
+          setProgramOfferingId(offeringId);
+          setMajorOfferingId("");
+          setMajorOfferings([]);
+          setError("");
+          setProgramOfferingDialogOpen(false);
+        }}
+      />
     </AdminPanel>
   );
 };

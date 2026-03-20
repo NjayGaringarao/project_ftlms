@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/style";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Dot } from "lucide-react";
 import React from "react";
 
 type ListItemSmallProps = {
@@ -13,6 +13,7 @@ type ListItemSmallProps = {
   icon?: React.ReactNode;
   annotations?: React.ReactNode;
   className?: string;
+  listType?: "layout" | "modal";
 };
 
 const ListItemSmall = ({
@@ -22,7 +23,8 @@ const ListItemSmall = ({
   isSelected,
   icon,
   annotations,
-  className
+  className,
+  listType
 }: ListItemSmallProps) => {
   const isSubtitleArray = Array.isArray(subtitle);
   const isSubtitleAnElement = React.isValidElement(subtitle);
@@ -74,7 +76,11 @@ const ListItemSmall = ({
       <div className="h-full flex flex-col items-center p-2">
         {annotations && annotations}
         {isSelected && (
-          <ArrowRight className="h-6 w-6 text-foreground/70 border border-red" />
+          
+            listType === "layout" ? (
+              <ArrowRight className="h-6 w-6 text-foreground/70" />
+            ) : (<div className="h-3 w-3 bg-foreground/50 mt-1 rounded-full" />)
+          
         )}
       </div>
     </div>

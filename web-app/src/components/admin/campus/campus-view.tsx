@@ -21,13 +21,20 @@ import { cn } from "@/utils/style";
 
 type CampusViewProps = {
   campus: Campus;
+  defaultAcademicTermId?: string;
 };
 
-export const CampusView = ({ campus }: CampusViewProps) => {
+export const CampusView = ({
+  campus,
+  defaultAcademicTermId,
+}: CampusViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const blocksUrl = defaultAcademicTermId
+    ? `/blocks?campus_id=${campus.id}&academic_term_id=${defaultAcademicTermId}`
+    : `/blocks?campus_id=${campus.id}`;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -118,7 +125,7 @@ export const CampusView = ({ campus }: CampusViewProps) => {
                   "shadow border",
                   "hover:bg-foreground/5 hover:border-foreground/30",
                 )}
-                onClick={() => router.push(`/campuses/${campus.id}/blocks`)}
+                onClick={() => router.push(blocksUrl)}
               >
                 <Blocks className="w-10 h-10" />
                 <span className="text-foreground font-medium">Blocks</span>
