@@ -11,18 +11,18 @@ SELECT
 	src.student_count
 FROM (
 	VALUES
-		('BSCS', 1, 'A', 40, 'FIRST SEM - AY 2024-2025'),
-		('BSCS', 2, 'A', 38, 'FIRST SEM - AY 2024-2025'),
-		('BSCS', 3, 'A', 36, 'FIRST SEM - AY 2024-2025'),
-		('BSCS', 4, 'A', 32, 'FIRST SEM - AY 2024-2025'),
-		('BSIT', 1, 'A', 42, 'FIRST SEM - AY 2024-2025'),
-		('BSIT', 2, 'A', 39, 'FIRST SEM - AY 2024-2025'),
-		('BSIT', 3, 'A', 35, 'FIRST SEM - AY 2024-2025'),
-		('BSIT', 4, 'A', 30, 'FIRST SEM - AY 2024-2025'),
-		('BSIS', 1, 'A', 35, 'FIRST SEM - AY 2024-2025'),
-		('BSIS', 2, 'A', 33, 'FIRST SEM - AY 2024-2025'),
-		('BSIS', 3, 'A', 30, 'FIRST SEM - AY 2024-2025'),
-		('BSIS', 4, 'A', 28, 'FIRST SEM - AY 2024-2025')
+		('BSCS', 1, 'A', 40, 'SECOND SEM - AY 2025-2026'),
+		('BSCS', 2, 'A', 38, 'SECOND SEM - AY 2025-2026'),
+		('BSCS', 3, 'A', 36, 'SECOND SEM - AY 2025-2026'),
+		('BSCS', 4, 'A', 32, 'SECOND SEM - AY 2025-2026'),
+		('BSIT', 1, 'A', 42, 'SECOND SEM - AY 2025-2026'),
+		('BSIT', 2, 'A', 39, 'SECOND SEM - AY 2025-2026'),
+		('BSIT', 3, 'A', 35, 'SECOND SEM - AY 2025-2026'),
+		('BSIT', 4, 'A', 30, 'SECOND SEM - AY 2025-2026'),
+		('BSIS', 1, 'A', 35, 'SECOND SEM - AY 2025-2026'),
+		('BSIS', 2, 'A', 33, 'SECOND SEM - AY 2025-2026'),
+		('BSIS', 3, 'A', 30, 'SECOND SEM - AY 2025-2026'),
+		('BSIS', 4, 'A', 28, 'SECOND SEM - AY 2025-2026')
 ) AS src(program_code, year_level, section, student_count, term_code)
 JOIN public.major_offering mo
 	ON mo.id = (
