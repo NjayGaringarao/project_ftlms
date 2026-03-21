@@ -5,8 +5,14 @@ security definer
 set search_path = public, auth
 as $$
 begin
-  insert into public."user" (id, employment_status)
-  values (new.id, 'Regular');
+  insert into public."user" (
+    id,
+    employment_status,
+    campus_id,
+    college_id,
+    employee_id
+  )
+  values (new.id, 'Regular', null, null, null);
   return new;
 end;
 $$;

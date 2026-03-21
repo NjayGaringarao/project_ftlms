@@ -1,10 +1,10 @@
 -- =========================================================
--- TRIGGER: Auto-generate session code on insert
+-- TRIGGER: Auto-generate session code when linked to a class
 -- Format: S{A-Z}{NNN} (e.g. SA001)
 -- The counter is scoped per academic term.
 -- =========================================================
 
-create or replace function public.generate_session_code()
+create or replace function public.generate_session_code_from_class()
 returns trigger
 language plpgsql
 as $$
@@ -15,17 +15,27 @@ declare
   v_letter_idx integer;
   v_number     integer;
   v_letter     text;
+  v_existing_code text;
 begin
-  -- Fetch the academic term for this session via class -> schedule.
-  select s.academic_term_id
+  select ses.code
+    into v_existing_code
+  from public.session ses
+  where ses.id = new.session_id;
+
+  if v_existing_code is not null and v_existing_code <> '' then
+    return new;
+  end if;
+
+  -- Fetch the academic term for this session via class -> course_utilization -> block.
+  select b.academic_term_id
     into v_term_id
-  from public.class c
-  join public.schedule s
-    on s.id = c.schedule_id
-  where c.id = new.class_id;
+  from public.course_utilization cu
+  join public.block b on b.id = cu.block_id
+  where cu.class_id = new.class_id
+  limit 1;
 
   if v_term_id is null then
-    raise exception 'Invalid class_id: no matching class/schedule found';
+    raise exception 'Invalid class_id: no matching class/block found';
   end if;
 
   -- Serialize code assignment per term to avoid race conditions.
@@ -38,11 +48,13 @@ begin
     )
     into v_max_index
   from public.session ses
-  join public.class cls
-    on cls.id = ses.class_id
-  join public.schedule sch
-    on sch.id = cls.schedule_id
-  where sch.academic_term_id = v_term_id
+  join public.session_class sc
+    on sc.session_id = ses.id
+  join public.course_utilization cu
+    on cu.class_id = sc.class_id
+  join public.block b
+    on b.id = cu.block_id
+  where b.academic_term_id = v_term_id
     and ses.code ~ '^S[A-Z][0-9]{3}$';
 
   v_next_index := coalesce(v_max_index, 0) + 1;
@@ -54,16 +66,18 @@ begin
   v_number := ((v_next_index - 1) % 999) + 1;
   v_letter := chr(ascii('A') + v_letter_idx);
 
-  new.code := 'S' || v_letter || lpad(v_number::text, 3, '0');
+  update public.session
+  set code = 'S' || v_letter || lpad(v_number::text, 3, '0')
+  where id = new.session_id;
 
   return new;
 end;
 $$;
 
-drop trigger if exists trg_session_generate_code on public.session;
+drop trigger if exists trg_session_generate_code on public.session_class;
 
 create trigger trg_session_generate_code
 before insert
-on public.session
+on public.session_class
 for each row
-execute function public.generate_session_code();
+execute function public.generate_session_code_from_class();

@@ -14,8 +14,8 @@ before update on public.degree
 for each row
 execute function public.set_updated_at();
 
-drop trigger if exists trg_schedule_set_updated_at on public.schedule;
-create trigger trg_schedule_set_updated_at
-before update on public.schedule
+drop trigger if exists trg_class_set_updated_at on public.class;
+create trigger trg_class_set_updated_at
+before update on public.class
 for each row
 execute function public.set_updated_at();

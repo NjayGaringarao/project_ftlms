@@ -146,22 +146,15 @@ as $$
     from public.degree deg
     group by deg.user_id
   ),
-  user_schedule as (
-    select
-      s.user_id,
-      s.id as schedule_id
-    from public.schedule s
-    join current_term ct on ct.id = s.academic_term_id
-  ),
   class_rows as (
     select
-      us.user_id,
+      uc.user_id,
       cls.id,
       cls.code as class_code,
-      c.code as course_code,
-      c.title as course_title,
-      coalesce(c.lecture_unit, 0) as lecture_unit,
-      coalesce(c.laboratory_unit, 0) as laboratory_unit,
+      co.code as course_code,
+      co.title as course_title,
+      coalesce(co.lecture_unit, 0) as lecture_unit,
+      coalesce(co.laboratory_unit, 0) as laboratory_unit,
       coalesce(
         string_agg(
           distinct concat_ws(' - ', b.year_level::text, b.section),
@@ -176,22 +169,23 @@ as $$
         ) filter (where campus.id is not null),
         'Not assigned'
       ) as campus_name
-    from user_schedule us
-    join public.class cls on cls.schedule_id = us.schedule_id
-    join public.course c on c.id = cls.course_id
-    left join public.class_block cb on cb.class_id = cls.id
-    left join public.block b on b.id = cb.block_id
+    from public.user_class uc
+    join public.class cls on cls.id = uc.class_id
+    join public.course_utilization cu on cu.class_id = cls.id
+    join public.course co on co.id = cu.course_id
+    join public.block b on b.id = cu.block_id
+    join current_term ct on ct.id = b.academic_term_id
     left join public.major_offering mo on mo.id = b.major_offering_id
     left join public.program_offering po on po.id = mo.program_offering_id
     left join public.campus campus on campus.id = po.campus_id
     group by
-      us.user_id,
+      uc.user_id,
       cls.id,
       cls.code,
-      c.code,
-      c.title,
-      c.lecture_unit,
-      c.laboratory_unit
+      co.code,
+      co.title,
+      co.lecture_unit,
+      co.laboratory_unit
   ),
   user_class_load as (
     select

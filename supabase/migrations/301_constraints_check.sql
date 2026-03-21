@@ -49,14 +49,5 @@ begin
       add constraint session_time_range_valid check (end_time > start_time);
   end if;
 
-  -- Evaluation level should be non-negative.
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'evaluation_level_nonnegative'
-      and conrelid = 'public.evaluation'::regclass
-  ) then
-    alter table public.evaluation
-      add constraint evaluation_level_nonnegative check (evaluation_level >= 0);
-  end if;
 end;
 $$;

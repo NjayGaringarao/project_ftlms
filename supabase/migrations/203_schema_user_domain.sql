@@ -8,7 +8,10 @@
 create table if not exists public."user" (
   id uuid primary key references auth.users(id) on delete cascade,
   academic_rank_id uuid references public.academic_rank(id) on delete set null,
-  employment_status public.employment_status_enum not null
+  employment_status public.employment_status_enum not null,
+  campus_id uuid references public.campus(id) on delete set null,
+  college_id uuid references public.college(id) on delete set null,
+  employee_id text
 );
 
 create table if not exists public.identity (

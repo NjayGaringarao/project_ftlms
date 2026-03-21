@@ -1,10 +1,10 @@
 -- =========================================================
--- TRIGGER: Auto-generate class code on insert
+-- TRIGGER: Auto-generate class code when utilization links a class
 -- Format: C{A-Z}{NNN} (e.g. CA001)
 -- The counter is scoped per academic term.
 -- =========================================================
 
-create or replace function public.generate_class_code()
+create or replace function public.generate_class_code_from_utilization()
 returns trigger
 language plpgsql
 as $$
@@ -15,15 +15,29 @@ declare
   v_letter_idx integer;
   v_number     integer;
   v_letter     text;
+  v_existing_code text;
 begin
-  -- Fetch the academic term for this class via schedule.
-  select s.academic_term_id
+  if new.class_id is null then
+    return new;
+  end if;
+
+  select c.code
+    into v_existing_code
+  from public.class c
+  where c.id = new.class_id;
+
+  if v_existing_code is not null and v_existing_code <> '' then
+    return new;
+  end if;
+
+  -- Fetch the academic term for this class via block.
+  select b.academic_term_id
     into v_term_id
-  from public.schedule s
-  where s.id = new.schedule_id;
+  from public.block b
+  where b.id = new.block_id;
 
   if v_term_id is null then
-    raise exception 'Invalid schedule_id: no matching schedule found';
+    raise exception 'Invalid block_id: no matching block found';
   end if;
 
   -- Serialize code assignment per term to avoid race conditions.
@@ -36,9 +50,11 @@ begin
     )
     into v_max_index
   from public.class c
-  join public.schedule sch
-    on sch.id = c.schedule_id
-  where sch.academic_term_id = v_term_id
+  join public.course_utilization cu
+    on cu.class_id = c.id
+  join public.block b
+    on b.id = cu.block_id
+  where b.academic_term_id = v_term_id
     and c.code ~ '^C[A-Z][0-9]{3}$';
 
   v_next_index := coalesce(v_max_index, 0) + 1;
@@ -50,16 +66,19 @@ begin
   v_number := ((v_next_index - 1) % 999) + 1;
   v_letter := chr(ascii('A') + v_letter_idx);
 
-  new.code := 'C' || v_letter || lpad(v_number::text, 3, '0');
+  update public.class
+  set code = 'C' || v_letter || lpad(v_number::text, 3, '0')
+  where id = new.class_id;
 
   return new;
 end;
 $$;
 
-drop trigger if exists trg_class_generate_code on public.class;
+drop trigger if exists trg_course_utilization_generate_class_code
+  on public.course_utilization;
 
-create trigger trg_class_generate_code
-before insert
-on public.class
+create trigger trg_course_utilization_generate_class_code
+before insert or update of class_id
+on public.course_utilization
 for each row
-execute function public.generate_class_code();
+execute function public.generate_class_code_from_utilization();
