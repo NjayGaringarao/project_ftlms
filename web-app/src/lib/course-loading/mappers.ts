@@ -50,11 +50,11 @@ const getLatestDegreeTitle = (degreeValue: unknown): string | null => {
   return latest.title ?? null;
 };
 
-const mapFacultyClassBlock = (classBlockRow: {
+const mapFacultyClassBlock = (utilRow: {
   id: string;
   block: unknown;
 }): FacultyClassBlock => {
-  const block = first(classBlockRow.block) as {
+  const block = first(utilRow.block) as {
     id?: string;
     code?: string;
     year_level?: number;
@@ -75,7 +75,7 @@ const mapFacultyClassBlock = (classBlockRow: {
   const program = first(programOffering?.program) as { code?: string } | null;
 
   return {
-    class_block_id: classBlockRow.id,
+    course_utilization_id: utilRow.id,
     block_id: block?.id ?? "",
     block_code: block?.code ?? "",
     program_code: program?.code ?? "",
@@ -91,27 +91,33 @@ export const mapFacultyListItem = (row: {
   identity: unknown;
   degree: unknown;
   designation: unknown;
-  schedule: unknown;
+  user_class: unknown;
 }): FacultyListItem => {
   const identity = first(row.identity) as { name?: string } | null;
   const latestDegreeTitle = getLatestDegreeTitle(row.degree);
 
-  const atl = asArray(row.schedule).reduce(
-    (scheduleSum: number, scheduleRow) =>
-      scheduleSum +
-      asArray((scheduleRow as { class?: unknown }).class).reduce(
-        (classSum: number, classRow) => {
-          const units = getCourseUnits(
-            (classRow as { course?: unknown }).course,
-          );
-          return (
-            classSum + calculateAtl(units.lectureUnit, units.laboratoryUnit)
-          );
-        },
-        0,
-      ),
-    0,
-  );
+  const classRows = asArray(row.user_class) as Array<{
+    class?: unknown;
+  }>;
+
+  const seenClassIds = new Set<string>();
+  const atl = classRows.reduce((sum: number, userClassRow) => {
+    const cls = first((userClassRow as { class?: unknown }).class) as {
+      id?: string;
+      course_utilization?: unknown;
+    } | null;
+
+    if (!cls?.id || seenClassIds.has(cls.id)) return sum;
+    seenClassIds.add(cls.id);
+
+    const utilizations = asArray(cls.course_utilization) as Array<{
+      course?: unknown;
+    }>;
+    const firstUtil = utilizations[0];
+    const units = getCourseUnits((firstUtil as { course?: unknown })?.course);
+
+    return sum + calculateAtl(units.lectureUnit, units.laboratoryUnit);
+  }, 0);
 
   const etl = asArray(row.designation).reduce(
     (sum: number, designationRow) =>
@@ -133,7 +139,7 @@ export const mapCourseLoadingBlockListItem = (row: {
   year_level: number;
   student_count: number;
   major_offering: unknown;
-  class_block: unknown;
+  course_utilization: unknown;
 }): CourseLoadingBlockListItem => {
   const majorOffering = first(row.major_offering) as {
     program_offering?: unknown;
@@ -148,12 +154,10 @@ export const mapCourseLoadingBlockListItem = (row: {
     name?: string;
   } | null;
 
-  const totalUnit = asArray(row.class_block).reduce(
-    (sum: number, classBlockRow) => {
-      const cls = first((classBlockRow as { class?: unknown }).class) as {
-        course?: unknown;
-      } | null;
-      const units = getCourseUnits(cls?.course);
+  const totalUnit = asArray(row.course_utilization).reduce(
+    (sum: number, utilRow) => {
+      const course = first((utilRow as { course?: unknown }).course);
+      const units = getCourseUnits(course);
       return sum + calculateUnit(units.lectureUnit, units.laboratoryUnit);
     },
     0,
@@ -175,18 +179,21 @@ export const mapCourseLoadingBlockListItem = (row: {
 export const mapFacultyClassRow = (cls: {
   id: string;
   code: string;
-  course: unknown;
-  class_block: unknown;
+  course_utilization: unknown;
 }): FacultyClassRow => {
-  const units = getCourseUnits(cls.course);
-  const classBlocks = asArray(cls.class_block) as {
+  const utilizations = asArray(cls.course_utilization) as {
     id: string;
-    block: unknown;
+    course?: unknown;
+    block?: unknown;
   }[];
-  const blocks = classBlocks.map(mapFacultyClassBlock);
 
-  const firstClassBlock = classBlocks[0];
-  const firstBlock = first(firstClassBlock?.block) as {
+  const firstUtil = utilizations[0];
+  const units = getCourseUnits((firstUtil as { course?: unknown })?.course);
+  const blocks = utilizations.map((util) =>
+    mapFacultyClassBlock({ id: util.id, block: util.block }),
+  );
+
+  const firstBlock = first(firstUtil?.block) as {
     major_offering?: unknown;
   } | null;
   const majorOffering = first(firstBlock?.major_offering) as {
@@ -226,6 +233,7 @@ export const mapFacultyClassRow = (cls: {
 
 export const mapBlockClassRow = (
   row: {
+    course: unknown;
     class: unknown;
   },
   blockId: string,
@@ -233,28 +241,28 @@ export const mapBlockClassRow = (
   const cls = first(row.class) as {
     id?: string;
     code?: string;
-    course?: unknown;
-    schedule?: unknown;
-    class_block?: unknown;
+    user_class?: unknown;
+    course_utilization?: unknown;
   } | null;
 
-  const units = getCourseUnits(cls?.course);
-  const schedule = first(cls?.schedule) as { user?: unknown } | null;
-  const user = first(schedule?.user) as {
+  const units = getCourseUnits(row.course);
+
+  const userClass = first(cls?.user_class) as { user?: unknown } | null;
+  const user = first(userClass?.user) as {
     id?: string;
     identity?: unknown;
   } | null;
   const identity = first(user?.identity) as { name?: string } | null;
 
-  const mergedWith: BlockClassMergedWith[] = asArray(cls?.class_block)
-    .filter((classBlockRow) => {
-      const block = first((classBlockRow as { block?: unknown }).block) as {
+  const mergedWith: BlockClassMergedWith[] = asArray(cls?.course_utilization)
+    .filter((utilRow) => {
+      const block = first((utilRow as { block?: unknown }).block) as {
         id?: string;
       } | null;
-      return block?.id !== blockId;
+      return block?.id && block.id !== blockId;
     })
-    .map((classBlockRow) => {
-      const block = first((classBlockRow as { block?: unknown }).block) as {
+    .map((utilRow) => {
+      const block = first((utilRow as { block?: unknown }).block) as {
         id?: string;
         code?: string;
       } | null;
@@ -273,8 +281,8 @@ export const mapBlockClassRow = (
     course_title: units.courseTitle,
     lecture_unit: units.lectureUnit,
     laboratory_unit: units.laboratoryUnit,
-    faculty_id: user?.id ?? "",
-    faculty_name: identity?.name?.trim() || "Unnamed Faculty",
+    faculty_id: user?.id ?? null,
+    faculty_name: identity?.name?.trim() || null,
     laboratory_hours: calculateLaboratoryContactHours(units.laboratoryUnit),
     lecture_hours: units.lectureUnit,
     unit: calculateUnit(units.lectureUnit, units.laboratoryUnit),

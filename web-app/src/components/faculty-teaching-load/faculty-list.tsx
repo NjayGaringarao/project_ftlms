@@ -20,7 +20,7 @@ export const FacultyList = ({ faculty, academicTermId }: FacultyListProps) => {
   const [query, setQuery] = useState("");
 
   const selectedId = useMemo(() => {
-    const match = pathname.match(/\/course-loading\/[^/]+\/faculty\/([^/]+)/);
+    const match = pathname.match(/\/faculty-teaching-load\/[^/]+\/faculty\/([^/]+)/);
     return match ? match[1] : null;
   }, [pathname]);
 
@@ -57,7 +57,7 @@ export const FacultyList = ({ faculty, academicTermId }: FacultyListProps) => {
             }
             isSelected={selectedId === f.id}
             onClick={() =>
-              router.push(`/course-loading/${academicTermId}/faculty/${f.id}`)
+              router.push(`/faculty-teaching-load/${academicTermId}/faculty/${f.id}`)
             }
             icon={<User className="h-6 w-6 text-background/70" />}
             annotations={

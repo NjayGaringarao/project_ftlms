@@ -5,16 +5,14 @@ import { revalidatePath } from "next/cache";
 import type { ClassInsertInput, ClassUpdateInput } from "./types";
 import {
   diffBlockIds,
-  ensureSchedule,
+  ensureCourseUtilizations,
   findConflictingBlockAssignments,
   validateClassInsertInput,
 } from "./action-helpers";
 
 const revalidateCourseLoading = (academicTermId: string) => {
-  revalidatePath(`/course-loading/${academicTermId}`, "layout");
+  revalidatePath(`/faculty-teaching-load/${academicTermId}`, "layout");
 };
-
-// ─── createClass ────────────────────────────────────────
 
 export async function createClass(
   input: ClassInsertInput,
@@ -24,34 +22,30 @@ export async function createClass(
 
   const supabase = await createClient();
 
-  // 1. Ensure schedule exists
-  const schedule = await ensureSchedule(
-    supabase,
-    input.faculty_id,
-    input.academic_term_id,
-  );
-  if (!schedule) return { error: "Failed to create or find schedule" };
-
   const conflictingBlocks = await findConflictingBlockAssignments(
     supabase,
-    schedule.id,
     input.course_id,
     input.block_ids,
   );
   if (conflictingBlocks.length > 0) {
     return {
       error:
-        "One or more selected blocks already have this course for the same faculty and term",
+        "One or more selected blocks already have this course assigned to a different class",
     };
   }
 
-  // 3. Insert class
+  const utilizations = await ensureCourseUtilizations(
+    supabase,
+    input.course_id,
+    input.block_ids,
+  );
+  if (utilizations.length === 0) {
+    return { error: "Failed to create course utilization rows" };
+  }
+
   const { data: newClass, error: classError } = await supabase
     .from("class")
-    .insert({
-      schedule_id: schedule.id,
-      course_id: input.course_id,
-    })
+    .insert({})
     .select("id")
     .single();
 
@@ -60,28 +54,75 @@ export async function createClass(
     return { error: classError.message };
   }
 
-  // 4. Insert class_block entries
-  const classBlockRows = input.block_ids.map((blockId) => ({
-    class_id: newClass.id,
-    block_id: blockId,
-  }));
+  const { error: userClassError } = await supabase
+    .from("user_class")
+    .insert({
+      user_id: input.faculty_id,
+      class_id: newClass.id,
+    });
 
-  const { error: cbError } = await supabase
-    .from("class_block")
-    .insert(classBlockRows);
-
-  if (cbError) {
-    console.error("lib.course-loading.createClass.classBlock ::", cbError);
-    // Rollback: delete the class we just created
+  if (userClassError) {
+    console.error("lib.course-loading.createClass.userClass ::", userClassError);
     await supabase.from("class").delete().eq("id", newClass.id);
-    return { error: cbError.message };
+    return { error: userClassError.message };
+  }
+
+  const { error: linkError } = await supabase
+    .from("course_utilization")
+    .update({ class_id: newClass.id })
+    .in(
+      "id",
+      utilizations.map((row) => row.id),
+    );
+
+  if (linkError) {
+    console.error("lib.course-loading.createClass.link ::", linkError);
+    await supabase.from("class").delete().eq("id", newClass.id);
+    return { error: linkError.message };
   }
 
   revalidateCourseLoading(input.academic_term_id);
   return { data: { id: newClass.id } };
 }
 
-// ─── updateClass ────────────────────────────────────────
+export async function createBlockCourses(
+  input: Omit<ClassInsertInput, "faculty_id">,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.course_id?.trim()) return { error: "Course is required" };
+  if (!input.academic_term_id?.trim()) {
+    return { error: "Academic term is required" };
+  }
+  if (!input.block_ids || input.block_ids.length === 0) {
+    return { error: "At least one block is required" };
+  }
+
+  const supabase = await createClient();
+
+  const conflictingBlocks = await findConflictingBlockAssignments(
+    supabase,
+    input.course_id,
+    input.block_ids,
+  );
+  if (conflictingBlocks.length > 0) {
+    return {
+      error:
+        "One or more selected blocks already have this course assigned to a class",
+    };
+  }
+
+  const utilizations = await ensureCourseUtilizations(
+    supabase,
+    input.course_id,
+    input.block_ids,
+  );
+
+  if (utilizations.length === 0) {
+    return { error: "Failed to create course utilization rows" };
+  }
+
+  revalidateCourseLoading(input.academic_term_id);
+  return { data: true };
+}
 
 export async function updateClass(
   input: ClassUpdateInput,
@@ -90,127 +131,106 @@ export async function updateClass(
 
   const supabase = await createClient();
 
-  const { data: currentClass, error: currentClassErr } = await supabase
-    .from("class")
-    .select("id, schedule_id, course_id")
-    .eq("id", input.class_id)
-    .single();
+  const { data: existingUtilizations, error: utilError } = await supabase
+    .from("course_utilization")
+    .select("id, block_id, course_id")
+    .eq("class_id", input.class_id);
 
-  if (currentClassErr || !currentClass) {
-    console.error(
-      "lib.course-loading.updateClass.currentClass ::",
-      currentClassErr,
-    );
-    return { error: currentClassErr?.message ?? "Class not found" };
+  if (utilError) {
+    console.error("lib.course-loading.updateClass.utilizations ::", utilError);
+    return { error: utilError.message };
   }
 
-  const { data: existingClassBlocks, error: existingClassBlocksErr } =
-    await supabase
-      .from("class_block")
-      .select("id, block_id")
-      .eq("class_id", input.class_id);
-
-  if (existingClassBlocksErr) {
-    console.error(
-      "lib.course-loading.updateClass.existingBlocks ::",
-      existingClassBlocksErr,
-    );
-    return { error: existingClassBlocksErr.message };
-  }
-
-  const nextCourseId = input.course_id ?? currentClass.course_id;
-  let nextScheduleId = currentClass.schedule_id;
-
-  if (input.faculty_id?.trim()) {
-    const nextSchedule = await ensureSchedule(
-      supabase,
-      input.faculty_id,
-      input.academic_term_id,
-    );
-    if (!nextSchedule) {
-      return {
-        error: "Failed to create or find schedule for selected faculty",
-      };
-    }
-    nextScheduleId = nextSchedule.id;
-  }
-
-  const nextBlockIds =
-    input.block_ids ?? (existingClassBlocks ?? []).map((cb) => cb.block_id);
-
-  const conflictingBlocks = await findConflictingBlockAssignments(
-    supabase,
-    nextScheduleId,
-    nextCourseId,
-    nextBlockIds,
-    input.class_id,
+  const currentCourseIds = Array.from(
+    new Set((existingUtilizations ?? []).map((row) => row.course_id)),
   );
 
-  if (conflictingBlocks.length > 0) {
+  const nextCourseId = input.course_id ?? currentCourseIds[0];
+  if (!nextCourseId) {
+    return { error: "Course is required" };
+  }
+
+  const existingBlocks = (existingUtilizations ?? []).filter(
+    (row) => row.course_id === nextCourseId,
+  );
+
+  const desiredBlockIds =
+    input.block_ids ?? existingBlocks.map((row) => row.block_id);
+
+  if (desiredBlockIds.length === 0) {
+    return { error: "At least one block is required" };
+  }
+
+  const conflicts = await findConflictingBlockAssignments(
+    supabase,
+    nextCourseId,
+    desiredBlockIds,
+    input.class_id,
+  );
+  if (conflicts.length > 0) {
     return {
       error:
-        "One or more selected blocks already have this course for the same faculty and term",
+        "One or more selected blocks already have this course assigned to a different class",
     };
   }
 
-  const scheduleChanged = nextScheduleId !== currentClass.schedule_id;
-  const courseChanged = nextCourseId !== currentClass.course_id;
+  await ensureCourseUtilizations(supabase, nextCourseId, desiredBlockIds);
 
-  if (scheduleChanged || courseChanged) {
-    const { error } = await supabase
-      .from("class")
-      .update({
-        schedule_id: nextScheduleId,
-        course_id: nextCourseId,
-      })
-      .eq("id", input.class_id);
+  const { error: clearCourseError } = await supabase
+    .from("course_utilization")
+    .update({ class_id: null })
+    .eq("class_id", input.class_id)
+    .neq("course_id", nextCourseId);
 
-    if (error) {
-      console.error("lib.course-loading.updateClass.class ::", error);
-      return { error: error.message };
-    }
+  if (clearCourseError) {
+    console.error("lib.course-loading.updateClass.clearCourse ::", clearCourseError);
+    return { error: clearCourseError.message };
   }
 
-  // Diff class_blocks if provided
-  if (input.block_ids) {
-    const existing = existingClassBlocks ?? [];
-    const { toRemove, toAdd } = diffBlockIds(existing, input.block_ids);
+  const { error: clearBlockError } = await supabase
+    .from("course_utilization")
+    .update({ class_id: null })
+    .eq("class_id", input.class_id)
+    .not("block_id", "in", `(${desiredBlockIds.map((id) => `"${id}"`).join(",")})`);
 
-    if (toRemove.length > 0) {
-      const { error: removeErr } = await supabase
-        .from("class_block")
-        .delete()
-        .in(
-          "id",
-          toRemove.map((cb) => cb.id),
-        );
+  if (clearBlockError) {
+    console.error("lib.course-loading.updateClass.clearBlocks ::", clearBlockError);
+    return { error: clearBlockError.message };
+  }
 
-      if (removeErr) {
-        console.error("lib.course-loading.updateClass.removeCB ::", removeErr);
-        return { error: removeErr.message };
-      }
-    }
+  const { error: assignError } = await supabase
+    .from("course_utilization")
+    .update({ class_id: input.class_id })
+    .eq("course_id", nextCourseId)
+    .in("block_id", desiredBlockIds);
 
-    if (toAdd.length > 0) {
-      const { error: addErr } = await supabase.from("class_block").insert(
-        toAdd.map((blockId) => ({
-          class_id: input.class_id,
-          block_id: blockId,
-        })),
-      );
+  if (assignError) {
+    console.error("lib.course-loading.updateClass.assign ::", assignError);
+    return { error: assignError.message };
+  }
 
-      if (addErr) {
-        console.error("lib.course-loading.updateClass.addCB ::", addErr);
-        return { error: addErr.message };
-      }
+  if (input.faculty_id?.trim()) {
+    await supabase
+      .from("user_class")
+      .delete()
+      .eq("class_id", input.class_id);
+
+    const { error: userClassError } = await supabase
+      .from("user_class")
+      .insert({
+        user_id: input.faculty_id,
+        class_id: input.class_id,
+      });
+
+    if (userClassError) {
+      console.error("lib.course-loading.updateClass.userClass ::", userClassError);
+      return { error: userClassError.message };
     }
   }
 
   revalidateCourseLoading(input.academic_term_id);
   return { data: true };
 }
-
-// ─── deleteClass ────────────────────────────────────────
 
 export async function deleteClass(
   classId: string,
@@ -230,9 +250,6 @@ export async function deleteClass(
   revalidateCourseLoading(academicTermId);
   return { data: true };
 }
-
-// ─── mergeClasses ──────────────────────────────────────
-// Merge whole classes that share the same faculty schedule, course, and campus.
 
 export async function mergeClasses(
   targetClassId: string,
@@ -257,10 +274,9 @@ export async function mergeClasses(
     .select(
       `
       id,
-      schedule_id,
-      course_id,
-      class_block (
-        id,
+      user_class ( user_id ),
+      course_utilization (
+        course_id,
         block:block_id (
           major_offering:major_offering_id (
             program_offering:program_offering_id (
@@ -283,13 +299,20 @@ export async function mergeClasses(
   }
 
   const normalized = classes.map((cls) => {
-    const classBlocks = Array.isArray(cls.class_block) ? cls.class_block : [];
-    const firstBlock = classBlocks[0];
-    const block = Array.isArray(firstBlock?.block)
-      ? firstBlock.block[0]
-      : firstBlock?.block;
-    const majorOffering = (block as { major_offering?: unknown })
-      ?.major_offering;
+    const userClass = Array.isArray(cls.user_class)
+      ? cls.user_class[0]
+      : cls.user_class;
+    const utilizations = Array.isArray(cls.course_utilization)
+      ? cls.course_utilization
+      : [];
+    const courseIds = Array.from(
+      new Set(utilizations.map((row: { course_id?: string }) => row.course_id).filter(Boolean)),
+    );
+    const firstUtil = utilizations[0];
+    const block = Array.isArray(firstUtil?.block)
+      ? firstUtil?.block[0]
+      : firstUtil?.block;
+    const majorOffering = (block as { major_offering?: unknown })?.major_offering;
     const majorOfferingNorm = Array.isArray(majorOffering)
       ? majorOffering[0]
       : majorOffering;
@@ -302,8 +325,9 @@ export async function mergeClasses(
 
     return {
       id: cls.id,
-      schedule_id: cls.schedule_id,
-      course_id: cls.course_id,
+      user_id: (userClass as { user_id?: string })?.user_id ?? null,
+      course_id: courseIds[0] ?? null,
+      has_multiple_courses: courseIds.length > 1,
       campus_id:
         (programOfferingNorm as { campus_id?: string })?.campus_id ?? null,
     };
@@ -311,12 +335,16 @@ export async function mergeClasses(
 
   const target = normalized.find((cls) => cls.id === targetClassId);
   if (!target) return { error: "Target class could not be found" };
+  if (target.has_multiple_courses) {
+    return { error: "Target class has multiple courses assigned" };
+  }
 
   const hasMismatch = normalized.some(
     (cls) =>
-      cls.schedule_id !== target.schedule_id ||
+      cls.user_id !== target.user_id ||
       cls.course_id !== target.course_id ||
-      cls.campus_id !== target.campus_id,
+      cls.campus_id !== target.campus_id ||
+      cls.has_multiple_courses,
   );
 
   if (hasMismatch) {
@@ -327,7 +355,7 @@ export async function mergeClasses(
   }
 
   const { error: moveErr } = await supabase
-    .from("class_block")
+    .from("course_utilization")
     .update({ class_id: targetClassId })
     .in("class_id", uniqueSourceIds);
 
@@ -350,9 +378,6 @@ export async function mergeClasses(
   return { data: true };
 }
 
-// ─── unmergeClass ──────────────────────────────────────
-// Split a merged class so each class_block belongs to its own class again.
-
 export async function unmergeClass(
   classId: string,
   academicTermId: string,
@@ -361,57 +386,67 @@ export async function unmergeClass(
 
   const supabase = await createClient();
 
-  const { data: cls, error: classErr } = await supabase
-    .from("class")
-    .select("id, schedule_id, course_id")
-    .eq("id", classId)
-    .single();
-
-  if (classErr || !cls) {
-    console.error("lib.course-loading.unmergeClass.fetchClass ::", classErr);
-    return { error: classErr?.message ?? "Class not found" };
-  }
-
-  const { data: classBlocks, error: cbErr } = await supabase
-    .from("class_block")
-    .select("id, block_id")
+  const { data: utilizations, error: utilErr } = await supabase
+    .from("course_utilization")
+    .select("id, block_id, course_id")
     .eq("class_id", classId)
     .order("id", { ascending: true });
 
-  if (cbErr) {
-    console.error("lib.course-loading.unmergeClass.fetchBlocks ::", cbErr);
-    return { error: cbErr.message };
+  if (utilErr) {
+    console.error("lib.course-loading.unmergeClass.fetchUtilizations ::", utilErr);
+    return { error: utilErr.message };
   }
 
-  if (!classBlocks || classBlocks.length <= 1) {
+  if (!utilizations || utilizations.length <= 1) {
     return { error: "This class is not merged" };
   }
 
-  for (const classBlock of classBlocks.slice(1)) {
+  const { data: userClass, error: userClassErr } = await supabase
+    .from("user_class")
+    .select("user_id")
+    .eq("class_id", classId)
+    .maybeSingle();
+
+  if (userClassErr) {
+    console.error("lib.course-loading.unmergeClass.userClass ::", userClassErr);
+    return { error: userClassErr.message };
+  }
+
+  const facultyId = userClass?.user_id ?? null;
+
+  for (const util of utilizations.slice(1)) {
     const { data: newClass, error: newClassErr } = await supabase
       .from("class")
-      .insert({
-        schedule_id: cls.schedule_id,
-        course_id: cls.course_id,
-      })
+      .insert({})
       .select("id")
       .single();
 
     if (newClassErr || !newClass) {
-      console.error(
-        "lib.course-loading.unmergeClass.createClass ::",
-        newClassErr,
-      );
+      console.error("lib.course-loading.unmergeClass.createClass ::", newClassErr);
       return { error: newClassErr?.message ?? "Failed to create class" };
     }
 
+    if (facultyId) {
+      const { error: insertUserClassErr } = await supabase
+        .from("user_class")
+        .insert({ user_id: facultyId, class_id: newClass.id });
+
+      if (insertUserClassErr) {
+        console.error(
+          "lib.course-loading.unmergeClass.userClassInsert ::",
+          insertUserClassErr,
+        );
+        return { error: insertUserClassErr.message };
+      }
+    }
+
     const { error: moveErr } = await supabase
-      .from("class_block")
+      .from("course_utilization")
       .update({ class_id: newClass.id })
-      .eq("id", classBlock.id);
+      .eq("id", util.id);
 
     if (moveErr) {
-      console.error("lib.course-loading.unmergeClass.moveBlock ::", moveErr);
+      console.error("lib.course-loading.unmergeClass.moveUtil ::", moveErr);
       return { error: moveErr.message };
     }
   }

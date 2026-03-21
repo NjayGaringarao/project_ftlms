@@ -25,12 +25,6 @@ export type SchedulerMatrixSession = {
   end_time: string;
 };
 
-type RawClassSessionRow = {
-  type?: "Lecture" | "Laboratory" | null;
-  start_time?: string | null;
-  end_time?: string | null;
-};
-
 type RawClassCourseRow = {
   lecture_unit?: number | null;
   laboratory_unit?: number | null;
@@ -39,8 +33,20 @@ type RawClassCourseRow = {
 type RawClassRow = {
   id: string;
   code: string;
-  course?: RawClassCourseRow | RawClassCourseRow[] | null;
-  session?: RawClassSessionRow[] | null;
+  course_utilization?: Array<{
+    course?: RawClassCourseRow | RawClassCourseRow[] | null;
+  }> | null;
+  session_class?: Array<{
+    session?: {
+      type?: "Lecture" | "Laboratory" | null;
+      start_time?: string | null;
+      end_time?: string | null;
+    } | Array<{
+      type?: "Lecture" | "Laboratory" | null;
+      start_time?: string | null;
+      end_time?: string | null;
+    }> | null;
+  }> | null;
 };
 
 type RawMatrixSessionRow = {
@@ -48,22 +54,6 @@ type RawMatrixSessionRow = {
   day?: SessionDay | string | null;
   start_time?: string | null;
   end_time?: string | null;
-};
-
-type RawMatrixClassRow = {
-  id: string;
-  code: string;
-  session?: RawMatrixSessionRow[] | null;
-};
-
-type RawMatrixRoomSessionRow = {
-  id?: string | null;
-  day?: SessionDay | string | null;
-  start_time?: string | null;
-  end_time?: string | null;
-  class?: {
-    code?: string | null;
-  } | null;
 };
 
 const first = <T>(value: T | T[] | null | undefined): T | null => {
@@ -93,7 +83,9 @@ const isNoContext = (context: SchedulerMapperContext): boolean => {
   return !context.facultyId && !context.blockId && !context.roomId;
 };
 
-const normalizeSessionDay = (value: string | null | undefined): SessionDay | null => {
+const normalizeSessionDay = (
+  value: string | null | undefined,
+): SessionDay | null => {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
 
@@ -117,29 +109,100 @@ const normalizeSessionDay = (value: string | null | undefined): SessionDay | nul
   }
 };
 
-const mapMatrixSessions = (
-  rows: RawMatrixClassRow[],
-): SchedulerMatrixSession[] => {
-  const sessions: SchedulerMatrixSession[] = [];
+const getClassIdsForTerm = async (
+  academicTermId: string,
+  classIds: string[],
+): Promise<string[]> => {
+  if (classIds.length === 0) return [];
+  const supabase = await createClient();
 
-  rows.forEach((row) => {
-    (row.session ?? []).forEach((session) => {
-      const normalizedDay = normalizeSessionDay(session?.day ?? null);
-      if (!session?.id || !normalizedDay || !session.start_time || !session.end_time) {
-        return;
-      }
+  const { data, error } = await supabase
+    .from("course_utilization")
+    .select("class_id, block:block_id(academic_term_id)")
+    .in("class_id", classIds)
+    .eq("block.academic_term_id", academicTermId);
 
-      sessions.push({
-        id: session.id,
-        class_code: row.code,
-        day: normalizedDay,
-        start_time: session.start_time,
-        end_time: session.end_time,
-      });
-    });
-  });
+  if (error) {
+    console.error("lib.schedule.mapper.getClassIdsForTerm ::", error);
+    return [];
+  }
 
-  return sessions;
+  return Array.from(
+    new Set(
+      (data ?? [])
+        .map((row) => row.class_id as string)
+        .filter(Boolean),
+    ),
+  );
+};
+
+const getClassIdsByBlock = async (
+  academicTermId: string,
+  blockId: string,
+): Promise<string[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("course_utilization")
+    .select("class_id, block:block_id(academic_term_id)")
+    .eq("block_id", blockId)
+    .eq("block.academic_term_id", academicTermId);
+
+  if (error) {
+    console.error("lib.schedule.mapper.getClassIdsByBlock ::", error);
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      (data ?? [])
+        .map((row) => row.class_id as string)
+        .filter(Boolean),
+    ),
+  );
+};
+
+const getClassIdsByFaculty = async (
+  academicTermId: string,
+  facultyId: string,
+): Promise<string[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("user_class")
+    .select("class_id")
+    .eq("user_id", facultyId);
+
+  if (error) {
+    console.error("lib.schedule.mapper.getClassIdsByFaculty ::", error);
+    return [];
+  }
+
+  const classIds = (data ?? [])
+    .map((row) => row.class_id as string)
+    .filter(Boolean);
+
+  return getClassIdsForTerm(academicTermId, classIds);
+};
+
+const getClassIdsByRoom = async (
+  academicTermId: string,
+  roomId: string,
+): Promise<string[]> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("session_class")
+    .select("class_id, session:session_id(room_id)")
+    .eq("session.room_id", roomId);
+
+  if (error) {
+    console.error("lib.schedule.mapper.getClassIdsByRoom ::", error);
+    return [];
+  }
+
+  const classIds = (data ?? [])
+    .map((row) => row.class_id as string)
+    .filter(Boolean);
+
+  return getClassIdsForTerm(academicTermId, classIds);
 };
 
 export const getSchedulerMapperClassList = async (
@@ -151,59 +214,34 @@ export const getSchedulerMapperClassList = async (
   }
 
   const supabase = await createClient();
+  let classIds: string[] = [];
 
-  let query = supabase
+  if (context.facultyId) {
+    classIds = await getClassIdsByFaculty(academicTermId, context.facultyId);
+  } else if (context.blockId) {
+    classIds = await getClassIdsByBlock(academicTermId, context.blockId);
+  } else if (context.roomId) {
+    classIds = await getClassIdsByRoom(academicTermId, context.roomId);
+  }
+
+  if (classIds.length === 0) return [];
+
+  const { data, error } = await supabase
     .from("class")
     .select(
       `
       id,
       code,
-      course:course_id(lecture_unit, laboratory_unit),
-      schedule:schedule_id!inner(id, user_id, academic_term_id),
-      class_block(block_id),
-      session(type, start_time, end_time, room_id)
+      course_utilization (
+        course:course_id(lecture_unit, laboratory_unit)
+      ),
+      session_class (
+        session:session_id(type, start_time, end_time)
+      )
       `,
     )
-    .eq("schedule.academic_term_id", academicTermId)
+    .in("id", classIds)
     .order("code", { ascending: true });
-
-  if (context.facultyId) {
-    query = query.eq("schedule.user_id", context.facultyId);
-  }
-
-  if (context.blockId) {
-    const { data: blockData, error: blockError } = await supabase
-      .from("class_block")
-      .select("class_id")
-      .eq("block_id", context.blockId);
-
-    if (blockError) {
-      console.error("lib.schedule.mapper.getSchedulerMapperClassList :: block pre-filter ::", blockError);
-      return [];
-    }
-
-    const classIds = (blockData ?? []).map((r) => r.class_id as string);
-    if (classIds.length === 0) return [];
-    query = query.in("id", classIds);
-  }
-
-  if (context.roomId) {
-    const { data: sessionData, error: sessionError } = await supabase
-      .from("session")
-      .select("class_id")
-      .eq("room_id", context.roomId);
-
-    if (sessionError) {
-      console.error("lib.schedule.mapper.getSchedulerMapperClassList :: room pre-filter ::", sessionError);
-      return [];
-    }
-
-    const classIds = (sessionData ?? []).map((r) => r.class_id as string);
-    if (classIds.length === 0) return [];
-    query = query.in("id", classIds);
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     console.error("lib.schedule.mapper.getSchedulerMapperClassList ::", error);
@@ -211,22 +249,23 @@ export const getSchedulerMapperClassList = async (
   }
 
   return ((data ?? []) as RawClassRow[]).map((row) => {
-    const course = first(row.course);
+    const firstUtil = (row.course_utilization ?? [])[0];
+    const course = first(firstUtil?.course);
     const lectureTarget = Number(course?.lecture_unit ?? 0);
     const laboratoryTarget = Number(course?.laboratory_unit ?? 0) * 3;
 
-    const sessions = row.session ?? [];
+    const sessions = (row.session_class ?? []).map((sc) => first(sc.session));
     const scheduledLectureHours = sessions
-      .filter((session) => session.type === "Lecture")
+      .filter((session) => session?.type === "Lecture")
       .reduce((sum, session) => {
-        const minutes = toMinutes(session.end_time) - toMinutes(session.start_time);
+        const minutes = toMinutes(session?.end_time) - toMinutes(session?.start_time);
         return sum + toHours(minutes);
       }, 0);
 
     const scheduledLaboratoryHours = sessions
-      .filter((session) => session.type === "Laboratory")
+      .filter((session) => session?.type === "Laboratory")
       .reduce((sum, session) => {
-        const minutes = toMinutes(session.end_time) - toMinutes(session.start_time);
+        const minutes = toMinutes(session?.end_time) - toMinutes(session?.start_time);
         return sum + toHours(minutes);
       }, 0);
 
@@ -267,6 +306,48 @@ const getSchedulerMapperClassListByRoom = async (
   return getSchedulerMapperClassList(academicTermId, { roomId });
 };
 
+const loadMatrixSessions = async (
+  classIds: string[],
+): Promise<SchedulerMatrixSession[]> => {
+  if (classIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data: sessionData, error: sessionError } = await supabase
+    .from("session_class")
+    .select(
+      `
+      class_id,
+      class:class_id(code),
+      session:session_id(id, day, start_time, end_time)
+      `,
+    )
+    .in("class_id", classIds);
+
+  if (sessionError) {
+    console.error("lib.schedule.mapper.loadMatrixSessions ::", sessionError);
+    return [];
+  }
+
+  return (sessionData ?? [])
+    .map((row) => {
+      const session = first(row.session) as RawMatrixSessionRow | null;
+      const cls = first(row.class) as { code?: string } | null;
+      const normalizedDay = normalizeSessionDay(session?.day ?? null);
+      if (!session?.id || !normalizedDay || !session.start_time || !session.end_time) {
+        return null;
+      }
+
+      return {
+        id: session.id,
+        class_code: cls?.code ?? "Unknown",
+        day: normalizedDay,
+        start_time: session.start_time,
+        end_time: session.end_time,
+      };
+    })
+    .filter((row): row is SchedulerMatrixSession => Boolean(row));
+};
+
 export const getSchedulerMapperMatrixByFaculty = async (
   academicTermId: string,
   facultyId: string,
@@ -275,57 +356,8 @@ export const getSchedulerMapperMatrixByFaculty = async (
     return [];
   }
 
-  const supabase = await createClient();
-
-  const { data: classData, error: classError } = await supabase
-    .from("class")
-    .select(
-      `
-      id,
-      code,
-      schedule:schedule_id!inner(id, user_id, academic_term_id)
-      `,
-    )
-    .eq("schedule.academic_term_id", academicTermId)
-    .eq("schedule.user_id", facultyId);
-
-  if (classError) {
-    console.error("lib.schedule.mapper.getSchedulerMapperMatrixByFaculty :: class query ::", classError);
-    return [];
-  }
-
-  const classRows = (classData ?? []) as RawMatrixClassRow[];
-  if (classRows.length === 0) return [];
-
-  const classIds = classRows.map((row) => row.id);
-  const classCodeMap = new Map(classRows.map((row) => [row.id, row.code]));
-
-  const { data: sessionData, error: sessionError } = await supabase
-    .from("session")
-    .select("id, class_id, day, start_time, end_time")
-    .in("class_id", classIds);
-
-  if (sessionError) {
-    console.error("lib.schedule.mapper.getSchedulerMapperMatrixByFaculty :: session query ::", sessionError);
-    return [];
-  }
-
-  return (sessionData ?? [])
-    .map((session) => {
-      const normalizedDay = normalizeSessionDay(session.day ?? null);
-      if (!session.id || !normalizedDay || !session.start_time || !session.end_time) {
-        return null;
-      }
-
-      return {
-        id: session.id,
-        class_code: classCodeMap.get(session.class_id) ?? "Unknown",
-        day: normalizedDay,
-        start_time: session.start_time,
-        end_time: session.end_time,
-      };
-    })
-    .filter((row): row is SchedulerMatrixSession => Boolean(row));
+  const classIds = await getClassIdsByFaculty(academicTermId, facultyId);
+  return loadMatrixSessions(classIds);
 };
 
 export const getSchedulerMapperMatrixByBlock = async (
@@ -336,70 +368,8 @@ export const getSchedulerMapperMatrixByBlock = async (
     return [];
   }
 
-  const supabase = await createClient();
-
-  const { data: blockData, error: blockError } = await supabase
-    .from("class_block")
-    .select("class_id")
-    .eq("block_id", blockId);
-
-  if (blockError) {
-    console.error("lib.schedule.mapper.getSchedulerMapperMatrixByBlock :: block pre-filter ::", blockError);
-    return [];
-  }
-
-  const classIds = (blockData ?? []).map((r) => r.class_id as string);
-  if (classIds.length === 0) return [];
-
-  const { data: classData, error: classError } = await supabase
-    .from("class")
-    .select(
-      `
-      id,
-      code,
-      schedule:schedule_id!inner(id, academic_term_id)
-      `,
-    )
-    .eq("schedule.academic_term_id", academicTermId)
-    .in("id", classIds);
-
-  if (classError) {
-    console.error("lib.schedule.mapper.getSchedulerMapperMatrixByBlock :: class query ::", classError);
-    return [];
-  }
-
-  const classRows = (classData ?? []) as RawMatrixClassRow[];
-  if (classRows.length === 0) return [];
-
-  const classIdsForSessions = classRows.map((row) => row.id);
-  const classCodeMap = new Map(classRows.map((row) => [row.id, row.code]));
-
-  const { data: sessionData, error: sessionError } = await supabase
-    .from("session")
-    .select("id, class_id, day, start_time, end_time")
-    .in("class_id", classIdsForSessions);
-
-  if (sessionError) {
-    console.error("lib.schedule.mapper.getSchedulerMapperMatrixByBlock :: session query ::", sessionError);
-    return [];
-  }
-
-  return (sessionData ?? [])
-    .map((session) => {
-      const normalizedDay = normalizeSessionDay(session.day ?? null);
-      if (!session.id || !normalizedDay || !session.start_time || !session.end_time) {
-        return null;
-      }
-
-      return {
-        id: session.id,
-        class_code: classCodeMap.get(session.class_id) ?? "Unknown",
-        day: normalizedDay,
-        start_time: session.start_time,
-        end_time: session.end_time,
-      };
-    })
-    .filter((row): row is SchedulerMatrixSession => Boolean(row));
+  const classIds = await getClassIdsByBlock(academicTermId, blockId);
+  return loadMatrixSessions(classIds);
 };
 
 export const getSchedulerMapperMatrixByRoom = async (
@@ -410,62 +380,8 @@ export const getSchedulerMapperMatrixByRoom = async (
     return [];
   }
 
-  const supabase = await createClient();
-
-  const { data: sessionData, error: sessionError } = await supabase
-    .from("session")
-    .select("id, class_id, day, start_time, end_time")
-    .eq("room_id", roomId);
-
-  if (sessionError) {
-    console.error("lib.schedule.mapper.getSchedulerMapperMatrixByRoom :: session query ::", sessionError);
-    return [];
-  }
-
-  const sessionRows = sessionData ?? [];
-  if (sessionRows.length === 0) return [];
-
-  const classIds = Array.from(new Set(sessionRows.map((row) => row.class_id)));
-
-  const { data: classData, error: classError } = await supabase
-    .from("class")
-    .select(
-      `
-      id,
-      code,
-      schedule:schedule_id!inner(id, academic_term_id)
-      `,
-    )
-    .eq("schedule.academic_term_id", academicTermId)
-    .in("id", classIds);
-
-  if (classError) {
-    console.error("lib.schedule.mapper.getSchedulerMapperMatrixByRoom :: class query ::", classError);
-    return [];
-  }
-
-  const classCodeMap = new Map(
-    ((classData ?? []) as RawMatrixClassRow[]).map((row) => [row.id, row.code]),
-  );
-
-  return sessionRows
-    .map((session) => {
-      if (!classCodeMap.has(session.class_id)) return null;
-
-      const normalizedDay = normalizeSessionDay(session.day ?? null);
-      if (!session.id || !normalizedDay || !session.start_time || !session.end_time) {
-        return null;
-      }
-
-      return {
-        id: session.id,
-        class_code: classCodeMap.get(session.class_id) ?? "Unknown",
-        day: normalizedDay,
-        start_time: session.start_time,
-        end_time: session.end_time,
-      };
-    })
-    .filter((row): row is SchedulerMatrixSession => Boolean(row));
+  const classIds = await getClassIdsByRoom(academicTermId, roomId);
+  return loadMatrixSessions(classIds);
 };
 
 export {

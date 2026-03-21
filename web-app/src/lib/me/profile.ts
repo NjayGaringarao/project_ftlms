@@ -357,34 +357,29 @@ export const getCurrentTermTeachingLoadByUserId = async (
     };
   }
 
-  const { data: scheduleData, error: scheduleError } = await supabase
-    .from("schedule")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("academic_term_id", term.id)
-    .maybeSingle();
-
-  if (scheduleError) {
-    console.error(
-      "lib.me.profile.getCurrentTermTeachingLoadByUserId.schedule ::",
-      scheduleError,
-    );
-  }
-
-  if (!scheduleData?.id) {
-    return {
-      term,
-      classes: [],
-      actual_teaching_load: 0,
-    };
-  }
-
   const { data: classData, error: classError } = await supabase
-    .from("class_delivery")
+    .from("user_class")
     .select(
-      "id, course_allocation:course_allocation!inner(schedule_id, course_offering:course_offering!inner(course:course!inner(code, title, lecture_hour, laboratory_hour))), class_delivery_block(block:block(year_level, section, major_offering:major_offering!inner(program_offering:program_offering!inner(campus:campus!inner(name)))))",
+      `
+      class:class_id(
+        id,
+        course_utilization(
+          course:course_id(code, title, lecture_unit, laboratory_unit),
+          block:block_id(
+            year_level,
+            section,
+            major_offering:major_offering_id(
+              program_offering:program_offering_id(
+                campus:campus_id(name)
+              )
+            )
+          )
+        )
+      )
+      `,
     )
-    .eq("course_allocation.schedule_id", scheduleData.id);
+    .eq("user_id", userId)
+    .eq("class.course_utilization.block.academic_term_id", term.id);
 
   if (classError) {
     console.error(
@@ -398,76 +393,52 @@ export const getCurrentTermTeachingLoadByUserId = async (
     };
   }
 
-  const classes: CurrentTermClassLoad[] = (classData ?? []).map((row) => {
-    const typedRow = row as {
-      id: string;
-      course_allocation?: {
-        course_offering?: {
-          course?: {
-            code?: string | null;
-            title?: string | null;
-            lecture_hour?: number | null;
-            laboratory_hour?: number | null;
-          } | null;
-        } | null;
-      } | null;
-      class_delivery_block?: Array<{
-        block?: {
-          year_level?: number | null;
-          section?: string | null;
-          major_offering?: {
-            program_offering?: {
-              campus?: {
-                name?: string | null;
-              } | null;
-            } | null;
-          } | null;
-        } | null;
-      }> | null;
-    };
+  const classes: CurrentTermClassLoad[] = (classData ?? [])
+    .map((row) => row.class)
+    .filter(Boolean)
+    .map((cls) => {
+      const utilizations = cls.course_utilization ?? [];
+      const firstUtil = utilizations[0];
+      const course = firstUtil?.course;
+      const lectureHour = Number(course?.lecture_unit ?? 0);
+      const laboratoryHour = Number(course?.laboratory_unit ?? 0);
 
-    const course = typedRow.course_allocation?.course_offering?.course;
-    const lectureHour = Number(course?.lecture_hour ?? 0);
-    const laboratoryHour = Number(course?.laboratory_hour ?? 0);
+      const blocks = utilizations.map((item) => item.block).filter(Boolean);
 
-    const blocks = (typedRow.class_delivery_block ?? [])
-      .map((item) => item.block)
-      .filter(Boolean);
+      const yearSection = blocks
+        .map((block) => {
+          const yearLevel = block?.year_level;
+          const section = block?.section;
+          if (!yearLevel || !section) return null;
+          return `${yearLevel} - ${section}`;
+        })
+        .filter((value): value is string => Boolean(value))
+        .join(", ");
 
-    const yearSection = blocks
-      .map((block) => {
-        const yearLevel = block?.year_level;
-        const section = block?.section;
-        if (!yearLevel || !section) return null;
-        return `${yearLevel} - ${section}`;
-      })
-      .filter((value): value is string => Boolean(value))
-      .join(", ");
+      const campusName = Array.from(
+        new Set(
+          blocks
+            .map(
+              (block) =>
+                block?.major_offering?.program_offering?.campus?.name ?? null,
+            )
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ).join(", ");
 
-    const campusName = Array.from(
-      new Set(
-        blocks
-          .map(
-            (block) =>
-              block?.major_offering?.program_offering?.campus?.name ?? null,
-          )
-          .filter((value): value is string => Boolean(value)),
-      ),
-    ).join(", ");
+      const load = lectureHour + laboratoryHour * 0.75;
 
-    const load = lectureHour + laboratoryHour * 0.75;
-
-    return {
-      id: typedRow.id,
-      course_code: course?.code ?? "Unknown",
-      course_title: course?.title ?? "Untitled Course",
-      lecture_hour: lectureHour,
-      laboratory_hour: laboratoryHour,
-      year_section: yearSection || "Not assigned",
-      campus_name: campusName || "Not assigned",
-      load,
-    };
-  });
+      return {
+        id: cls.id,
+        course_code: course?.code ?? "Unknown",
+        course_title: course?.title ?? "Untitled Course",
+        lecture_hour: lectureHour,
+        laboratory_hour: laboratoryHour,
+        year_section: yearSection || "Not assigned",
+        campus_name: campusName || "Not assigned",
+        load,
+      };
+    });
 
   const actualTeachingLoad = classes.reduce((sum, item) => sum + item.load, 0);
 

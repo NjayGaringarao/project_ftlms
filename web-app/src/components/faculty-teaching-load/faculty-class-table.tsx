@@ -100,7 +100,7 @@ export const FacultyClassTable = ({
                   <div className="flex flex-col gap-1">
                     {row.blocks.map((block) => (
                       <span
-                        key={block.class_block_id}
+                        key={block.course_utilization_id}
                         className="rounded bg-foreground/10 px-1.5 py-0.5 text-xs"
                       >
                         {formatFacultyBlockLabel(block)}

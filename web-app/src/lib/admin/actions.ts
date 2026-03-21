@@ -586,7 +586,7 @@ export async function deleteTerm(
   const supabase = await createClient();
 
   const { count, error: countError } = await supabase
-    .from("schedule")
+    .from("block")
     .select("id", { count: "exact", head: true })
     .eq("academic_term_id", termId);
 
@@ -597,7 +597,7 @@ export async function deleteTerm(
   if ((count ?? 0) > 0) {
     return {
       error:
-        "Cannot delete term while schedules are attached. Remove or reassign schedules first.",
+        "Cannot delete term while blocks are attached. Remove or reassign blocks first.",
     };
   }
 

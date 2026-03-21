@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Button } from "@/components/ui/button";
-import { createClass, updateClass } from "@/lib/course-loading/actions";
+import { createBlockCourses, createClass, updateClass } from "@/lib/course-loading/actions";
 import type { CampusListItem } from "@/lib/admin/campuses";
 import type { CourseListItem } from "@/lib/admin/courses";
 import type {
@@ -172,30 +172,42 @@ const ClassMaker = ({
   }, [selectedBlockIds, isFacultyAware, blockId]);
 
   const canSubmit =
-    resolvedFacultyId &&
     selectedCourseId &&
     resolvedBlockIds.length > 0 &&
-    !isPending;
+    !isPending &&
+    (Boolean(resolvedFacultyId) || (!isFacultyAware && mode === "Insert") || mode === "Edit");
 
   const handleSubmit = () => {
     setError("");
     startTransition(async () => {
       if (mode === "Insert") {
-        const result = await createClass({
-          academic_term_id: academicTermId,
-          faculty_id: resolvedFacultyId,
-          course_id: selectedCourseId,
-          block_ids: resolvedBlockIds,
-        });
-        if (result.error) {
-          setError(result.error);
-          return;
+        if (!resolvedFacultyId && !isFacultyAware) {
+          const result = await createBlockCourses({
+            academic_term_id: academicTermId,
+            course_id: selectedCourseId,
+            block_ids: resolvedBlockIds,
+          });
+          if (result.error) {
+            setError(result.error);
+            return;
+          }
+        } else {
+          const result = await createClass({
+            academic_term_id: academicTermId,
+            faculty_id: resolvedFacultyId,
+            course_id: selectedCourseId,
+            block_ids: resolvedBlockIds,
+          });
+          if (result.error) {
+            setError(result.error);
+            return;
+          }
         }
       } else if (classId) {
         const result = await updateClass({
           class_id: classId,
           academic_term_id: academicTermId,
-          faculty_id: resolvedFacultyId,
+          faculty_id: resolvedFacultyId || undefined,
           course_id: selectedCourseId,
           block_ids: resolvedBlockIds,
         });
@@ -212,11 +224,17 @@ const ClassMaker = ({
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={mode === "Insert" ? "Add Class" : "Edit Class"}
+      title={
+        mode === "Insert"
+          ? isFacultyAware
+            ? "Add Class"
+            : "Add Course"
+          : "Edit Class"
+      }
       description={
         isFacultyAware
           ? "Select a campus, course, and block(s)."
-          : "Select a campus, course, and faculty."
+          : "Select a campus, course, and optionally a faculty member."
       }
       contentClassName="flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden"
     >
@@ -327,7 +345,7 @@ const ClassMaker = ({
                 {selectedFacultyId
                   ? (facultyOptions.find((f) => f.id === selectedFacultyId)
                       ?.name ?? "Unknown")
-                  : "None selected"}
+                  : "Unassigned"}
               </p>
             )}
           </div>
@@ -343,7 +361,9 @@ const ClassMaker = ({
             {isPending
               ? "Saving…"
               : mode === "Insert"
-                ? "Insert Class"
+                ? isFacultyAware
+                  ? "Insert Class"
+                  : "Insert Course"
                 : "Update Class"}
           </Button>
         </div>

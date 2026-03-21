@@ -1,5 +1,5 @@
-import { FacultyClassTable } from "@/components/course-loading/faculty-class-table";
-import FacultyOverviewPanel from "@/components/course-loading/faculty-overview-panel";
+import { FacultyClassTable } from "@/components/faculty-teaching-load/faculty-class-table";
+import FacultyOverviewPanel from "@/components/faculty-teaching-load/faculty-overview-panel";
 import { getClassesByFacultyAndTerm } from "@/lib/course-loading/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
 import { redirect } from "next/navigation";
@@ -16,7 +16,7 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
     getUserOverviewById(faculty_id),
   ]);
 
-  if (!overview) redirect(`/course-loading/${academic_term_id}/faculty`);
+  if (!overview) redirect(`/faculty-teaching-load/${academic_term_id}/faculty`);
 
   const termAtl = classRows.reduce((sum, r) => sum + r.atl, 0);
 

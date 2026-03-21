@@ -17,13 +17,12 @@ type CourseLoadingTermSwitcherProps = {
 
 const getTargetTermPath = (pathname: string, termId: string) => {
   const segments = pathname.split("/").filter(Boolean);
-  const courseLoadingIndex = segments.indexOf("course-loading");
+  const courseLoadingIndex = segments.indexOf("faculty-teaching-load");
   const section = segments[courseLoadingIndex + 2];
 
-  const suffix =
-    section === "faculty" || section === "block" ? `/${section}` : "";
+  const suffix = section === "faculty" ? `/${section}` : "";
 
-  return `/course-loading/${termId}${suffix}`;
+  return `/faculty-teaching-load/${termId}${suffix}`;
 };
 
 export const CourseLoadingTermSwitcher = ({
@@ -82,7 +81,7 @@ export const CourseLoadingTermSwitcher = ({
         open={open}
         onOpenChange={setOpen}
         title="Select Academic Term"
-        description="Search and switch the active course-loading term."
+        description="Search and switch the active faculty teaching load term."
         contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
       >
         <div className="flex h-full flex-col gap-3 overflow-hidden">

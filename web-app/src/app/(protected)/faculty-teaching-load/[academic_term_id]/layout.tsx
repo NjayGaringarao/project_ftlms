@@ -1,5 +1,5 @@
 import { TopBarNav } from "@/components/ui/topbar-nav";
-import { CourseLoadingTermSwitcher } from "@/components/course-loading/term-switcher";
+import { CourseLoadingTermSwitcher } from "@/components/faculty-teaching-load/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
@@ -22,28 +22,23 @@ const AcademicTermIdLayout = async ({
 
   if (!selectedTerm) {
     if (terms.length > 0) {
-      redirect(`/course-loading/${terms[0].id}`);
+      redirect(`/faculty-teaching-load/${terms[0].id}`);
     }
 
-    redirect("/course-loading");
+    redirect("/faculty-teaching-load");
   }
 
-  const basePath = `/course-loading/${academic_term_id}`;
+  const basePath = `/faculty-teaching-load/${academic_term_id}`;
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
       <TopBarNav
-        title="Course Loading"
+        title="Faculty Teaching Load"
         items={[
           { label: "Overview", href: basePath },
           {
-            label: "Faculty-Aware",
+            label: "Faculty",
             href: `${basePath}/faculty`,
-            activeMatch: "prefix",
-          },
-          {
-            label: "Block-Aware",
-            href: `${basePath}/block`,
             activeMatch: "prefix",
           },
         ]}

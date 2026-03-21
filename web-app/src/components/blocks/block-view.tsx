@@ -8,13 +8,19 @@ import DangerZone from "../admin/danger-zone";
 import DeleteConfirmModal from "../admin/delete-confirm-modal";
 import { deleteBlock } from "@/lib/admin/actions";
 import { BlockListItem } from "@/lib/admin/blocks";
+import BlockCoursePlanner from "@/components/blocks/block-course-planner";
 
 type BlockViewProps = {
   block: BlockListItem;
+  academicTermId: string | null;
   basePath?: string;
 };
 
-export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
+export const BlockView = ({
+  block,
+  academicTermId,
+  basePath = "/blocks",
+}: BlockViewProps) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -100,6 +106,13 @@ export const BlockView = ({ block, basePath = "/blocks" }: BlockViewProps) => {
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <BlockCoursePlanner
+            blockId={block.id}
+            academicTermId={academicTermId}
+          />
         </div>
 
         <DangerZone

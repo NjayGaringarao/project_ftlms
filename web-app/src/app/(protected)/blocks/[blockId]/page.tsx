@@ -35,11 +35,18 @@ const BlockPage = async ({ params, searchParams }: BlockPageProps) => {
     notFound();
   }
 
+  const academicTermId =
+    block.academic_term_id ?? block.academic_term?.id ?? null;
+
   const queryString = buildQueryString(resolvedSearchParams);
 
   return (
     <div className="flex-1 flex-col">
-      <BlockView block={block} basePath={`/blocks${queryString}`} />
+      <BlockView
+        block={block}
+        academicTermId={academicTermId}
+        basePath={`/blocks${queryString}`}
+      />
     </div>
   );
 };

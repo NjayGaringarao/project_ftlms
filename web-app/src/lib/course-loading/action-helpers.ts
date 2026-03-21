@@ -17,37 +17,51 @@ export const validateClassInsertInput = (
   return {};
 };
 
-export const ensureSchedule = async (
+export const ensureCourseUtilizations = async (
   supabase: CourseLoadingSupabase,
-  userId: string,
-  academicTermId: string,
-): Promise<{ id: string } | null> => {
-  const { data: existing } = await supabase
-    .from("schedule")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("academic_term_id", academicTermId)
-    .maybeSingle();
+  courseId: string,
+  blockIds: string[],
+): Promise<Array<{ id: string; block_id: string; class_id: string | null }>> => {
+  if (blockIds.length === 0) return [];
 
-  if (existing) return existing;
+  const { data: existing, error: existingError } = await supabase
+    .from("course_utilization")
+    .select("id, block_id, class_id")
+    .eq("course_id", courseId)
+    .in("block_id", blockIds);
 
-  const { data: created, error } = await supabase
-    .from("schedule")
-    .insert({ user_id: userId, academic_term_id: academicTermId })
-    .select("id")
-    .single();
-
-  if (error) {
-    console.error("lib.course-loading.ensureSchedule ::", error);
-    return null;
+  if (existingError) {
+    console.error("lib.course-loading.ensureCourseUtilizations ::", existingError);
+    return [];
   }
 
-  return created;
+  const existingBlockIds = new Set((existing ?? []).map((row) => row.block_id));
+  const missing = blockIds.filter((blockId) => !existingBlockIds.has(blockId));
+
+  if (missing.length > 0) {
+    const { data: inserted, error: insertError } = await supabase
+      .from("course_utilization")
+      .insert(
+        missing.map((blockId) => ({
+          course_id: courseId,
+          block_id: blockId,
+        })),
+      )
+      .select("id, block_id, class_id");
+
+    if (insertError) {
+      console.error("lib.course-loading.ensureCourseUtilizations.insert ::", insertError);
+      return existing ?? [];
+    }
+
+    return [...(existing ?? []), ...(inserted ?? [])];
+  }
+
+  return existing ?? [];
 };
 
 export const findConflictingBlockAssignments = async (
   supabase: CourseLoadingSupabase,
-  scheduleId: string,
   courseId: string,
   blockIds: string[],
   excludedClassId?: string,
@@ -55,8 +69,9 @@ export const findConflictingBlockAssignments = async (
   if (blockIds.length === 0) return [];
 
   const { data, error } = await supabase
-    .from("class_block")
-    .select("block_id, class_id, class:class_id (id, schedule_id, course_id)")
+    .from("course_utilization")
+    .select("block_id, class_id")
+    .eq("course_id", courseId)
     .in("block_id", blockIds);
 
   if (error) {
@@ -71,18 +86,11 @@ export const findConflictingBlockAssignments = async (
     ...new Set(
       (data ?? [])
         .filter((row) => {
-          const cls = Array.isArray(row.class) ? row.class[0] : row.class;
-          const clsId = (cls as { id?: string })?.id ?? row.class_id;
-          const clsScheduleId = (cls as { schedule_id?: string })?.schedule_id;
-          const clsCourseId = (cls as { course_id?: string })?.course_id;
-
-          return (
-            clsScheduleId === scheduleId &&
-            clsCourseId === courseId &&
-            clsId !== excludedClassId
-          );
+          if (!row.class_id) return false;
+          if (excludedClassId && row.class_id === excludedClassId) return false;
+          return true;
         })
-        .map((row) => row.block_id),
+        .map((row) => row.block_id as string),
     ),
   ];
 };

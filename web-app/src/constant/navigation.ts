@@ -52,8 +52,8 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
-    label: "Course Loading",
-    href: "/course-loading",
+    label: "Faculty Teaching Load",
+    href: "/faculty-teaching-load",
     icon: "weight-tilde",
     allowedRoles: ["Admin", "Program Chairperson", "College Dean"],
   },

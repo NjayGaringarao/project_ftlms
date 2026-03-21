@@ -83,7 +83,7 @@ export const SchedulerTermSwitcher = ({
         open={open}
         onOpenChange={setOpen}
         title="Select Academic Term"
-        description="Search and switch the active course-loading term."
+        description="Search and switch the active scheduling term."
         contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
       >
         <div className="flex h-full flex-col gap-3 overflow-hidden">

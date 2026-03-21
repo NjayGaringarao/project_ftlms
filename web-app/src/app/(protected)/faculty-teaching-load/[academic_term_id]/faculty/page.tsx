@@ -1,9 +1,9 @@
-const BlockPage = () => {
+const FacultyPage = () => {
   return (
     <div className="flex h-full items-center justify-center rounded-lg border border-dashed p-6 text-sm text-foreground/70">
-      Select a block to view and manage its class assignments.
+      Select a faculty member to open the faculty teaching load workspace.
     </div>
   );
 };
 
-export default BlockPage;
+export default FacultyPage;

@@ -14,15 +14,11 @@ import {
   mapFacultyListItem,
 } from "./mappers";
 
-// ─── Faculty sidebar list ───────────────────────────────
-
 export const getFacultyListByTerm = async (
   termId: string,
 ): Promise<FacultyListItem[]> => {
   const supabase = await createClient();
 
-  // List ALL users; nest schedule filtered by term so ATL is term-specific.
-  // PostgREST returns users even when the nested schedule array is empty.
   const { data, error } = await supabase
     .from("user")
     .select(
@@ -31,16 +27,18 @@ export const getFacultyListByTerm = async (
       identity:identity (name),
       degree:degree (title, academic_level, year_graduated),
       designation (load),
-      schedule (
-        id,
-        class (
+      user_class (
+        class:class_id (
           id,
-          course:course_id (lecture_unit, laboratory_unit)
+          course_utilization (
+            course:course_id (lecture_unit, laboratory_unit),
+            block:block_id (academic_term_id)
+          )
         )
       )
     `,
     )
-    .eq("schedule.academic_term_id", termId)
+    .eq("user_class.class.course_utilization.block.academic_term_id", termId)
     .order("id", { ascending: true });
 
   if (error) {
@@ -56,12 +54,10 @@ export const getFacultyListByTerm = async (
       identity: row.identity,
       degree: row.degree,
       designation: row.designation,
-      schedule: row.schedule,
+      user_class: row.user_class,
     }),
   );
 };
-
-// ─── Block sidebar list ─────────────────────────────────
 
 export const getBlockListByTerm = async (
   termId: string,
@@ -84,10 +80,8 @@ export const getBlockListByTerm = async (
           campus:campus_id (id, code, name)
         )
       ),
-      class_block (
-        class:class_id (
-          course:course_id (lecture_unit, laboratory_unit)
-        )
+      course_utilization (
+        course:course_id (lecture_unit, laboratory_unit)
       )
     `,
     )
@@ -106,12 +100,10 @@ export const getBlockListByTerm = async (
       year_level: row.year_level,
       student_count: row.student_count,
       major_offering: row.major_offering,
-      class_block: row.class_block,
+      course_utilization: row.course_utilization,
     }),
   );
 };
-
-// ─── Faculty-aware class table ──────────────────────────
 
 export const getClassesByFacultyAndTerm = async (
   userId: string,
@@ -119,73 +111,57 @@ export const getClassesByFacultyAndTerm = async (
 ): Promise<FacultyClassRow[]> => {
   const supabase = await createClient();
 
-  // Find the schedule for this user+term
-  const { data: schedule, error: scheduleError } = await supabase
-    .from("schedule")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("academic_term_id", termId)
-    .maybeSingle();
-
-  if (scheduleError) {
-    console.error(
-      "lib.course-loading.getClassesByFacultyAndTerm.schedule ::",
-      scheduleError,
-    );
-    return [];
-  }
-
-  if (!schedule) return [];
-
-  // Get all classes under this schedule
-  const { data: classes, error: classError } = await supabase
-    .from("class")
+  const { data: userClassRows, error } = await supabase
+    .from("user_class")
     .select(
       `
-      id,
-      code,
-      course:course_id (id, code, title, lecture_unit, laboratory_unit),
-      class_block (
+      class:class_id (
         id,
-        block:block_id (
+        code,
+        course_utilization (
           id,
-          code,
-          year_level,
-          section,
-          student_count,
-          major_offering:major_offering_id (
-            major:major_id (code),
-            program_offering:program_offering_id (
-              program:program_id (code),
-              campus:campus_id (id, code, name)
+          course:course_id (id, code, title, lecture_unit, laboratory_unit),
+          block:block_id (
+            id,
+            code,
+            year_level,
+            section,
+            student_count,
+            major_offering:major_offering_id (
+              major:major_id (code),
+              program_offering:program_offering_id (
+                program:program_id (code),
+                campus:campus_id (id, code, name)
+              )
             )
           )
         )
       )
     `,
     )
-    .eq("schedule_id", schedule.id)
-    .order("created_at", { ascending: true });
+    .eq("user_id", userId)
+    .eq("class.course_utilization.block.academic_term_id", termId)
+    .order("class_id", { ascending: true });
 
-  if (classError) {
+  if (error) {
     console.error(
       "lib.course-loading.getClassesByFacultyAndTerm.classes ::",
-      classError,
+      error,
     );
     return [];
   }
 
-  return (classes ?? []).map((cls) =>
-    mapFacultyClassRow({
-      id: cls.id,
-      code: cls.code,
-      course: cls.course,
-      class_block: cls.class_block,
-    }),
-  );
+  return (userClassRows ?? [])
+    .map((row) => row.class)
+    .filter(Boolean)
+    .map((cls) =>
+      mapFacultyClassRow({
+        id: cls.id,
+        code: cls.code,
+        course_utilization: cls.course_utilization,
+      }),
+    );
 };
-
-// ─── Block-aware class table ────────────────────────────
 
 export const getClassesByBlockAndTerm = async (
   blockId: string,
@@ -193,24 +169,22 @@ export const getClassesByBlockAndTerm = async (
 ): Promise<BlockClassRow[]> => {
   const supabase = await createClient();
 
-  // Get class_blocks for this block
   const { data, error } = await supabase
-    .from("class_block")
+    .from("course_utilization")
     .select(
       `
       id,
+      course:course_id (id, code, title, lecture_unit, laboratory_unit),
       class:class_id (
         id,
         code,
-        course:course_id (id, code, title, lecture_unit, laboratory_unit),
-        schedule:schedule_id (
+        user_class (
           user:user_id (
             id,
             identity:identity (name)
           )
         ),
-        class_block (
-          id,
+        course_utilization (
           block:block_id (id, code)
         )
       )
@@ -224,6 +198,9 @@ export const getClassesByBlockAndTerm = async (
   }
 
   return (data ?? []).map((row) =>
-    mapBlockClassRow({ class: row.class }, blockId),
+    mapBlockClassRow(
+      { class: row.class, course: row.course },
+      blockId,
+    ),
   );
 };

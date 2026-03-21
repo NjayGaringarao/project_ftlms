@@ -15,7 +15,7 @@ import {
   sortScheduleRows,
 } from "./utils";
 
-type ClassDeliveryBlockRow = {
+type ClassBlockRow = {
   block?: {
     year_level?: number | null;
     section?: string | null;
@@ -29,7 +29,7 @@ type ClassDeliveryBlockRow = {
   } | null;
 };
 
-type ClassDeliverySessionRow = {
+type ClassSessionRow = {
   id: string;
   day: SessionDay;
   start_time: string;
@@ -41,20 +41,21 @@ type ClassDeliverySessionRow = {
   } | null;
 };
 
-type ClassDeliveryRow = {
+type ClassRow = {
   id: string;
-  course_allocation?: {
-    course_offering?: {
-      course?: {
-        code?: string | null;
-        title?: string | null;
-        lecture_hour?: number | null;
-        laboratory_hour?: number | null;
-      } | null;
+  code: string;
+  course_utilization?: Array<{
+    course?: {
+      code?: string | null;
+      title?: string | null;
+      lecture_unit?: number | null;
+      laboratory_unit?: number | null;
     } | null;
-  } | null;
-  class_delivery_block?: ClassDeliveryBlockRow[] | null;
-  session?: ClassDeliverySessionRow[] | null;
+    block?: ClassBlockRow["block"] | null;
+  }> | null;
+  session_class?: Array<{
+    session?: ClassSessionRow | ClassSessionRow[] | null;
+  }> | null;
 };
 
 type RawScheduleTermRow = {
@@ -125,25 +126,55 @@ const resolveSelectedTerm = (
   return terms[0] ?? null;
 };
 
-const getScheduleIdByFacultyAndTerm = async (
+const getClassRowsByFacultyAndTerm = async (
   userId: string,
   academicTermId: string,
-): Promise<string | null> => {
+): Promise<ClassRow[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("schedule")
-    .select("id")
+    .from("user_class")
+    .select(
+      `
+      class:class_id(
+        id,
+        code,
+        course_utilization(
+          course:course_id(code, title, lecture_unit, laboratory_unit),
+          block:block_id(
+            year_level,
+            section,
+            major_offering:major_offering_id(
+              program_offering:program_offering_id(
+                campus:campus_id(name)
+              )
+            )
+          )
+        ),
+        session_class(
+          session:session_id(
+            id,
+            day,
+            start_time,
+            end_time,
+            type,
+            room:room_id(code, name)
+          )
+        )
+      )
+      `,
+    )
     .eq("user_id", userId)
-    .eq("academic_term_id", academicTermId)
-    .maybeSingle();
+    .eq("class.course_utilization.block.academic_term_id", academicTermId);
 
   if (error) {
-    console.error("lib.schedule.getScheduleIdByFacultyAndTerm ::", error);
-    return null;
+    console.error("lib.schedule.getClassRowsByFacultyAndTerm ::", error);
+    return [];
   }
 
-  return data?.id ?? null;
+  return (data ?? [])
+    .map((row) => row.class as ClassRow)
+    .filter(Boolean);
 };
 
 const formatBlockLabel = (
@@ -154,9 +185,7 @@ const formatBlockLabel = (
   return `${yearLevel}${section}`;
 };
 
-const mapSession = (
-  session: ClassDeliverySessionRow,
-): FacultyScheduleSessionInfo => {
+const mapSession = (session: ClassSessionRow): FacultyScheduleSessionInfo => {
   return {
     id: session.id,
     day: session.day,
@@ -168,78 +197,23 @@ const mapSession = (
   };
 };
 
-const getClassDeliveries = async (
-  scheduleId: string,
-): Promise<ClassDeliveryRow[]> => {
-  const supabase = await createClient();
+const mapTeachingLoadRows = (classRows: ClassRow[]): FacultyTeachingLoadRow[] => {
+  return classRows.map((item) => {
+    const firstUtil = (item.course_utilization ?? [])[0];
+    const course = firstUtil?.course;
+    const lectureHour = Number(course?.lecture_unit ?? 0);
+    const laboratoryHour = Number(course?.laboratory_unit ?? 0);
 
-  const { data, error } = await supabase
-    .from("class_delivery")
-    .select(
-      `
-      id,
-      course_allocation:course_allocation!inner(
-        schedule_id,
-        course_offering:course_offering!inner(
-          course:course!inner(code, title, lecture_hour, laboratory_hour)
-        )
-      ),
-      class_delivery_block(
-        block:block(
-          year_level,
-          section,
-          major_offering:major_offering!inner(
-            program_offering:program_offering!inner(
-              campus:campus!inner(name)
-            )
-          )
-        )
-      ),
-      session:session!session_class_delivery_id_fkey(
-        id,
-        day,
-        start_time,
-        end_time,
-        type,
-        room:room(code, name)
-      )
-    `,
-    )
-    .eq("course_allocation.schedule_id", scheduleId);
-
-  if (error) {
-    console.error("lib.schedule.getClassDeliveries ::", error);
-    return [];
-  }
-
-  return (data ?? []) as ClassDeliveryRow[];
-};
-
-const mapTeachingLoadRows = (
-  classDeliveries: ClassDeliveryRow[],
-): FacultyTeachingLoadRow[] => {
-  return classDeliveries.map((item) => {
-    const course = item.course_allocation?.course_offering?.course;
-    const lectureHour = Number(course?.lecture_hour ?? 0);
-    const laboratoryHour = Number(course?.laboratory_hour ?? 0);
-
-    const blocks = (item.class_delivery_block ?? [])
+    const blocks = (item.course_utilization ?? [])
       .map((entry) =>
-        formatBlockLabel(
-          entry.block?.year_level ?? null,
-          entry.block?.section ?? null,
-        ),
+        formatBlockLabel(entry.block?.year_level ?? null, entry.block?.section ?? null),
       )
       .filter((value): value is string => Boolean(value));
 
     const campusLabel = Array.from(
       new Set(
-        (item.class_delivery_block ?? [])
-          .map(
-            (entry) =>
-              entry.block?.major_offering?.program_offering?.campus?.name ??
-              null,
-          )
+        (item.course_utilization ?? [])
+          .map((entry) => entry.block?.major_offering?.program_offering?.campus?.name ?? null)
           .filter((value): value is string => Boolean(value)),
       ),
     ).join(", ");
@@ -258,24 +232,24 @@ const mapTeachingLoadRows = (
   });
 };
 
-const mapScheduleRows = (
-  classDeliveries: ClassDeliveryRow[],
-): FacultyScheduleRow[] => {
+const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
   const rows: FacultyScheduleRow[] = [];
 
-  classDeliveries.forEach((item) => {
-    const course = item.course_allocation?.course_offering?.course;
-    const blocks = (item.class_delivery_block ?? [])
+  classRows.forEach((item) => {
+    const firstUtil = (item.course_utilization ?? [])[0];
+    const course = firstUtil?.course;
+    const blocks = (item.course_utilization ?? [])
       .map((entry) =>
-        formatBlockLabel(
-          entry.block?.year_level ?? null,
-          entry.block?.section ?? null,
-        ),
+        formatBlockLabel(entry.block?.year_level ?? null, entry.block?.section ?? null),
       )
       .filter((value): value is string => Boolean(value));
 
     const mergedBlockLabel = mergeBlockLabels(blocks);
-    const sessions = (item.session ?? []).map(mapSession);
+    const sessions = (item.session_class ?? [])
+      .map((entry) => entry.session)
+      .map((session) => (Array.isArray(session) ? session[0] : session))
+      .filter(Boolean)
+      .map(mapSession);
 
     if (sessions.length === 0) {
       rows.push({
@@ -328,17 +302,17 @@ export const getFacultySchedulePageData = async (
     return emptyPageData(terms, null);
   }
 
-  const scheduleId = await getScheduleIdByFacultyAndTerm(
+  const classRows = await getClassRowsByFacultyAndTerm(
     userId,
     selectedTerm.id,
   );
-  if (!scheduleId) {
+
+  if (classRows.length === 0) {
     return emptyPageData(terms, selectedTerm);
   }
 
-  const classDeliveries = await getClassDeliveries(scheduleId);
-  const teachingLoadRows = mapTeachingLoadRows(classDeliveries);
-  const scheduleRows = mapScheduleRows(classDeliveries);
+  const teachingLoadRows = mapTeachingLoadRows(classRows);
+  const scheduleRows = mapScheduleRows(classRows);
   const totalTeachingLoad = teachingLoadRows.reduce(
     (sum, item) => sum + item.load,
     0,

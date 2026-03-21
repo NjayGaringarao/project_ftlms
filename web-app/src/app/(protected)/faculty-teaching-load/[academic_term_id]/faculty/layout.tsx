@@ -1,5 +1,5 @@
 import React from "react";
-import { FacultyList } from "@/components/course-loading/faculty-list";
+import { FacultyList } from "@/components/faculty-teaching-load/faculty-list";
 import { getFacultyListByTerm } from "@/lib/course-loading/queries";
 
 type FacultyLayoutProps = {

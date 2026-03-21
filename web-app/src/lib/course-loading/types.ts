@@ -13,7 +13,7 @@ export type CourseLoadingClassRow = {
 // ── Faculty-aware class row ──
 
 export type FacultyClassBlock = {
-  class_block_id: string;
+  course_utilization_id: string;
   block_id: string;
   block_code: string;
   program_code: string;
@@ -42,8 +42,8 @@ export type BlockClassMergedWith = {
 };
 
 export type BlockClassRow = CourseLoadingClassRow & {
-  faculty_id: string;
-  faculty_name: string;
+  faculty_id: string | null;
+  faculty_name: string | null;
   /** laboratory_unit × 3 (contact hours) */
   laboratory_hours: number;
   /** lecture_unit (contact hours) */
