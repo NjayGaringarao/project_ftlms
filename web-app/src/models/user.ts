@@ -11,6 +11,9 @@ export type User = {
   id: string;
   academic_rank_id: string | null;
   employment_status: EmploymentStatus;
+  campus_id?: string | null;
+  college_id?: string | null;
+  employee_id?: string | null;
 };
 
 export type ExtendedUser = User & {

@@ -1,14 +1,8 @@
-import { Course } from "./course";
-import { Schedule } from "./schedule";
-
 export type Class = {
   id: string;
   code: string;
-  schedule_id: string;
-  course_id: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
-export type ExtendedClass = Class & {
-  schedule: Schedule;
-  course: Course;
-};
+export type ExtendedClass = Class;

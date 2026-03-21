@@ -1,11 +1,10 @@
 import { Designation } from "./designation";
-import { Schedule } from "./schedule";
+import { Proposal } from "./proposal";
 
 export type Evaluation = {
   id: string;
-  designation_id: string;
-  schedule_id: string;
-  evaluation_level: number;
+  designation_id: string | null;
+  proposal_id: string;
   evaluator_role: string;
   status: string;
   comment: string | null;
@@ -13,6 +12,6 @@ export type Evaluation = {
 };
 
 export type ExtendedEvaluation = Evaluation & {
-  designation: Designation;
-  schedule: Schedule;
+  designation: Designation | null;
+  proposal: Proposal;
 };
