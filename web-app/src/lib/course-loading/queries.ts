@@ -27,6 +27,8 @@ export const getFacultyListByTerm = async (
       identity:identity (name),
       degree:degree (title, academic_level, year_graduated),
       designation (load),
+      campus:campus_id (id, name),
+      college:college_id (id, code, name),
       user_class (
         class:class_id (
           id,
@@ -54,6 +56,8 @@ export const getFacultyListByTerm = async (
       identity: row.identity,
       degree: row.degree,
       designation: row.designation,
+      campus: row.campus,
+      college: row.college,
       user_class: row.user_class,
     }),
   );

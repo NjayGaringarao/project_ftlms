@@ -1,20 +1,13 @@
 import React from "react";
-import MapperLeftPane from "@/components/scheduler/mapper-left-pane";
-import { getBlockListByTerm } from "@/lib/course-loading/queries";
 
 type MapperLayoutProps = {
   children: React.ReactNode;
   params: Promise<{ academic_term_id: string }>;
 };
 
-const MapperLayout = async ({ children, params }: MapperLayoutProps) => {
-  const { academic_term_id } = await params;
-  
+const MapperLayout = async ({ children }: MapperLayoutProps) => {
   return (
-    <div className="flex w-full h-full gap-4 overflow-hidden p-4">
-      <div className="flex max-w-82">
-        <MapperLeftPane academicTermId={academic_term_id}/>
-      </div>
+    <div className="flex w-full h-full overflow-hidden p-4">
       <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
     </div>
   );

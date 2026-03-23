@@ -26,7 +26,9 @@ begin
   from public.class c
   where c.id = new.class_id;
 
-  if v_existing_code is not null and v_existing_code <> '' then
+  if v_existing_code is not null
+     and v_existing_code <> ''
+     and v_existing_code !~ '^TMP-' then
     return new;
   end if;
 

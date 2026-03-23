@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ClassInsertInput, ClassUpdateInput } from "./types";
@@ -45,7 +46,7 @@ export async function createClass(
 
   const { data: newClass, error: classError } = await supabase
     .from("class")
-    .insert({})
+    .insert({ code: `TMP-${randomUUID()}` })
     .select("id")
     .single();
 
@@ -364,14 +365,97 @@ export async function mergeClasses(
     return { error: moveErr.message };
   }
 
-  const { error: deleteErr } = await supabase
-    .from("class")
-    .delete()
-    .in("id", uniqueSourceIds);
+  const { data: remaining, error: remainingErr } = await supabase
+    .from("course_utilization")
+    .select("class_id")
+    .in("class_id", uniqueSourceIds);
 
-  if (deleteErr) {
-    console.error("lib.course-loading.mergeClasses.delete ::", deleteErr);
-    return { error: deleteErr.message };
+  if (remainingErr) {
+    console.error(
+      "lib.course-loading.mergeClasses.remaining ::",
+      remainingErr,
+    );
+    return { error: remainingErr.message };
+  }
+
+  const remainingIds = new Set(
+    (remaining ?? []).map((row) => row.class_id as string),
+  );
+  const emptyClassIds = uniqueSourceIds.filter(
+    (id) => !remainingIds.has(id),
+  );
+
+  if (emptyClassIds.length > 0) {
+    const { data: sessionRows, error: sessionErr } = await supabase
+      .from("session_class")
+      .select("session_id")
+      .in("class_id", emptyClassIds);
+
+    if (sessionErr) {
+      console.error(
+        "lib.course-loading.mergeClasses.sessions ::",
+        sessionErr,
+      );
+      return { error: sessionErr.message };
+    }
+
+    const sessionIds = Array.from(
+      new Set((sessionRows ?? []).map((row) => row.session_id as string)),
+    );
+
+    if (sessionIds.length > 0) {
+      const { error: sessionClassErr } = await supabase
+        .from("session_class")
+        .delete()
+        .in("class_id", emptyClassIds);
+
+      if (sessionClassErr) {
+        console.error(
+          "lib.course-loading.mergeClasses.sessionClassDelete ::",
+          sessionClassErr,
+        );
+        return { error: sessionClassErr.message };
+      }
+
+      const { error: sessionDeleteErr } = await supabase
+        .from("session")
+        .delete()
+        .in("id", sessionIds);
+
+      if (sessionDeleteErr) {
+        console.error(
+          "lib.course-loading.mergeClasses.sessionDelete ::",
+          sessionDeleteErr,
+        );
+        return { error: sessionDeleteErr.message };
+      }
+    }
+
+    const { error: userClassErr } = await supabase
+      .from("user_class")
+      .delete()
+      .in("class_id", emptyClassIds);
+
+    if (userClassErr) {
+      console.error(
+        "lib.course-loading.mergeClasses.userClassDelete ::",
+        userClassErr,
+      );
+      return { error: userClassErr.message };
+    }
+
+    const { error: classDeleteErr } = await supabase
+      .from("class")
+      .delete()
+      .in("id", emptyClassIds);
+
+    if (classDeleteErr) {
+      console.error(
+        "lib.course-loading.mergeClasses.classDelete ::",
+        classDeleteErr,
+      );
+      return { error: classDeleteErr.message };
+    }
   }
 
   revalidateCourseLoading(academicTermId);
@@ -417,7 +501,7 @@ export async function unmergeClass(
   for (const util of utilizations.slice(1)) {
     const { data: newClass, error: newClassErr } = await supabase
       .from("class")
-      .insert({})
+      .insert({ code: `TMP-${randomUUID()}` })
       .select("id")
       .single();
 
@@ -448,6 +532,92 @@ export async function unmergeClass(
     if (moveErr) {
       console.error("lib.course-loading.unmergeClass.moveUtil ::", moveErr);
       return { error: moveErr.message };
+    }
+  }
+
+  const { data: remaining, error: remainingErr } = await supabase
+    .from("course_utilization")
+    .select("class_id")
+    .eq("class_id", classId);
+
+  if (remainingErr) {
+    console.error(
+      "lib.course-loading.unmergeClass.remaining ::",
+      remainingErr,
+    );
+    return { error: remainingErr.message };
+  }
+
+  if (!remaining || remaining.length === 0) {
+    const { data: sessionRows, error: sessionErr } = await supabase
+      .from("session_class")
+      .select("session_id")
+      .eq("class_id", classId);
+
+    if (sessionErr) {
+      console.error(
+        "lib.course-loading.unmergeClass.sessions ::",
+        sessionErr,
+      );
+      return { error: sessionErr.message };
+    }
+
+    const sessionIds = Array.from(
+      new Set((sessionRows ?? []).map((row) => row.session_id as string)),
+    );
+
+    if (sessionIds.length > 0) {
+      const { error: sessionClassErr } = await supabase
+        .from("session_class")
+        .delete()
+        .eq("class_id", classId);
+
+      if (sessionClassErr) {
+        console.error(
+          "lib.course-loading.unmergeClass.sessionClassDelete ::",
+          sessionClassErr,
+        );
+        return { error: sessionClassErr.message };
+      }
+
+      const { error: sessionDeleteErr } = await supabase
+        .from("session")
+        .delete()
+        .in("id", sessionIds);
+
+      if (sessionDeleteErr) {
+        console.error(
+          "lib.course-loading.unmergeClass.sessionDelete ::",
+          sessionDeleteErr,
+        );
+        return { error: sessionDeleteErr.message };
+      }
+    }
+
+    const { error: userClassErr } = await supabase
+      .from("user_class")
+      .delete()
+      .eq("class_id", classId);
+
+    if (userClassErr) {
+      console.error(
+        "lib.course-loading.unmergeClass.userClassDelete ::",
+        userClassErr,
+      );
+      return { error: userClassErr.message };
+    }
+
+    const { error: classDeleteErr } = await supabase
+      .from("class")
+      .delete()
+      .eq("id", classId);
+
+    if (classDeleteErr) {
+      console.error(
+        "lib.course-loading.unmergeClass.classDelete ::",
+        classDeleteErr,
+      );
+      return { error: classDeleteErr.message };
     }
   }
 

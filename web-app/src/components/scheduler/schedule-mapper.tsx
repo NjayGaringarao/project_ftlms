@@ -1,28 +1,49 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Blocks, ChevronDown, DoorOpen, User, X } from "lucide-react";
-import type { SessionDay } from "@/models";
-import { toDisplayTime, toMinutes } from "@/lib/schedule/utils";
+import {
+  Blocks,
+  BookOpen,
+  ChevronDown,
+  Clock,
+  DoorOpen,
+  User,
+  X,
+} from "lucide-react";
+import type { SessionDay, SessionType } from "@/models";
+import { dayLabel, toDisplayTime, toMinutes } from "@/lib/schedule/utils";
 import {
   getSchedulerMapperMatrixByBlock,
   getSchedulerMapperMatrixByFaculty,
   getSchedulerMapperMatrixByRoom,
   type SchedulerMatrixSession,
 } from "@/lib/schedule/mapper";
+import {
+  getBlockCourseOfferingsForScheduler,
+  type SchedulerCourseOfferingItem,
+} from "@/lib/schedule/course-offerings";
+import {
+  createSessionFromOffering,
+  getSessionSummaries,
+  type SessionSummary,
+} from "@/lib/schedule/session-actions";
 import MatrixRenderer from "./matrix-renderer";
 import { getSelectedContextsFromSearchParams } from "./utils";
 import SelectBlockDialog from "./select-block-dialog";
-import SelectFacultyDialog from "./select-faculty-dialog";
+import FacultyPickerDialog from "@/components/shared/faculty-picker-dialog";
 import SelectRoomDialog from "./select-room-dialog";
+import SelectCourseOfferingDialog from "./select-course-offering-dialog";
+import SchedulerRightPane from "./scheduler-right-pane";
 import type {
   CourseLoadingBlockListItem,
   FacultyListItem,
 } from "@/lib/course-loading/types";
 import type { ExtendedRoom } from "@/models";
 import { Button } from "../ui/button";
+import { AppDialog } from "../ui/app-dialog";
 import { cn } from "@/utils/style";
+import { numberToHourDuration } from "@/utils/time";
 
 type ScheduleMapperProps = {
   academic_term_id: string;
@@ -95,6 +116,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const selectedFacultyId = selectedContexts.facultyId ?? null;
   const selectedBlockId = selectedContexts.blockId ?? null;
   const selectedRoomId = selectedContexts.roomId ?? null;
+  const selectedCourseUtilizationId =
+    selectedContexts.courseUtilizationId ?? null;
 
   const [blockSessions, setBlockSessions] = useState<SchedulerMatrixSession[]>(
     [],
@@ -112,10 +135,43 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const [faculty, setFaculty] = useState<FacultyListItem[]>([]);
   const [rooms, setRooms] = useState<ExtendedRoom[]>([]);
   const [blocks, setBlocks] = useState<CourseLoadingBlockListItem[]>([]);
+  const [offerings, setOfferings] = useState<SchedulerCourseOfferingItem[]>([]);
+  const [offeringsLoading, setOfferingsLoading] = useState(false);
   const [showFacultyDialog, setShowFacultyDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showRoomDialog, setShowRoomDialog] = useState(false);
+  const [showOfferingDialog, setShowOfferingDialog] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [dragError, setDragError] = useState("");
+  const [selectedCell, setSelectedCell] = useState<{
+    source: "Block" | "Faculty" | "Room";
+    sessions: SchedulerMatrixSession[];
+  } | null>(null);
+  const [overlappingSessions, setOverlappingSessions] = useState<
+    SessionSummary[]
+  >([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [dragging, setDragging] = useState<{
+    day: SessionDay;
+    startIndex: number;
+    endIndex: number;
+  } | null>(null);
+  const [pendingRange, setPendingRange] = useState<{
+    day: SessionDay;
+    startIndex: number;
+    endIndex: number;
+  } | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [sessionType, setSessionType] = useState<SessionType>("Lecture");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const draggingRef = useRef<typeof dragging>(null);
+
+  useEffect(() => {
+    draggingRef.current = dragging;
+  }, [dragging]);
 
   const setQueryParams = (mutate: (next: URLSearchParams) => void) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -124,8 +180,12 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     router.replace(queryString ? `${pathname}?${queryString}` : pathname);
   };
 
+  const setContextParams = (mutate: (next: URLSearchParams) => void) => {
+    setQueryParams(mutate);
+  };
+
   const setContextParam = (
-    key: "facultyId" | "blockId" | "roomId",
+    key: "facultyId" | "blockId" | "roomId" | "courseUtilizationId",
     value: string,
   ) => {
     setQueryParams((next) => {
@@ -133,7 +193,9 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     });
   };
 
-  const clearContextParam = (key: "facultyId" | "blockId" | "roomId") => {
+  const clearContextParam = (
+    key: "facultyId" | "blockId" | "roomId" | "courseUtilizationId",
+  ) => {
     setQueryParams((next) => {
       next.delete(key);
     });
@@ -144,6 +206,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const selectedBlock =
     blocks.find((item) => item.id === selectedBlockId) ?? null;
   const selectedRoom = rooms.find((item) => item.id === selectedRoomId) ?? null;
+  const selectedOffering =
+    offerings.find((item) => item.id === selectedCourseUtilizationId) ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -174,6 +238,39 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       cancelled = true;
     };
   }, [academic_term_id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadOfferings = async () => {
+      if (!selectedBlockId) {
+        setOfferings([]);
+        setOfferingsLoading(false);
+        return;
+      }
+      setOfferingsLoading(true);
+      const rows = await getBlockCourseOfferingsForScheduler(selectedBlockId);
+      if (cancelled) return;
+      setOfferings(rows);
+      setOfferingsLoading(false);
+    };
+
+    void loadOfferings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBlockId, refreshKey]);
+
+  useEffect(() => {
+    if (!selectedCourseUtilizationId) return;
+    const exists = offerings.some(
+      (item) => item.id === selectedCourseUtilizationId,
+    );
+    if (!exists) {
+      clearContextParam("courseUtilizationId");
+    }
+  }, [offerings, selectedCourseUtilizationId]);
 
   const timeSlots = useMemo(() => {
     const slots: { start: string; end: string; startMinute: number }[] = [];
@@ -219,7 +316,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     return () => {
       cancelled = true;
     };
-  }, [academic_term_id, selectedBlockId]);
+  }, [academic_term_id, selectedBlockId, refreshKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -246,7 +343,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     return () => {
       cancelled = true;
     };
-  }, [academic_term_id, selectedFacultyId]);
+  }, [academic_term_id, selectedFacultyId, refreshKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -273,7 +370,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     return () => {
       cancelled = true;
     };
-  }, [academic_term_id, selectedRoomId]);
+  }, [academic_term_id, selectedRoomId, refreshKey]);
 
   const blockMatrix = useMemo(
     () => buildMatrix(blockSessions, slotStarts),
@@ -287,6 +384,256 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     () => buildMatrix(roomSessions, slotStarts),
     [roomSessions, slotStarts],
   );
+
+  const expectedHours = useMemo(() => {
+    if (!selectedOffering) return 0;
+    return sessionType === "Lecture"
+      ? selectedOffering.unscheduled_lecture_hours
+      : selectedOffering.unscheduled_laboratory_hours;
+  }, [selectedOffering, sessionType]);
+
+  const maxDragSlots = useMemo(() => {
+    if (expectedHours <= 0) return 0;
+    return Math.ceil(expectedHours / 0.5);
+  }, [expectedHours]);
+
+  const canDrag = Boolean(
+    selectedBlockId &&
+    selectedCourseUtilizationId &&
+    selectedFacultyId &&
+    selectedOffering,
+  );
+
+  const hasMatrixConflict = (
+    matrix: MatrixMap,
+    day: SessionDay,
+    startIndex: number,
+    endIndex: number,
+  ): boolean => {
+    const min = Math.min(startIndex, endIndex);
+    const max = Math.max(startIndex, endIndex);
+    for (let index = min; index <= max; index += 1) {
+      if ((matrix[day]?.[index] ?? []).length > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const finalizeDrag = (
+    day: SessionDay,
+    startIndex: number,
+    endIndex: number,
+  ) => {
+    if (!canDrag) {
+      setDragError("Select a block, course offering, and faculty to schedule.");
+      setDragging(null);
+      return;
+    }
+
+    if (hasMatrixConflict(blockMatrix, day, startIndex, endIndex)) {
+      setDragError("Block already has a schedule in that time range.");
+      setDragging(null);
+      return;
+    }
+
+    if (hasMatrixConflict(facultyMatrix, day, startIndex, endIndex)) {
+      setDragError("Faculty already has a schedule in that time range.");
+      setDragging(null);
+      return;
+    }
+
+    if (
+      selectedRoomId &&
+      hasMatrixConflict(roomMatrix, day, startIndex, endIndex)
+    ) {
+      setDragError("Room is occupied in that time range.");
+      setDragging(null);
+      return;
+    }
+
+    setDragError("");
+    setPendingRange({ day, startIndex, endIndex });
+    setSessionType("Lecture");
+    setConfirmOpen(true);
+    setDragging(null);
+  };
+
+  const handleCellMouseDown = (
+    day: SessionDay,
+    rowIndex: number,
+    items: SchedulerMatrixSession[],
+  ) => {
+    if (items.length > 0) {
+      setSelectedCell({ source: "Block", sessions: items });
+      return;
+    }
+    if (!canDrag) {
+      setDragError("Select a block, course offering, and faculty to schedule.");
+      return;
+    }
+
+    if (expectedHours <= 0) {
+      setDragError(
+        `No remaining ${sessionType.toLowerCase()} hours for this course.`,
+      );
+      return;
+    }
+    setDragError("");
+    setDragging({ day, startIndex: rowIndex, endIndex: rowIndex });
+  };
+
+  const handleCellMouseEnter = (
+    day: SessionDay,
+    rowIndex: number,
+    _items: SchedulerMatrixSession[],
+  ) => {
+    setDragging((prev) => {
+      if (!prev || prev.day !== day) return prev;
+      if (maxDragSlots <= 0) return prev;
+      const minIndex = 0;
+      const maxIndex = timeSlots.length - 1;
+      const direction = rowIndex >= prev.startIndex ? 1 : -1;
+      const clampedEnd =
+        direction === 1
+          ? Math.min(prev.startIndex + maxDragSlots - 1, rowIndex, maxIndex)
+          : Math.max(prev.startIndex - (maxDragSlots - 1), rowIndex, minIndex);
+      return { ...prev, endIndex: clampedEnd };
+    });
+  };
+
+  const handleSessionClick =
+    (source: "Block" | "Faculty" | "Room") =>
+    (_day: SessionDay, _rowIndex: number, items: SchedulerMatrixSession[]) => {
+      if (items.length === 0) return;
+      setSelectedCell({ source, sessions: items });
+    };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSummaries = async () => {
+      if (!selectedCell || selectedCell.sessions.length === 0) {
+        setOverlappingSessions([]);
+        setActiveSessionId(null);
+        setSelectedClassId(null);
+        return;
+      }
+
+      const ids = selectedCell.sessions.map((session) => session.id);
+      const summaries = await getSessionSummaries(ids);
+      if (cancelled) return;
+      setOverlappingSessions(summaries);
+      setActiveSessionId((prev) => {
+        if (!summaries || summaries.length === 0) return null;
+        if (prev && summaries.some((item) => item.session_id === prev)) {
+          return prev;
+        }
+        return summaries[0].session_id;
+      });
+      setSelectedClassId(summaries[0]?.class_id ?? null);
+    };
+
+    void loadSummaries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCell]);
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    const handleMouseUp = () => {
+      const current = draggingRef.current;
+      if (!current) return;
+      finalizeDrag(current.day, current.startIndex, current.endIndex);
+      setDragging(null);
+    };
+
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragging]);
+
+  const handleConfirmSchedule = async () => {
+    if (
+      !pendingRange ||
+      !selectedOffering ||
+      !selectedFacultyId ||
+      !selectedBlockId
+    ) {
+      return;
+    }
+
+    const minIndex = Math.min(pendingRange.startIndex, pendingRange.endIndex);
+    const maxIndex = Math.max(pendingRange.startIndex, pendingRange.endIndex);
+    const startSlot = timeSlots[minIndex];
+    const endSlot = timeSlots[maxIndex];
+
+    if (!startSlot || !endSlot) {
+      setDragError("Invalid time range selected.");
+      return;
+    }
+
+    const selectedDurationHours =
+      (toMinutes(endSlot.end) - toMinutes(startSlot.start)) / 60;
+    if (expectedHours > 0 && selectedDurationHours - expectedHours > 0.001) {
+      setDragError(
+        `Selected duration (${selectedDurationHours.toFixed(
+          2,
+        )}h) exceeds the remaining ${sessionType.toLowerCase()} hours (${expectedHours.toFixed(2)}h).`,
+      );
+      return;
+    }
+
+    setIsSaving(true);
+    const result = await createSessionFromOffering({
+      academicTermId: academic_term_id,
+      blockId: selectedBlockId,
+      courseUtilizationId: selectedOffering.id,
+      facultyId: selectedFacultyId,
+      roomId: selectedRoomId,
+      day: pendingRange.day,
+      startTime: startSlot.start,
+      endTime: endSlot.end,
+      type: sessionType,
+    });
+
+    if (result.error) {
+      setDragError(result.error);
+      setIsSaving(false);
+      return;
+    }
+
+    setConfirmOpen(false);
+    setPendingRange(null);
+    setIsSaving(false);
+    setDragError("");
+    if (result.data?.id && selectedOffering.class_id) {
+      setSelectedCell({
+        source: "Block",
+        sessions: [
+          {
+            id: result.data.id,
+            class_id: selectedOffering.class_id,
+            class_code: selectedOffering.class_code ?? "TMP",
+            day: pendingRange.day,
+            start_time: startSlot.start,
+            end_time: endSlot.end,
+          },
+        ],
+      });
+      setActiveSessionId(result.data.id);
+      setSelectedClassId(selectedOffering.class_id);
+    } else {
+      setSelectedCell(null);
+      setActiveSessionId(result.data?.id ?? null);
+      setSelectedClassId(selectedOffering.class_id ?? null);
+    }
+    setRefreshKey((prev) => prev + 1);
+  };
 
   const getHeaderButtonClass = (hasSelection: boolean) =>
     cn("min-w-0 h-7 px-2 text-sm", hasSelection ? "font-semibold flex-1" : "");
@@ -324,6 +671,63 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     </>
   );
 
+  const clearBlockSelection = () => {
+    setContextParams((next) => {
+      next.delete("blockId");
+      next.delete("courseUtilizationId");
+    });
+    setPendingRange(null);
+    setConfirmOpen(false);
+    setDragError("");
+  };
+
+  const clearCourseOffering = () => {
+    setContextParams((next) => {
+      next.delete("courseUtilizationId");
+    });
+    setPendingRange(null);
+    setConfirmOpen(false);
+    setDragError("");
+  };
+
+  const renderBlockHeader = () => (
+    <div className="flex items-center gap-1 w-full">
+      {renderHeaderButton(
+        "Block",
+        <Blocks className="h-3 w-3" />,
+        selectedBlock?.code ?? null,
+        () => setShowBlockDialog(true),
+        clearBlockSelection,
+      )}
+      <Button
+        title={
+          selectedOffering ? "Change course offering" : "Select course offering"
+        }
+        variant="outline"
+        className={getHeaderButtonClass(Boolean(selectedOffering))}
+        onClick={() => setShowOfferingDialog(true)}
+        disabled={!selectedBlockId || lookupLoading || offeringsLoading}
+      >
+        <BookOpen className="h-3 w-3" />
+        <span className="truncate">
+          {selectedOffering?.course_code ?? "Pick Course"}
+        </span>
+        <ChevronDown className="h-3 w-3 text-foreground/60" />
+      </Button>
+      {selectedOffering ? (
+        <Button
+          title="Clear course offering"
+          variant="ghost"
+          className="h-7 w-7 p-0 hover:bg-transparent"
+          onClick={clearCourseOffering}
+          disabled={lookupLoading}
+        >
+          <X className="h-3 w-3 text-background" />
+        </Button>
+      ) : null}
+    </div>
+  );
+
   if (!academic_term_id?.trim()) {
     return (
       <div className="flex h-full items-center justify-center rounded-md border border-dashed p-6 text-sm text-foreground/70">
@@ -333,107 +737,151 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   }
 
   return (
-    <div className="flex h-full border rounded-md overflow-hidden">
-      <div className="flex-1 overflow-auto">
-        <div
-          className="grid auto-rows-[2.5rem] grid-cols-[minmax(9rem,10rem)_repeat(21,minmax(4rem,1fr))] min-w-max border border-foreground/10 text-xs"
-          onMouseLeave={() => setHoveredRow(null)}
-        >
-          {/* TOP-LEFT */}
-          <div
-            className="sticky top-0 left-0 z-50 bg-foreground/70 border-r-4 border-foreground/10 backdrop-blur-xs"
-            style={{ gridColumn: 1, gridRow: 1 }}
-          />
-
-          {/* TIME HEADER */}
-          <div
-            className="sticky text-sm text-background top-10 left-0 z-50 bg-foreground/80 flex items-center justify-center border-b-4 border-r-4 border-foreground/10 font-semibold backdrop-blur-xs"
-            style={{ gridColumn: 1, gridRow: 2 }}
-          >
-            Time
-          </div>
-
-          {/* TIME SLOTS */}
-          {timeSlots.map((slot, index) => (
+    <>
+      <div className="flex flex-col h-full border rounded-md overflow-hidden">
+        <div className="flex-1 flex flex-row h-full overflow-hidden">
+          <div className="flex-1 overflow-auto">
             <div
-              key={`time-${slot.start}`}
-              className={cn(
-                "sticky left-0 z-20 bg-background flex items-center justify-center border-b border-r-4 border-foreground/10 px-2 text-xs",
-                hoveredRow === index && "bg-foreground/5 border-y-foreground/20 backdrop-blur-xs",
-              )}
-              style={{ gridColumn: 1, gridRow: 3 + index }}
-              onMouseEnter={() => setHoveredRow(index)}
+              className="grid auto-rows-[2.5rem] grid-cols-[minmax(5rem,8rem)_repeat(21,minmax(3rem,1fr))] min-w-max border border-foreground/10 text-xs"
+              onMouseLeave={() => {
+                setHoveredRow(null);
+              }}
+              onMouseUp={() => {
+                if (!dragging) return;
+                finalizeDrag(
+                  dragging.day,
+                  dragging.startIndex,
+                  dragging.endIndex,
+                );
+                setDragging(null);
+              }}
             >
-              {toDisplayTime(slot.start)} - {toDisplayTime(slot.end)}
+              {/* TOP-LEFT */}
+              <div
+                className="sticky top-0 left-0 z-50 bg-foreground/70 border-r-4 border-foreground/10 backdrop-blur-xs"
+                style={{ gridColumn: 1, gridRow: 1 }}
+              />
+
+              {/* TIME HEADER */}
+              <div
+                className="sticky text-sm text-background top-10 left-0 z-50 bg-foreground/80 flex items-center justify-center border-b-4 border-r-4 border-foreground/10 font-semibold backdrop-blur-xs"
+                style={{ gridColumn: 1, gridRow: 2 }}
+              >
+                Time
+              </div>
+
+              {/* TIME SLOTS */}
+              {timeSlots.map((slot, index) => (
+                <div
+                  key={`time-${slot.start}`}
+                  className={cn(
+                    "sticky left-0 z-20 bg-background flex items-center justify-center border-b border-r-4 border-foreground/10 text-xs",
+                    hoveredRow === index &&
+                      "bg-foreground/5 border-y-foreground/20 backdrop-blur-xs",
+                  )}
+                  style={{ gridColumn: 1, gridRow: 3 + index }}
+                  onMouseEnter={() => setHoveredRow(index)}
+                >
+                  {toDisplayTime(slot.start)} - {toDisplayTime(slot.end)}
+                </div>
+              ))}
+
+              {/* MATRIX RENDERERS */}
+              <MatrixRenderer
+                title="Block"
+                headerAction={renderBlockHeader()}
+                days={DAYS}
+                timeSlots={timeSlots.map((slot) => slot.start)}
+                matrix={blockMatrix}
+                hoveredRow={hoveredRow}
+                onHoverRow={setHoveredRow}
+                loading={blockLoading}
+                startColumn={2}
+                highlightedClassId={selectedOffering?.class_id ?? null}
+                selectedRange={dragging}
+                onCellMouseDown={handleCellMouseDown}
+                onCellMouseEnter={handleCellMouseEnter}
+                onCellClick={handleSessionClick("Block")}
+              />
+
+              <MatrixRenderer
+                title="Faculty"
+                headerAction={renderHeaderButton(
+                  "Faculty",
+                  <User className="h-3 w-3" />,
+                  selectedFaculty?.name ?? null,
+                  () => setShowFacultyDialog(true),
+                  () => clearContextParam("facultyId"),
+                )}
+                days={DAYS}
+                timeSlots={timeSlots.map((slot) => slot.start)}
+                matrix={facultyMatrix}
+                hoveredRow={hoveredRow}
+                onHoverRow={setHoveredRow}
+                loading={facultyLoading}
+                startColumn={9}
+                highlightedClassId={selectedOffering?.class_id ?? null}
+                selectedRange={selectedFacultyId ? dragging : null}
+                onCellClick={handleSessionClick("Faculty")}
+              />
+
+              <MatrixRenderer
+                title="Room"
+                headerAction={renderHeaderButton(
+                  "Room",
+                  <DoorOpen className="h-3 w-3" />,
+                  selectedRoom?.code ?? null,
+                  () => setShowRoomDialog(true),
+                  () => clearContextParam("roomId"),
+                )}
+                days={DAYS}
+                timeSlots={timeSlots.map((slot) => slot.start)}
+                matrix={roomMatrix}
+                hoveredRow={hoveredRow}
+                onHoverRow={setHoveredRow}
+                loading={roomLoading}
+                startColumn={16}
+                highlightedClassId={selectedOffering?.class_id ?? null}
+                selectedRange={selectedRoomId ? dragging : null}
+                onCellClick={handleSessionClick("Room")}
+              />
             </div>
-          ))}
-
-          {/* MATRIX RENDERERS */}
-          <MatrixRenderer
-            title="Block"
-     
-            headerAction={renderHeaderButton(
-              "Block",
-              <Blocks className="h-3 w-3" />,
-              selectedBlock?.code ?? null,
-              () => setShowBlockDialog(true),
-              () => clearContextParam("blockId"),
-            )}
-            days={DAYS}
-            timeSlots={timeSlots.map((slot) => slot.start)}
-            matrix={blockMatrix}
-            hoveredRow={hoveredRow}
-            onHoverRow={setHoveredRow}
-            loading={blockLoading}
-            startColumn={2}
-          />
-
-          <MatrixRenderer
-            title="Faculty"
-           
-            headerAction={renderHeaderButton(
-              "Faculty",
-              <User className="h-3 w-3" />,
-              selectedFaculty?.name ?? null,
-              () => setShowFacultyDialog(true),
-              () => clearContextParam("facultyId"),
-            )}
-            days={DAYS}
-            timeSlots={timeSlots.map((slot) => slot.start)}
-            matrix={facultyMatrix}
-            hoveredRow={hoveredRow}
-            onHoverRow={setHoveredRow}
-            loading={facultyLoading}
-            startColumn={9}
-          />
-
-          <MatrixRenderer
-            title="Room"
-          
-            headerAction={renderHeaderButton(
-              "Room",
-              <DoorOpen className="h-3 w-3" />,
-              selectedRoom?.code ?? null,
-              () => setShowRoomDialog(true),
-              () => clearContextParam("roomId"),
-            )}
-            days={DAYS}
-            timeSlots={timeSlots.map((slot) => slot.start)}
-            matrix={roomMatrix}
-            hoveredRow={hoveredRow}
-            onHoverRow={setHoveredRow}
-            loading={roomLoading}
-            startColumn={16}
+          </div>
+          <SchedulerRightPane
+            selectedOffering={selectedOffering}
+            sessionType={sessionType}
+            onSessionTypeChange={setSessionType}
+            selectedSessionId={activeSessionId}
+            selectedClassId={selectedClassId}
+            classRefreshKey={refreshKey}
+            overlappingSessions={overlappingSessions}
+            onSelectSession={(sessionId, classId) => {
+              setActiveSessionId(sessionId || null);
+              if (classId) setSelectedClassId(classId);
+            }}
+            onClearSelection={() => {
+              setSelectedCell(null);
+              setSelectedClassId(null);
+            }}
+            facultyOptions={faculty}
+            onSessionChanged={() => {
+              setRefreshKey((prev) => prev + 1);
+            }}
+            errorMessage={dragError || null}
           />
         </div>
+
       </div>
-      <SelectFacultyDialog
+      <FacultyPickerDialog
         open={showFacultyDialog}
         onOpenChange={setShowFacultyDialog}
+        title="Select Faculty"
+        description="Select faculty to map. You can select block and room independently."
         faculty={faculty}
         selectedFacultyId={selectedFacultyId}
         onSelectFaculty={(facultyId) => {
           setContextParam("facultyId", facultyId);
+          setDragError("");
           setShowFacultyDialog(false);
         }}
       />
@@ -444,22 +892,121 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         blocks={blocks}
         selectedBlockId={selectedBlockId}
         onSelectBlock={(blockId: string) => {
-          setContextParam("blockId", blockId);
+          setContextParams((next) => {
+            next.set("blockId", blockId);
+            next.delete("courseUtilizationId");
+          });
+          setDragError("");
+          setPendingRange(null);
+          setConfirmOpen(false);
           setShowBlockDialog(false);
         }}
       />
 
-       <SelectRoomDialog
+      <SelectCourseOfferingDialog
+        open={showOfferingDialog}
+        onOpenChange={setShowOfferingDialog}
+        academicTermId={academic_term_id}
+        offerings={offerings}
+        selectedOfferingId={selectedCourseUtilizationId}
+        onSelectOffering={(id) => {
+          setContextParam("courseUtilizationId", id);
+          setShowOfferingDialog(false);
+          setDragError("");
+          setPendingRange(null);
+          setConfirmOpen(false);
+        }}
+        onOfferingsChanged={() => setRefreshKey((prev) => prev + 1)}
+      />
+
+      <SelectRoomDialog
         open={showRoomDialog}
         onOpenChange={setShowRoomDialog}
         rooms={rooms}
         selectedRoomId={selectedRoomId}
         onSelectRoom={(roomId: string) => {
           setContextParam("roomId", roomId);
+          setDragError("");
           setShowRoomDialog(false);
         }}
       />
-    </div>
+
+      <AppDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          if (!open) {
+            setPendingRange(null);
+          }
+        }}
+        title="Confirm Schedule"
+        description="Review the details before creating this session."
+        contentClassName="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="rounded-md border bg-foreground/5 p-3 text-sm">
+            {pendingRange ? (
+              <div className="flex flex-row gap-2 items-center">
+                <Clock className="inline-block h-6 w-6 *:text-foreground/70" />
+                <p className="text-xl">
+                  {pendingRange.day}{" "}
+                  {toDisplayTime(
+                    timeSlots[
+                      Math.min(pendingRange.startIndex, pendingRange.endIndex)
+                    ]?.start ?? "",
+                  )}
+                  {" - "}
+                  {toDisplayTime(
+                    timeSlots[
+                      Math.max(pendingRange.startIndex, pendingRange.endIndex)
+                    ]?.end ?? "",
+                  )}{" "}
+                  (
+                  {numberToHourDuration(
+                    ((Math.abs(
+                      pendingRange.endIndex - pendingRange.startIndex,
+                    ) +
+                      1) *
+                      30) /
+                      60,
+                  )}{" "}
+                  {sessionType})
+                </p>
+              </div>
+            ) : null}
+
+            <div className="grid grid-cols-2 mt-2 text-sm">
+              <p>Block: {selectedBlock?.code ?? "None"}</p>
+              <p>Course: {selectedOffering?.course_code ?? "None"}</p>
+              <p>Faculty: {selectedFaculty?.name ?? "None"}</p>
+              <p>Room: {selectedRoom?.code ?? "Online / None"}</p>
+            </div>
+          </div>
+
+          {dragError ? (
+            <p className="text-xs text-red-700">{dragError}</p>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleConfirmSchedule}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Confirm"}
+            </Button>
+          </div>
+        </div>
+      </AppDialog>
+    </>
   );
 };
 

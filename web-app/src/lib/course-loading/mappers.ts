@@ -91,10 +91,17 @@ export const mapFacultyListItem = (row: {
   identity: unknown;
   degree: unknown;
   designation: unknown;
+  campus?: unknown;
+  college?: unknown;
   user_class: unknown;
 }): FacultyListItem => {
   const identity = first(row.identity) as { name?: string } | null;
   const latestDegreeTitle = getLatestDegreeTitle(row.degree);
+  const campus = first(row.campus) as { id?: string; name?: string | null } | null;
+  const college = first(row.college) as {
+    id?: string;
+    name?: string | null;
+  } | null;
 
   const classRows = asArray(row.user_class) as Array<{
     class?: unknown;
@@ -130,6 +137,10 @@ export const mapFacultyListItem = (row: {
     name: identity?.name?.trim() || "Unnamed Faculty",
     latest_degree_title: latestDegreeTitle,
     total_working_load: atl + etl,
+    campus_id: campus?.id ?? null,
+    campus_name: campus?.name ?? null,
+    college_id: college?.id ?? null,
+    college_name: college?.name ?? null,
   };
 };
 

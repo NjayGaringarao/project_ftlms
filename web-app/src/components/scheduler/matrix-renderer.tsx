@@ -15,6 +15,23 @@ type MatrixRendererProps = {
   loading?: boolean;
   emptyHint?: string | null;
   startColumn: number;
+  highlightedClassId?: string | null;
+  selectedRange?: { day: SessionDay; startIndex: number; endIndex: number } | null;
+  onCellMouseDown?: (
+    day: SessionDay,
+    rowIndex: number,
+    items: SchedulerMatrixSession[],
+  ) => void;
+  onCellMouseEnter?: (
+    day: SessionDay,
+    rowIndex: number,
+    items: SchedulerMatrixSession[],
+  ) => void;
+  onCellClick?: (
+    day: SessionDay,
+    rowIndex: number,
+    items: SchedulerMatrixSession[],
+  ) => void;
 };
 
 const MatrixRenderer = ({
@@ -28,12 +45,17 @@ const MatrixRenderer = ({
   loading = false,
   emptyHint,
   startColumn,
+  highlightedClassId,
+  selectedRange,
+  onCellMouseDown,
+  onCellMouseEnter,
+  onCellClick,
 }: MatrixRendererProps) => {
   return (
     <>
       {/* ROW 1: SECTION HEADER (STICKY TOP) */}
       <div
-        className="sticky top-0 z-40 bg-foreground/80 flex flex-col border-b border-r-4 border-foreground/10 px-2 py-1.5 text-xs font-semibold"
+        className="select-none sticky top-0 z-40 bg-foreground/80 flex flex-col border-b border-r-4 border-foreground/10 px-2 py-1.5 text-xs font-semibold"
         style={{
           gridColumn: `${startColumn} / span ${days.length}`,
           gridRow: 1,
@@ -52,7 +74,7 @@ const MatrixRenderer = ({
       {days.map((day, dayIndex) => (
         <div
           key={`header-${title}-${day}`}
-          className={cn("sticky z-30 bg-background flex items-center justify-center border-b-4 border-r border-foreground/10 px-2 py-1 text-xs font-medium text-foreground/70", dayIndex === 6 && "border-r-4")}  
+          className={cn("select-none sticky z-30 bg-background flex items-center justify-center border-b-4 border-r border-foreground/10 px-2 py-1 text-xs font-medium text-foreground/70", dayIndex === 6 && "border-r-4")}  
           style={{
             gridColumn: startColumn + dayIndex,
             gridRow: 2,
@@ -67,25 +89,41 @@ const MatrixRenderer = ({
       {timeSlots.map((slot, rowIndex) =>
         days.map((day, dayIndex) => {
           const items = matrix[day]?.[rowIndex] ?? [];
+          const isSelected =
+            selectedRange &&
+            selectedRange.day === day &&
+            rowIndex >= Math.min(selectedRange.startIndex, selectedRange.endIndex) &&
+            rowIndex <= Math.max(selectedRange.startIndex, selectedRange.endIndex);
           return (
             <div
               key={`${title}-${day}-${slot}`}
               className={cn(
-                "border-b border-r border-foreground/10 text-xs leading-tight",
+                "select-none border-b border-r border-foreground/10 text-xs leading-tight",
                 dayIndex === 6 && "border-r-4",
                 hoveredRow === rowIndex && "bg-foreground/5 border-y-foreground/20",
+                isSelected && "bg-green-100 cursor-grabbing",
               )}
               style={{
                 gridColumn: startColumn + dayIndex,
                 gridRow: 3 + rowIndex,
               }}
-              onMouseEnter={() => onHoverRow(rowIndex)}
+              onMouseEnter={() => {
+                onHoverRow(rowIndex);
+                onCellMouseEnter?.(day, rowIndex, items);
+              }}
+              onMouseDown={() => onCellMouseDown?.(day, rowIndex, items)}
+              onClick={() => onCellClick?.(day, rowIndex, items)}
             >
               <div className="flex h-full flex-col gap-1">
                 {items.map((item) => (
                   <span
                     key={item.id}
-                    className="bg-yellow-200 px-1 h-full flex items-center justify-center font-medium text-foreground"
+                    className={cn(
+                      "h-full flex items-center justify-center font-medium text-foreground",
+                      highlightedClassId && item.class_id === highlightedClassId
+                        ? "bg-blue-100"
+                        : "bg-yellow-100 cursor-pointer",
+                    )}
                     title={item.class_code}
                   >
                     {item.class_code}

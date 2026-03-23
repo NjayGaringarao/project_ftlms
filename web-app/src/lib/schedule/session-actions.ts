@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import type { SessionDay, SessionType } from "@/models";
 import { createClient } from "@/utils/supabase/server";
@@ -8,7 +9,7 @@ type MutationError = { message?: string };
 
 type ClassContext = {
   classId: string;
-  userId: string;
+  userId: string | null;
   academicTermId: string;
   blockIds: string[];
 };
@@ -86,9 +87,14 @@ type RawClassDetailsRow = {
                     program_offering?:
                       | {
                           program?:
-                            | { code?: string | null; name?: string | null }
+                            | {
+                                code?: string | null;
+                                name?: string | null;
+                                college_id?: string | null;
+                              }
                             | Array<{ code?: string | null; name?: string | null }>
                             | null;
+                          campus_id?: string | null;
                           campus?:
                             | { id?: string; name?: string | null; address?: string | null }
                             | Array<{ id?: string; name?: string | null; address?: string | null }>
@@ -96,9 +102,14 @@ type RawClassDetailsRow = {
                         }
                       | Array<{
                           program?:
-                            | { code?: string | null; name?: string | null }
+                            | {
+                                code?: string | null;
+                                name?: string | null;
+                                college_id?: string | null;
+                              }
                             | Array<{ code?: string | null; name?: string | null }>
                             | null;
+                          campus_id?: string | null;
                           campus?:
                             | { id?: string; name?: string | null; address?: string | null }
                             | Array<{ id?: string; name?: string | null; address?: string | null }>
@@ -114,9 +125,14 @@ type RawClassDetailsRow = {
                     program_offering?:
                       | {
                           program?:
-                            | { code?: string | null; name?: string | null }
+                            | {
+                                code?: string | null;
+                                name?: string | null;
+                                college_id?: string | null;
+                              }
                             | Array<{ code?: string | null; name?: string | null }>
                             | null;
+                          campus_id?: string | null;
                           campus?:
                             | { id?: string; name?: string | null; address?: string | null }
                             | Array<{ id?: string; name?: string | null; address?: string | null }>
@@ -124,9 +140,14 @@ type RawClassDetailsRow = {
                         }
                       | Array<{
                           program?:
-                            | { code?: string | null; name?: string | null }
+                            | {
+                                code?: string | null;
+                                name?: string | null;
+                                college_id?: string | null;
+                              }
                             | Array<{ code?: string | null; name?: string | null }>
                             | null;
+                          campus_id?: string | null;
                           campus?:
                             | { id?: string; name?: string | null; address?: string | null }
                             | Array<{ id?: string; name?: string | null; address?: string | null }>
@@ -250,6 +271,33 @@ export type SessionConflictWindow = {
   reason: string;
 };
 
+export type SessionSummary = {
+  session_id: string;
+  class_id: string;
+  class_code: string;
+  course_code: string | null;
+  course_title: string | null;
+  faculty_id: string | null;
+  faculty_name: string | null;
+  room_code: string | null;
+  room_name: string | null;
+  campus_id: string | null;
+  college_id: string | null;
+  day: SessionDay;
+  start_time: string;
+  end_time: string;
+  type: SessionType;
+  block_codes: string[];
+};
+
+export type SessionRoomOption = {
+  id: string;
+  code: string;
+  name: string;
+  campus_name: string | null;
+  capacity: number | null;
+};
+
 export type CreateClassSessionInput = {
   classId: string;
   type: SessionType;
@@ -257,6 +305,19 @@ export type CreateClassSessionInput = {
   day: SessionDay;
   startTime: string;
   endTime: string;
+  facultyId?: string | null;
+};
+
+export type CreateSessionFromOfferingInput = {
+  academicTermId: string;
+  blockId: string;
+  courseUtilizationId: string;
+  facultyId: string;
+  roomId: string | null;
+  day: SessionDay;
+  startTime: string;
+  endTime: string;
+  type: SessionType;
 };
 
 const first = <T>(value: T | T[] | null | undefined): T | null => {
@@ -295,6 +356,318 @@ const normalizeType = (value: SessionType | null | undefined): SessionType => {
   return value ?? "Lecture";
 };
 
+const unlinkFacultyIfNoSessions = async (
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classId: string,
+): Promise<void> => {
+  const { data: remaining, error } = await supabase
+    .from("session_class")
+    .select("session_id")
+    .eq("class_id", classId)
+    .limit(1);
+
+  if (error) {
+    console.error(
+      "lib.schedule.session-actions.unlinkFacultyIfNoSessions ::",
+      error,
+    );
+    return;
+  }
+
+  if (!remaining || remaining.length === 0) {
+    await supabase.from("user_class").delete().eq("class_id", classId);
+  }
+};
+
+export const getSessionSummaries = async (
+  sessionIds: string[],
+): Promise<SessionSummary[]> => {
+  if (!sessionIds || sessionIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("session_class")
+    .select(
+      `
+      session:session_id(id, day, start_time, end_time, type, room:room_id(code, name)),
+      class:class_id(
+        id,
+        code,
+        user_class(user:user_id(id, identity:identity(name))),
+        course_utilization(
+          course:course_id(code, title),
+          block:block_id(
+            code,
+            major_offering:major_offering_id(
+              program_offering:program_offering_id(
+                campus_id,
+                program:program_id(college_id)
+              )
+            )
+          )
+        )
+      )
+      `,
+    )
+    .in("session_id", sessionIds);
+
+  if (error) {
+    console.error("lib.schedule.session-actions.getSessionSummaries ::", error);
+    return [];
+  }
+
+  return (data ?? [])
+    .map((row) => {
+      const session = first((row as { session?: unknown }).session) as RawSessionRow | null;
+      const cls = first((row as { class?: unknown }).class) as RawClassDetailsRow | null;
+      if (!session?.id || !cls?.id) return null;
+
+      const userClass = first(cls.user_class) as { user?: unknown } | null;
+      const facultyRow = first(userClass?.user) as { id?: string; identity?: unknown } | null;
+      const facultyIdentity = first(facultyRow?.identity) as { name?: string } | null;
+
+      const utilizations = cls.course_utilization ?? [];
+      const firstUtil = utilizations[0];
+      const course = first(firstUtil?.course) as {
+        code?: string | null;
+        title?: string | null;
+      } | null;
+
+      const blockCodes = utilizations
+        .map((util) => first(util.block))
+        .filter((block): block is { code?: string | null } => Boolean(block))
+        .map((block) => block.code ?? "Unknown");
+
+      const campusIds = new Set(
+        utilizations
+          .map((util) => first(util.block))
+          .map((block) => first(block?.major_offering))
+          .map((majorOffering) => first(majorOffering?.program_offering))
+          .map((programOffering) => programOffering?.campus_id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      const campusId = campusIds.size === 1 ? Array.from(campusIds)[0] : null;
+
+      const collegeIds = new Set(
+        utilizations
+          .map((util) => first(util.block))
+          .map((block) => first(block?.major_offering))
+          .map((majorOffering) => first(majorOffering?.program_offering))
+          .map((programOffering) => first(programOffering?.program))
+          .map((program) => program?.college_id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      const collegeId = collegeIds.size === 1 ? Array.from(collegeIds)[0] : null;
+
+      const room = first(session?.room);
+
+      return {
+        session_id: session.id ?? "",
+        class_id: cls.id ?? "",
+        class_code: cls.code ?? "Unknown",
+        course_code: course?.code ?? null,
+        course_title: course?.title ?? null,
+        faculty_id: facultyRow?.id ?? null,
+        faculty_name: facultyIdentity?.name ?? null,
+        room_code: room?.code ?? null,
+        room_name: room?.name ?? null,
+        campus_id: campusId,
+        college_id: collegeId,
+        day: normalizeDay(session.day),
+        start_time: session.start_time ?? "00:00:00",
+        end_time: session.end_time ?? "00:00:00",
+        type: normalizeType(session.type),
+        block_codes: Array.from(new Set(blockCodes)),
+      };
+    })
+    .filter((row): row is SessionSummary => Boolean(row));
+};
+
+export const getSessionSummariesByClass = async (
+  classId: string,
+): Promise<SessionSummary[]> => {
+  if (!classId?.trim()) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("session_class")
+    .select(
+      `
+      session:session_id(id, day, start_time, end_time, type, room:room_id(code, name)),
+      class:class_id(
+        id,
+        code,
+        user_class(user:user_id(id, identity:identity(name))),
+        course_utilization(
+          course:course_id(code, title),
+          block:block_id(
+            code,
+            major_offering:major_offering_id(
+              program_offering:program_offering_id(
+                campus_id,
+                program:program_id(college_id)
+              )
+            )
+          )
+        )
+      )
+      `,
+    )
+    .eq("class_id", classId);
+
+  if (error) {
+    console.error(
+      "lib.schedule.session-actions.getSessionSummariesByClass ::",
+      error,
+    );
+    return [];
+  }
+
+  return (data ?? [])
+    .map((row) => {
+      const session = first((row as { session?: unknown }).session) as
+        | RawSessionRow
+        | null;
+      const cls = first((row as { class?: unknown }).class) as
+        | RawClassDetailsRow
+        | null;
+      if (!session?.id || !cls?.id) return null;
+
+      const userClass = first(cls.user_class) as { user?: unknown } | null;
+      const facultyRow = first(userClass?.user) as { id?: string; identity?: unknown } | null;
+      const facultyIdentity = first(facultyRow?.identity) as { name?: string } | null;
+
+      const utilizations = cls.course_utilization ?? [];
+      const firstUtil = utilizations[0];
+      const course = first(firstUtil?.course) as {
+        code?: string | null;
+        title?: string | null;
+      } | null;
+
+      const blockCodes = utilizations
+        .map((util) => first(util.block))
+        .filter((block): block is { code?: string | null } => Boolean(block))
+        .map((block) => block.code ?? "Unknown");
+
+      const campusIds = new Set(
+        utilizations
+          .map((util) => first(util.block))
+          .map((block) => first(block?.major_offering))
+          .map((majorOffering) => first(majorOffering?.program_offering))
+          .map((programOffering) => programOffering?.campus_id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      const campusId = campusIds.size === 1 ? Array.from(campusIds)[0] : null;
+
+      const collegeIds = new Set(
+        utilizations
+          .map((util) => first(util.block))
+          .map((block) => first(block?.major_offering))
+          .map((majorOffering) => first(majorOffering?.program_offering))
+          .map((programOffering) => first(programOffering?.program))
+          .map((program) => program?.college_id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      const collegeId = collegeIds.size === 1 ? Array.from(collegeIds)[0] : null;
+
+      const room = first(session?.room);
+
+      return {
+        session_id: session.id ?? "",
+        class_id: cls.id ?? "",
+        class_code: cls.code ?? "Unknown",
+        course_code: course?.code ?? null,
+        course_title: course?.title ?? null,
+        faculty_id: facultyRow?.id ?? null,
+        faculty_name: facultyIdentity?.name ?? null,
+        room_code: room?.code ?? null,
+        room_name: room?.name ?? null,
+        campus_id: campusId,
+        college_id: collegeId,
+        day: normalizeDay(session.day),
+        start_time: session.start_time ?? "00:00:00",
+        end_time: session.end_time ?? "00:00:00",
+        type: normalizeType(session.type),
+        block_codes: Array.from(new Set(blockCodes)),
+      };
+    })
+    .filter((row): row is SessionSummary => Boolean(row));
+};
+
+export const getRoomsForClass = async (
+  classId: string,
+): Promise<SessionRoomOption[]> => {
+  if (!classId?.trim()) return [];
+
+  const supabase = await createClient();
+  const { data: classData, error: classError } = await supabase
+    .from("class")
+    .select(
+      `
+      id,
+      course_utilization(
+        block:block_id(
+          major_offering:major_offering_id(
+            program_offering:program_offering_id(
+              campus_id
+            )
+          )
+        )
+      )
+      `,
+    )
+    .eq("id", classId)
+    .maybeSingle();
+
+  if (classError || !classData) {
+    console.error("lib.schedule.session-actions.getRoomsForClass ::", classError);
+    return [];
+  }
+
+  const utilizations = (classData as RawClassDetailsRow).course_utilization ?? [];
+  const campusIds = Array.from(
+    new Set(
+      utilizations
+        .map((util) => first(util.block))
+        .map((block) => first(block?.major_offering))
+        .map((majorOffering) => first(majorOffering?.program_offering))
+        .map((programOffering) => programOffering?.campus_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+
+  const roomsResult = campusIds.length
+    ? await supabase
+        .from("room")
+        .select("id, code, name, capacity, campus_id, campus:campus_id(id, name)")
+        .in("campus_id", campusIds)
+        .order("code", { ascending: true })
+    : await supabase
+        .from("room")
+        .select("id, code, name, capacity, campus_id, campus:campus_id(id, name)")
+        .order("code", { ascending: true });
+
+  if (roomsResult.error) {
+    console.error(
+      "lib.schedule.session-actions.getRoomsForClass.rooms ::",
+      roomsResult.error,
+    );
+    return [];
+  }
+
+  return (roomsResult.data ?? []).map((item) => {
+    const room = item as RawRoomRow;
+    const campus = first(room.campus);
+    return {
+      id: room.id,
+      code: room.code,
+      name: room.name ?? "Unnamed Room",
+      capacity: room.capacity ?? null,
+      campus_name: campus?.name ?? null,
+    };
+  });
+};
+
 const getClassContext = async (classId: string): Promise<ClassContext | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -318,7 +691,7 @@ const getClassContext = async (classId: string): Promise<ClassContext | null> =>
 
   const row = data as { user_class?: unknown; course_utilization?: unknown };
   const userClass = first(row.user_class) as { user_id?: string } | null;
-  const userId = userClass?.user_id ?? "";
+  const userId = userClass?.user_id ?? null;
 
   const utilizations = (row.course_utilization ?? []) as Array<{
     block_id?: string;
@@ -336,7 +709,7 @@ const getClassContext = async (classId: string): Promise<ClassContext | null> =>
   const block = first(firstUtil?.block);
   const academicTermId = block?.academic_term_id ?? "";
 
-  if (!userId || !academicTermId) {
+  if (!academicTermId) {
     return null;
   }
 
@@ -348,6 +721,91 @@ const getClassContext = async (classId: string): Promise<ClassContext | null> =>
   };
 };
 
+type SessionContext = {
+  sessionId: string;
+  classId: string;
+  facultyId: string;
+  academicTermId: string;
+  blockIds: string[];
+  day: SessionDay;
+  start_time: string;
+  end_time: string;
+};
+
+const getSessionContext = async (
+  sessionId: string,
+): Promise<SessionContext | null> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("session_class")
+    .select(
+      `
+      class_id,
+      session:session_id(day, start_time, end_time),
+      class:class_id(
+        user_class(user_id),
+        course_utilization(block_id, block:block_id(academic_term_id))
+      )
+      `,
+    )
+    .eq("session_id", sessionId)
+    .maybeSingle();
+
+  if (error || !data) {
+    if (error) {
+      console.error("lib.schedule.session-actions.getSessionContext ::", error);
+    }
+    return null;
+  }
+
+  const session = first((data as { session?: unknown }).session) as {
+    day?: SessionDay | null;
+    start_time?: string | null;
+    end_time?: string | null;
+  } | null;
+  const classRow = first((data as { class?: unknown }).class) as {
+    user_class?: unknown;
+    course_utilization?: unknown;
+  } | null;
+
+  const userClass = first(classRow?.user_class) as { user_id?: string } | null;
+  const facultyId = userClass?.user_id ?? "";
+  const utilizations = (classRow?.course_utilization ?? []) as Array<{
+    block_id?: string;
+    block?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
+  }>;
+  const blockIds = Array.from(
+    new Set(
+      utilizations
+        .map((item) => item.block_id)
+        .filter((item): item is string => Boolean(item)),
+    ),
+  );
+  const firstUtil = utilizations[0];
+  const block = first(firstUtil?.block);
+  const academicTermId = block?.academic_term_id ?? "";
+
+  if (
+    !session?.day ||
+    !session.start_time ||
+    !session.end_time ||
+    !academicTermId
+  ) {
+    return null;
+  }
+
+  return {
+    sessionId,
+    classId: data.class_id as string,
+    facultyId,
+    academicTermId,
+    blockIds,
+    day: session.day,
+    start_time: session.start_time,
+    end_time: session.end_time,
+  };
+};
+
 const getSessionWindowsByPredicate = async (
   academicTermId: string,
   day: SessionDay,
@@ -356,6 +814,7 @@ const getSessionWindowsByPredicate = async (
     facultyId?: string | null;
     blockIds?: string[];
     excludeClassId?: string;
+    excludeSessionId?: string;
   },
 ): Promise<Array<{ start_time: string; end_time: string }>> => {
   const supabase = await createClient();
@@ -390,6 +849,10 @@ const getSessionWindowsByPredicate = async (
     query = query.neq("class.id", options.excludeClassId);
   }
 
+  if (options.excludeSessionId) {
+    query = query.neq("session.id", options.excludeSessionId);
+  }
+
   const { data, error } = await query;
 
   if (error) {
@@ -418,9 +881,11 @@ export const getSessionConflictWindows = async (
   classId: string,
   day: SessionDay,
   roomId?: string | null,
+  facultyId?: string | null,
 ): Promise<SessionConflictWindow[]> => {
   const context = await getClassContext(classId);
   if (!context) return [];
+  const conflictFacultyId = facultyId ?? context.userId ?? null;
 
   const supabase = await createClient();
   const { data: ownSessions, error: ownSessionError } = await supabase
@@ -437,10 +902,12 @@ export const getSessionConflictWindows = async (
   }
 
   const [facultySessions, blockSessions, roomSessions] = await Promise.all([
-    getSessionWindowsByPredicate(context.academicTermId, day, {
-      facultyId: context.userId,
-      excludeClassId: classId,
-    }),
+    conflictFacultyId
+      ? getSessionWindowsByPredicate(context.academicTermId, day, {
+          facultyId: conflictFacultyId,
+          excludeClassId: classId,
+        })
+      : Promise.resolve([]),
     getSessionWindowsByPredicate(context.academicTermId, day, {
       blockIds: context.blockIds,
       excludeClassId: classId,
@@ -710,7 +1177,12 @@ export const createClassSession = async (
     return { error: "Class context not found" };
   }
 
-  const windows = await getSessionConflictWindows(input.classId, input.day, input.roomId);
+  const windows = await getSessionConflictWindows(
+    input.classId,
+    input.day,
+    input.roomId,
+    input.facultyId ?? null,
+  );
   const conflict = windows.find((window) =>
     overlaps(input.startTime, input.endTime, window.start_time, window.end_time),
   );
@@ -752,6 +1224,268 @@ export const createClassSession = async (
   return { data: { id: session.id } };
 };
 
+export const createSessionFromOffering = async (
+  input: CreateSessionFromOfferingInput,
+): Promise<{ data?: { id: string }; error?: string }> => {
+  if (!input.academicTermId?.trim()) return { error: "Academic term is required" };
+  if (!input.blockId?.trim()) return { error: "Block is required" };
+  if (!input.courseUtilizationId?.trim()) return { error: "Course offering is required" };
+  if (!input.facultyId?.trim()) return { error: "Faculty is required" };
+
+  const supabase = await createClient();
+  const { data: utilization, error } = await supabase
+    .from("course_utilization")
+    .select("id, class_id, block_id, block:block_id(academic_term_id)")
+    .eq("id", input.courseUtilizationId)
+    .maybeSingle();
+
+  if (error || !utilization) {
+    return { error: error?.message ?? "Course offering not found" };
+  }
+
+  const block = first((utilization as { block?: unknown }).block) as {
+    academic_term_id?: string | null;
+  } | null;
+
+  if (utilization.block_id !== input.blockId) {
+    return { error: "Course offering does not belong to the selected block" };
+  }
+
+  if (block?.academic_term_id !== input.academicTermId) {
+    return { error: "Course offering does not belong to the selected term" };
+  }
+
+  let classId = utilization.class_id as string | null;
+
+  if (!classId) {
+    const { data: newClass, error: classError } = await supabase
+      .from("class")
+      .insert({ code: `TMP-${randomUUID()}` })
+      .select("id")
+      .single();
+
+    if (classError || !newClass) {
+      return { error: classError?.message ?? "Unable to create class" };
+    }
+
+    const { error: linkError } = await supabase
+      .from("course_utilization")
+      .update({ class_id: newClass.id })
+      .eq("id", utilization.id);
+
+    if (linkError) {
+      return { error: linkError.message };
+    }
+
+    classId = newClass.id;
+  }
+
+  const { data: existingUserClass, error: userClassError } = await supabase
+    .from("user_class")
+    .select("user_id")
+    .eq("class_id", classId)
+    .maybeSingle();
+
+  if (userClassError) {
+    return { error: userClassError.message };
+  }
+
+  if (existingUserClass?.user_id && existingUserClass.user_id !== input.facultyId) {
+    return { error: "Class is already assigned to a different faculty" };
+  }
+
+  const sessionResult = await createClassSession({
+    classId,
+    type: input.type,
+    roomId: input.roomId,
+    day: input.day,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    facultyId: input.facultyId,
+  });
+
+  if (sessionResult.error || !sessionResult.data) {
+    return sessionResult;
+  }
+
+  if (!existingUserClass?.user_id) {
+    const { error: insertUserClassError } = await supabase
+      .from("user_class")
+      .insert({ user_id: input.facultyId, class_id: classId });
+    if (insertUserClassError) {
+      return { error: insertUserClassError.message };
+    }
+  }
+
+  return sessionResult;
+};
+
+export const updateSessionRoom = async (
+  sessionId: string,
+  roomId: string | null,
+): Promise<{ data?: boolean; error?: string }> => {
+  if (!sessionId?.trim()) return { error: "Session is required" };
+
+  const context = await getSessionContext(sessionId);
+  if (!context) return { error: "Session context not found" };
+
+  const [facultyWindows, blockWindows, roomWindows] = await Promise.all([
+    context.facultyId
+      ? getSessionWindowsByPredicate(context.academicTermId, context.day, {
+          facultyId: context.facultyId,
+          excludeSessionId: sessionId,
+        })
+      : Promise.resolve([]),
+    getSessionWindowsByPredicate(context.academicTermId, context.day, {
+      blockIds: context.blockIds,
+      excludeSessionId: sessionId,
+    }),
+    roomId
+      ? getSessionWindowsByPredicate(context.academicTermId, context.day, {
+          roomId,
+          excludeSessionId: sessionId,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const conflicts: Array<{ start_time: string; end_time: string; reason: string }> = [];
+  facultyWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Faculty has another schedule" }),
+  );
+  blockWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Block has another schedule" }),
+  );
+  roomWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Room is occupied" }),
+  );
+
+  const conflict = conflicts.find((window) =>
+    overlaps(context.start_time, context.end_time, window.start_time, window.end_time),
+  );
+
+  if (conflict) {
+    return {
+      error: `${conflict.reason} at ${conflict.start_time} - ${conflict.end_time}`,
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("session")
+    .update({ room_id: roomId })
+    .eq("id", sessionId);
+
+  if (error) {
+    return { error: mapMutationError(error) };
+  }
+
+  revalidatePath(`/scheduler/${context.academicTermId}/mapper`);
+  return { data: true };
+};
+
+export const replaceClassFaculty = async (
+  classId: string,
+  facultyId: string,
+): Promise<{ data?: boolean; error?: string }> => {
+  if (!classId?.trim()) return { error: "Class is required" };
+  if (!facultyId?.trim()) return { error: "Faculty is required" };
+
+  const supabase = await createClient();
+  const { data: classSessions, error: sessionError } = await supabase
+    .from("session_class")
+    .select("session:session_id(day, start_time, end_time)")
+    .eq("class_id", classId);
+
+  if (sessionError) {
+    return { error: sessionError.message };
+  }
+
+  if (!classSessions || classSessions.length === 0) {
+    return { error: "Assign faculty after scheduling sessions." };
+  }
+
+  const { data: classRow, error: classContextError } = await supabase
+    .from("class")
+    .select(
+      `
+      id,
+      course_utilization(block_id, block:block_id(academic_term_id))
+      `,
+    )
+    .eq("id", classId)
+    .maybeSingle();
+
+  if (classContextError || !classRow) {
+    return { error: classContextError?.message ?? "Class context not found" };
+  }
+
+  const utilizations = (classRow as { course_utilization?: unknown })
+    .course_utilization as Array<{
+    block_id?: string;
+    block?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
+  }> | null;
+
+  const blockIds = Array.from(
+    new Set(
+      (utilizations ?? [])
+        .map((item) => item.block_id)
+        .filter((item): item is string => Boolean(item)),
+    ),
+  );
+  const firstUtil = (utilizations ?? [])[0];
+  const block = first(firstUtil?.block);
+  const academicTermId = block?.academic_term_id ?? "";
+
+  if (!academicTermId) {
+    return { error: "Academic term not found for class" };
+  }
+
+  const sessions = (classSessions ?? [])
+    .map((row) => first((row as { session?: unknown }).session))
+    .filter((row): row is { day?: SessionDay; start_time?: string; end_time?: string } =>
+      Boolean(row?.day && row?.start_time && row?.end_time),
+    );
+
+  for (const session of sessions) {
+    const windows = await getSessionWindowsByPredicate(
+      academicTermId,
+      normalizeDay(session.day),
+      {
+        facultyId,
+        excludeClassId: classId,
+      },
+    );
+
+    const conflict = windows.find((window) =>
+      overlaps(
+        session.start_time ?? "",
+        session.end_time ?? "",
+        window.start_time,
+        window.end_time,
+      ),
+    );
+
+    if (conflict) {
+      return {
+        error: `Faculty has a conflict at ${conflict.start_time} - ${conflict.end_time}`,
+      };
+    }
+  }
+
+  await supabase.from("user_class").delete().eq("class_id", classId);
+  const { error: userClassError } = await supabase.from("user_class").insert({
+    class_id: classId,
+    user_id: facultyId,
+  });
+
+  if (userClassError) {
+    return { error: userClassError.message };
+  }
+
+  revalidatePath(`/scheduler/${academicTermId}/mapper`);
+  return { data: true };
+};
+
 export const deleteClassSession = async (
   sessionId: string,
 ): Promise<{ data?: boolean; error?: string }> => {
@@ -782,6 +1516,8 @@ export const deleteClassSession = async (
   if (error) {
     return { error: mapMutationError(error) };
   }
+
+  await unlinkFacultyIfNoSessions(supabase, existing.class_id as string);
 
   if (academicTermId) {
     revalidatePath(`/scheduler/${academicTermId}/mapper`);
