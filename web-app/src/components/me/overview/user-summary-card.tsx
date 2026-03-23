@@ -8,18 +8,10 @@ import PersonalInformation from "@/components/user/personal-information";
 import EducationInformation from "@/components/user/education-information";
 import EmploymentInformation from "@/components/user/employment-information";
 import AccountInformation from "@/components/user/account-information";
+import { UserOverviewReadModel } from "@/lib/user-overview/types";
 
 type UserSummaryCardProps = {
-  userId: string;
-  email: string | null;
-  emailConfirmedAt?: string | null;
-  accountCreatedAt?: string | null;
-  lastSignInAt?: string | null;
-  identity: Identity | null;
-  employmentStatus: EmploymentStatus | string | null;
-  academicRank: AcademicRank | null;
-  accountType: "Admin" | "User";
-  degrees: Degree[];
+  userOverview: UserOverviewReadModel;
 };
 
 const toInitials = (name: string, email?: string) => {
@@ -35,16 +27,20 @@ const toInitials = (name: string, email?: string) => {
 };
 
 const UserSummaryCard = ({
-  userId,
-  email,
-  emailConfirmedAt,
-  accountCreatedAt,
-  lastSignInAt,
-  identity,
-  employmentStatus,
-  academicRank,
-  accountType,
-  degrees,
+  userOverview: {
+    id,
+    email,
+    emailConfirmedAt,
+    accountCreatedAt,
+    lastSignInAt,
+    identity,
+    employmentStatus,
+    rank: academicRank,
+    accountType,
+    degrees,
+    campus,
+    college,
+  },
 }: UserSummaryCardProps) => {
   const displayName = identity?.name?.trim() || "No name set";
   const initials = toInitials(identity?.name ?? "", email ?? undefined);
@@ -74,9 +70,11 @@ const UserSummaryCard = ({
         <EmploymentInformation
           employmentStatus={employmentStatus}
           academicRank={academicRank}
+          campus={campus}
+          college={college}
         />
         <AccountInformation
-          userId={userId}
+          userId={id}
           email={email}
           emailStatus={emailStatus}
           accountType={accountType}

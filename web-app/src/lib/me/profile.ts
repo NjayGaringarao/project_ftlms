@@ -6,6 +6,8 @@ import { Identity } from "@/models/identity";
 import { ExtendedDesignation } from "@/models/designation";
 import { Degree } from "@/models/degree";
 import { AcademicRank } from "@/models/academic_rank";
+import { Campus } from "@/models/campus";
+import { College } from "@/models/college";
 import { User } from "@/models/user";
 import { ExtendedAcademicTerm } from "@/models/academic_term";
 
@@ -82,6 +84,8 @@ export type ProfessionalInfo = {
   user: User | null;
   rank: AcademicRank | null;
   designations: ProfessionalDesignation[];
+  campus: Campus | null;
+  college: College | null;
 };
 
 export type ProfessionalDesignation = Omit<ExtendedDesignation, "user">;
@@ -128,7 +132,7 @@ export const getProfessionalInfoByUserId = async (
   const { data: userData, error: userError } = await supabase
     .from("user")
     .select(
-      "id, academic_rank_id, employment_status, academic_rank ( id, code, title, description )",
+      "id, academic_rank_id, employment_status, campus_id, college_id, academic_rank ( id, code, title, description ), campus:campus_id ( id, code, name, address ), college:college_id ( id, code, name, description )",
     )
     .eq("id", userId)
     .single();
@@ -145,6 +149,8 @@ export const getProfessionalInfoByUserId = async (
         id: userData.id,
         academic_rank_id: userData.academic_rank_id,
         employment_status: userData.employment_status,
+        campus_id: userData.campus_id ?? null,
+        college_id: userData.college_id ?? null,
       }
     : null;
 
@@ -152,6 +158,18 @@ export const getProfessionalInfoByUserId = async (
     ? Array.isArray(userData.academic_rank)
       ? (userData.academic_rank[0] as AcademicRank)
       : (userData.academic_rank as AcademicRank)
+    : null;
+
+  const campus: Campus | null = userData?.campus
+    ? Array.isArray(userData.campus)
+      ? (userData.campus[0] as Campus)
+      : (userData.campus as Campus)
+    : null;
+
+  const college: College | null = userData?.college
+    ? Array.isArray(userData.college)
+      ? (userData.college[0] as College)
+      : (userData.college as College)
     : null;
 
   const { data: designationData, error: designationError } = await supabase
@@ -259,6 +277,8 @@ export const getProfessionalInfoByUserId = async (
     user,
     rank,
     designations,
+    campus,
+    college,
   };
 };
 
@@ -266,7 +286,7 @@ export async function getProfessionalInfoForCurrentUser(): Promise<ProfessionalI
   const user = await getCurrentUser();
 
   if (!user) {
-    return { user: null, rank: null, designations: [] };
+    return { user: null, rank: null, designations: [], campus: null, college: null };
   }
 
   return getProfessionalInfoByUserId(user.id);
@@ -309,6 +329,11 @@ type RawCurrentTermRow = {
         start_year: number;
         end_year: number;
       }>;
+};
+
+const first = <T>(value: T | T[] | null | undefined): T | null => {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
 };
 
 export const getCurrentTermTeachingLoadByUserId = async (
@@ -393,17 +418,24 @@ export const getCurrentTermTeachingLoadByUserId = async (
     };
   }
 
-  const classes: CurrentTermClassLoad[] = (classData ?? [])
-    .map((row) => row.class)
-    .filter(Boolean)
-    .map((cls) => {
+  const classRows = (classData ?? []).flatMap((row) => {
+    const cls = row.class;
+    if (!cls) return [];
+    return Array.isArray(cls) ? cls : [cls];
+  });
+
+  const classes: CurrentTermClassLoad[] = classRows.map((cls) => {
       const utilizations = cls.course_utilization ?? [];
       const firstUtil = utilizations[0];
-      const course = firstUtil?.course;
+      const course = first(firstUtil?.course);
       const lectureHour = Number(course?.lecture_unit ?? 0);
       const laboratoryHour = Number(course?.laboratory_unit ?? 0);
 
-      const blocks = utilizations.map((item) => item.block).filter(Boolean);
+      const blocks = utilizations.flatMap((item) => {
+        const block = item.block;
+        if (!block) return [];
+        return Array.isArray(block) ? block : [block];
+      });
 
       const yearSection = blocks
         .map((block) => {
@@ -419,8 +451,12 @@ export const getCurrentTermTeachingLoadByUserId = async (
         new Set(
           blocks
             .map(
-              (block) =>
-                block?.major_offering?.program_offering?.campus?.name ?? null,
+              (block) => {
+                const majorOffering = first(block?.major_offering);
+                const programOffering = first(majorOffering?.program_offering);
+                const campus = first(programOffering?.campus);
+                return campus?.name ?? null;
+              },
             )
             .filter((value): value is string => Boolean(value)),
         ),

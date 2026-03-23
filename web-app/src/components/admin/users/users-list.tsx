@@ -101,7 +101,7 @@ export const UsersList = ({ users }: UsersListProps) => {
             key={user.id}
             onClick={() => router.push(`/users/${user.id}`)}
             title={name}
-            subtitle={[`${user.email ?? "Email not available"} | ${status}`]}
+            subtitle={[`${user.campus?.name ?? "No Home"} Campus | ${user.college?.code ?? "No Default College"}`]}
             isSelected={isSelected}
             icon={<User className="h-14 w-14 text-background" />}
           />

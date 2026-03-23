@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle, Lock, Briefcase, Edit } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Lock,
+  Briefcase,
+  Edit,
+  ChevronDown,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { UserDetail } from "@/lib/users/types";
@@ -20,15 +27,23 @@ import { ExtendedDesignation } from "@/models/designation";
 import DesignationSection, {
   NewDesignationInput,
 } from "@/components/user/designation-section";
+import CampusPickerDialog from "@/components/shared/campus-picker-dialog";
+import CollegePickerDialog from "@/components/shared/college-picker-dialog";
+import type { CampusListItem } from "@/lib/admin/campuses";
+import type { CollegeListItem } from "@/lib/admin/colleges";
 
 type UserEditProps = {
   user: UserDetail;
   ranks?: Array<{ id: string; title: string }>;
+  campuses: CampusListItem[];
+  colleges: CollegeListItem[];
 };
 
 type ProfessionalFormState = {
   academicRankId: string | null;
   employmentStatus: string;
+  campusId: string | null;
+  collegeId: string | null;
   designations: Array<Omit<ExtendedDesignation, "user">>;
 };
 
@@ -51,10 +66,17 @@ const userToProfessionalFormState = (
 ): ProfessionalFormState => ({
   academicRankId: user.rank?.id ?? null,
   employmentStatus: user.employment_status ?? "",
+  campusId: user.campus_id ?? null,
+  collegeId: user.college_id ?? null,
   designations: user.designations ?? [],
 });
 
-export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
+export const UserEdit = ({
+  user,
+  ranks = [],
+  campuses,
+  colleges,
+}: UserEditProps) => {
   const router = useRouter();
 
   const [professionalData, setProfessionalData] =
@@ -68,6 +90,10 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
   const [professionalSuccess, setProfessionalSuccess] = useState(false);
 
   const [isSecuritySaving, setIsSecuritySaving] = useState(false);
+  const [campusDialogOpen, setCampusDialogOpen] = useState(false);
+  const [collegeDialogOpen, setCollegeDialogOpen] = useState(false);
+  const [campusQuery, setCampusQuery] = useState("");
+  const [collegeQuery, setCollegeQuery] = useState("");
 
   const hasProfessionalChanges = useMemo(
     () =>
@@ -146,10 +172,22 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
     setProfessionalSuccess(false);
 
     try {
+      if (!professionalData.campusId?.trim()) {
+        setProfessionalError("Campus is required");
+        return;
+      }
+
+      if (!professionalData.collegeId?.trim()) {
+        setProfessionalError("College is required");
+        return;
+      }
+
       const { error } = await updateUserProfessional({
         user_id: user.id,
         academic_rank_id: professionalData.academicRankId,
         employment_status: professionalData.employmentStatus.trim() || null,
+        campus_id: professionalData.campusId.trim(),
+        college_id: professionalData.collegeId.trim(),
         designations: professionalData.designations,
       });
 
@@ -285,6 +323,46 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
                 <option value="Temporary">Temporary</option>
               </select>
             </div>
+
+            <div>
+              <Label className="text-xs">Campus *</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-1 w-full justify-between"
+                onClick={() => setCampusDialogOpen(true)}
+                disabled={isProfessionalSaving}
+              >
+                <span className="truncate">
+                  {professionalData.campusId
+                    ? campuses.find((c) => c.id === professionalData.campusId)
+                        ?.name ?? "Select campus..."
+                    : "Select campus..."}
+                </span>
+                <ChevronDown className="h-4 w-4 text-foreground/60" />
+              </Button>
+            </div>
+
+            <div>
+              <Label className="text-xs">College *</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-1 w-full justify-between"
+                onClick={() => setCollegeDialogOpen(true)}
+                disabled={isProfessionalSaving}
+              >
+                <span className="truncate">
+                  {professionalData.collegeId
+                    ? colleges.find((c) => c.id === professionalData.collegeId)
+                        ?.name ?? "Select college..."
+                    : "Select college..."}
+                </span>
+                <ChevronDown className="h-4 w-4 text-foreground/60" />
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
@@ -356,6 +434,34 @@ export const UserEdit = ({ user, ranks = [] }: UserEditProps) => {
           </div>
         </div>
       </div>
+
+      <CampusPickerDialog
+        open={campusDialogOpen}
+        onOpenChange={setCampusDialogOpen}
+        campuses={campuses}
+        selectedCampusId={professionalData.campusId ?? ""}
+        query={campusQuery}
+        onQueryChange={setCampusQuery}
+        onSelect={(nextCampusId) => {
+          handleProfessionalChange("campusId", nextCampusId);
+          setCampusDialogOpen(false);
+        }}
+        emptyState="No campuses found."
+      />
+
+      <CollegePickerDialog
+        open={collegeDialogOpen}
+        onOpenChange={setCollegeDialogOpen}
+        colleges={colleges}
+        selectedCollegeId={professionalData.collegeId ?? ""}
+        query={collegeQuery}
+        onQueryChange={setCollegeQuery}
+        onSelect={(nextCollegeId) => {
+          handleProfessionalChange("collegeId", nextCollegeId);
+          setCollegeDialogOpen(false);
+        }}
+        emptyState="No colleges found."
+      />
     </AdminPanel>
   );
 };

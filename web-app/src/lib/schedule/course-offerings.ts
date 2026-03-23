@@ -24,7 +24,7 @@ export type SchedulerCourseOfferingItem = {
 
 type RawUtilizationRow = {
   id: string;
-  block_id: string;
+  block_id?: string;
   course_id: string;
   class_id: string | null;
   block?: {
@@ -41,6 +41,7 @@ type RawUtilizationRow = {
     id?: string | null;
     code?: string | null;
     student_count?: number | null;
+    academic_term_id?: string | null;
     major_offering?: {
       program_offering?: { campus_id?: string | null } | Array<{ campus_id?: string | null }>;
     } | Array<{
@@ -177,8 +178,13 @@ export const getBlockCourseOfferingsForScheduler = async (
     const majorOffering = first(block?.major_offering);
     const programOffering = first(majorOffering?.program_offering);
     const cls = first(raw.class);
-    const userClass = (cls?.user_class ?? [])[0];
-    const faculty = first(userClass?.user);
+    const userClass = first(cls?.user_class) as { user?: unknown } | null;
+    const facultyRow = first(userClass?.user) as
+      | { id?: string; identity?: unknown }
+      | null;
+    const facultyIdentity = first(facultyRow?.identity) as {
+      name?: string | null;
+    } | null;
 
     const lectureTarget = Number(course?.lecture_unit ?? 0);
     const laboratoryTarget = Number(course?.laboratory_unit ?? 0) * 3;
@@ -207,7 +213,7 @@ export const getBlockCourseOfferingsForScheduler = async (
 
     return {
       id: raw.id,
-      block_id: raw.block_id,
+      block_id: raw.block_id ?? "",
       block_code: block?.code ?? "Unknown",
       student_count: Number(block?.student_count ?? 0),
       campus_id: programOffering?.campus_id ?? null,
@@ -217,8 +223,8 @@ export const getBlockCourseOfferingsForScheduler = async (
       course_title: course?.title ?? "Untitled Course",
       class_id: raw.class_id ?? null,
       class_code: cls?.code ?? null,
-      faculty_id: faculty?.id ?? null,
-      faculty_name: first(faculty?.identity)?.name ?? null,
+      faculty_id: facultyRow?.id ?? null,
+      faculty_name: facultyIdentity?.name ?? null,
       unscheduled_lecture_hours: Math.max(lectureTarget - lectureScheduled, 0),
       unscheduled_laboratory_hours: Math.max(
         laboratoryTarget - laboratoryScheduled,

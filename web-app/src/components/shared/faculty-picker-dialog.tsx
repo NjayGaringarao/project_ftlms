@@ -197,13 +197,7 @@ const FacultyPickerDialog = ({
               key={item.id}
               title={item.name}
               subtitle={[
-                ...(renderSubtitle
-                  ? renderSubtitle(item)
-                  : [
-                      item.latest_degree_title
-                        ? item.latest_degree_title
-                        : "No degree on file",
-                    ]),
+                `${item.campus_name ?? "No Home"} Campus | ${item.college_name ?? "No Home College"}`
               ]}
               isSelected={item.id === selectedId}
               onClick={() => onSelect(item.id)}
@@ -216,18 +210,7 @@ const FacultyPickerDialog = ({
                     <span className="rounded-md bg-foreground/10 px-1.5 py-1 text-xs">
                       TWL: {toFixed(item.total_working_load)}
                     </span>
-                    <div className="flex flex-wrap gap-1 text-[10px] text-foreground/60">
-                      {item.campus_name ? (
-                        <span className="rounded-full border border-foreground/10 px-1.5 py-0.5">
-                          {item.campus_name}
-                        </span>
-                      ) : null}
-                      {item.college_name ? (
-                        <span className="rounded-full border border-foreground/10 px-1.5 py-0.5">
-                          {item.college_name}
-                        </span>
-                      ) : null}
-                    </div>
+                   
                   </div>
                 )
               }

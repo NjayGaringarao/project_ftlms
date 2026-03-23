@@ -36,166 +36,82 @@ type RawSessionRow = {
     | null;
 };
 
+type RawIdentityRow = { name?: string | null };
+type RawRankRow = { code?: string | null; title?: string | null };
+type RawDegreeRow = {
+  title?: string | null;
+  academic_level?: string | null;
+  year_graduated?: number | null;
+};
+
+type RawProgramRow = {
+  code?: string | null;
+  name?: string | null;
+  college_id?: string | null;
+};
+
+type RawCampusRow = {
+  id?: string | null;
+  name?: string | null;
+  address?: string | null;
+};
+
+type RawProgramOfferingRow = {
+  program?: RawProgramRow | RawProgramRow[] | null;
+  campus_id?: string | null;
+  campus?: RawCampusRow | RawCampusRow[] | null;
+};
+
+type RawMajorRow = { code?: string | null; name?: string | null };
+
+type RawMajorOfferingRow = {
+  major?: RawMajorRow | RawMajorRow[] | null;
+  program_offering?: RawProgramOfferingRow | RawProgramOfferingRow[] | null;
+};
+
+type RawBlockRow = {
+  id?: string;
+  code?: string | null;
+  year_level?: number | null;
+  section?: string | null;
+  student_count?: number | null;
+  academic_term_id?: string | null;
+  major_offering?: RawMajorOfferingRow | RawMajorOfferingRow[] | null;
+};
+
+type RawCourseRow = {
+  id?: string;
+  code?: string | null;
+  title?: string | null;
+  lecture_unit?: number | null;
+  laboratory_unit?: number | null;
+};
+
 type RawClassDetailsRow = {
   id: string;
-  code: string;
+  code?: string | null;
   user_class?:
     | Array<{
-        user?: {
-          id?: string;
-          identity?: { name?: string | null } | Array<{ name?: string | null }> | null;
-          rank?: { code?: string | null; title?: string | null } | Array<{ code?: string | null; title?: string | null }> | null;
-          degree?: Array<{ title?: string | null; academic_level?: string | null; year_graduated?: number | null }> | null;
-        } | Array<{
-          id?: string;
-          identity?: { name?: string | null } | Array<{ name?: string | null }> | null;
-          rank?: { code?: string | null; title?: string | null } | Array<{ code?: string | null; title?: string | null }> | null;
-          degree?: Array<{ title?: string | null; academic_level?: string | null; year_graduated?: number | null }> | null;
-        }> | null;
+        user?:
+          | {
+              id?: string;
+              identity?: RawIdentityRow | RawIdentityRow[] | null;
+              rank?: RawRankRow | RawRankRow[] | null;
+              degree?: RawDegreeRow[] | null;
+            }
+          | Array<{
+              id?: string;
+              identity?: RawIdentityRow | RawIdentityRow[] | null;
+              rank?: RawRankRow | RawRankRow[] | null;
+              degree?: RawDegreeRow[] | null;
+            }>
+          | null;
       }>
     | null;
   course_utilization?:
     | Array<{
-        course?:
-          | {
-              id?: string;
-              code?: string | null;
-              title?: string | null;
-              lecture_unit?: number | null;
-              laboratory_unit?: number | null;
-            }
-          | Array<{
-              id?: string;
-              code?: string | null;
-              title?: string | null;
-              lecture_unit?: number | null;
-              laboratory_unit?: number | null;
-            }>
-          | null;
-        block?:
-          | {
-              id?: string;
-              code?: string | null;
-              year_level?: number | null;
-              section?: string | null;
-              student_count?: number | null;
-              major_offering?:
-                | {
-                    major?:
-                      | { code?: string | null; name?: string | null }
-                      | Array<{ code?: string | null; name?: string | null }>
-                      | null;
-                    program_offering?:
-                      | {
-                          program?:
-                            | {
-                                code?: string | null;
-                                name?: string | null;
-                                college_id?: string | null;
-                              }
-                            | Array<{ code?: string | null; name?: string | null }>
-                            | null;
-                          campus_id?: string | null;
-                          campus?:
-                            | { id?: string; name?: string | null; address?: string | null }
-                            | Array<{ id?: string; name?: string | null; address?: string | null }>
-                            | null;
-                        }
-                      | Array<{
-                          program?:
-                            | {
-                                code?: string | null;
-                                name?: string | null;
-                                college_id?: string | null;
-                              }
-                            | Array<{ code?: string | null; name?: string | null }>
-                            | null;
-                          campus_id?: string | null;
-                          campus?:
-                            | { id?: string; name?: string | null; address?: string | null }
-                            | Array<{ id?: string; name?: string | null; address?: string | null }>
-                            | null;
-                        }>
-                      | null;
-                  }
-                | Array<{
-                    major?:
-                      | { code?: string | null; name?: string | null }
-                      | Array<{ code?: string | null; name?: string | null }>
-                      | null;
-                    program_offering?:
-                      | {
-                          program?:
-                            | {
-                                code?: string | null;
-                                name?: string | null;
-                                college_id?: string | null;
-                              }
-                            | Array<{ code?: string | null; name?: string | null }>
-                            | null;
-                          campus_id?: string | null;
-                          campus?:
-                            | { id?: string; name?: string | null; address?: string | null }
-                            | Array<{ id?: string; name?: string | null; address?: string | null }>
-                            | null;
-                        }
-                      | Array<{
-                          program?:
-                            | {
-                                code?: string | null;
-                                name?: string | null;
-                                college_id?: string | null;
-                              }
-                            | Array<{ code?: string | null; name?: string | null }>
-                            | null;
-                          campus_id?: string | null;
-                          campus?:
-                            | { id?: string; name?: string | null; address?: string | null }
-                            | Array<{ id?: string; name?: string | null; address?: string | null }>
-                            | null;
-                        }>
-                      | null;
-                  }>
-                | null;
-            }
-          | Array<{
-              id?: string;
-              code?: string | null;
-              year_level?: number | null;
-              section?: string | null;
-              student_count?: number | null;
-              major_offering?:
-                | {
-                    major?:
-                      | { code?: string | null; name?: string | null }
-                      | Array<{ code?: string | null; name?: string | null }>
-                      | null;
-                    program_offering?:
-                      | {
-                          program?:
-                            | { code?: string | null; name?: string | null }
-                            | Array<{ code?: string | null; name?: string | null }>
-                            | null;
-                          campus?:
-                            | { id?: string; name?: string | null; address?: string | null }
-                            | Array<{ id?: string; name?: string | null; address?: string | null }>
-                            | null;
-                        }
-                      | Array<{
-                          program?:
-                            | { code?: string | null; name?: string | null }
-                            | Array<{ code?: string | null; name?: string | null }>
-                            | null;
-                          campus?:
-                            | { id?: string; name?: string | null; address?: string | null }
-                            | Array<{ id?: string; name?: string | null; address?: string | null }>
-                            | null;
-                        }>
-                      | null;
-                  }
-                | null;
-            }>
-          | null;
+        course?: RawCourseRow | RawCourseRow[] | null;
+        block?: RawBlockRow | RawBlockRow[] | null;
       }>
     | null;
 };
@@ -1153,7 +1069,7 @@ export const getClassSchedulerDetails = async (
   return {
     data: {
       class_id: classRow.id,
-      class_code: classRow.code,
+      class_code: classRow.code ?? "Unknown",
       academic_term_id: academicTermId,
       faculty_id: facultyRow?.id ?? "",
       faculty_name: facultyIdentity?.name ?? "Unknown Faculty",
@@ -1290,6 +1206,10 @@ export const createSessionFromOffering = async (
     }
 
     classId = newClass.id;
+  }
+
+  if (!classId) {
+    return { error: "Unable to resolve class for this offering" };
   }
 
   const { data: existingUserClass, error: userClassError } = await supabase
@@ -1453,9 +1373,15 @@ export const replaceClassFaculty = async (
   }
 
   const sessions = (classSessions ?? [])
-    .map((row) => first((row as { session?: unknown }).session))
-    .filter((row): row is { day?: SessionDay; start_time?: string; end_time?: string } =>
-      Boolean(row?.day && row?.start_time && row?.end_time),
+    .map(
+      (row) =>
+        first((row as { session?: unknown }).session) as
+          | { day?: SessionDay | null; start_time?: string | null; end_time?: string | null }
+          | null,
+    )
+    .filter(
+      (row): row is { day: SessionDay; start_time: string; end_time: string } =>
+        Boolean(row?.day && row?.start_time && row?.end_time),
     );
 
   for (const session of sessions) {
@@ -1520,7 +1446,9 @@ export const deleteClassSession = async (
     course_utilization?: unknown;
   } | null;
   const firstUtil = first(
-    (classRow?.course_utilization ?? []) as Array<{ block?: unknown }>,
+    (classRow?.course_utilization ?? []) as Array<{
+      block?: RawBlockRow | RawBlockRow[] | null;
+    }>,
   );
   const academicTermId = first(firstUtil?.block)?.academic_term_id ?? null;
 

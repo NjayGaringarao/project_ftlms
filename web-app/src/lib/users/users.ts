@@ -1,27 +1,33 @@
 "use server";
 
 import { AcademicRank } from "@/models/academic_rank";
-import { getUserOverviewById, getUserOverviewList } from "@/lib/user-overview";
+import { getUserDataById, getUserDataList } from "@/lib/user-data";
 import { createClient } from "@/utils/supabase/server";
-import { UserOverviewReadModel } from "@/lib/user-overview";
+import { UserDataReadModel } from "@/lib/user-data";
 import { UserDetail, UsersListItem } from "./types";
 
 const mapOverviewToListItem = (
-  overview: Awaited<ReturnType<typeof getUserOverviewList>>[number],
+  overview: Awaited<ReturnType<typeof getUserDataList>>[number],
 ): UsersListItem => ({
   id: overview.id,
   email: overview.email,
   employment_status: overview.employmentStatus,
   identity: overview.identity,
+  campus: overview.campus,
+  college: overview.college,
 });
 
 const mapOverviewToUserDetail = (
-  overview: UserOverviewReadModel,
+  overview: UserDataReadModel,
 ): UserDetail => ({
   id: overview.id,
   email: overview.email,
   employment_status: overview.employmentStatus,
   identity: overview.identity,
+  campus_id: overview.campus_id,
+  college_id: overview.college_id,
+  campus: overview.campus,
+  college: overview.college,
   rank: overview.rank,
   designations: overview.designations,
   degrees: overview.degrees,
@@ -37,14 +43,19 @@ const mapOverviewToUserDetail = (
 });
 
 export const getUsersList = async (): Promise<UsersListItem[]> => {
-  const list = await getUserOverviewList();
+  const list = await getUserDataList();
   return list.map(mapOverviewToListItem);
 };
 
 export const getUserById = async (
   userId: string,
 ): Promise<UserDetail | null> => {
-  const overview = await getUserOverviewById(userId);
+  const overview = await getUserDataById(userId, {
+    includeDegrees: true,
+    includeDesignations: true,
+    includeClasses: true,
+    includeLoads: true,
+  });
   if (!overview) return null;
   return mapOverviewToUserDetail(overview);
 };

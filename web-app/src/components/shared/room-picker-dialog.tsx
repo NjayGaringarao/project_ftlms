@@ -23,6 +23,7 @@ type RoomPickerDialogProps = {
   onlineLabel?: string;
   renderSubtitle?: (item: ExtendedRoom) => string[];
   renderAnnotation?: (item: ExtendedRoom) => ReactNode;
+  defaultCampusId?: string | null;
 };
 
 const RoomPickerDialog = ({
@@ -38,6 +39,7 @@ const RoomPickerDialog = ({
   onlineLabel = "Online / No Room",
   renderSubtitle,
   renderAnnotation,
+  defaultCampusId,
 }: RoomPickerDialogProps) => {
   const [roomQuery, setRoomQuery] = useState("");
   const [roomCampusFilter, setRoomCampusFilter] = useState("");
@@ -79,7 +81,7 @@ const RoomPickerDialog = ({
   useEffect(() => {
     if (!open) return;
     setRoomQuery("");
-    setRoomCampusFilter("");
+    setRoomCampusFilter(defaultCampusId ?? "");
   }, [open]);
 
   useEffect(() => {
@@ -144,7 +146,7 @@ const RoomPickerDialog = ({
           roomCampusFilter ? () => setRoomCampusFilter("") : undefined,
         )}
 
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+        <div className="flex-1 grid grid-cols-2 gap-2 overflow-y-auto">
           {allowOnline ? (
             <ListItemSmall
               key="online"

@@ -41,6 +41,8 @@ const FacultyOverviewPanel = ({
       <EmploymentInformation
         employmentStatus={overview.employmentStatus}
         academicRank={overview.rank}
+        campus={overview.campus}
+        college={overview.college}
       />
     </div>
   );

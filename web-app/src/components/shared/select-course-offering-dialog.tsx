@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUp, BookOpen, GitMerge, Link2Off, Merge, Split } from "lucide-react";
+import {
+  ArrowUp,
+  BookOpen,
+  GitMerge,
+  Link2Off,
+  Merge,
+  Split,
+} from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
@@ -29,6 +36,11 @@ type SelectCourseOfferingDialogProps = {
   onOfferingsChanged: () => void;
 };
 
+type SortOrder = "desc" | "asc";
+
+const getUnscheduledTotal = (item: SchedulerCourseOfferingItem) =>
+  item.unscheduled_lecture_hours + item.unscheduled_laboratory_hours;
+
 const SelectCourseOfferingDialog = ({
   academicTermId,
   open,
@@ -39,6 +51,7 @@ const SelectCourseOfferingDialog = ({
   onOfferingsChanged,
 }: SelectCourseOfferingDialogProps) => {
   const [query, setQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [mergeOffering, setMergeOffering] =
     useState<SchedulerCourseOfferingItem | null>(null);
@@ -71,9 +84,18 @@ const SelectCourseOfferingDialog = ({
     );
   }, [offerings, query]);
 
+  const sortedOfferings = useMemo(() => {
+    const sorted = [...filtered].sort((a, b) => {
+      const diff = getUnscheduledTotal(a) - getUnscheduledTotal(b);
+      return sortOrder === "asc" ? diff : -diff;
+    });
+    return sorted;
+  }, [filtered, sortOrder]);
+
   useEffect(() => {
     if (!open) return;
     setQuery("");
+    setSortOrder("desc");
   }, [open]);
 
   useEffect(() => {
@@ -174,7 +196,12 @@ const SelectCourseOfferingDialog = ({
       0,
     );
     return Math.max(unmergeCurrentClassTotal - selected, 0);
-  }, [mergeOffering, selectedUnmergeRows, unmergeMode, unmergeCurrentClassTotal]);
+  }, [
+    mergeOffering,
+    selectedUnmergeRows,
+    unmergeMode,
+    unmergeCurrentClassTotal,
+  ]);
 
   const openMergeDialog = (offering: SchedulerCourseOfferingItem) => {
     setMergeOffering(offering);
@@ -308,81 +335,93 @@ const SelectCourseOfferingDialog = ({
   };
 
   return (
-    <AppDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Select Course Offering"
-      description="Choose a course offering to schedule."
-      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
-    >
-      <div className="flex h-full flex-col gap-3 overflow-hidden">
-        <Input
-          placeholder="Search course code"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-          {filtered.length === 0 && (
-            <p className="p-4 text-center text-sm text-foreground/70">
-              No course offerings found.
-            </p>
-          )}
-
-          {filtered.map((item) => (
-            <ListItemSmall
-              key={item.id}
-              title={item.course_code.concat(" - ").concat(item.course_title)}
-              subtitle={[
-               
-                `Faculty: ${item.faculty_name ?? "Unassigned"} | Unscheduled: Lec ${numberToHourDuration(item.unscheduled_lecture_hours,)} Lab ${numberToHourDuration(item.unscheduled_laboratory_hours)}`,
-            
-                
-              ]}
-              isSelected={item.id === selectedOfferingId}
-              onClick={() => onSelectOffering(item.id)}
-              icon={<BookOpen className="h-5 w-5 text-background/80" />}
-              annotations={
-                <div className="flex flex-col gap-1">
-                  {item.merged_blocks.length > 0 ? (
-                    <Button
-                      size="sm"
-                      title="Unmerge from other class"
-                      variant="outline"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openUnmergeDialog(item);
-                      }}
-                    >
-                      <Split className="h-6 w-6" />
-                    
-                    </Button>
-                  ) : null}
-                  {item.merge_candidate_count > 0 ? (
-                    <Button
-                      size="sm"
-                      title="Merge with other class"
-                      variant="outline"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openMergeDialog(item);
-                      }}
-                    >
-                      <Merge className="h-6 w-6" />
-                
-                    </Button>
-                  ) : null}
-                </div>
-              }
+    <>
+      <AppDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Select Course Offering"
+        description="Choose a course offering to schedule."
+        contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+      >
+        <div className="flex h-full flex-col gap-3 overflow-hidden">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search course code"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
             />
-          ))}
-        </div>
-      </div>
+            <select
+              value={sortOrder}
+              onChange={(event) =>
+                setSortOrder(event.target.value as SortOrder)
+              }
+              className="h-9 rounded-md border bg-background px-2 text-xs"
+            >
+              <option value="desc">Hours: High to Low</option>
+              <option value="asc">Hours: Low to High</option>
+            </select>
+          </div>
 
+          <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+            {sortedOfferings.length === 0 && (
+              <p className="p-4 text-center text-sm text-foreground/70">
+                No course offerings found.
+              </p>
+            )}
+
+            {sortedOfferings.map((item) => (
+              <ListItemSmall
+                key={item.id}
+                title={item.course_code.concat(" - ").concat(item.course_title)}
+                subtitle={[
+                  `Faculty: ${item.faculty_name ?? "Unassigned"} | Unscheduled: Lec ${numberToHourDuration(
+                    item.unscheduled_lecture_hours,
+                  )} Lab ${numberToHourDuration(
+                    item.unscheduled_laboratory_hours,
+                  )}`,
+                ]}
+                isSelected={item.id === selectedOfferingId}
+                onClick={() => onSelectOffering(item.id)}
+                icon={<BookOpen className="h-5 w-5 text-background/80" />}
+                annotations={
+                  <div className="flex flex-col gap-1">
+                    {item.merged_blocks.length > 0 ? (
+                      <Button
+                        size="sm"
+                        title="Unmerge from other class"
+                        variant="outline"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openUnmergeDialog(item);
+                        }}
+                      >
+                        <Split className="h-6 w-6" />
+                      </Button>
+                    ) : null}
+                    {item.merge_candidate_count > 0 ? (
+                      <Button
+                        size="sm"
+                        title="Merge with other class"
+                        variant="outline"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openMergeDialog(item);
+                        }}
+                      >
+                        <Merge className="h-6 w-6" />
+                      </Button>
+                    ) : null}
+                  </div>
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </AppDialog>
       <AppDialog
         open={mergeDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) closeMergeDialogs();
+        onOpenChange={(openValue) => {
+          if (!openValue) closeMergeDialogs();
         }}
         title="Merge Blocks"
         description="Select blocks to merge with the current block."
@@ -392,7 +431,7 @@ const SelectCourseOfferingDialog = ({
           {mergeOffering && (
             <div className="rounded-md border bg-background/60 p-3 text-xs">
               <p>
-                Current block: {mergeOffering.block_code} • Students:{" "}
+                Current block: {mergeOffering.block_code} - Students:{" "}
                 {mergeOffering.student_count}
               </p>
             </div>
@@ -416,7 +455,9 @@ const SelectCourseOfferingDialog = ({
                 <button
                   key={candidate.utilization_id}
                   type="button"
-                  onClick={() => handleToggleCandidate(candidate.utilization_id)}
+                  onClick={() =>
+                    handleToggleCandidate(candidate.utilization_id)
+                  }
                   className={cn(
                     "flex items-center gap-2 rounded border px-2 py-1.5 text-left text-xs",
                     isSelected
@@ -429,7 +470,7 @@ const SelectCourseOfferingDialog = ({
                   </div>
                   <div className="flex-1">
                     <p>
-                      {candidate.block_code} • Students:{" "}
+                      {candidate.block_code} - Students:{" "}
                       {candidate.student_count}
                     </p>
                     <p className="text-[10px] text-foreground/60">
@@ -486,8 +527,8 @@ const SelectCourseOfferingDialog = ({
 
       <AppDialog
         open={unmergeDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) closeMergeDialogs();
+        onOpenChange={(openValue) => {
+          if (!openValue) closeMergeDialogs();
         }}
         title="Unmerge Block"
         description="Detach blocks from the merged class."
@@ -497,7 +538,7 @@ const SelectCourseOfferingDialog = ({
           {mergeOffering && (
             <div className="rounded-md border bg-background/60 p-3 text-xs">
               <p>
-                Block: {mergeOffering.block_code} • Students:{" "}
+                Block: {mergeOffering.block_code} - Students:{" "}
                 {mergeOffering.student_count}
               </p>
             </div>
@@ -556,7 +597,7 @@ const SelectCourseOfferingDialog = ({
                           </div>
                           <div className="flex-1">
                             <p>
-                              {candidate.block_code} â€¢ Students:{" "}
+                              {candidate.block_code} - Students:{" "}
                               {candidate.student_count}
                             </p>
                           </div>
@@ -586,7 +627,6 @@ const SelectCourseOfferingDialog = ({
                       New class per block
                     </label>
                   </div>
-
                 </>
               )}
             </div>
@@ -633,7 +673,7 @@ const SelectCourseOfferingDialog = ({
           </div>
         </div>
       </AppDialog>
-    </AppDialog>
+    </>
   );
 };
 

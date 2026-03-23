@@ -8,9 +8,9 @@ import { cn } from "@/utils/style";
 import { redirect } from "next/navigation";
 
 const MePage = async () => {
-  const overview = await getCurrentUserOverview();
+  const userOverview = await getCurrentUserOverview();
 
-  if (!overview) {
+  if (!userOverview) {
     redirect("/auth/login");
   }
 
@@ -22,29 +22,21 @@ const MePage = async () => {
         "xl:grid xl:grid-cols-2 2xl:grid-cols-3",
       )}
     >
-      <UserSummaryCard
-        userId={overview.id}
-        email={overview.email}
-        emailConfirmedAt={overview.emailConfirmedAt}
-        accountCreatedAt={overview.accountCreatedAt}
-        lastSignInAt={overview.lastSignInAt}
-        identity={overview.identity}
-        employmentStatus={overview.employmentStatus}
-        academicRank={overview.rank}
-        accountType={overview.accountType}
-        degrees={overview.degrees}
-      />
+      <UserSummaryCard userOverview={userOverview} />
 
       <div className="2xl:col-span-2 space-y-4">
         <WorkingLoadMetrics
-          designationLoad={overview.designationLoad}
-          actualTeachingLoad={overview.actualTeachingLoad}
-          totalWorkingLoad={overview.totalWorkingLoad}
+          designationLoad={userOverview.designationLoad}
+          actualTeachingLoad={userOverview.actualTeachingLoad}
+          totalWorkingLoad={userOverview.totalWorkingLoad}
         />
 
-        <DesignationListCard designations={overview.designations} />
+        <DesignationListCard designations={userOverview.designations} />
 
-        <AssignedClassesCard term={overview.term} classes={overview.classes} />
+        <AssignedClassesCard
+          term={userOverview.term}
+          classes={userOverview.classes}
+        />
       </div>
     </div>
   );

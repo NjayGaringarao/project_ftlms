@@ -23,7 +23,7 @@ import { getSelectedContextsFromSearchParams } from "./utils";
 import BlockPickerDialog from "@/components/shared/block-picker-dialog";
 import FacultyPickerDialog from "@/components/shared/faculty-picker-dialog";
 import RoomPickerDialog from "@/components/shared/room-picker-dialog";
-import SelectCourseOfferingDialog from "./select-course-offering-dialog";
+import SelectCourseOfferingDialog from "@/components/shared/select-course-offering-dialog";
 import SchedulerRightPane from "./scheduler-right-pane";
 import { SchedulerProvider } from "./scheduler-context";
 import type {
@@ -947,6 +947,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
           setDragError("");
           setShowRoomDialog(false);
         }}
+        defaultCampusId={selectedBlock?.campus_id ?? null}
       />
 
       <ConfirmScheduleDialog

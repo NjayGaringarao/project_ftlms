@@ -20,6 +20,8 @@ type CreateUserInput = {
   zip_code?: string | null;
   contact_number?: string | null;
   employment_status?: string | null;
+  campus_id: string;
+  college_id: string;
 };
 
 const EMPLOYMENT_STATUS_ALIASES = new Map<string, string>([
@@ -111,6 +113,8 @@ export async function createUser(
 
   if (!resolvedName) return { error: "Full name is required" };
   if (!input.birth_date?.trim()) return { error: "Birth date is required" };
+  if (!input.campus_id?.trim()) return { error: "Campus is required" };
+  if (!input.college_id?.trim()) return { error: "College is required" };
 
   // Create admin client for user creation
   const adminClient = await createAdminClient();
@@ -195,6 +199,18 @@ export async function createUser(
       console.error("lib.users.actions.createUser.userUpdate ::", userError);
       // Don't fail the whole operation, just log it
     }
+  }
+
+  const { error: affiliationError } = await supabase
+    .from("user")
+    .update({
+      campus_id: input.campus_id.trim(),
+      college_id: input.college_id.trim(),
+    })
+    .eq("id", userId);
+
+  if (affiliationError) {
+    console.error("lib.users.actions.createUser.affiliation ::", affiliationError);
   }
 
   revalidatePath("/users");
@@ -319,6 +335,8 @@ type UpdateUserProfessionalInput = {
   user_id: string;
   academic_rank_id?: string | null;
   employment_status?: string | null;
+  campus_id?: string | null;
+  college_id?: string | null;
   designations?: Array<{
     id?: string;
     campus_id?: string | null;
@@ -354,6 +372,13 @@ export async function updateUserProfessional(
     updatePayload.employment_status = normalizeEmploymentStatus(
       input.employment_status,
     );
+  }
+  if (input.campus_id !== undefined || input.college_id !== undefined) {
+    if (!input.campus_id?.trim()) return { error: "Campus is required" };
+    if (!input.college_id?.trim()) return { error: "College is required" };
+
+    updatePayload.campus_id = input.campus_id.trim();
+    updatePayload.college_id = input.college_id.trim();
   }
 
   if (Object.keys(updatePayload).length > 0) {

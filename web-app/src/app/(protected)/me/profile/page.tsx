@@ -29,6 +29,8 @@ const ProfilePage = async () => {
         user={professionalInfo.user}
         rank={professionalInfo.rank}
         designations={professionalInfo.designations}
+        campus={professionalInfo.campus}
+        college={professionalInfo.college}
       />
       <EducationInformation initialDegrees={degrees} />
     </div>

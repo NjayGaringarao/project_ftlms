@@ -6,6 +6,8 @@ import type {
   FacultyClassRow,
   FacultyListItem,
 } from "./types";
+import type { Degree } from "@/models/degree";
+import type { UserDataReadModel } from "@/lib/user-data/types";
 import {
   calculateAtl,
   calculateLaboratoryContactHours,
@@ -14,8 +16,6 @@ import {
 } from "./calculations";
 import { formatFacultyBlockLabels } from "./formatters";
 import { asArray, first } from "./normalizers";
-
-type DegreeRow = { title?: string | null; year_graduated?: number | null };
 
 type CourseUnits = {
   id?: string;
@@ -39,8 +39,7 @@ const getCourseUnits = (courseValue: unknown) => {
   };
 };
 
-const getLatestDegreeTitle = (degreeValue: unknown): string | null => {
-  const degrees = asArray(degreeValue) as DegreeRow[];
+const getLatestDegreeTitle = (degrees: Degree[]): string | null => {
   if (degrees.length === 0) return null;
 
   const latest = [...degrees].sort(
@@ -86,68 +85,20 @@ const mapFacultyClassBlock = (utilRow: {
   };
 };
 
-export const mapFacultyListItem = (row: {
-  id: string;
-  identity: unknown;
-  degree: unknown;
-  designation: unknown;
-  campus?: unknown;
-  college?: unknown;
-  user_class: unknown;
-}): FacultyListItem => {
-  const identity = first(row.identity) as { name?: string } | null;
-  const latestDegreeTitle = getLatestDegreeTitle(row.degree);
-  const campus = first(row.campus) as {
-    id?: string;
-    code?: string | null;
-    name?: string | null;
-  } | null;
-  const college = first(row.college) as {
-    id?: string;
-    code?: string | null;
-    name?: string | null;
-  } | null;
-
-  const classRows = asArray(row.user_class) as Array<{
-    class?: unknown;
-  }>;
-
-  const seenClassIds = new Set<string>();
-  const atl = classRows.reduce((sum: number, userClassRow) => {
-    const cls = first((userClassRow as { class?: unknown }).class) as {
-      id?: string;
-      course_utilization?: unknown;
-    } | null;
-
-    if (!cls?.id || seenClassIds.has(cls.id)) return sum;
-    seenClassIds.add(cls.id);
-
-    const utilizations = asArray(cls.course_utilization) as Array<{
-      course?: unknown;
-    }>;
-    const firstUtil = utilizations[0];
-    const units = getCourseUnits((firstUtil as { course?: unknown })?.course);
-
-    return sum + calculateAtl(units.lectureUnit, units.laboratoryUnit);
-  }, 0);
-
-  const etl = asArray(row.designation).reduce(
-    (sum: number, designationRow) =>
-      sum + toNumber((designationRow as { load?: number | null }).load),
-    0,
-  );
+export const mapFacultyListItem = (row: UserDataReadModel): FacultyListItem => {
+  const latestDegreeTitle = getLatestDegreeTitle(row.degrees ?? []);
 
   return {
     id: row.id,
-    name: identity?.name?.trim() || "Unnamed Faculty",
+    name: row.identity?.name?.trim() || "Unnamed Faculty",
     latest_degree_title: latestDegreeTitle,
-    total_working_load: atl + etl,
-    campus_id: campus?.id ?? null,
-    campus_code: campus?.code ?? null,
-    campus_name: campus?.name ?? null,
-    college_id: college?.id ?? null,
-    college_code: college?.code ?? null,
-    college_name: college?.name ?? null,
+    total_working_load: row.totalWorkingLoad,
+    campus_id: row.campus?.id ?? null,
+    campus_code: row.campus?.code ?? null,
+    campus_name: row.campus?.name ?? null,
+    college_id: row.college?.id ?? null,
+    college_code: row.college?.code ?? null,
+    college_name: row.college?.name ?? null,
   };
 };
 

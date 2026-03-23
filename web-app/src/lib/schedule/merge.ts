@@ -481,7 +481,7 @@ export const mergeCourseUtilizations = async (
     new Set(
       (sourceRows ?? [])
         .map((row) => row.class_id as string | null)
-        .filter(Boolean),
+        .filter((value): value is string => Boolean(value)),
     ),
   );
 

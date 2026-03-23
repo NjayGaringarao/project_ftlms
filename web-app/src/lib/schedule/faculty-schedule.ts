@@ -50,8 +50,13 @@ type ClassRow = {
       title?: string | null;
       lecture_unit?: number | null;
       laboratory_unit?: number | null;
-    } | null;
-    block?: ClassBlockRow["block"] | null;
+    } | Array<{
+      code?: string | null;
+      title?: string | null;
+      lecture_unit?: number | null;
+      laboratory_unit?: number | null;
+    }> | null;
+    block?: ClassBlockRow["block"] | Array<ClassBlockRow["block"]> | null;
   }> | null;
   session_class?: Array<{
     session?: ClassSessionRow | ClassSessionRow[] | null;
@@ -78,6 +83,11 @@ type RawScheduleTermRow = {
         start_year: number;
         end_year: number;
       }>;
+};
+
+const first = <T>(value: T | T[] | null | undefined): T | null => {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
 };
 
 const getAcademicTerms = async (): Promise<ScheduleAcademicTermOption[]> => {
@@ -172,9 +182,11 @@ const getClassRowsByFacultyAndTerm = async (
     return [];
   }
 
-  return (data ?? [])
-    .map((row) => row.class as ClassRow)
-    .filter(Boolean);
+  return (data ?? []).flatMap((row) => {
+    const cls = row.class as ClassRow | ClassRow[] | null | undefined;
+    if (!cls) return [];
+    return Array.isArray(cls) ? cls : [cls];
+  });
 };
 
 const formatBlockLabel = (
@@ -200,20 +212,28 @@ const mapSession = (session: ClassSessionRow): FacultyScheduleSessionInfo => {
 const mapTeachingLoadRows = (classRows: ClassRow[]): FacultyTeachingLoadRow[] => {
   return classRows.map((item) => {
     const firstUtil = (item.course_utilization ?? [])[0];
-    const course = firstUtil?.course;
+    const course = first(firstUtil?.course);
     const lectureHour = Number(course?.lecture_unit ?? 0);
     const laboratoryHour = Number(course?.laboratory_unit ?? 0);
 
     const blocks = (item.course_utilization ?? [])
-      .map((entry) =>
-        formatBlockLabel(entry.block?.year_level ?? null, entry.block?.section ?? null),
+      .map((entry) => first(entry.block))
+      .filter(Boolean)
+      .map((block) =>
+        formatBlockLabel(block?.year_level ?? null, block?.section ?? null),
       )
       .filter((value): value is string => Boolean(value));
 
     const campusLabel = Array.from(
       new Set(
         (item.course_utilization ?? [])
-          .map((entry) => entry.block?.major_offering?.program_offering?.campus?.name ?? null)
+          .map((entry) => {
+            const block = first(entry.block);
+            const majorOffering = first(block?.major_offering);
+            const programOffering = first(majorOffering?.program_offering);
+            const campus = first(programOffering?.campus);
+            return campus?.name ?? null;
+          })
           .filter((value): value is string => Boolean(value)),
       ),
     ).join(", ");
@@ -237,18 +257,19 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
 
   classRows.forEach((item) => {
     const firstUtil = (item.course_utilization ?? [])[0];
-    const course = firstUtil?.course;
+    const course = first(firstUtil?.course);
     const blocks = (item.course_utilization ?? [])
-      .map((entry) =>
-        formatBlockLabel(entry.block?.year_level ?? null, entry.block?.section ?? null),
+      .map((entry) => first(entry.block))
+      .filter(Boolean)
+      .map((block) =>
+        formatBlockLabel(block?.year_level ?? null, block?.section ?? null),
       )
       .filter((value): value is string => Boolean(value));
 
     const mergedBlockLabel = mergeBlockLabels(blocks);
     const sessions = (item.session_class ?? [])
-      .map((entry) => entry.session)
-      .map((session) => (Array.isArray(session) ? session[0] : session))
-      .filter(Boolean)
+      .map((entry) => first(entry.session))
+      .filter((session): session is ClassSessionRow => Boolean(session))
       .map(mapSession);
 
     if (sessions.length === 0) {

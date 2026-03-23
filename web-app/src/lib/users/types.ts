@@ -1,27 +1,33 @@
-import { UserOverviewReadModel } from "@/lib/user-overview";
+import { UserDataReadModel } from "@/lib/user-data";
 
 export type UsersListItem = {
   id: string;
   email: string | null;
   employment_status: string | null;
-  identity: UserOverviewReadModel["identity"];
+  identity: UserDataReadModel["identity"];
+  campus: UserDataReadModel["campus"];
+  college: UserDataReadModel["college"];
 };
 
 export type UserDetail = {
   id: string;
   email: string | null;
   employment_status: string | null;
-  identity: UserOverviewReadModel["identity"];
-  rank: UserOverviewReadModel["rank"];
-  designations: UserOverviewReadModel["designations"];
-  degrees: UserOverviewReadModel["degrees"];
-  account_type: UserOverviewReadModel["accountType"];
-  email_confirmed_at: UserOverviewReadModel["emailConfirmedAt"];
-  account_created_at: UserOverviewReadModel["accountCreatedAt"];
-  last_sign_in_at: UserOverviewReadModel["lastSignInAt"];
-  term: UserOverviewReadModel["term"];
-  classes: UserOverviewReadModel["classes"];
-  actual_teaching_load: UserOverviewReadModel["actualTeachingLoad"];
-  designation_load: UserOverviewReadModel["designationLoad"];
-  total_working_load: UserOverviewReadModel["totalWorkingLoad"];
+  identity: UserDataReadModel["identity"];
+  campus_id: UserDataReadModel["campus_id"];
+  college_id: UserDataReadModel["college_id"];
+  campus: UserDataReadModel["campus"];
+  college: UserDataReadModel["college"];
+  rank: UserDataReadModel["rank"];
+  designations: UserDataReadModel["designations"];
+  degrees: UserDataReadModel["degrees"];
+  account_type: UserDataReadModel["accountType"];
+  email_confirmed_at: UserDataReadModel["emailConfirmedAt"];
+  account_created_at: UserDataReadModel["accountCreatedAt"];
+  last_sign_in_at: UserDataReadModel["lastSignInAt"];
+  term: UserDataReadModel["term"];
+  classes: UserDataReadModel["classes"];
+  actual_teaching_load: UserDataReadModel["actualTeachingLoad"];
+  designation_load: UserDataReadModel["designationLoad"];
+  total_working_load: UserDataReadModel["totalWorkingLoad"];
 };

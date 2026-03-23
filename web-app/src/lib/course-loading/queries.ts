@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { getUserDataList } from "@/lib/user-data/queries";
 import type {
   FacultyListItem,
   CourseLoadingBlockListItem,
@@ -17,50 +18,15 @@ import {
 export const getFacultyListByTerm = async (
   termId: string,
 ): Promise<FacultyListItem[]> => {
-  const supabase = await createClient();
+  const rows = await getUserDataList({
+    academicTermId: termId,
+    includeDegrees: true,
+    includeClasses: true,
+    includeLoads: true,
+  });
 
-  const { data, error } = await supabase
-    .from("user")
-    .select(
-      `
-      id,
-      identity:identity (name),
-      degree:degree (title, academic_level, year_graduated),
-      designation (load),
-      campus:campus_id (id, code, name),
-      college:college_id (id, code, name),
-      user_class (
-        class:class_id (
-          id,
-          course_utilization (
-            course:course_id (lecture_unit, laboratory_unit),
-            block:block_id (academic_term_id)
-          )
-        )
-      )
-    `,
-    )
-    .eq("user_class.class.course_utilization.block.academic_term_id", termId)
-    .order("id", { ascending: true });
-
-  if (error) {
-    console.error("lib.course-loading.getFacultyListByTerm ::", error);
-    return [];
-  }
-
-  if (!data) return [];
-
-  return data.map((row) =>
-    mapFacultyListItem({
-      id: row.id,
-      identity: row.identity,
-      degree: row.degree,
-      designation: row.designation,
-      campus: row.campus,
-      college: row.college,
-      user_class: row.user_class,
-    }),
-  );
+  const withClasses = rows.filter((row) => row.classes.length > 0);
+  return withClasses.map(mapFacultyListItem);
 };
 
 export const getBlockListByTerm = async (
@@ -156,16 +122,19 @@ export const getClassesByFacultyAndTerm = async (
     return [];
   }
 
-  return (userClassRows ?? [])
-    .map((row) => row.class)
-    .filter(Boolean)
-    .map((cls) =>
-      mapFacultyClassRow({
-        id: cls.id,
-        code: cls.code,
-        course_utilization: cls.course_utilization,
-      }),
-    );
+  const classRows = (userClassRows ?? []).flatMap((row) => {
+    const cls = row.class;
+    if (!cls) return [];
+    return Array.isArray(cls) ? cls : [cls];
+  });
+
+  return classRows.map((cls) =>
+    mapFacultyClassRow({
+      id: cls.id,
+      code: cls.code,
+      course_utilization: cls.course_utilization,
+    }),
+  );
 };
 
 export const getClassesByBlockAndTerm = async (

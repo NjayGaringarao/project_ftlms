@@ -3,6 +3,8 @@
 import { Briefcase } from "lucide-react";
 import { ExtendedDesignation } from "@/models/designation";
 import { Rank } from "@/models/academic_rank";
+import { Campus } from "@/models/campus";
+import { College } from "@/models/college";
 import { User } from "@/models/user";
 import { SecurityActionCard } from "@/components/me/security/security-action-card";
 import DesignationSection from "@/components/user/designation-section";
@@ -13,15 +15,21 @@ type ProfessionalInformationProps = {
   user: User | null;
   rank: Rank | null;
   designations: ProfessionalDesignation[];
+  campus: Campus | null;
+  college: College | null;
 };
 
 const ProfessionalInformation = ({
   user,
   rank,
   designations,
+  campus,
+  college,
 }: ProfessionalInformationProps) => {
   const employmentStatus = user?.employment_status ?? "Not set";
   const rankTitle = rank?.title ?? "Not set";
+  const campusName = campus?.name ?? "Not set";
+  const collegeName = college?.name ?? "Not set";
 
   return (
     <SecurityActionCard
@@ -39,6 +47,16 @@ const ProfessionalInformation = ({
         <div>
           <p className="text-sm text-foreground/60">Employment Status</p>
           <p className="font-medium">{employmentStatus}</p>
+        </div>
+
+        <div>
+          <p className="text-sm text-foreground/60">Campus</p>
+          <p className="font-medium">{campusName}</p>
+        </div>
+
+        <div>
+          <p className="text-sm text-foreground/60">College</p>
+          <p className="font-medium">{collegeName}</p>
         </div>
       </div>
 

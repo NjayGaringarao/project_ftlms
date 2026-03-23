@@ -14,6 +14,7 @@ import PersonalInformation from "@/components/user/personal-information";
 import EducationInformation from "@/components/user/education-information";
 import EmploymentInformation from "@/components/user/employment-information";
 import AccountInformation from "@/components/user/account-information";
+import FieldView from "@/components/ui/field-view";
 
 type UserViewProps = {
   user: UserDetail;
@@ -69,7 +70,10 @@ export const UserView = ({ user }: UserViewProps) => {
       <EmploymentInformation
         employmentStatus={user.employment_status}
         academicRank={user.rank}
+        campus={user.campus}
+        college={user.college}
       />
+     
       <div className="space-y-3">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground/70">
           Designation
