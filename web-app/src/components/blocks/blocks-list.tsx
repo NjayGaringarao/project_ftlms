@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useListState } from "@/hooks/useListState";
 import ListItem from "../ui/list-item";
-import CampusPickerDialog from "@/components/blocks/campus-picker-dialog";
-import ProgramOfferingPickerDialog from "@/components/blocks/program-offering-picker-dialog";
+import CampusPickerDialog from "@/components/shared/campus-picker-dialog";
+import ProgramOfferingPickerDialog from "@/components/shared/program-offering-picker-dialog";
 import { Blocks, ChevronDown, Search, Sliders, User, X } from "lucide-react";
 import { BlockListItem } from "@/lib/admin/blocks";
 import { CampusListItem } from "@/lib/admin/campuses";
@@ -83,6 +83,19 @@ export const BlocksList = ({
       (offering) => offering.campus_id === campusId,
     );
   }, [campusId, programOfferings]);
+
+  const programOfferingOptions = useMemo(
+    () =>
+      programOfferingsForCampus.map((offering) => ({
+        id: offering.id,
+        campus_id: offering.campus_id,
+        campus_code: offering.campus?.code ?? "",
+        campus_name: offering.campus?.name ?? "",
+        program_code: offering.program?.code ?? "",
+        program_name: offering.program?.name ?? "",
+      })),
+    [programOfferingsForCampus],
+  );
 
   const setCampus = (nextCampusId: string) => {
     setQueryParams((next) => {
@@ -317,7 +330,7 @@ export const BlocksList = ({
       <ProgramOfferingPickerDialog
         open={programOfferingDialogOpen}
         onOpenChange={setProgramOfferingDialogOpen}
-        programOfferings={programOfferingsForCampus}
+        programOfferings={programOfferingOptions}
         selectedProgramOfferingId={programOfferingId}
         query={programOfferingQuery}
         onQueryChange={setProgramOfferingQuery}

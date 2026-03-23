@@ -61,8 +61,10 @@ export type FacultyListItem = {
   latest_degree_title: string | null;
   total_working_load: number;
   campus_id: string | null;
+  campus_code: string | null;
   campus_name: string | null;
   college_id: string | null;
+  college_code: string | null;
   college_name: string | null;
 };
 
@@ -70,6 +72,10 @@ export type CourseLoadingBlockListItem = {
   id: string;
   code: string;
   program_offering_code: string;
+  program_offering_id?: string;
+  program_code?: string;
+  program_name?: string;
+  college_id?: string | null;
   campus_id: string;
   campus_code: string;
   campus_name: string;

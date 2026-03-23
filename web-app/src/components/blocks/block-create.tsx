@@ -20,8 +20,8 @@ import {
   ProgramOfferingListItem,
 } from "@/lib/admin/program-offerings";
 import { formatAcademicTermLabel } from "@/utils/string";
-import CampusPickerDialog from "@/components/blocks/campus-picker-dialog";
-import ProgramOfferingPickerDialog from "@/components/blocks/program-offering-picker-dialog";
+import CampusPickerDialog from "@/components/shared/campus-picker-dialog";
+import ProgramOfferingPickerDialog from "@/components/shared/program-offering-picker-dialog";
 import { cn } from "@/utils/style";
 
 type BlockCreateProps = {
@@ -143,6 +143,19 @@ export const BlockCreate = ({
       (offering) => offering.campus_id === campusId,
     );
   }, [campusId, programOfferings]);
+
+  const programOfferingOptions = useMemo(
+    () =>
+      programOfferingsForCampus.map((offering) => ({
+        id: offering.id,
+        campus_id: offering.campus_id,
+        campus_code: offering.campus?.code ?? "",
+        campus_name: offering.campus?.name ?? "",
+        program_code: offering.program?.code ?? "",
+        program_name: offering.program?.name ?? "",
+      })),
+    [programOfferingsForCampus],
+  );
 
   useEffect(() => {
     setAcademicTermId(selectedAcademicTermId);
@@ -423,7 +436,7 @@ export const BlockCreate = ({
       <ProgramOfferingPickerDialog
         open={programOfferingDialogOpen}
         onOpenChange={setProgramOfferingDialogOpen}
-        programOfferings={programOfferingsForCampus}
+        programOfferings={programOfferingOptions}
         selectedProgramOfferingId={programOfferingId}
         query={programOfferingQuery}
         onQueryChange={setProgramOfferingQuery}

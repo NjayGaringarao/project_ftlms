@@ -1,22 +1,12 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  Blocks,
-  BookOpen,
-  ChevronDown,
-  Clock,
-  DoorOpen,
-  User,
-  X,
-} from "lucide-react";
+import { Blocks, BookOpen, ChevronDown, DoorOpen, User, X } from "lucide-react";
 import type { SessionDay, SessionType } from "@/models";
 import { dayLabel, toDisplayTime, toMinutes } from "@/lib/schedule/utils";
 import {
-  getSchedulerMapperMatrixByBlock,
-  getSchedulerMapperMatrixByFaculty,
-  getSchedulerMapperMatrixByRoom,
+  getSchedulerMapperMatrices,
   type SchedulerMatrixSession,
 } from "@/lib/schedule/mapper";
 import {
@@ -30,20 +20,20 @@ import {
 } from "@/lib/schedule/session-actions";
 import MatrixRenderer from "./matrix-renderer";
 import { getSelectedContextsFromSearchParams } from "./utils";
-import SelectBlockDialog from "./select-block-dialog";
+import BlockPickerDialog from "@/components/shared/block-picker-dialog";
 import FacultyPickerDialog from "@/components/shared/faculty-picker-dialog";
-import SelectRoomDialog from "./select-room-dialog";
+import RoomPickerDialog from "@/components/shared/room-picker-dialog";
 import SelectCourseOfferingDialog from "./select-course-offering-dialog";
 import SchedulerRightPane from "./scheduler-right-pane";
+import { SchedulerProvider } from "./scheduler-context";
 import type {
   CourseLoadingBlockListItem,
   FacultyListItem,
 } from "@/lib/course-loading/types";
 import type { ExtendedRoom } from "@/models";
 import { Button } from "../ui/button";
-import { AppDialog } from "../ui/app-dialog";
+import ConfirmScheduleDialog from "@/components/scheduler/dialogs/confirm-schedule-dialog";
 import { cn } from "@/utils/style";
-import { numberToHourDuration } from "@/utils/time";
 
 type ScheduleMapperProps = {
   academic_term_id: string;
@@ -168,6 +158,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const [isSaving, setIsSaving] = useState(false);
 
   const draggingRef = useRef<typeof dragging>(null);
+  const matrixRequestIdRef = useRef(0);
 
   useEffect(() => {
     draggingRef.current = dragging;
@@ -200,6 +191,26 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       next.delete(key);
     });
   };
+
+  const selectSession = useCallback(
+    (sessionId: string | null, classId?: string | null) => {
+      setActiveSessionId(sessionId ?? null);
+      if (classId) {
+        setSelectedClassId(classId);
+      }
+    },
+    [],
+  );
+
+  const clearSelection = useCallback(() => {
+    setSelectedCell(null);
+    setSelectedClassId(null);
+    setActiveSessionId(null);
+  }, []);
+
+  const refreshSessions = useCallback(() => {
+    setRefreshKey((prev) => prev + 1);
+  }, []);
 
   const selectedFaculty =
     faculty.find((item) => item.id === selectedFacultyId) ?? null;
@@ -263,6 +274,11 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   }, [selectedBlockId, refreshKey]);
 
   useEffect(() => {
+    setBlockSessions([]);
+    setBlockLoading(Boolean(selectedBlockId));
+  }, [selectedBlockId]);
+
+  useEffect(() => {
     if (!selectedCourseUtilizationId) return;
     const exists = offerings.some(
       (item) => item.id === selectedCourseUtilizationId,
@@ -295,73 +311,35 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     let cancelled = false;
 
     const load = async () => {
-      if (!selectedBlockId) {
+      if (!selectedBlockId && !selectedFacultyId && !selectedRoomId) {
         setBlockSessions([]);
-        setBlockLoading(false);
-        return;
-      }
-
-      setBlockLoading(true);
-      const rows = await getSchedulerMapperMatrixByBlock(
-        academic_term_id,
-        selectedBlockId,
-      );
-      if (cancelled) return;
-      setBlockSessions(rows);
-      setBlockLoading(false);
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [academic_term_id, selectedBlockId, refreshKey]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      if (!selectedFacultyId) {
         setFacultySessions([]);
-        setFacultyLoading(false);
-        return;
-      }
-
-      setFacultyLoading(true);
-      const rows = await getSchedulerMapperMatrixByFaculty(
-        academic_term_id,
-        selectedFacultyId,
-      );
-      if (cancelled) return;
-      setFacultySessions(rows);
-      setFacultyLoading(false);
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [academic_term_id, selectedFacultyId, refreshKey]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      if (!selectedRoomId) {
         setRoomSessions([]);
+        setBlockLoading(false);
+        setFacultyLoading(false);
         setRoomLoading(false);
         return;
       }
 
-      setRoomLoading(true);
-      const rows = await getSchedulerMapperMatrixByRoom(
-        academic_term_id,
-        selectedRoomId,
-      );
-      if (cancelled) return;
-      setRoomSessions(rows);
+      setBlockLoading(Boolean(selectedBlockId));
+      setFacultyLoading(Boolean(selectedFacultyId));
+      setRoomLoading(Boolean(selectedRoomId));
+
+      const requestId = (matrixRequestIdRef.current += 1);
+      const result = await getSchedulerMapperMatrices(academic_term_id, {
+        blockId: selectedBlockId ?? null,
+        facultyId: selectedFacultyId ?? null,
+        roomId: selectedRoomId ?? null,
+      });
+
+      if (cancelled || requestId !== matrixRequestIdRef.current) return;
+
+      setBlockSessions(selectedBlockId ? result.block : []);
+      setFacultySessions(selectedFacultyId ? result.faculty : []);
+      setRoomSessions(selectedRoomId ? result.room : []);
+
+      setBlockLoading(false);
+      setFacultyLoading(false);
       setRoomLoading(false);
     };
 
@@ -370,7 +348,13 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     return () => {
       cancelled = true;
     };
-  }, [academic_term_id, selectedRoomId, refreshKey]);
+  }, [
+    academic_term_id,
+    selectedBlockId,
+    selectedFacultyId,
+    selectedRoomId,
+    refreshKey,
+  ]);
 
   const blockMatrix = useMemo(
     () => buildMatrix(blockSessions, slotStarts),
@@ -681,6 +665,54 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     setDragError("");
   };
 
+  const schedulerContextValue = useMemo(
+    () => ({
+      blocks,
+      rooms,
+      offerings,
+      blockSessions,
+      facultySessions,
+      roomSessions,
+      selectedBlockId,
+      selectedFacultyId,
+      selectedRoomId,
+      selectedOffering,
+      sessionType,
+      setSessionType,
+      selectedSessionId: activeSessionId,
+      selectedClassId,
+      classRefreshKey: refreshKey,
+      overlappingSessions,
+      selectSession,
+      clearSelection,
+      facultyOptions: faculty,
+      refreshSessions,
+      errorMessage: dragError || null,
+    }),
+    [
+      activeSessionId,
+      blockSessions,
+      blocks,
+      clearSelection,
+      dragError,
+      faculty,
+      facultySessions,
+      overlappingSessions,
+      offerings,
+      refreshKey,
+      rooms,
+      roomSessions,
+      selectSession,
+      selectedClassId,
+      selectedBlockId,
+      selectedFacultyId,
+      selectedOffering,
+      selectedRoomId,
+      sessionType,
+      refreshSessions,
+    ],
+  );
+
   const clearCourseOffering = () => {
     setContextParams((next) => {
       next.delete("courseUtilizationId");
@@ -737,7 +769,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   }
 
   return (
-    <>
+    <SchedulerProvider value={schedulerContextValue}>
       <div className="flex flex-col h-full border rounded-md overflow-hidden">
         <div className="flex-1 flex flex-row h-full overflow-hidden">
           <div className="flex-1 overflow-auto">
@@ -847,28 +879,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
               />
             </div>
           </div>
-          <SchedulerRightPane
-            selectedOffering={selectedOffering}
-            sessionType={sessionType}
-            onSessionTypeChange={setSessionType}
-            selectedSessionId={activeSessionId}
-            selectedClassId={selectedClassId}
-            classRefreshKey={refreshKey}
-            overlappingSessions={overlappingSessions}
-            onSelectSession={(sessionId, classId) => {
-              setActiveSessionId(sessionId || null);
-              if (classId) setSelectedClassId(classId);
-            }}
-            onClearSelection={() => {
-              setSelectedCell(null);
-              setSelectedClassId(null);
-            }}
-            facultyOptions={faculty}
-            onSessionChanged={() => {
-              setRefreshKey((prev) => prev + 1);
-            }}
-            errorMessage={dragError || null}
-          />
+          <SchedulerRightPane />
         </div>
 
       </div>
@@ -877,21 +888,23 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         onOpenChange={setShowFacultyDialog}
         title="Select Faculty"
         description="Select faculty to map. You can select block and room independently."
-        faculty={faculty}
-        selectedFacultyId={selectedFacultyId}
-        onSelectFaculty={(facultyId) => {
+        items={faculty}
+        selectedId={selectedFacultyId}
+        onSelect={(facultyId) => {
           setContextParam("facultyId", facultyId);
           setDragError("");
           setShowFacultyDialog(false);
         }}
+        defaultCampusId={selectedBlock?.campus_id ?? null}
+        defaultCollegeId={selectedBlock?.college_id ?? null}
       />
 
-      <SelectBlockDialog
+      <BlockPickerDialog
         open={showBlockDialog}
         onOpenChange={setShowBlockDialog}
-        blocks={blocks}
-        selectedBlockId={selectedBlockId}
-        onSelectBlock={(blockId: string) => {
+        items={blocks}
+        selectedId={selectedBlockId}
+        onSelect={(blockId: string) => {
           setContextParams((next) => {
             next.set("blockId", blockId);
             next.delete("courseUtilizationId");
@@ -900,6 +913,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
           setPendingRange(null);
           setConfirmOpen(false);
           setShowBlockDialog(false);
+          setRefreshKey((prev) => prev + 1);
         }}
       />
 
@@ -919,19 +933,23 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         onOfferingsChanged={() => setRefreshKey((prev) => prev + 1)}
       />
 
-      <SelectRoomDialog
+      <RoomPickerDialog
         open={showRoomDialog}
         onOpenChange={setShowRoomDialog}
-        rooms={rooms}
-        selectedRoomId={selectedRoomId}
-        onSelectRoom={(roomId: string) => {
-          setContextParam("roomId", roomId);
+        items={rooms}
+        selectedId={selectedRoomId}
+        onSelect={(roomId) => {
+          if (roomId) {
+            setContextParam("roomId", roomId);
+          } else {
+            clearContextParam("roomId");
+          }
           setDragError("");
           setShowRoomDialog(false);
         }}
       />
 
-      <AppDialog
+      <ConfirmScheduleDialog
         open={confirmOpen}
         onOpenChange={(open) => {
           setConfirmOpen(open);
@@ -939,74 +957,18 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
             setPendingRange(null);
           }
         }}
-        title="Confirm Schedule"
-        description="Review the details before creating this session."
-        contentClassName="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden"
-      >
-        <div className="flex flex-col gap-3">
-          <div className="rounded-md border bg-foreground/5 p-3 text-sm">
-            {pendingRange ? (
-              <div className="flex flex-row gap-2 items-center">
-                <Clock className="inline-block h-6 w-6 *:text-foreground/70" />
-                <p className="text-xl">
-                  {pendingRange.day}{" "}
-                  {toDisplayTime(
-                    timeSlots[
-                      Math.min(pendingRange.startIndex, pendingRange.endIndex)
-                    ]?.start ?? "",
-                  )}
-                  {" - "}
-                  {toDisplayTime(
-                    timeSlots[
-                      Math.max(pendingRange.startIndex, pendingRange.endIndex)
-                    ]?.end ?? "",
-                  )}{" "}
-                  (
-                  {numberToHourDuration(
-                    ((Math.abs(
-                      pendingRange.endIndex - pendingRange.startIndex,
-                    ) +
-                      1) *
-                      30) /
-                      60,
-                  )}{" "}
-                  {sessionType})
-                </p>
-              </div>
-            ) : null}
-
-            <div className="grid grid-cols-2 mt-2 text-sm">
-              <p>Block: {selectedBlock?.code ?? "None"}</p>
-              <p>Course: {selectedOffering?.course_code ?? "None"}</p>
-              <p>Faculty: {selectedFaculty?.name ?? "None"}</p>
-              <p>Room: {selectedRoom?.code ?? "Online / None"}</p>
-            </div>
-          </div>
-
-          {dragError ? (
-            <p className="text-xs text-red-700">{dragError}</p>
-          ) : null}
-
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setConfirmOpen(false)}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleConfirmSchedule}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Confirm"}
-            </Button>
-          </div>
-        </div>
-      </AppDialog>
-    </>
+        pendingRange={pendingRange}
+        timeSlots={timeSlots}
+        sessionType={sessionType}
+        selectedBlock={selectedBlock}
+        selectedOffering={selectedOffering}
+        selectedFaculty={selectedFaculty}
+        selectedRoom={selectedRoom}
+        errorMessage={dragError}
+        isSaving={isSaving}
+        onConfirm={handleConfirmSchedule}
+      />
+    </SchedulerProvider>
   );
 };
 

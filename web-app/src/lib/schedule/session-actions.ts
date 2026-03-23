@@ -21,6 +21,7 @@ type RawSessionRow = {
   start_time?: string | null;
   end_time?: string | null;
   type?: SessionType | null;
+  room_id?: string | null;
   room?:
     | {
         id?: string | null;
@@ -206,8 +207,8 @@ type RawRoomRow = {
   capacity?: number | null;
   campus_id?: string;
   campus?:
-    | { id?: string; name?: string | null }
-    | Array<{ id?: string; name?: string | null }>
+    | { id?: string; code?: string | null; name?: string | null }
+    | Array<{ id?: string; code?: string | null; name?: string | null }>
     | null;
 };
 
@@ -279,6 +280,7 @@ export type SessionSummary = {
   course_title: string | null;
   faculty_id: string | null;
   faculty_name: string | null;
+  room_id: string | null;
   room_code: string | null;
   room_name: string | null;
   campus_id: string | null;
@@ -295,6 +297,8 @@ export type SessionRoomOption = {
   code: string;
   name: string;
   campus_name: string | null;
+  campus_id: string | null;
+  campus_code: string | null;
   capacity: number | null;
 };
 
@@ -389,7 +393,7 @@ export const getSessionSummaries = async (
     .from("session_class")
     .select(
       `
-      session:session_id(id, day, start_time, end_time, type, room:room_id(code, name)),
+      session:session_id(id, day, start_time, end_time, type, room_id, room:room_id(code, name)),
       class:class_id(
         id,
         code,
@@ -469,6 +473,7 @@ export const getSessionSummaries = async (
         course_title: course?.title ?? null,
         faculty_id: facultyRow?.id ?? null,
         faculty_name: facultyIdentity?.name ?? null,
+        room_id: session.room_id ?? null,
         room_code: room?.code ?? null,
         room_name: room?.name ?? null,
         campus_id: campusId,
@@ -493,7 +498,7 @@ export const getSessionSummariesByClass = async (
     .from("session_class")
     .select(
       `
-      session:session_id(id, day, start_time, end_time, type, room:room_id(code, name)),
+      session:session_id(id, day, start_time, end_time, type, room_id, room:room_id(code, name)),
       class:class_id(
         id,
         code,
@@ -580,6 +585,7 @@ export const getSessionSummariesByClass = async (
         course_title: course?.title ?? null,
         faculty_id: facultyRow?.id ?? null,
         faculty_name: facultyIdentity?.name ?? null,
+        room_id: session.room_id ?? null,
         room_code: room?.code ?? null,
         room_name: room?.name ?? null,
         campus_id: campusId,
@@ -639,12 +645,16 @@ export const getRoomsForClass = async (
   const roomsResult = campusIds.length
     ? await supabase
         .from("room")
-        .select("id, code, name, capacity, campus_id, campus:campus_id(id, name)")
+        .select(
+          "id, code, name, capacity, campus_id, campus:campus_id(id, code, name)",
+        )
         .in("campus_id", campusIds)
         .order("code", { ascending: true })
     : await supabase
         .from("room")
-        .select("id, code, name, capacity, campus_id, campus:campus_id(id, name)")
+        .select(
+          "id, code, name, capacity, campus_id, campus:campus_id(id, code, name)",
+        )
         .order("code", { ascending: true });
 
   if (roomsResult.error) {
@@ -663,6 +673,8 @@ export const getRoomsForClass = async (
       code: room.code,
       name: room.name ?? "Unnamed Room",
       capacity: room.capacity ?? null,
+      campus_id: room.campus_id ?? null,
+      campus_code: campus?.code ?? null,
       campus_name: campus?.name ?? null,
     };
   });

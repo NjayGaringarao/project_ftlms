@@ -1,16 +1,14 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Info, Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppDialog } from "@/components/ui/app-dialog";
 import { Select } from "@/components/ui/select";
 import type { SessionType } from "@/models";
 import { numberToHourDuration } from "@/utils/time";
 import { cn } from "@/utils/style";
-import type { SchedulerCourseOfferingItem } from "@/lib/schedule/course-offerings";
-import type { FacultyListItem } from "@/lib/course-loading/types";
 import FacultyPickerDialog from "@/components/shared/faculty-picker-dialog";
+import RoomPickerDialog from "@/components/shared/room-picker-dialog";
 import {
   deleteClassSession,
   getRoomsForClass,
@@ -21,37 +19,23 @@ import {
   type SessionSummary,
 } from "@/lib/schedule/session-actions";
 import { dayLabel, toDisplayTime, toMinutes } from "@/lib/schedule/utils";
-import ListItemSmall from "@/components/ui/list-item-small";
+import { useScheduler } from "./scheduler-context";
 
-type SchedulerRightPaneProps = {
-  selectedOffering: SchedulerCourseOfferingItem | null;
-  sessionType: SessionType;
-  onSessionTypeChange: (type: SessionType) => void;
-  selectedSessionId: string | null;
-  selectedClassId: string | null;
-  classRefreshKey: number;
-  overlappingSessions: SessionSummary[];
-  onSelectSession: (sessionId: string, classId?: string) => void;
-  onClearSelection: () => void;
-  facultyOptions: FacultyListItem[];
-  onSessionChanged: () => void;
-  errorMessage?: string | null;
-};
-
-const SchedulerRightPane = ({
-  selectedOffering,
-  sessionType,
-  onSessionTypeChange,
-  selectedSessionId,
-  selectedClassId,
-  classRefreshKey,
-  overlappingSessions,
-  onSelectSession,
-  onClearSelection,
-  facultyOptions,
-  onSessionChanged,
-  errorMessage,
-}: SchedulerRightPaneProps) => {
+const SchedulerRightPane = () => {
+  const {
+    selectedOffering,
+    sessionType,
+    setSessionType,
+    selectedSessionId,
+    selectedClassId,
+    classRefreshKey,
+    overlappingSessions,
+    selectSession,
+    clearSelection,
+    facultyOptions,
+    refreshSessions,
+    errorMessage,
+  } = useScheduler();
   const [showRoomEditDialog, setShowRoomEditDialog] = useState(false);
   const [showFacultyReplaceDialog, setShowFacultyReplaceDialog] =
     useState(false);
@@ -59,7 +43,6 @@ const SchedulerRightPane = ({
     null,
   );
   const [roomOptions, setRoomOptions] = useState<SessionRoomOption[]>([]);
-  const [roomOptionsLoading, setRoomOptionsLoading] = useState(false);
   const [actionError, setActionError] = useState("");
   const [isMutating, startMutation] = useTransition();
   const [classSessions, setClassSessions] = useState<SessionSummary[]>([]);
@@ -91,11 +74,9 @@ const SchedulerRightPane = ({
     let cancelled = false;
 
     const loadRooms = async () => {
-      setRoomOptionsLoading(true);
       const rows = await getRoomsForClass(selectedClassId);
       if (cancelled) return;
       setRoomOptions(rows);
-      setRoomOptionsLoading(false);
     };
 
     void loadRooms();
@@ -146,7 +127,7 @@ const SchedulerRightPane = ({
       }
       setShowRoomEditDialog(false);
       setRoomEditSessionId(null);
-      onSessionChanged();
+      refreshSessions();
     });
   };
 
@@ -163,7 +144,7 @@ const SchedulerRightPane = ({
         return;
       }
       setShowFacultyReplaceDialog(false);
-      onSessionChanged();
+      refreshSessions();
     });
   };
 
@@ -183,12 +164,12 @@ const SchedulerRightPane = ({
       });
       if (selectedSessionId === sessionId) {
         if (remaining.length > 0) {
-          onSelectSession(remaining[0].session_id, remaining[0].class_id);
+          selectSession(remaining[0].session_id, remaining[0].class_id);
         } else {
-          onClearSelection();
+          clearSelection();
         }
       }
-      onSessionChanged();
+      refreshSessions();
     });
   };
 
@@ -252,13 +233,39 @@ const SchedulerRightPane = ({
     return ids.size === 1 ? Array.from(ids)[0] : null;
   }, [classSessions, selectedSession]);
 
+  const roomPickerItems = useMemo(
+    () =>
+      roomOptions.map((room) => ({
+        id: room.id,
+        code: room.code,
+        name: room.name,
+        capacity: room.capacity ?? null,
+        campus_id: room.campus_id ?? "",
+        campus: {
+          id: room.campus_id ?? "",
+          code: room.campus_code ?? "",
+          name: room.campus_name ?? "Unknown Campus",
+          address: null,
+        },
+      })),
+    [roomOptions],
+  );
+
+  const roomPickerSelectedId = useMemo(() => {
+    if (!roomEditSessionId) return null;
+    const session = classSessions.find(
+      (item) => item.session_id === roomEditSessionId,
+    );
+    return session?.room_id ?? null;
+  }, [classSessions, roomEditSessionId]);
+
   useEffect(() => {
     if (!selectedClassId) return;
     if (classSessionsLoading) return;
     if (classSessionsClassId !== selectedClassId) return;
     if (classSessions.length === 0) {
       if (overlappingSessions.length === 0) {
-        onClearSelection();
+        clearSelection();
       }
       return;
     }
@@ -266,7 +273,7 @@ const SchedulerRightPane = ({
       (session) => session.session_id === selectedSessionId,
     );
     if (!exists) {
-      onSelectSession(classSessions[0].session_id, classSessions[0].class_id);
+      selectSession(classSessions[0].session_id, classSessions[0].class_id);
     }
   }, [
     classSessions,
@@ -274,8 +281,8 @@ const SchedulerRightPane = ({
     classSessionsClassId,
     selectedClassId,
     selectedSessionId,
-    onSelectSession,
-    onClearSelection,
+    selectSession,
+    clearSelection,
     overlappingSessions,
   ]);
 
@@ -313,9 +320,9 @@ const SchedulerRightPane = ({
               <Select
                 value={sessionType}
                 onChange={(event) =>
-                  onSessionTypeChange(event.target.value as SessionType)
-                }
-              >
+                setSessionType(event.target.value as SessionType)
+              }
+            >
                 <option value="Lecture">
                   Lecture (
                   {numberToHourDuration(
@@ -354,7 +361,7 @@ const SchedulerRightPane = ({
                 <Button
                   size="xs"
                   variant="ghost"
-                  onClick={onClearSelection}
+                  onClick={clearSelection}
                   title="Clear selection"
                 >
                   <X className="h-3 w-3" />
@@ -367,8 +374,8 @@ const SchedulerRightPane = ({
                       key={session.session_id}
                       type="button"
                       onClick={() =>
-                        onSelectSession(session.session_id, session.class_id)
-                      }
+                      selectSession(session.session_id, session.class_id)
+                    }
                       className={cn(
                         "rounded-full border px-2 py-0.5 text-[10px]",
                         selectedSession?.session_id === session.session_id
@@ -449,7 +456,7 @@ const SchedulerRightPane = ({
                             <div
                               key={session.session_id}
                               onClick={() =>
-                                onSelectSession(
+                                selectSession(
                                   session.session_id,
                                   session.class_id,
                                 )
@@ -544,7 +551,7 @@ const SchedulerRightPane = ({
         </div>
       </div>
 
-      <AppDialog
+      <RoomPickerDialog
         open={showRoomEditDialog}
         onOpenChange={(open) => {
           setShowRoomEditDialog(open);
@@ -555,41 +562,12 @@ const SchedulerRightPane = ({
         }}
         title="Change Room"
         description="Assign a different room or mark this session as online."
-        contentClassName="flex max-h-[70vh] w-full max-w-md flex-col overflow-hidden"
-      >
-        <div className="flex flex-col gap-3 overflow-hidden">
-          {roomOptionsLoading && (
-            <p className="text-xs text-foreground/60">Loading rooms...</p>
-          )}
-          {!roomOptionsLoading && roomOptions.length === 0 && (
-            <p className="text-xs text-foreground/60">No rooms available.</p>
-          )}
-          <div className="flex max-h-60 flex-col gap-2 overflow-y-auto">
-            <ListItemSmall
-              key="none"
-              title="Online / No Room"
-              subtitle="Remove the room assignment"
-              onClick={() => handleUpdateRoom(null)}
-            />
-            {roomOptions.map((room) => (
-              <ListItemSmall
-                key={room.id}
-                title={`${room.code} - ${room.name}`}
-                subtitle={
-                  room.campus_name
-                    ? `${room.campus_name}${
-                        room.capacity ? ` - cap ${room.capacity}` : ""
-                      }`
-                    : room.capacity
-                      ? `cap ${room.capacity}`
-                      : ""
-                }
-                onClick={() => handleUpdateRoom(room.id)}
-              />
-            ))}
-          </div>
-        </div>
-      </AppDialog>
+        items={roomPickerItems}
+        selectedId={roomPickerSelectedId}
+        onSelect={(roomId) => handleUpdateRoom(roomId)}
+        allowOnline
+        onlineLabel="Online / No Room"
+      />
 
       <FacultyPickerDialog
         open={showFacultyReplaceDialog}
@@ -599,9 +577,9 @@ const SchedulerRightPane = ({
         }}
         title="Replace Faculty"
         description="Choose a new faculty for all sessions in this class."
-        faculty={facultyOptions}
-        selectedFacultyId={selectedSession?.faculty_id ?? null}
-        onSelectFaculty={(facultyId) => handleReplaceFaculty(facultyId)}
+        items={facultyOptions}
+        selectedId={selectedSession?.faculty_id ?? null}
+        onSelect={(facultyId) => handleReplaceFaculty(facultyId)}
         defaultCampusId={classCampusId}
         defaultCollegeId={classCollegeId}
       />

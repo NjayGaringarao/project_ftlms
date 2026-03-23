@@ -26,6 +26,12 @@ export type SchedulerMatrixSession = {
   end_time: string;
 };
 
+export type SchedulerMatricesResult = {
+  block: SchedulerMatrixSession[];
+  faculty: SchedulerMatrixSession[];
+  room: SchedulerMatrixSession[];
+};
+
 type RawClassCourseRow = {
   lecture_unit?: number | null;
   laboratory_unit?: number | null;
@@ -419,6 +425,77 @@ export const getSchedulerMapperMatrixByRoom = async (
       };
     })
     .filter((row): row is SchedulerMatrixSession => Boolean(row));
+};
+
+type RawRpcSession = {
+  id?: string | null;
+  class_id?: string | null;
+  class_code?: string | null;
+  day?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+};
+
+const normalizeRpcSessions = (rows: unknown): SchedulerMatrixSession[] => {
+  const list = Array.isArray(rows) ? rows : [];
+  return list
+    .map((row) => {
+      const session = row as RawRpcSession;
+      const normalizedDay = normalizeSessionDay(session.day ?? null);
+      if (
+        !session.id ||
+        !session.class_id ||
+        !normalizedDay ||
+        !session.start_time ||
+        !session.end_time
+      ) {
+        return null;
+      }
+
+      return {
+        id: session.id,
+        class_id: session.class_id,
+        class_code: session.class_code ?? "Unknown",
+        day: normalizedDay,
+        start_time: session.start_time,
+        end_time: session.end_time,
+      };
+    })
+    .filter((row): row is SchedulerMatrixSession => Boolean(row));
+};
+
+export const getSchedulerMapperMatrices = async (
+  academicTermId: string,
+  context: SchedulerMapperContext,
+): Promise<SchedulerMatricesResult> => {
+  if (!academicTermId?.trim() || isNoContext(context)) {
+    return { block: [], faculty: [], room: [] };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("rpc_get_scheduler_matrices", {
+    academic_term_id: academicTermId,
+    block_id: context.blockId ?? null,
+    faculty_id: context.facultyId ?? null,
+    room_id: context.roomId ?? null,
+  });
+
+  if (error) {
+    console.error("lib.schedule.mapper.getSchedulerMapperMatrices ::", error);
+    return { block: [], faculty: [], room: [] };
+  }
+
+  const payload = (data ?? {}) as {
+    block?: unknown;
+    faculty?: unknown;
+    room?: unknown;
+  };
+
+  return {
+    block: normalizeRpcSessions(payload.block),
+    faculty: normalizeRpcSessions(payload.faculty),
+    room: normalizeRpcSessions(payload.room),
+  };
 };
 
 export {

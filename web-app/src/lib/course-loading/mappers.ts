@@ -97,9 +97,14 @@ export const mapFacultyListItem = (row: {
 }): FacultyListItem => {
   const identity = first(row.identity) as { name?: string } | null;
   const latestDegreeTitle = getLatestDegreeTitle(row.degree);
-  const campus = first(row.campus) as { id?: string; name?: string | null } | null;
+  const campus = first(row.campus) as {
+    id?: string;
+    code?: string | null;
+    name?: string | null;
+  } | null;
   const college = first(row.college) as {
     id?: string;
+    code?: string | null;
     name?: string | null;
   } | null;
 
@@ -138,8 +143,10 @@ export const mapFacultyListItem = (row: {
     latest_degree_title: latestDegreeTitle,
     total_working_load: atl + etl,
     campus_id: campus?.id ?? null,
+    campus_code: campus?.code ?? null,
     campus_name: campus?.name ?? null,
     college_id: college?.id ?? null,
+    college_code: college?.code ?? null,
     college_name: college?.name ?? null,
   };
 };
@@ -156,13 +163,20 @@ export const mapCourseLoadingBlockListItem = (row: {
     program_offering?: unknown;
   } | null;
   const programOffering = first(majorOffering?.program_offering) as {
+    id?: string;
     code?: string;
     campus_id?: string;
     campus?: unknown;
+    program?: unknown;
   } | null;
   const campus = first(programOffering?.campus) as {
     code?: string;
     name?: string;
+  } | null;
+  const program = first(programOffering?.program) as {
+    code?: string;
+    name?: string;
+    college_id?: string | null;
   } | null;
 
   const totalUnit = asArray(row.course_utilization).reduce(
@@ -179,6 +193,10 @@ export const mapCourseLoadingBlockListItem = (row: {
     code: row.code,
     student_count: toNumber(row.student_count),
     program_offering_code: programOffering?.code ?? "",
+    program_offering_id: programOffering?.id ?? "",
+    program_code: program?.code ?? "",
+    program_name: program?.name ?? "",
+    college_id: program?.college_id ?? null,
     campus_id: programOffering?.campus_id ?? "",
     campus_code: campus?.code ?? "",
     campus_name: campus?.name ?? "",

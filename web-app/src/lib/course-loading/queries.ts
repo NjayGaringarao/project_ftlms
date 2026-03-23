@@ -27,7 +27,7 @@ export const getFacultyListByTerm = async (
       identity:identity (name),
       degree:degree (title, academic_level, year_graduated),
       designation (load),
-      campus:campus_id (id, name),
+      campus:campus_id (id, code, name),
       college:college_id (id, code, name),
       user_class (
         class:class_id (
@@ -81,7 +81,8 @@ export const getBlockListByTerm = async (
           id,
           code,
           campus_id,
-          campus:campus_id (id, code, name)
+          campus:campus_id (id, code, name),
+          program:program_id (id, code, name, college_id)
         )
       ),
       course_utilization (

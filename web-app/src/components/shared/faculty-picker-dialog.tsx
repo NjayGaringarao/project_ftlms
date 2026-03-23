@@ -1,23 +1,29 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { User } from "lucide-react";
+import type { ReactNode } from "react";
+import { ChevronDown, User, X } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import ListItemSmall from "@/components/ui/list-item-small";
 import type { FacultyListItem } from "@/lib/course-loading/types";
+import CampusPickerDialog from "@/components/shared/campus-picker-dialog";
+import CollegePickerDialog from "@/components/shared/college-picker-dialog";
+import { Button } from "@/components/ui/button";
 
 type FacultyPickerDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  faculty: FacultyListItem[];
-  selectedFacultyId?: string | null;
-  onSelectFaculty: (facultyId: string) => void;
+  title?: string;
+  description?: string;
+  items: FacultyListItem[];
+  selectedId?: string | null;
+  onSelect: (id: string) => void;
+  searchPlaceholder?: string;
   defaultCampusId?: string | null;
   defaultCollegeId?: string | null;
+  renderSubtitle?: (item: FacultyListItem) => string[];
+  renderAnnotation?: (item: FacultyListItem) => ReactNode;
 };
 
 const toFixed = (value: number) => value.toFixed(2);
@@ -25,17 +31,24 @@ const toFixed = (value: number) => value.toFixed(2);
 const FacultyPickerDialog = ({
   open,
   onOpenChange,
-  title,
-  description,
-  faculty,
-  selectedFacultyId,
-  onSelectFaculty,
+  title = "Select Faculty",
+  description = "Select faculty.",
+  items,
+  selectedId,
+  onSelect,
+  searchPlaceholder = "Search faculty",
   defaultCampusId,
   defaultCollegeId,
+  renderSubtitle,
+  renderAnnotation,
 }: FacultyPickerDialogProps) => {
   const [facultyQuery, setFacultyQuery] = useState("");
   const [campusFilterId, setCampusFilterId] = useState("");
   const [collegeFilterId, setCollegeFilterId] = useState("");
+  const [campusDialogOpen, setCampusDialogOpen] = useState(false);
+  const [collegeDialogOpen, setCollegeDialogOpen] = useState(false);
+  const [campusQuery, setCampusQuery] = useState("");
+  const [collegeQuery, setCollegeQuery] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -45,28 +58,81 @@ const FacultyPickerDialog = ({
   }, [open, defaultCampusId, defaultCollegeId]);
 
   const campusOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    faculty.forEach((item) => {
+    const map = new Map<string, { id: string; code: string; name: string }>();
+    items.forEach((item) => {
       if (item.campus_id) {
-        map.set(item.campus_id, item.campus_name ?? "Unknown Campus");
+        map.set(item.campus_id, {
+          id: item.campus_id,
+          code: item.campus_code ?? "",
+          name: item.campus_name ?? "Unknown Campus",
+        });
       }
     });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [faculty]);
+    return Array.from(map.values());
+  }, [items]);
 
   const collegeOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    faculty.forEach((item) => {
+    const map = new Map<string, { id: string; code: string; name: string }>();
+    items.forEach((item) => {
       if (item.college_id) {
-        map.set(item.college_id, item.college_name ?? "Unknown College");
+        map.set(item.college_id, {
+          id: item.college_id,
+          code: item.college_code ?? "",
+          name: item.college_name ?? "Unknown College",
+        });
       }
     });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [faculty]);
+    return Array.from(map.values());
+  }, [items]);
+
+  useEffect(() => {
+    if (!campusDialogOpen) return;
+    setCampusQuery("");
+  }, [campusDialogOpen]);
+
+  useEffect(() => {
+    if (!collegeDialogOpen) return;
+    setCollegeQuery("");
+  }, [collegeDialogOpen]);
+
+  const selectedCampus =
+    campusOptions.find((campus) => campus.id === campusFilterId) ?? null;
+  const selectedCollege =
+    collegeOptions.find((college) => college.id === collegeFilterId) ?? null;
+
+  const renderFilterButton = (
+    label: string,
+    selectedLabel: string | null,
+    onClick: () => void,
+    onClear?: () => void,
+  ) => (
+    <div className="flex items-center flex-1">
+      <Button
+        variant="outline"
+        size="xs"
+        className={selectedLabel ? "font-semibold flex-1" : "flex-1"}
+        onClick={onClick}
+      >
+        <span className="truncate">{selectedLabel ?? label}</span>
+        <ChevronDown className="h-3 w-3 text-foreground/60" />
+      </Button>
+      {selectedLabel && onClear ? (
+        <Button
+          variant="ghost"
+          size="xs"
+          className="w-8"
+          onClick={onClear}
+          title={`Clear ${label}`}
+        >
+          <X className="h-3 w-3 text-foreground/60" />
+        </Button>
+      ) : null}
+    </div>
+  );
 
   const filteredFaculty = useMemo(() => {
     const normalized = facultyQuery.trim().toLowerCase();
-    return faculty.filter((item) => {
+    return items.filter((item) => {
       if (normalized && !item.name.toLowerCase().includes(normalized)) {
         return false;
       }
@@ -78,9 +144,11 @@ const FacultyPickerDialog = ({
       }
       return true;
     });
-  }, [faculty, facultyQuery, campusFilterId, collegeFilterId]);
+  }, [items, facultyQuery, campusFilterId, collegeFilterId]);
 
   return (
+    <>
+    
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
@@ -91,60 +159,25 @@ const FacultyPickerDialog = ({
       <div className="flex h-full flex-col gap-3 overflow-hidden">
         <div className="flex flex-col gap-2">
           <Input
-            placeholder="Search faculty"
+            placeholder={searchPlaceholder}
             value={facultyQuery}
             onChange={(event) => setFacultyQuery(event.target.value)}
           />
-          <div className="grid grid-cols-2 gap-2">
-            <Select
-              value={campusFilterId}
-              onChange={(event) => setCampusFilterId(event.target.value)}
-            >
-              <option value="">All campuses</option>
-              {campusOptions.map((campus) => (
-                <option key={campus.id} value={campus.id}>
-                  {campus.name}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={collegeFilterId}
-              onChange={(event) => setCollegeFilterId(event.target.value)}
-            >
-              <option value="">All colleges</option>
-              {collegeOptions.map((college) => (
-                <option key={college.id} value={college.id}>
-                  {college.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex flex-wrap gap-1 text-[10px] text-foreground/70">
-              {campusFilterId ? (
-                <span className="rounded-full border border-foreground/10 bg-foreground/5 px-2 py-0.5">
-                  Campus:{" "}
-                  {campusOptions.find((campus) => campus.id === campusFilterId)
-                    ?.name ?? "Selected"}
-                </span>
-              ) : (
-                <span className="rounded-full border border-foreground/10 bg-foreground/5 px-2 py-0.5">
-                  Campus: All
-                </span>
-              )}
-              {collegeFilterId ? (
-                <span className="rounded-full border border-foreground/10 bg-foreground/5 px-2 py-0.5">
-                  College:{" "}
-                  {collegeOptions.find((college) => college.id === collegeFilterId)
-                    ?.name ?? "Selected"}
-                </span>
-              ) : (
-                <span className="rounded-full border border-foreground/10 bg-foreground/5 px-2 py-0.5">
-                  College: All
-                </span>
-              )}
-            </div>
-            <button
+          <div className="flex flex-row gap-2">
+            {renderFilterButton(
+            "All Campus",
+            selectedCampus ? selectedCampus.code || selectedCampus.name : null,
+            () => setCampusDialogOpen(true),
+            campusFilterId ? () => setCampusFilterId("") : undefined,
+          )}
+          {renderFilterButton(
+            "All College",
+            selectedCollege ? selectedCollege.code || selectedCollege.name : null,
+            () => setCollegeDialogOpen(true),
+            collegeFilterId ? () => setCollegeFilterId("") : undefined,
+          )}
+
+          <button
               type="button"
               className="text-xs text-foreground/60 hover:text-foreground"
               onClick={() => {
@@ -153,8 +186,9 @@ const FacultyPickerDialog = ({
               }}
             >
               Reset filters
-            </button>
+            </button> 
           </div>
+         
         </div>
 
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
@@ -163,37 +197,84 @@ const FacultyPickerDialog = ({
               key={item.id}
               title={item.name}
               subtitle={[
-                item.latest_degree_title
-                  ? item.latest_degree_title
-                  : "No degree on file",
+                ...(renderSubtitle
+                  ? renderSubtitle(item)
+                  : [
+                      item.latest_degree_title
+                        ? item.latest_degree_title
+                        : "No degree on file",
+                    ]),
               ]}
-              isSelected={item.id === selectedFacultyId}
-              onClick={() => onSelectFaculty(item.id)}
+              isSelected={item.id === selectedId}
+              onClick={() => onSelect(item.id)}
               icon={<User className="h-5 w-5 text-background/80" />}
               annotations={
-                <div className="flex flex-col items-end gap-1">
-                  <span className="rounded-md bg-foreground/10 px-1.5 py-1 text-xs">
-                    TWL: {toFixed(item.total_working_load)}
-                  </span>
-                  <div className="flex flex-wrap gap-1 text-[10px] text-foreground/60">
-                    {item.campus_name ? (
-                      <span className="rounded-full border border-foreground/10 px-1.5 py-0.5">
-                        {item.campus_name}
-                      </span>
-                    ) : null}
-                    {item.college_name ? (
-                      <span className="rounded-full border border-foreground/10 px-1.5 py-0.5">
-                        {item.college_name}
-                      </span>
-                    ) : null}
+                renderAnnotation ? (
+                  renderAnnotation(item)
+                ) : (
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="rounded-md bg-foreground/10 px-1.5 py-1 text-xs">
+                      TWL: {toFixed(item.total_working_load)}
+                    </span>
+                    <div className="flex flex-wrap gap-1 text-[10px] text-foreground/60">
+                      {item.campus_name ? (
+                        <span className="rounded-full border border-foreground/10 px-1.5 py-0.5">
+                          {item.campus_name}
+                        </span>
+                      ) : null}
+                      {item.college_name ? (
+                        <span className="rounded-full border border-foreground/10 px-1.5 py-0.5">
+                          {item.college_name}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
+                )
               }
             />
           ))}
         </div>
       </div>
     </AppDialog>
+
+    <CampusPickerDialog
+      open={campusDialogOpen}
+      onOpenChange={setCampusDialogOpen}
+      campuses={campusOptions.map((campus) => ({
+        id: campus.id,
+        code: campus.code,
+        name: campus.name,
+        address: null,
+      }))}
+      selectedCampusId={campusFilterId}
+      query={campusQuery}
+      onQueryChange={setCampusQuery}
+      onSelect={(nextCampusId) => {
+        setCampusFilterId(nextCampusId);
+        setCampusDialogOpen(false);
+      }}
+      emptyState="No campuses found."
+    />
+
+    <CollegePickerDialog
+      open={collegeDialogOpen}
+      onOpenChange={setCollegeDialogOpen}
+      colleges={collegeOptions.map((college) => ({
+        id: college.id,
+        code: college.code,
+        name: college.name,
+        description: null,
+      }))}
+      selectedCollegeId={collegeFilterId}
+      query={collegeQuery}
+      onQueryChange={setCollegeQuery}
+      onSelect={(nextCollegeId) => {
+        setCollegeFilterId(nextCollegeId);
+        setCollegeDialogOpen(false);
+      }}
+      emptyState="No colleges found."
+    />
+    </>
   );
 };
 
