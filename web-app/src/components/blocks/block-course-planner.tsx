@@ -66,7 +66,11 @@ const BlockCoursePlanner = ({
     setError("");
     startTransition(async () => {
       for (const courseId of selectedCourseIds) {
-        const result = await addCourseToBlock(blockId, courseId);
+        const result = await addCourseToBlock(
+          blockId,
+          courseId,
+          academicTermId,
+        );
         if (result.error) {
           setError(result.error);
           return;
@@ -81,7 +85,11 @@ const BlockCoursePlanner = ({
   const handleRemove = (courseId: string) => {
     setError("");
     startTransition(async () => {
-      const result = await removeCourseFromBlock(blockId, courseId);
+      const result = await removeCourseFromBlock(
+        blockId,
+        courseId,
+        academicTermId,
+      );
       if (result.error) {
         setError(result.error);
         return;

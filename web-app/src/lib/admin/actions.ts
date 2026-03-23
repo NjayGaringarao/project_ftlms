@@ -139,13 +139,14 @@ const revalidateMajorOfferingsPaths = (id?: string) => {
   }
 };
 
-const revalidateBlocksPaths = (id?: string) => {
-  revalidatePath("/blocks");
-  revalidatePath("/blocks/create");
+const revalidateBlocksPaths = (academicTermId?: string, id?: string) => {
+  const basePath = academicTermId ? `/blocks/${academicTermId}` : "/blocks";
+  revalidatePath(basePath);
+  revalidatePath(`${basePath}/create`);
 
   if (id) {
-    revalidatePath(`/blocks/${id}`);
-    revalidatePath(`/blocks/${id}/edit`);
+    revalidatePath(`${basePath}/${id}`);
+    revalidatePath(`${basePath}/${id}/edit`);
   }
 };
 
@@ -1392,7 +1393,7 @@ export async function createBlock(
     };
   }
 
-  revalidateBlocksPaths(data.id);
+  revalidateBlocksPaths(input.academic_term_id, data.id);
   return { data: { id: data.id } };
 }
 
@@ -1418,7 +1419,11 @@ export async function updateBlock(
 
   const supabase = await createClient();
 
-  const [{ data: majorOffering }, { data: academicTerm }] = await Promise.all([
+  const [
+    { data: majorOffering },
+    { data: academicTerm },
+    { data: existingBlock },
+  ] = await Promise.all([
     supabase
       .from("major_offering")
       .select("id")
@@ -1428,6 +1433,11 @@ export async function updateBlock(
       .from("academic_term")
       .select("id")
       .eq("id", input.academic_term_id)
+      .maybeSingle(),
+    supabase
+      .from("block")
+      .select("academic_term_id")
+      .eq("id", input.id)
       .maybeSingle(),
   ]);
 
@@ -1454,7 +1464,13 @@ export async function updateBlock(
     };
   }
 
-  revalidateBlocksPaths(input.id);
+  revalidateBlocksPaths(input.academic_term_id, input.id);
+  if (
+    existingBlock?.academic_term_id &&
+    existingBlock.academic_term_id !== input.academic_term_id
+  ) {
+    revalidateBlocksPaths(existingBlock.academic_term_id, input.id);
+  }
   return { data: true };
 }
 
@@ -1464,14 +1480,18 @@ export async function deleteBlock(
   if (!blockId?.trim()) return { error: "Block ID is required" };
 
   const supabase = await createClient();
-
+  const { data: existingBlock } = await supabase
+    .from("block")
+    .select("academic_term_id")
+    .eq("id", blockId)
+    .maybeSingle();
   const { error } = await supabase.from("block").delete().eq("id", blockId);
 
   if (error) {
     return { error: error.message };
   }
 
-  revalidateBlocksPaths();
+  revalidateBlocksPaths(existingBlock?.academic_term_id);
   return { data: true };
 }
 

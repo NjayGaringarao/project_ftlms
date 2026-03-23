@@ -20,6 +20,7 @@ type BlocksListProps = {
   blocks: BlockListItem[];
   campuses: CampusListItem[];
   programOfferings: ProgramOfferingListItem[];
+  academicTermId: string;
   basePath?: string;
   createPath?: string;
 };
@@ -28,8 +29,9 @@ export const BlocksList = ({
   blocks,
   campuses,
   programOfferings,
-  basePath = "/blocks",
-  createPath = "/blocks/create",
+  academicTermId,
+  basePath,
+  createPath,
 }: BlocksListProps) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,9 +42,11 @@ export const BlocksList = ({
   const [campusQuery, setCampusQuery] = useState("");
   const [programOfferingQuery, setProgramOfferingQuery] = useState("");
 
-  const academicTermId = searchParams.get("academic_term_id") ?? "";
   const campusId = searchParams.get("campus_id") ?? "";
   const programOfferingId = searchParams.get("program_offering_id") ?? "";
+  const resolvedBasePath = basePath ?? `/blocks/${academicTermId}`;
+  const resolvedCreatePath =
+    createPath ?? `/blocks/${academicTermId}/create`;
 
   const setQueryParams = useCallback(
     (mutate: (next: URLSearchParams) => void) => {
@@ -137,9 +141,9 @@ export const BlocksList = ({
   const idMatchPattern = useMemo(
     () =>
       new RegExp(
-        `^${basePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([^/]+)(?:/|$)`,
+        `^${resolvedBasePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/([^/]+)(?:/|$)`,
       ),
-    [basePath],
+    [resolvedBasePath],
   );
   const filterByParams = useCallback(
     (items: BlockListItem[]) => {
@@ -247,7 +251,7 @@ export const BlocksList = ({
         <CardHeader className="flex flex-row items-center justify-between mb-4">
           <CardTitle>Blocks</CardTitle>
           <Button asChild size={"sm"}>
-            <Link href={withQuery(createPath)}>Create Block</Link>
+            <Link href={withQuery(resolvedCreatePath)}>Create Block</Link>
           </Button>
         </CardHeader>
         <CardContent className="px-4 flex flex-col gap-2 w-full">
@@ -295,7 +299,9 @@ export const BlocksList = ({
           {filteredItems.map((block) => (
             <ListItem
               key={block.id}
-              onClick={() => router.push(withQuery(`${basePath}/${block.id}`))}
+              onClick={() =>
+                router.push(withQuery(`${resolvedBasePath}/${block.id}`))
+              }
               title={`${block.code}`}
               subtitle={[
                 `${block.major_offering?.program_offering?.campus?.name ?? "Unknown"} Campus`,

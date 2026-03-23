@@ -33,8 +33,8 @@ export const CampusView = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const blocksUrl = defaultAcademicTermId
-    ? `/blocks?campus_id=${campus.id}&academic_term_id=${defaultAcademicTermId}`
-    : `/blocks?campus_id=${campus.id}`;
+    ? `/blocks/${defaultAcademicTermId}?campus_id=${campus.id}`
+    : "/blocks";
 
   const handleDelete = async () => {
     setIsDeleting(true);

@@ -54,6 +54,7 @@ export const getBlockCourses = async (
 export const addCourseToBlock = async (
   blockId: string,
   courseId: string,
+  academicTermId?: string | null,
 ): Promise<{ data?: boolean; error?: string }> => {
   if (!blockId?.trim()) return { error: "Block is required" };
   if (!courseId?.trim()) return { error: "Course is required" };
@@ -67,13 +68,19 @@ export const addCourseToBlock = async (
     return { error: error.message };
   }
 
-  revalidatePath(`/blocks/${blockId}`);
+  if (academicTermId) {
+    revalidatePath(`/blocks/${academicTermId}`);
+    revalidatePath(`/blocks/${academicTermId}/${blockId}`);
+  } else {
+    revalidatePath("/blocks");
+  }
   return { data: true };
 };
 
 export const removeCourseFromBlock = async (
   blockId: string,
   courseId: string,
+  academicTermId?: string | null,
 ): Promise<{ data?: boolean; error?: string }> => {
   if (!blockId?.trim()) return { error: "Block is required" };
   if (!courseId?.trim()) return { error: "Course is required" };
@@ -95,6 +102,11 @@ export const removeCourseFromBlock = async (
     return { error: "Course is already scheduled and cannot be removed." };
   }
 
-  revalidatePath(`/blocks/${blockId}`);
+  if (academicTermId) {
+    revalidatePath(`/blocks/${academicTermId}`);
+    revalidatePath(`/blocks/${academicTermId}/${blockId}`);
+  } else {
+    revalidatePath("/blocks");
+  }
   return { data: true };
 };

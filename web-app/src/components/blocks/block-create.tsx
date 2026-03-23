@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ChevronDown, Plus } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -25,16 +25,17 @@ import ProgramOfferingPickerDialog from "@/components/shared/program-offering-pi
 import { cn } from "@/utils/style";
 
 type BlockCreateProps = {
+  academic_term_id: string;
   basePath?: string;
   fixedCampusId?: string;
 };
 
 export const BlockCreate = ({
+  academic_term_id,
   basePath = "/blocks",
   fixedCampusId,
 }: BlockCreateProps) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [pathBase, queryString] = basePath.split("?");
   const withQuery = (suffix: string) =>
     queryString ? `${pathBase}${suffix}?${queryString}` : `${pathBase}${suffix}`;
@@ -57,7 +58,6 @@ export const BlockCreate = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
-  const selectedAcademicTermId = searchParams.get("academic_term_id") ?? "";
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
   const [campusQuery, setCampusQuery] = useState("");
   const [programOfferingDialogOpen, setProgramOfferingDialogOpen] =
@@ -129,9 +129,8 @@ export const BlockCreate = ({
     [programOfferingId, programOfferings],
   );
   const selectedTerm = useMemo(
-    () =>
-      terms.find((term) => term.id === selectedAcademicTermId) ?? null,
-    [selectedAcademicTermId, terms],
+    () => terms.find((term) => term.id === academicTermId) ?? null,
+    [academicTermId, terms],
   );
   const availableMajorOfferings = useMemo(() => {
     return majorOfferings;
@@ -158,8 +157,8 @@ export const BlockCreate = ({
   );
 
   useEffect(() => {
-    setAcademicTermId(selectedAcademicTermId);
-  }, [selectedAcademicTermId]);
+    setAcademicTermId(academic_term_id);
+  }, [academic_term_id]);
 
   const handleCreate = async () => {
     const parsedYearLevel = Number(yearLevel);
@@ -397,7 +396,7 @@ export const BlockCreate = ({
                 setCampusId(fixedCampusId ?? "");
                 setProgramOfferingId("");
                 setMajorOfferingId("");
-                setAcademicTermId("");
+                setAcademicTermId(academicTermId);
                 setYearLevel("");
                 setSection("");
                 setStudentCount("");

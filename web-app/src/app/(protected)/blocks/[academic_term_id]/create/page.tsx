@@ -1,10 +1,8 @@
 import React from "react";
-import { notFound } from "next/navigation";
-import { BlockEdit } from "@/components/blocks/block-edit";
-import { getBlockById } from "@/lib/admin/blocks";
+import { BlockCreate } from "@/components/blocks/block-create";
 
-type EditBlockPageProps = {
-  params: Promise<{ blockId: string }>;
+type CreateBlockPageProps = {
+  params: Promise<{ academic_term_id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -24,24 +22,25 @@ const buildQueryString = (
   return queryString ? `?${queryString}` : "";
 };
 
-const EditBlockPage = async ({ params, searchParams }: EditBlockPageProps) => {
-  const [{ blockId }, resolvedSearchParams] = await Promise.all([
+const CreateBlockPage = async ({ params, searchParams }: CreateBlockPageProps) => {
+  const [{ academic_term_id }, resolvedSearchParams] = await Promise.all([
     params,
     searchParams,
   ]);
-  const block = await getBlockById(blockId);
-
-  if (!block) {
-    notFound();
-  }
-
   const queryString = buildQueryString(resolvedSearchParams);
+  const campusId = resolvedSearchParams.campus_id;
+  const fixedCampusId =
+    typeof campusId === "string" && campusId.trim() ? campusId : undefined;
 
   return (
     <div className="flex-1 flex-col">
-      <BlockEdit block={block} basePath={`/blocks${queryString}`} />
+      <BlockCreate
+        academic_term_id={academic_term_id}
+        basePath={`/blocks/${academic_term_id}${queryString}`}
+        fixedCampusId={fixedCampusId}
+      />
     </div>
   );
 };
 
-export default EditBlockPage;
+export default CreateBlockPage;
