@@ -746,6 +746,55 @@ const getSessionWindowsByPredicate = async (
   },
 ): Promise<Array<{ start_time: string; end_time: string }>> => {
   const supabase = await createClient();
+  let facultyClassIds: string[] | null = null;
+  let blockClassIds: string[] | null = null;
+
+  if (options.facultyId) {
+    const { data: facultyClasses, error: facultyClassError } = await supabase
+      .from("user_class")
+      .select("class_id")
+      .eq("user_id", options.facultyId);
+
+    if (facultyClassError) {
+      console.error(
+        "lib.schedule.session-actions.getSessionWindowsByPredicate.faculty ::",
+        facultyClassError,
+      );
+      return [];
+    }
+
+    facultyClassIds = (facultyClasses ?? [])
+      .map((row) => row.class_id as string)
+      .filter(Boolean);
+
+    if (facultyClassIds.length === 0) return [];
+  }
+
+  if (options.blockIds && options.blockIds.length > 0) {
+    const { data: blockClasses, error: blockClassError } = await supabase
+      .from("course_utilization")
+      .select("class_id, block:block_id(academic_term_id)")
+      .in("block_id", options.blockIds)
+      .eq("block.academic_term_id", academicTermId);
+
+    if (blockClassError) {
+      console.error(
+        "lib.schedule.session-actions.getSessionWindowsByPredicate.block ::",
+        blockClassError,
+      );
+      return [];
+    }
+
+    blockClassIds = Array.from(
+      new Set(
+        (blockClasses ?? [])
+          .map((row) => row.class_id as string)
+          .filter(Boolean),
+      ),
+    );
+
+    if (blockClassIds.length === 0) return [];
+  }
   let query = supabase
     .from("session_class")
     .select(
@@ -765,12 +814,12 @@ const getSessionWindowsByPredicate = async (
     query = query.eq("session.room_id", options.roomId);
   }
 
-  if (options.facultyId) {
-    query = query.eq("class.user_class.user_id", options.facultyId);
+  if (facultyClassIds) {
+    query = query.in("class_id", facultyClassIds);
   }
 
-  if (options.blockIds && options.blockIds.length > 0) {
-    query = query.in("class.course_utilization.block_id", options.blockIds);
+  if (blockClassIds) {
+    query = query.in("class_id", blockClassIds);
   }
 
   if (options.excludeClassId) {
