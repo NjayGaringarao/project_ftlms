@@ -64,7 +64,7 @@ export function SidebarNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "w-full px-4 py-2 hover:bg-foreground/5 flex items-center gap-3",
+                "w-full px-4 py-2 hover:bg-foreground/5 flex items-center gap-3 text-sm",
                 isActive
                   ? "font-semibold border-foreground bg-foreground/5"
                   : "border-transparent",
@@ -78,7 +78,7 @@ export function SidebarNav() {
           );
         })}
         <button
-          className="w-full text-foreground text-base py-2 px-4 font-normal hover:bg-foreground/5 rounded-none flex flex-row items-center justify-start"
+          className="w-full text-foreground text-sm py-2 px-4 font-normal hover:bg-foreground/5 rounded-none flex flex-row items-center justify-start"
           onClick={logout}
         >
           <LogOutIcon className="w-5 h-5 ml-1 mr-1" />

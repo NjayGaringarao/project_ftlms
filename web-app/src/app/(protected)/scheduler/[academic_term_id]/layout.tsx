@@ -3,7 +3,7 @@ import { getTermById, getTermsList } from "@/lib/admin/terms";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
-import { SchedulerTermSwitcher } from "@/components/scheduler/term-switcher";
+import TermSwitcher from "@/components/shared/term-switcher";
 
 type AcademicTermIdLayoutProps = {
   children: React.ReactNode;
@@ -43,7 +43,13 @@ const AcademicTermIdLayout = async ({
           },
         ]}
       >
-        <SchedulerTermSwitcher terms={terms} selectedTermId={selectedTerm.id} />
+        <TermSwitcher
+          terms={terms}
+          selectedTermId={selectedTerm.id}
+          routeConfig={{ mode: "segment", baseSegment: "scheduler" }}
+          description="Search and switch the active scheduling term."
+          refreshOnSelect
+        />
       </TopBarNav>
       <div className="flex flex-col h-full overflow-hidden">{children}</div>
       <div className="absolute  h-full w-full bg-background z-100 lg:hidden flex flex-col items-center justify-center px-16">

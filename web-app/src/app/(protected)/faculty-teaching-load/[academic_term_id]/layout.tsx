@@ -1,5 +1,5 @@
 import { TopBarNav } from "@/components/ui/topbar-nav";
-import { CourseLoadingTermSwitcher } from "@/components/faculty-teaching-load/term-switcher";
+import TermSwitcher from "@/components/shared/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
@@ -43,9 +43,12 @@ const AcademicTermIdLayout = async ({
           },
         ]}
       >
-        <CourseLoadingTermSwitcher
+        <TermSwitcher
           terms={terms}
           selectedTermId={selectedTerm.id}
+          routeConfig={{ mode: "segment", baseSegment: "faculty-teaching-load" }}
+          description="Search and switch the active faculty teaching load term."
+          refreshOnSelect
         />
       </TopBarNav>
       <div className="flex flex-col h-full overflow-hidden">{children}</div>
