@@ -74,7 +74,32 @@ as $$
     end,
     'room',
     case
-      when $4 is null then '[]'::jsonb
+      when $4 is null then coalesce(
+        (
+          select jsonb_agg(row_to_json(t))
+          from (
+            select distinct
+              s.id,
+              sc.class_id,
+              c.code as class_code,
+              s.day,
+              s.start_time,
+              s.end_time
+            from public.session_class sc
+            join public.session s
+              on s.id = sc.session_id
+            join public.class c
+              on c.id = sc.class_id
+            join public.course_utilization cu
+              on cu.class_id = c.id
+            join public.block b
+              on b.id = cu.block_id
+            where s.room_id is null
+              and b.academic_term_id = $1
+          ) t
+        ),
+        '[]'::jsonb
+      )
       else coalesce(
         (
           select jsonb_agg(row_to_json(t))

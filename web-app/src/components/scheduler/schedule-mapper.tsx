@@ -34,6 +34,7 @@ import type { ExtendedRoom } from "@/models";
 import { Button } from "../ui/button";
 import ConfirmScheduleDialog from "@/components/scheduler/dialogs/confirm-schedule-dialog";
 import { cn } from "@/utils/style";
+import { title } from "process";
 
 type ScheduleMapperProps = {
   academic_term_id: string;
@@ -336,7 +337,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
       setBlockSessions(selectedBlockId ? result.block : []);
       setFacultySessions(selectedFacultyId ? result.faculty : []);
-      setRoomSessions(selectedRoomId ? result.room : []);
+      setRoomSessions(result.room);
 
       setBlockLoading(false);
       setFacultyLoading(false);
@@ -623,7 +624,9 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     cn("min-w-0 h-7 px-2 text-sm", hasSelection ? "font-semibold flex-1" : "");
 
   const renderHeaderButton = (
-    label: string,
+    entityName: string,
+    emptyStateTitle: string,
+    filledStateTitle: string,
     icon: React.ReactNode,
     selectedLabel: string | null,
     onClick: () => void,
@@ -631,19 +634,19 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   ) => (
     <>
       <Button
-        title={selectedLabel ? `Change ${label}` : `Select ${label}`}
+        title={selectedLabel ? `${filledStateTitle}` : `${emptyStateTitle}`}
         variant="outline"
         className={getHeaderButtonClass(Boolean(selectedLabel))}
         onClick={onClick}
         disabled={lookupLoading}
       >
         {icon}
-        <span className="truncate">{selectedLabel ?? `Pick ${label}`}</span>
-        <ChevronDown className="h-3 w-3 text-foreground/60" />
+        <span className="truncate">{selectedLabel ?? `${filledStateTitle}`}</span>
+        <ChevronDown className="h-3 w-3 text-foreground/60" />,
       </Button>
       {selectedLabel ? (
         <Button
-          title={`Clear ${label}`}
+          title={`Clear ${entityName} selection`}
           variant="ghost"
           className="h-7 w-7 p-0 hover:bg-transparent"
           onClick={onClear}
@@ -726,6 +729,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     <div className="flex items-center gap-1 w-full">
       {renderHeaderButton(
         "Block",
+        "Change Block",
+        "Select Block",
         <Blocks className="h-3 w-3" />,
         selectedBlock?.code ?? null,
         () => setShowBlockDialog(true),
@@ -840,6 +845,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
                 title="Faculty"
                 headerAction={renderHeaderButton(
                   "Faculty",
+                  "Change Faculty",
+                  "Select Faculty",
                   <User className="h-3 w-3" />,
                   selectedFaculty?.name ?? null,
                   () => setShowFacultyDialog(true),
@@ -861,6 +868,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
                 title="Room"
                 headerAction={renderHeaderButton(
                   "Room",
+                  "Change Room",
+                  "Online Room / No Room",
                   <DoorOpen className="h-3 w-3" />,
                   selectedRoom?.code ?? null,
                   () => setShowRoomDialog(true),
@@ -947,6 +956,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
           setDragError("");
           setShowRoomDialog(false);
         }}
+        allowOnline
+        onlineLabel="Online / No Room"
         defaultCampusId={selectedBlock?.campus_id ?? null}
       />
 

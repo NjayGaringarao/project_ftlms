@@ -216,7 +216,9 @@ const SchedulerRightPane = () => {
         ? [selectedSession]
         : [];
     const ids = new Set(
-      source.map((session) => session.campus_id).filter((id): id is string => Boolean(id)),
+      source
+        .map((session) => session.campus_id)
+        .filter((id): id is string => Boolean(id)),
     );
     return ids.size === 1 ? Array.from(ids)[0] : null;
   }, [classSessions, selectedSession]);
@@ -228,7 +230,9 @@ const SchedulerRightPane = () => {
         ? [selectedSession]
         : [];
     const ids = new Set(
-      source.map((session) => session.college_id).filter((id): id is string => Boolean(id)),
+      source
+        .map((session) => session.college_id)
+        .filter((id): id is string => Boolean(id)),
     );
     return ids.size === 1 ? Array.from(ids)[0] : null;
   }, [classSessions, selectedSession]);
@@ -294,35 +298,51 @@ const SchedulerRightPane = () => {
             <>
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold">
-                  Scheduling {selectedOffering.class_code}
+                  Scheduling {selectedOffering.class_code} (
+                  {selectedOffering.course_code})
                 </p>
               </div>
               {selectedOffering && offeringDetails && (
-                <div className="space-y-1 ">
-                  <p className="text-xs text-foreground/70">
-                    Course: {offeringDetails.course}
-                  </p>
-                  <p className="text-xs text-foreground/70">
-                    Unscheduled: {offeringDetails.unscheduled}
-                  </p>
-                  <p className="text-xs text-foreground/70">
-                    {offeringDetails.remaining}
-                  </p>
-                  <p className="text-xs text-foreground/70">
-                    Faculty: {offeringDetails.faculty}
-                  </p>
-                  <p className="text-xs text-foreground/70">
-                    Merged: {offeringDetails.merged}
-                  </p>
+                <div className="space-y-1 text-xs text-foreground/70">
+                  <div>
+                    <p>Course</p>
+                    <span className="text-sm text-foreground ">
+                      {offeringDetails.course}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p>Unscheduled</p>
+                    <span className="text-sm text-foreground ">
+                      {offeringDetails.unscheduled}
+                    </span>
+                  </div>
+
+                  <div>
+                      <p>Faculty</p>
+                      <span className="text-sm text-foreground ">
+                       {offeringDetails.faculty}
+                      </span>
+                    </div>
+
+                  <div>
+                      <p>Class Merge</p>
+                      <span className="text-sm text-foreground ">
+                        {offeringDetails.merged}
+                      </span>
+                    </div>
+                 
+                 
+               
                 </div>
               )}
               <p className="text-xs text-foreground/60">Session Type</p>
               <Select
                 value={sessionType}
                 onChange={(event) =>
-                setSessionType(event.target.value as SessionType)
-              }
-            >
+                  setSessionType(event.target.value as SessionType)
+                }
+              >
                 <option value="Lecture">
                   Lecture (
                   {numberToHourDuration(
@@ -347,7 +367,7 @@ const SchedulerRightPane = () => {
           ) : (
             <div className="h-full flex items-center justify-center">
               <p className="text-base text-foreground p-4 border border-dashed ">
-                Pick block and course on the Block column
+                Select block and course on the Block column
               </p>
             </div>
           )}
@@ -374,8 +394,8 @@ const SchedulerRightPane = () => {
                       key={session.session_id}
                       type="button"
                       onClick={() =>
-                      selectSession(session.session_id, session.class_id)
-                    }
+                        selectSession(session.session_id, session.class_id)
+                      }
                       className={cn(
                         "rounded-full border px-2 py-0.5 text-[10px]",
                         selectedSession?.session_id === session.session_id
@@ -526,8 +546,6 @@ const SchedulerRightPane = () => {
                         </div>
                       )}
                   </div>
-
-                  
                 </div>
               ) : (
                 <p className="text-xs text-foreground/60">
@@ -542,7 +560,7 @@ const SchedulerRightPane = () => {
               ) : null}
             </>
           ) : (
-             <div className="h-full flex items-center justify-center">
+            <div className="h-full flex items-center justify-center">
               <p className="text-base text-foreground p-4 border border-dashed ">
                 Click any class on the grid
               </p>
@@ -567,6 +585,7 @@ const SchedulerRightPane = () => {
         onSelect={(roomId) => handleUpdateRoom(roomId)}
         allowOnline
         onlineLabel="Online / No Room"
+        defaultCampusId={classCampusId}
       />
 
       <FacultyPickerDialog
