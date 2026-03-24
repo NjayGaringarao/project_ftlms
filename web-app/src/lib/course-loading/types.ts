@@ -51,6 +51,9 @@ export type BlockClassRow = CourseLoadingClassRow & {
   /** laboratory_unit + lecture_unit */
   unit: number;
   merged_with: BlockClassMergedWith[];
+  has_sessions: boolean;
+  unscheduled_lecture_hours: number;
+  unscheduled_laboratory_hours: number;
 };
 
 // ── Sidebar list items ──

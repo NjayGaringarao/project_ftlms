@@ -222,6 +222,7 @@ export const mapBlockClassRow = (
     id?: string;
     code?: string;
     user_class?: unknown;
+    session_class?: unknown;
     course_utilization?: unknown;
   } | null;
 
@@ -253,6 +254,47 @@ export const mapBlockClassRow = (
       };
     });
 
+  const parseTimeToMinutes = (value: string | null | undefined) => {
+    if (!value) return 0;
+    const parts = value.split(":");
+    if (parts.length < 2) return 0;
+    const hours = Number(parts[0] ?? 0);
+    const minutes = Number(parts[1] ?? 0);
+    return hours * 60 + minutes;
+  };
+
+  const sessionRows = asArray(cls?.session_class) as Array<{
+    session?: { type?: string; start_time?: string; end_time?: string } | null;
+  }>;
+
+  const { scheduledLectureHours, scheduledLabHours } = sessionRows.reduce(
+    (acc, row) => {
+      const session = row.session ?? null;
+      if (!session?.type) return acc;
+      const startMinutes = parseTimeToMinutes(session.start_time);
+      const endMinutes = parseTimeToMinutes(session.end_time);
+      const durationHours = Math.max(endMinutes - startMinutes, 0) / 60;
+      if (session.type === "Lecture") {
+        acc.scheduledLectureHours += durationHours;
+      } else if (session.type === "Laboratory") {
+        acc.scheduledLabHours += durationHours;
+      }
+      return acc;
+    },
+    { scheduledLectureHours: 0, scheduledLabHours: 0 },
+  );
+
+  const totalLectureHours = units.lectureUnit;
+  const totalLabHours = calculateLaboratoryContactHours(units.laboratoryUnit);
+  const unscheduledLectureHours = Math.max(
+    totalLectureHours - scheduledLectureHours,
+    0,
+  );
+  const unscheduledLabHours = Math.max(
+    totalLabHours - scheduledLabHours,
+    0,
+  );
+
   return {
     id: cls?.id ?? "",
     class_code: cls?.code ?? "",
@@ -263,9 +305,14 @@ export const mapBlockClassRow = (
     laboratory_unit: units.laboratoryUnit,
     faculty_id: user?.id ?? null,
     faculty_name: identity?.name?.trim() || null,
-    laboratory_hours: calculateLaboratoryContactHours(units.laboratoryUnit),
-    lecture_hours: units.lectureUnit,
+    laboratory_hours: totalLabHours,
+    lecture_hours: totalLectureHours,
     unit: calculateUnit(units.lectureUnit, units.laboratoryUnit),
     merged_with: mergedWith,
+    has_sessions: Array.isArray(cls?.session_class)
+      ? cls?.session_class.length > 0
+      : Boolean(cls?.session_class),
+    unscheduled_lecture_hours: unscheduledLectureHours,
+    unscheduled_laboratory_hours: unscheduledLabHours,
   };
 };

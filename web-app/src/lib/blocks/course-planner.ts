@@ -86,20 +86,46 @@ export const removeCourseFromBlock = async (
   if (!courseId?.trim()) return { error: "Course is required" };
 
   const supabase = await createClient();
+  const { data: utilization, error: fetchError } = await supabase
+    .from("course_utilization")
+    .select("id, class_id")
+    .eq("block_id", blockId)
+    .eq("course_id", courseId)
+    .maybeSingle();
+
+  if (fetchError) {
+    return { error: fetchError.message };
+  }
+
+  if (!utilization) {
+    return { error: "Course utilization not found." };
+  }
+
+  if (utilization.class_id) {
+    const { count, error: sessionError } = await supabase
+      .from("session_class")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", utilization.class_id);
+
+    if (sessionError) {
+      return { error: sessionError.message };
+    }
+
+    if ((count ?? 0) > 0) {
+      return {
+        error: "Course utilization has scheduled sessions and cannot be removed.",
+      };
+    }
+  }
+
   const { data, error } = await supabase
     .from("course_utilization")
     .delete()
-    .eq("block_id", blockId)
-    .eq("course_id", courseId)
-    .is("class_id", null)
+    .eq("id", utilization.id)
     .select("id");
 
   if (error) {
     return { error: error.message };
-  }
-
-  if (!data || data.length === 0) {
-    return { error: "Course is already scheduled and cannot be removed." };
   }
 
   if (academicTermId) {

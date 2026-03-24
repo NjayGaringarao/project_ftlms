@@ -7,8 +7,13 @@ import { AppDialog } from "@/components/ui/app-dialog";
 import { PickerList } from "@/components/faculty-teaching-load/picker-list";
 import type { CourseListItem } from "@/lib/admin/courses";
 import type { BlockClassRow } from "@/lib/course-loading/types";
-import { addCourseToBlock, removeCourseFromBlock } from "@/lib/blocks/course-planner";
+import {
+  addCourseToBlock,
+  removeCourseFromBlock,
+} from "@/lib/blocks/course-planner";
 import { getClassesByBlockAndTerm } from "@/lib/course-loading/queries";
+import { numberToHourDuration } from "@/utils/time";
+import { Popover } from "radix-ui";
 
 type BlockCoursePlannerProps = {
   blockId: string;
@@ -98,7 +103,7 @@ const BlockCoursePlanner = ({
     });
   };
 
-  const totalUnits : number = useMemo(
+  const totalUnits: number = useMemo(
     () => rows.reduce((sum, row) => sum + (row.unit || 0), 0),
     [rows],
   );
@@ -109,23 +114,23 @@ const BlockCoursePlanner = ({
         <div className="flex-1 flex gap-2">
           <NotebookTabs className="w-5 h-5" />
           <h3 className="text-base font-semibold">Course Utilization</h3>
-          <div title={totalUnits > 21 ? "Units for this block is overload" : ""} className="text-xs flex flex-row items-center bg-foreground/10 text-foreground/80 rounded-md px-2 py-0.5">
-
-          <span>Total Units: {totalUnits.toFixed(2)}</span>
-          {
-            totalUnits >= 21 && (
+          <div
+            title={totalUnits > 21 ? "Units for this block is overload" : ""}
+            className="text-xs flex flex-row items-center bg-foreground/10 text-foreground/80 rounded-md px-2 py-0.5"
+          >
+            <span>Total Units: {totalUnits.toFixed(2)}</span>
+            {totalUnits >= 21 && (
               <ArrowUp className="ml-1 w-3 h-3 text-red-500" />
-            )
-          }
-        </div>
+            )}
           </div>
+        </div>
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4" />
           Add Course
         </Button>
       </div>
 
-      { rows.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="text-sm text-foreground/60">No courses assigned yet.</p>
       ) : (
         <div className="overflow-hidden rounded-md border mt-4">
@@ -134,8 +139,8 @@ const BlockCoursePlanner = ({
               <tr className="text-left text-xs text-foreground">
                 <th className="px-3 py-2">Course Code</th>
                 <th className="px-3 py-2">Instructor</th>
-                <th className="px-3 py-2">Laboratory (h)</th>
-                <th className="px-3 py-2">Lecture (h)</th>
+                <th className="px-3 py-2">Lecture</th>
+                <th className="px-3 py-2">Laboratory</th>
                 <th className="px-3 py-2">Unit</th>
                 <th className="px-3 py-2">Merge(s)</th>
                 <th className="px-3 py-2" />
@@ -143,28 +148,61 @@ const BlockCoursePlanner = ({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={`${row.id || "unassigned"}-${row.course_id}`} className="border-t">
-                  <td title={row.course_title} className="px-3 py-2 font-medium">{row.course_code}</td>
+                <tr
+                  key={`${row.id || "unassigned"}-${row.course_id}`}
+                  className="border-t"
+                >
+                  <td
+                    title={row.course_title}
+                    className="px-3 py-2 font-medium"
+                  >
+                    {row.course_code}
+                  </td>
                   <td className="px-3 py-2 text-foreground/70">
                     {row.faculty_name ?? "Unassigned"}
                   </td>
-                  <td className="px-3 py-2">{row.laboratory_hours}</td>
-                  <td className="px-3 py-2">{row.lecture_hours}</td>
-                  <td className="px-3 py-2 font-medium">{row.unit}</td>
+                  <td
+                    title="Unscheduled over total Lecture Hours"
+                    className="px-3 py-2"
+                  >
+                    {numberToHourDuration(row.unscheduled_lecture_hours)} /{" "}
+                    {numberToHourDuration(row.lecture_hours)}
+                  </td>
+                  <td
+                    title="Unscheduled over total Laboratory Hours"
+                    className="px-3 py-2"
+                  >
+                    {numberToHourDuration(row.unscheduled_laboratory_hours)} /{" "}
+                    {numberToHourDuration(row.laboratory_hours)}
+                  </td>
+                  <td className="px-3 py-2 font-medium">
+                    {row.unit.toFixed(2)}
+                  </td>
                   <td className="px-3 py-2 text-foreground/60 text-xs">
                     {row.merged_with.length > 0
                       ? row.merged_with.map((m) => m.block_code).join(", ")
                       : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
+                    <Popover.Root>
+                      <Popover.Trigger />
+                      <Popover.Anchor />
+                      <Popover.Portal>
+                        <Popover.Content>
+                          <Popover.Close />
+                          <Popover.Arrow />
+                        </Popover.Content>
+                      </Popover.Portal>
+                    </Popover.Root>
+
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleRemove(row.course_id)}
-                      disabled={Boolean(row.id) || isPending}
+                      disabled={row.has_sessions || isPending}
                       title={
-                        row.id
-                          ? "Remove the class assignment before deleting this course."
+                        row.has_sessions
+                          ? "Cannot remove — class has scheduled sessions."
                           : "Remove course"
                       }
                     >

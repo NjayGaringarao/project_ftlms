@@ -158,6 +158,9 @@ export const getClassesByBlockAndTerm = async (
             identity:identity (name)
           )
         ),
+        session_class (
+          session:session_id (type, start_time, end_time)
+        ),
         course_utilization (
           block:block_id (id, code)
         )
