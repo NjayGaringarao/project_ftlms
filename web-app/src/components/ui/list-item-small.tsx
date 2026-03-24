@@ -24,7 +24,7 @@ const ListItemSmall = ({
   icon,
   annotations,
   className,
-  listType
+  listType = "layout",
 }: ListItemSmallProps) => {
   const isSubtitleArray = Array.isArray(subtitle);
   const isSubtitleAnElement = React.isValidElement(subtitle);

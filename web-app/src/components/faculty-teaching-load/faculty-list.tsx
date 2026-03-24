@@ -8,27 +8,29 @@ import ListItemSmall from "@/components/ui/list-item-small";
 import type { FacultyListItem } from "@/lib/course-loading/types";
 
 type FacultyListProps = {
-  faculty: FacultyListItem[];
+  facultyList: FacultyListItem[];
   academicTermId: string;
 };
 
 const toFixed = (v: number) => v.toFixed(2);
 
-export const FacultyList = ({ faculty, academicTermId }: FacultyListProps) => {
+export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
 
   const selectedId = useMemo(() => {
-    const match = pathname.match(/\/faculty-teaching-load\/[^/]+\/faculty\/([^/]+)/);
+    const match = pathname.match(
+      /\/faculty-teaching-load\/[^/]+\/faculty\/([^/]+)/,
+    );
     return match ? match[1] : null;
   }, [pathname]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return faculty;
-    return faculty.filter((f) => f.name.toLowerCase().includes(q));
-  }, [faculty, query]);
+    if (!q) return facultyList;
+    return facultyList.filter((faculty) => faculty.name.toLowerCase().includes(q));
+  }, [facultyList, query]);
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-hidden">
@@ -46,23 +48,21 @@ export const FacultyList = ({ faculty, academicTermId }: FacultyListProps) => {
           </p>
         )}
 
-        {filtered.map((f) => (
+        {filtered.map((faculty) => (
           <ListItemSmall
-            key={f.id}
-            title={f.name}
-            subtitle={
-              f.latest_degree_title
-                ? [f.latest_degree_title]
-                : ["No degree on file"]
-            }
-            isSelected={selectedId === f.id}
+            key={faculty.id}
+            title={faculty.name}
+            subtitle={[`${faculty.campus_name?.concat(" Campus") ?? "Campus not assigned"} ${faculty.college_code ? " | ".concat(faculty.college_code) : ""}`]}
+            isSelected={selectedId === faculty.id}
             onClick={() =>
-              router.push(`/faculty-teaching-load/${academicTermId}/faculty/${f.id}`)
+              router.push(
+                `/faculty-teaching-load/${academicTermId}/faculty/${faculty.id}`,
+              )
             }
             icon={<User className="h-6 w-6 text-background/70" />}
             annotations={
               <span className="text-xs text-foreground bg-foreground/10 px-1 py-1 rounded-md">
-                TWL: {toFixed(f.total_working_load)}
+                TWL: {toFixed(faculty.total_working_load)}
               </span>
             }
           />

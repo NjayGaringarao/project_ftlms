@@ -24,7 +24,6 @@ const FacultyOverviewPanel = ({
     <div className="flex h-full flex-col gap-6 overflow-y-auto p-4">
       <WorkingLoadMetrics
         designationLoad={designationLoad}
-        actualTeachingLoad={actualTeachingLoad}
         totalWorkingLoad={totalWorkingLoad}
         size="Compact"
       />

@@ -1,14 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { Pencil, Trash2, Merge, Split, ArrowUp } from "lucide-react";
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowUp, ClipboardClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AddTile } from "@/components/ui/add-tile";
-import { deleteClass, unmergeClass } from "@/lib/course-loading/actions";
 import type { FacultyClassRow } from "@/lib/course-loading/types";
 import { formatFacultyBlockLabel } from "@/lib/course-loading/formatters";
-import ClassMaker from "./class-maker";
-import MergeClassDialog from "./merge-class-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 type FacultyClassTableProps = {
@@ -24,36 +21,17 @@ export const FacultyClassTable = ({
   academicTermId,
   facultyId,
 }: FacultyClassTableProps) => {
-  const [isPending, startTransition] = useTransition();
-  const [classMakerOpen, setClassMakerOpen] = useState(false);
-  const [editRow, setEditRow] = useState<FacultyClassRow | null>(null);
-  const [mergeTarget, setMergeTarget] = useState<FacultyClassRow | null>(null);
+  const router = useRouter();
 
-  const mergeableByClassId = useMemo(() => {
-    return new Map(
-      rows.map((row) => [
-        row.id,
-        rows.filter(
-          (candidate) =>
-            candidate.id !== row.id &&
-            candidate.course_id === row.course_id &&
-            candidate.campus_code === row.campus_code,
-        ),
-      ]),
-    );
-  }, [rows]);
+  const handleManageSchedule = (row: FacultyClassRow) => {
+    const firstBlock = row.blocks[0];
+    if (!firstBlock) return;
 
-  const handleDelete = (classId: string) => {
-    if (!confirm("Delete this class? This action cannot be undone.")) return;
-    startTransition(async () => {
-      await deleteClass(classId, academicTermId);
-    });
-  };
-
-  const handleUnmerge = (classId: string) => {
-    startTransition(async () => {
-      await unmergeClass(classId, academicTermId);
-    });
+    const params = new URLSearchParams();
+    params.set("blockId", firstBlock.block_id);
+    params.set("courseUtilizationId", firstBlock.course_utilization_id);
+    params.set("facultyId", facultyId);
+    router.push(`/scheduler/${academicTermId}/mapper?${params.toString()}`);
   };
 
   const totalAtl = rows.reduce((sum, r) => sum + r.atl, 0);
@@ -87,10 +65,6 @@ export const FacultyClassTable = ({
               <tr
                 key={row.id}
                 className="py-4 text-left border-b hover:bg-foreground/5"
-                onClick={() => {
-                  setEditRow(row);
-                  setClassMakerOpen(true);
-                }}
               >
                 <td className="px-3 py-2">{row.campus_name}</td>
                 <td className="px-3 py-2">
@@ -127,49 +101,20 @@ export const FacultyClassTable = ({
                 <td className="px-3 py-2">{toFixed(row.lecture_unit)}</td>
                 <td className="px-3 py-2 font-medium">{toFixed(row.atl)}</td>
 
-                <td className="w-20">
+                <td className="w-28">
                   <div className="flex items-center justify-end gap-1">
-                    {row.blocks.length > 1 ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isPending}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnmerge(row.id);
-                        }}
-                        title="Unmerge this class"
-                      >
-                        <Split className="h-4 w-4 text-foreground" />
-                      </Button>
-                    ) : null}
-
-                    {(mergeableByClassId.get(row.id)?.length ?? 0) > 0 ? (
-                      <Button
-                        variant="outline"
-                        title="Merge with a similar class"
-                        size="sm"
-                        disabled={isPending}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMergeTarget(row);
-                        }}
-                      >
-                        <Merge className="h-4 w-4 text-foreground" />
-                      </Button>
-                    ) : null}
-
                     <Button
-                      title="Delete this class"
+                      title={
+                        row.blocks.length === 0
+                          ? "No block assigned."
+                          : "Manage Schedule"
+                      }
                       variant="outline"
                       size="sm"
-                      disabled={isPending}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(row.id);
-                      }}
+                      disabled={row.blocks.length === 0}
+                      onClick={() => handleManageSchedule(row)}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <ClipboardClock className="h-4 w-4" />
                     </Button>
                   </div>
                 </td>
@@ -186,48 +131,9 @@ export const FacultyClassTable = ({
                 </td>
               </tr>
             )}
-            <tr className="p-2 w-full">
-              <td colSpan={8} className="py-1">
-                <AddTile
-                  title="Add Class"
-                  containerClassName="justify-center items-center"
-                  className="p-2"
-                  onClick={() => {
-                    setEditRow(null);
-                    setClassMakerOpen(true);
-                  }}
-                />
-              </td>
-            </tr>
           </tbody>
         </table>
       </CardContent>
-
-      {classMakerOpen && (
-        <ClassMaker
-          academicTermId={academicTermId}
-          mode={editRow ? "Edit" : "Insert"}
-          facultyId={facultyId}
-          classId={editRow?.id}
-          initialCampusId={editRow?.campus_id}
-          initialCourseId={editRow?.course_id}
-          initialBlockIds={editRow?.blocks.map((b) => b.block_id)}
-          open={classMakerOpen}
-          onOpenChange={setClassMakerOpen}
-        />
-      )}
-
-      {mergeTarget && (
-        <MergeClassDialog
-          classRow={mergeTarget}
-          candidates={mergeableByClassId.get(mergeTarget.id) ?? []}
-          academicTermId={academicTermId}
-          open={Boolean(mergeTarget)}
-          onOpenChange={(open) => {
-            if (!open) setMergeTarget(null);
-          }}
-        />
-      )}
     </Card>
   );
 };

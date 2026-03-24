@@ -5,7 +5,6 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ClassInsertInput, ClassUpdateInput } from "./types";
 import {
-  diffBlockIds,
   ensureCourseUtilizations,
   findConflictingBlockAssignments,
   validateClassInsertInput,
@@ -233,25 +232,6 @@ export async function updateClass(
   return { data: true };
 }
 
-export async function deleteClass(
-  classId: string,
-  academicTermId: string,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!classId?.trim()) return { error: "Class ID is required" };
-
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("class").delete().eq("id", classId);
-
-  if (error) {
-    console.error("lib.course-loading.deleteClass ::", error);
-    return { error: error.message };
-  }
-
-  revalidateCourseLoading(academicTermId);
-  return { data: true };
-}
-
 export async function mergeClasses(
   targetClassId: string,
   sourceClassIds: string[],
@@ -452,169 +432,6 @@ export async function mergeClasses(
     if (classDeleteErr) {
       console.error(
         "lib.course-loading.mergeClasses.classDelete ::",
-        classDeleteErr,
-      );
-      return { error: classDeleteErr.message };
-    }
-  }
-
-  revalidateCourseLoading(academicTermId);
-  return { data: true };
-}
-
-export async function unmergeClass(
-  classId: string,
-  academicTermId: string,
-): Promise<{ data?: boolean; error?: string }> {
-  if (!classId?.trim()) return { error: "Class ID is required" };
-
-  const supabase = await createClient();
-
-  const { data: utilizations, error: utilErr } = await supabase
-    .from("course_utilization")
-    .select("id, block_id, course_id")
-    .eq("class_id", classId)
-    .order("id", { ascending: true });
-
-  if (utilErr) {
-    console.error("lib.course-loading.unmergeClass.fetchUtilizations ::", utilErr);
-    return { error: utilErr.message };
-  }
-
-  if (!utilizations || utilizations.length <= 1) {
-    return { error: "This class is not merged" };
-  }
-
-  const { data: userClass, error: userClassErr } = await supabase
-    .from("user_class")
-    .select("user_id")
-    .eq("class_id", classId)
-    .maybeSingle();
-
-  if (userClassErr) {
-    console.error("lib.course-loading.unmergeClass.userClass ::", userClassErr);
-    return { error: userClassErr.message };
-  }
-
-  const facultyId = userClass?.user_id ?? null;
-
-  for (const util of utilizations.slice(1)) {
-    const { data: newClass, error: newClassErr } = await supabase
-      .from("class")
-      .insert({ code: `TMP-${randomUUID()}` })
-      .select("id")
-      .single();
-
-    if (newClassErr || !newClass) {
-      console.error("lib.course-loading.unmergeClass.createClass ::", newClassErr);
-      return { error: newClassErr?.message ?? "Failed to create class" };
-    }
-
-    if (facultyId) {
-      const { error: insertUserClassErr } = await supabase
-        .from("user_class")
-        .insert({ user_id: facultyId, class_id: newClass.id });
-
-      if (insertUserClassErr) {
-        console.error(
-          "lib.course-loading.unmergeClass.userClassInsert ::",
-          insertUserClassErr,
-        );
-        return { error: insertUserClassErr.message };
-      }
-    }
-
-    const { error: moveErr } = await supabase
-      .from("course_utilization")
-      .update({ class_id: newClass.id })
-      .eq("id", util.id);
-
-    if (moveErr) {
-      console.error("lib.course-loading.unmergeClass.moveUtil ::", moveErr);
-      return { error: moveErr.message };
-    }
-  }
-
-  const { data: remaining, error: remainingErr } = await supabase
-    .from("course_utilization")
-    .select("class_id")
-    .eq("class_id", classId);
-
-  if (remainingErr) {
-    console.error(
-      "lib.course-loading.unmergeClass.remaining ::",
-      remainingErr,
-    );
-    return { error: remainingErr.message };
-  }
-
-  if (!remaining || remaining.length === 0) {
-    const { data: sessionRows, error: sessionErr } = await supabase
-      .from("session_class")
-      .select("session_id")
-      .eq("class_id", classId);
-
-    if (sessionErr) {
-      console.error(
-        "lib.course-loading.unmergeClass.sessions ::",
-        sessionErr,
-      );
-      return { error: sessionErr.message };
-    }
-
-    const sessionIds = Array.from(
-      new Set((sessionRows ?? []).map((row) => row.session_id as string)),
-    );
-
-    if (sessionIds.length > 0) {
-      const { error: sessionClassErr } = await supabase
-        .from("session_class")
-        .delete()
-        .eq("class_id", classId);
-
-      if (sessionClassErr) {
-        console.error(
-          "lib.course-loading.unmergeClass.sessionClassDelete ::",
-          sessionClassErr,
-        );
-        return { error: sessionClassErr.message };
-      }
-
-      const { error: sessionDeleteErr } = await supabase
-        .from("session")
-        .delete()
-        .in("id", sessionIds);
-
-      if (sessionDeleteErr) {
-        console.error(
-          "lib.course-loading.unmergeClass.sessionDelete ::",
-          sessionDeleteErr,
-        );
-        return { error: sessionDeleteErr.message };
-      }
-    }
-
-    const { error: userClassErr } = await supabase
-      .from("user_class")
-      .delete()
-      .eq("class_id", classId);
-
-    if (userClassErr) {
-      console.error(
-        "lib.course-loading.unmergeClass.userClassDelete ::",
-        userClassErr,
-      );
-      return { error: userClassErr.message };
-    }
-
-    const { error: classDeleteErr } = await supabase
-      .from("class")
-      .delete()
-      .eq("id", classId);
-
-    if (classDeleteErr) {
-      console.error(
-        "lib.course-loading.unmergeClass.classDelete ::",
         classDeleteErr,
       );
       return { error: classDeleteErr.message };

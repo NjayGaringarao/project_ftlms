@@ -13,8 +13,8 @@ const FacultyLayout = async ({ children, params }: FacultyLayoutProps) => {
 
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
-      <div className="w-1/4 shrink-0 overflow-hidden rounded-lg border p-4">
-        <FacultyList faculty={faculty} academicTermId={academic_term_id} />
+      <div className="w-84 overflow-hidden">
+        <FacultyList facultyList={faculty} academicTermId={academic_term_id} />
       </div>
       <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
     </div>

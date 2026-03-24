@@ -555,5 +555,4 @@ export {
   getSchedulerMapperClassListByFaculty,
   getSchedulerMapperClassListByBlock,
   getSchedulerMapperClassListByRoom,
-  getSchedulerMapperMatrixByOnlineBlock,
 };

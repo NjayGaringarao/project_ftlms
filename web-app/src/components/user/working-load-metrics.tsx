@@ -8,9 +8,9 @@ import {
 } from "lucide-react";
 
 type WorkingLoadMetricsProps = {
-  designationLoad: number;
-  actualTeachingLoad: number;
-  totalWorkingLoad: number;
+  designationLoad?: number;
+  actualTeachingLoad?: number;
+  totalWorkingLoad?: number;
   size?: "Default" | "Compact";
 };
 
@@ -30,63 +30,69 @@ const WorkingLoadMetrics = ({
         size === "Compact" && "grid-cols-1",
       )}
     >
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Calculator className="w-4 h-4" />
-            Total Working Load
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-row gap-2 items-center">
-            <p className="text-3xl font-semibold">
-              {toFixedLoad(totalWorkingLoad)}
-            </p>
-            <WeightTilde />
-          </div>
-          <p className="text-xs text-foreground/60 mt-1">ATL + ETL</p>
-        </CardContent>
-      </Card>
+      {totalWorkingLoad !== undefined && totalWorkingLoad > -1 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Calculator className="w-4 h-4" />
+              Total Working Load
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-row gap-2 items-center">
+              <p className="text-3xl font-semibold">
+                {toFixedLoad(totalWorkingLoad)}
+              </p>
+              <WeightTilde />
+            </div>
+            <p className="text-xs text-foreground/60 mt-1">ATL + ETL</p>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <BriefcaseBusiness className="w-4 h-4" />
-            Designation (ETL)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-row gap-2 items-center">
-            <p className="text-3xl font-semibold">
-              {toFixedLoad(designationLoad)}
+      {designationLoad !== undefined && designationLoad > -1 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <BriefcaseBusiness className="w-4 h-4" />
+              Designation (ETL)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-row gap-2 items-center">
+              <p className="text-3xl font-semibold">
+                {toFixedLoad(designationLoad)}
+              </p>
+              <WeightTilde />
+            </div>
+            <p className="text-xs text-foreground/60 mt-1">
+              Equivalent load units
             </p>
-            <WeightTilde />
-          </div>
-          <p className="text-xs text-foreground/60 mt-1">
-            Equivalent load units
-          </p>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <GraduationCap className="w-4 h-4" />
-            Actual Teaching Load (ATL)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-row gap-2 items-center">
-            <p className="text-3xl font-semibold">
-              {toFixedLoad(actualTeachingLoad)}
+      {actualTeachingLoad !== undefined && actualTeachingLoad > -1 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <GraduationCap className="w-4 h-4" />
+              Actual Teaching Load (ATL)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-row gap-2 items-center">
+              <p className="text-3xl font-semibold">
+                {toFixedLoad(actualTeachingLoad)}
+              </p>
+              <WeightTilde />
+            </div>
+            <p className="text-xs text-foreground/60 mt-1">
+              Lecture + (Laboratory * 0.75)
             </p>
-            <WeightTilde />
-          </div>
-          <p className="text-xs text-foreground/60 mt-1">
-            Lecture + (Laboratory * 0.75)
-          </p>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

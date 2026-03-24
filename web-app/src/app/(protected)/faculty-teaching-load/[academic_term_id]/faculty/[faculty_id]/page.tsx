@@ -22,15 +22,16 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
 
   return (
     <div className="flex h-full rounded-lg gap-4">
-      <div className="h-full flex-1 overflow-hidden">
+      <div className="h-full flex-1 flex flex-col gap-4 overflow-hidden">
         <FacultyClassTable
           rows={classRows}
           academicTermId={academic_term_id}
           facultyId={faculty_id}
         />
+        
       </div>
 
-      <div className="h-full w-1/3 overflow-hidden border rounded-md">
+      <div className="h-full max-w-92 overflow-hidden border rounded-md">
         <FacultyOverviewPanel
           overview={overview}
           termActualTeachingLoad={termAtl}
