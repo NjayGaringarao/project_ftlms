@@ -141,7 +141,7 @@ as $$
   class_loads as (
     select
       cr.user_id,
-      sum(cr.lecture_unit + cr.laboratory_unit * 0.75) as actual_teaching_load
+      sum(cr.lecture_unit + (cr.laboratory_unit * 3) * 0.75) as actual_teaching_load
     from class_rows cr
     group by cr.user_id
   ),

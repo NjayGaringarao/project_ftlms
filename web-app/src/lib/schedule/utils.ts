@@ -43,7 +43,7 @@ export const computeTeachingLoad = (
   lectureHour: number,
   laboratoryHour: number,
 ): number => {
-  return lectureHour + laboratoryHour * 0.75;
+  return lectureHour + laboratoryHour * 3 * 0.75;
 };
 
 export const mergeBlockLabels = (labels: string[]): string => {

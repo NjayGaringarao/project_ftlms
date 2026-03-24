@@ -97,7 +97,7 @@ export const FacultyClassTable = ({
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  {toFixed(row.laboratory_unit * 0.75)}
+                  {toFixed(row.laboratory_unit * 3 * 0.75)}
                 </td>
                 <td className="px-3 py-2">{toFixed(row.lecture_unit)}</td>
                 <td className="px-3 py-2 font-medium">{toFixed(row.atl)}</td>

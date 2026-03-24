@@ -88,7 +88,7 @@ const WorkingLoadMetrics = ({
               <WeightTilde />
             </div>
             <p className="text-xs text-foreground/60 mt-1">
-              Lecture + (Laboratory * 0.75)
+              Lecture + (Laboratory * 3 * 0.75)
             </p>
           </CardContent>
         </Card>

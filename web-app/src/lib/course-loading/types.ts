@@ -30,7 +30,7 @@ export type FacultyClassRow = CourseLoadingClassRow & {
   blocks: FacultyClassBlock[];
   merged_block_label: string;
   student_count: number;
-  /** ATL = lecture_unit + laboratory_unit × 0.75 */
+  /** ATL = lecture_unit + (laboratory_unit × 3) × 0.75 */
   atl: number;
 };
 

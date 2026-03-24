@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { calculateAtl } from "@/lib/course-loading/calculations";
 import { getCurrentUser } from "@/lib/auth/utils";
 import { Identity } from "@/models/identity";
 import { ExtendedDesignation } from "@/models/designation";
@@ -462,7 +463,7 @@ export const getCurrentTermTeachingLoadByUserId = async (
         ),
       ).join(", ");
 
-      const load = lectureHour + laboratoryHour * 0.75;
+      const load = calculateAtl(lectureHour, laboratoryHour);
 
       return {
         id: cls.id,

@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { UserDataReadModel } from "@/lib/user-data/types";
 import type { Degree } from "@/models";
+import { calculateLaboratoryContactHours } from "@/lib/course-loading/calculations";
 import {
   getEvaluationsByProposal,
   getEvaluationMetadataByCampus,
@@ -38,7 +39,8 @@ const computeProposalSnapshot = (userData: UserDataReadModel) => {
     0,
   );
   const labSum = userData.classes.reduce(
-    (sum, cls) => sum + Number(cls.laboratory_unit ?? 0),
+    (sum, cls) =>
+      sum + calculateLaboratoryContactHours(Number(cls.laboratory_unit ?? 0)),
     0,
   );
 

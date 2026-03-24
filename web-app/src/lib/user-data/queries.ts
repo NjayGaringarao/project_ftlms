@@ -3,6 +3,7 @@
 import { getCurrentUser } from "@/lib/auth/utils";
 import { AcademicRank, Degree, ExtendedDesignation, Identity } from "@/models";
 import { createClient } from "@/utils/supabase/server";
+import { calculateAtl } from "@/lib/course-loading/calculations";
 import {
   OverviewClassLoad,
   UserDataOptions,
@@ -53,7 +54,7 @@ const mapClassRows = (value: unknown): OverviewClassLoad[] => {
       laboratory_unit: laboratoryUnit,
       year_section: String(row.year_section ?? "Not assigned"),
       campus_name: String(row.campus_name ?? "Not assigned"),
-      load: lectureUnit + laboratoryUnit * 0.75,
+      load: calculateAtl(lectureUnit, laboratoryUnit),
     };
   });
 };
@@ -76,22 +77,19 @@ const mapRowToUserData = (row: UserDataRpcRow): UserDataReadModel => {
   const classes = mapClassRows(row.classes);
 
   const actualTeachingLoad =
-    row.actual_teaching_load === null || row.actual_teaching_load === undefined
+    classes.length > 0
       ? classes.reduce((sum, classItem) => sum + toNumber(classItem.load), 0)
       : toNumber(row.actual_teaching_load);
 
   const designationLoad =
-    row.designation_load === null || row.designation_load === undefined
+    designations.length > 0
       ? designations.reduce(
           (sum, designation) => sum + toNumber(designation.load),
           0,
         )
       : toNumber(row.designation_load);
 
-  const totalWorkingLoad =
-    row.total_working_load === null || row.total_working_load === undefined
-      ? actualTeachingLoad + designationLoad
-      : toNumber(row.total_working_load);
+  const totalWorkingLoad = actualTeachingLoad + designationLoad;
 
   return {
     id: row.id,

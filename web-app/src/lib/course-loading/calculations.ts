@@ -6,7 +6,7 @@ export const toNumber = (value: unknown): number => {
 export const calculateAtl = (
   lectureUnit: number,
   laboratoryUnit: number,
-): number => lectureUnit + laboratoryUnit * 0.75;
+): number => lectureUnit + calculateLaboratoryContactHours(laboratoryUnit) * 0.75;
 
 export const calculateUnit = (
   lectureUnit: number,
