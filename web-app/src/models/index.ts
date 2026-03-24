@@ -10,7 +10,7 @@ export * from "./course_utilization";
 export * from "./degree";
 export * from "./designation";
 export * from "./evaluation";
-export * from "./evaluation_mt";
+export * from "./evaluation_metadata";
 export * from "./identity";
 export * from "./major-offering";
 export * from "./major";

@@ -1,4 +1,5 @@
 import { FacultyClassTable } from "@/components/faculty-teaching-load/faculty-class-table";
+import FacultyLoadStatus from "@/components/faculty-teaching-load/faculty-load-status";
 import FacultyOverviewPanel from "@/components/faculty-teaching-load/faculty-overview-panel";
 import { getClassesByFacultyAndTerm } from "@/lib/course-loading/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
@@ -27,6 +28,11 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
           rows={classRows}
           academicTermId={academic_term_id}
           facultyId={faculty_id}
+        />
+        <FacultyLoadStatus
+          academicTermId={academic_term_id}
+          facultyId={faculty_id}
+          facultyCampusCode={overview.campus?.code ?? null}
         />
         
       </div>

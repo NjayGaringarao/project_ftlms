@@ -2,11 +2,12 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ClipboardClock } from "lucide-react";
+import { ArrowUp, ClipboardClock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FacultyClassRow } from "@/lib/course-loading/types";
 import { formatFacultyBlockLabel } from "@/lib/course-loading/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Popover } from "radix-ui";
 
 type FacultyClassTableProps = {
   rows: FacultyClassRow[];
@@ -37,19 +38,19 @@ export const FacultyClassTable = ({
   const totalAtl = rows.reduce((sum, r) => sum + r.atl, 0);
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden">
+    <Card className="flex-1 flex flex-col overflow-hidden">
       <CardHeader className="flex items-center justify-between">
-        <CardTitle className="text-lg">Teaching Designation</CardTitle>
+        <CardTitle className="text-lg">Actual Teaching Load</CardTitle>
         <div className="flex items-center gap-1">
           <p className="px-3 py-2 text-right">
-            Actual Teaching Load: <b>{toFixed(totalAtl)}</b>{" "}
+            Total: <b>{toFixed(totalAtl)}</b>{" "}
           </p>
         </div>
       </CardHeader>
       <CardContent className="overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-background border-b">
-            <tr className="text-left text-xs text-foreground/60">
+        <table className="w-full text-sm rounded-md overflow-hidden">
+           <thead className="sticky top-0 border-b bg-foreground/10">
+            <tr className="text-left text-xs">
               <th className="px-3 py-2">Campus</th>
               <th className="px-3 py-2">Course</th>
               <th className="px-3 py-2">Block(s)</th>
@@ -64,7 +65,7 @@ export const FacultyClassTable = ({
             {rows.map((row) => (
               <tr
                 key={row.id}
-                className="py-4 text-left border-b hover:bg-foreground/5"
+                className="py-4 text-left border-b"
               >
                 <td className="px-3 py-2">{row.campus_name}</td>
                 <td className="px-3 py-2">
@@ -101,22 +102,32 @@ export const FacultyClassTable = ({
                 <td className="px-3 py-2">{toFixed(row.lecture_unit)}</td>
                 <td className="px-3 py-2 font-medium">{toFixed(row.atl)}</td>
 
-                <td className="w-28">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button
-                      title={
-                        row.blocks.length === 0
-                          ? "No block assigned."
-                          : "Manage Schedule"
-                      }
-                      variant="outline"
-                      size="sm"
-                      disabled={row.blocks.length === 0}
-                      onClick={() => handleManageSchedule(row)}
-                    >
-                      <ClipboardClock className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <td className="w-7">
+                  <Popover.Root>
+                    <Popover.Trigger>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Popover.Trigger>
+                    <Popover.Anchor />
+                    <Popover.Portal>
+                      <Popover.Content>
+                        <div className="flex flex-col bg-background rounded-md overflow-hidden shadow-md border">
+                          <button
+                            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-foreground/10 disabled:cursor-not-allowed disabled:hover:bg-transparent border-b"
+                            disabled={row.blocks.length === 0}
+                            onClick={() => handleManageSchedule(row)}
+                            title={
+                              row.blocks.length === 0
+                                ? "No block assigned."
+                                : "Manage Schedule"
+                            }
+                          >
+                            <ClipboardClock className="h-4 w-4" /> Manage
+                            Schedule
+                          </button>
+                        </div>
+                      </Popover.Content>
+                    </Popover.Portal>
+                  </Popover.Root>
                 </td>
               </tr>
             ))}

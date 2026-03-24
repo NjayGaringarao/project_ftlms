@@ -1,4 +1,4 @@
-export type EvaluationMT = {
+export type EvaluationMetadata = {
   id: string;
   evaluator_role: string;
   evaluation_level: number;

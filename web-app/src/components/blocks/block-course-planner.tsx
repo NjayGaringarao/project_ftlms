@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppDialog } from "@/components/ui/app-dialog";
-import { PickerList } from "@/components/faculty-teaching-load/picker-list";
+import { PickerList } from "@/components/blocks/picker-list";
 import type { CourseListItem } from "@/lib/admin/courses";
 import type { BlockClassRow } from "@/lib/course-loading/types";
 import {
@@ -224,7 +224,7 @@ const BlockCoursePlanner = ({
                           <div className="flex flex-col bg-background rounded-md overflow-hidden shadow-md border">
                             
                             <button
-                              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-foreground/10 disabled:cursor-not-allowed disabled:hover:bg-transparent border-b"
+                              className="flex items-center gap-2 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:hover:bg-transparent border-b"
                               onClick={() => handleManageSchedule(row)}
                               disabled={!academicTermId || isPending}
                               title={
