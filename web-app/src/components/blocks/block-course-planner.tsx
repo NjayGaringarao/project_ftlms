@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { ArrowBigUp, ArrowUp, NotebookTabs, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowUp,
+  ClipboardClock,
+  MoreHorizontal,
+  NotebookTabs,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { PickerList } from "@/components/faculty-teaching-load/picker-list";
@@ -14,6 +22,7 @@ import {
 import { getClassesByBlockAndTerm } from "@/lib/course-loading/queries";
 import { numberToHourDuration } from "@/utils/time";
 import { Popover } from "radix-ui";
+import { cn } from "@/utils/style";
 
 type BlockCoursePlannerProps = {
   blockId: string;
@@ -33,6 +42,7 @@ const BlockCoursePlanner = ({
   );
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const load = async () => {
     setLoading(true);
@@ -101,6 +111,24 @@ const BlockCoursePlanner = ({
       }
       await load();
     });
+  };
+
+  const handleManageSchedule = (row: BlockClassRow) => {
+    if (!academicTermId) {
+      setError("Academic term is required to manage schedule.");
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set("blockId", blockId);
+    if (row.course_utilization_id) {
+      params.set("courseUtilizationId", row.course_utilization_id);
+    }
+    if (row.faculty_id) {
+      params.set("facultyId", row.faculty_id);
+    }
+
+    router.push(`/scheduler/${academicTermId}/mapper?${params.toString()}`);
   };
 
   const totalUnits: number = useMemo(
@@ -185,29 +213,45 @@ const BlockCoursePlanner = ({
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Popover.Root>
-                      <Popover.Trigger />
+                      <Popover.Trigger>
+                     
+                          <MoreHorizontal className="h-4 w-4" />
+                       
+                      </Popover.Trigger>
                       <Popover.Anchor />
                       <Popover.Portal>
                         <Popover.Content>
-                          <Popover.Close />
-                          <Popover.Arrow />
+                          <div className="flex flex-col bg-background rounded-md overflow-hidden shadow-md border">
+                            
+                            <button
+                              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-foreground/10 disabled:cursor-not-allowed disabled:hover:bg-transparent border-b"
+                              onClick={() => handleManageSchedule(row)}
+                              disabled={!academicTermId || isPending}
+                              title={
+                                !academicTermId
+                                  ? "Academic term is required to manage schedule."
+                                  : "Manage schedule"
+                              }
+                            >
+                              <ClipboardClock className="h-4 w-4" /> Manage Schedule
+                            </button>
+                            <button
+                              className={cn("flex items-center gap-2 px-3 py-2 text-sm hover:bg-foreground/10 disabled:cursor-not-allowed disabled:opacity-50")}
+                              onClick={() => handleRemove(row.course_id)}
+                              disabled={row.has_sessions || isPending}
+                              title={
+                                row.has_sessions
+                                  ? "Cannot remove — class has scheduled sessions."
+                                  : "Remove course"
+                              }
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" /> Remove Course
+                            </button>
+
+                          </div>
                         </Popover.Content>
                       </Popover.Portal>
                     </Popover.Root>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemove(row.course_id)}
-                      disabled={row.has_sessions || isPending}
-                      title={
-                        row.has_sessions
-                          ? "Cannot remove — class has scheduled sessions."
-                          : "Remove course"
-                      }
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
                   </td>
                 </tr>
               ))}

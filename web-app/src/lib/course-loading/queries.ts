@@ -178,6 +178,7 @@ export const getClassesByBlockAndTerm = async (
     mapBlockClassRow(
       { class: row.class, course: row.course },
       blockId,
+      row.id,
     ),
   );
 };

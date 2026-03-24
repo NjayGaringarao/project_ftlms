@@ -96,18 +96,24 @@ const SchedulerRightPane = () => {
     const previousClassId = selectedClassIdRef.current;
     if (previousClassId !== selectedClassId) {
       setClassSessions([]);
-      setClassSessionsClassId(null);
       selectedClassIdRef.current = selectedClassId;
     }
     let cancelled = false;
 
     const loadClassSessions = async () => {
       setClassSessionsLoading(true);
-      const rows = await getSessionSummariesByClass(selectedClassId);
-      if (cancelled) return;
-      setClassSessions(rows);
-      setClassSessionsClassId(selectedClassId);
-      setClassSessionsLoading(false);
+      setClassSessionsClassId(null);
+      try {
+        const rows = await getSessionSummariesByClass(selectedClassId);
+        if (cancelled) return;
+        setClassSessions(rows);
+        setClassSessionsClassId(selectedClassId);
+      } catch (error) {
+        console.error("scheduler.right-pane.loadClassSessions ::", error);
+      } finally {
+        if (cancelled) return;
+        setClassSessionsLoading(false);
+      }
     };
 
     void loadClassSessions();
@@ -166,7 +172,7 @@ const SchedulerRightPane = () => {
         if (remaining.length > 0) {
           selectSession(remaining[0].session_id, remaining[0].class_id);
         } else {
-          clearSelection();
+          selectSession(null, selectedClassId);
         }
       }
       refreshSessions();
@@ -268,9 +274,7 @@ const SchedulerRightPane = () => {
     if (classSessionsLoading) return;
     if (classSessionsClassId !== selectedClassId) return;
     if (classSessions.length === 0) {
-      if (overlappingSessions.length === 0) {
-        clearSelection();
-      }
+      clearSelection();
       return;
     }
     const exists = classSessions.some(
@@ -485,7 +489,7 @@ const SchedulerRightPane = () => {
                                 "flex-col items-center gap-2 rounded border px-2 py-1 text-xs",
                                 selectedSession.session_id ===
                                   session.session_id
-                                  ? "border-foreground/40"
+                                  ? "border-orange-400 bg-yellow-50/30"
                                   : "border-foreground/10",
                               )}
                             >

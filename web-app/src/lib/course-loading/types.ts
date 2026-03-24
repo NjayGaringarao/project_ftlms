@@ -42,6 +42,7 @@ export type BlockClassMergedWith = {
 };
 
 export type BlockClassRow = CourseLoadingClassRow & {
+  course_utilization_id: string;
   faculty_id: string | null;
   faculty_name: string | null;
   /** laboratory_unit × 3 (contact hours) */

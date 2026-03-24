@@ -217,6 +217,7 @@ export const mapBlockClassRow = (
     class: unknown;
   },
   blockId: string,
+  courseUtilizationId: string,
 ): BlockClassRow => {
   const cls = first(row.class) as {
     id?: string;
@@ -296,6 +297,7 @@ export const mapBlockClassRow = (
   );
 
   return {
+    course_utilization_id: courseUtilizationId,
     id: cls?.id ?? "",
     class_code: cls?.code ?? "",
     course_id: units.courseId,

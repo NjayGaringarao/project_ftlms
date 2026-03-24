@@ -16,6 +16,7 @@ type MatrixRendererProps = {
   emptyHint?: string | null;
   startColumn: number;
   highlightedClassId?: string | null;
+  selectedSessionId?: string | null;
   selectedRange?: { day: SessionDay; startIndex: number; endIndex: number } | null;
   onCellMouseDown?: (
     day: SessionDay,
@@ -46,6 +47,7 @@ const MatrixRenderer = ({
   emptyHint,
   startColumn,
   highlightedClassId,
+  selectedSessionId,
   selectedRange,
   onCellMouseDown,
   onCellMouseEnter,
@@ -120,9 +122,11 @@ const MatrixRenderer = ({
                     key={item.id}
                     className={cn(
                       "h-full flex items-center justify-center font-medium text-foreground",
-                      highlightedClassId && item.class_id === highlightedClassId
-                        ? "bg-blue-100"
-                        : "bg-yellow-100 cursor-pointer",
+                      selectedSessionId && item.id === selectedSessionId
+                        ? "bg-yellow-100 ring-1 ring-orange-400"
+                        : highlightedClassId && item.class_id === highlightedClassId
+                          ? "bg-blue-100"
+                          : "bg-yellow-100 cursor-pointer",
                     )}
                     title={item.class_code}
                   >

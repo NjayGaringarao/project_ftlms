@@ -7,6 +7,7 @@ import type { SessionDay, SessionType } from "@/models";
 import { dayLabel, toDisplayTime, toMinutes } from "@/lib/schedule/utils";
 import {
   getSchedulerMapperMatrices,
+  getSchedulerMapperMatrixByOnlineBlock,
   type SchedulerMatrixSession,
 } from "@/lib/schedule/mapper";
 import {
@@ -128,6 +129,10 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const [blocks, setBlocks] = useState<CourseLoadingBlockListItem[]>([]);
   const [offerings, setOfferings] = useState<SchedulerCourseOfferingItem[]>([]);
   const [offeringsLoading, setOfferingsLoading] = useState(false);
+  const [offeringsLoadedForBlockId, setOfferingsLoadedForBlockId] = useState<
+    string | null
+  >(null);
+  const [contextNotice, setContextNotice] = useState("");
   const [showFacultyDialog, setShowFacultyDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showRoomDialog, setShowRoomDialog] = useState(false);
@@ -222,26 +227,42 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     offerings.find((item) => item.id === selectedCourseUtilizationId) ?? null;
 
   useEffect(() => {
+    setContextNotice("");
+  }, [selectedBlockId]);
+
+  useEffect(() => {
+    if (selectedOffering) {
+      setContextNotice("");
+    }
+  }, [selectedOffering?.id]);
+
+  useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       setLookupLoading(true);
-      const [courseLoadingModule, roomModule] = await Promise.all([
-        import("@/lib/course-loading/queries"),
-        import("@/lib/admin/rooms"),
-      ]);
+      try {
+        const [courseLoadingModule, roomModule] = await Promise.all([
+          import("@/lib/course-loading/queries"),
+          import("@/lib/admin/rooms"),
+        ]);
 
-      const [facultyRows, roomRows, blockRows] = await Promise.all([
-        courseLoadingModule.getFacultyListByTerm(academic_term_id),
-        roomModule.getRooms(),
-        courseLoadingModule.getBlockListByTerm(academic_term_id),
-      ]);
+        const [facultyRows, roomRows, blockRows] = await Promise.all([
+          courseLoadingModule.getFacultyListByTerm(academic_term_id),
+          roomModule.getRooms(),
+          courseLoadingModule.getBlockListByTerm(academic_term_id),
+        ]);
 
-      if (cancelled) return;
-      setFaculty(facultyRows);
-      setRooms(roomRows);
-      setBlocks(blockRows);
-      setLookupLoading(false);
+        if (cancelled) return;
+        setFaculty(facultyRows);
+        setRooms(roomRows);
+        setBlocks(blockRows);
+      } catch (error) {
+        console.error("scheduler.lookup.load ::", error);
+      } finally {
+        if (cancelled) return;
+        setLookupLoading(false);
+      }
     };
 
     void load();
@@ -258,13 +279,24 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       if (!selectedBlockId) {
         setOfferings([]);
         setOfferingsLoading(false);
+        setOfferingsLoadedForBlockId(null);
         return;
       }
       setOfferingsLoading(true);
-      const rows = await getBlockCourseOfferingsForScheduler(selectedBlockId);
-      if (cancelled) return;
-      setOfferings(rows);
-      setOfferingsLoading(false);
+      setOfferingsLoadedForBlockId(null);
+      try {
+        const rows = await getBlockCourseOfferingsForScheduler(selectedBlockId);
+        if (cancelled) return;
+        setOfferings(rows);
+      } catch (error) {
+        console.error("scheduler.offerings.load ::", error);
+        if (cancelled) return;
+        setOfferings([]);
+      } finally {
+        if (cancelled) return;
+        setOfferingsLoading(false);
+        setOfferingsLoadedForBlockId(selectedBlockId);
+      }
     };
 
     void loadOfferings();
@@ -281,13 +313,25 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   useEffect(() => {
     if (!selectedCourseUtilizationId) return;
+    if (!selectedBlockId) return;
+    if (offeringsLoading) return;
+    if (offeringsLoadedForBlockId !== selectedBlockId) return;
     const exists = offerings.some(
       (item) => item.id === selectedCourseUtilizationId,
     );
     if (!exists) {
       clearContextParam("courseUtilizationId");
+      setContextNotice(
+        "Course offering not found for this block. Please reselect.",
+      );
     }
-  }, [offerings, selectedCourseUtilizationId]);
+  }, [
+    offerings,
+    offeringsLoadedForBlockId,
+    offeringsLoading,
+    selectedBlockId,
+    selectedCourseUtilizationId,
+  ]);
 
   const timeSlots = useMemo(() => {
     const slots: { start: string; end: string; startMinute: number }[] = [];
@@ -337,7 +381,18 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
       setBlockSessions(selectedBlockId ? result.block : []);
       setFacultySessions(selectedFacultyId ? result.faculty : []);
-      setRoomSessions(result.room);
+      if (selectedRoomId) {
+        setRoomSessions(result.room);
+      } else if (selectedBlockId) {
+        const onlineSessions = await getSchedulerMapperMatrixByOnlineBlock(
+          academic_term_id,
+          selectedBlockId,
+        );
+        if (cancelled || requestId !== matrixRequestIdRef.current) return;
+        setRoomSessions(onlineSessions);
+      } else {
+        setRoomSessions([]);
+      }
 
       setBlockLoading(false);
       setFacultyLoading(false);
@@ -501,7 +556,6 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       if (!selectedCell || selectedCell.sessions.length === 0) {
         setOverlappingSessions([]);
         setActiveSessionId(null);
-        setSelectedClassId(null);
         return;
       }
 
@@ -516,7 +570,9 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         }
         return summaries[0].session_id;
       });
-      setSelectedClassId(summaries[0]?.class_id ?? null);
+      if (summaries && summaries.length > 0) {
+        setSelectedClassId(summaries[0]?.class_id ?? null);
+      }
     };
 
     void loadSummaries();
@@ -776,6 +832,11 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   return (
     <SchedulerProvider value={schedulerContextValue}>
       <div className="flex flex-col h-full border rounded-md overflow-hidden">
+        {contextNotice ? (
+          <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            {contextNotice}
+          </div>
+        ) : null}
         <div className="flex-1 flex flex-row h-full overflow-hidden">
           <div className="flex-1 overflow-auto">
             <div
@@ -835,6 +896,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
                 loading={blockLoading}
                 startColumn={2}
                 highlightedClassId={selectedOffering?.class_id ?? null}
+                selectedSessionId={activeSessionId}
                 selectedRange={dragging}
                 onCellMouseDown={handleCellMouseDown}
                 onCellMouseEnter={handleCellMouseEnter}
@@ -860,8 +922,11 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
                 loading={facultyLoading}
                 startColumn={9}
                 highlightedClassId={selectedOffering?.class_id ?? null}
+                selectedSessionId={activeSessionId}
                 selectedRange={selectedFacultyId ? dragging : null}
                 onCellClick={handleSessionClick("Faculty")}
+                onCellMouseDown={handleCellMouseDown}
+                onCellMouseEnter={handleCellMouseEnter}
               />
 
               <MatrixRenderer
@@ -883,7 +948,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
                 loading={roomLoading}
                 startColumn={16}
                 highlightedClassId={selectedOffering?.class_id ?? null}
-                selectedRange={selectedRoomId ? dragging : null}
+                selectedSessionId={activeSessionId}
+                selectedRange={dragging}
                 onCellClick={handleSessionClick("Room")}
               />
             </div>
