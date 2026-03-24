@@ -494,7 +494,6 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
     setDragError("");
     setPendingRange({ day, startIndex, endIndex });
-    setSessionType("Lecture");
     setConfirmOpen(true);
     setDragging(null);
   };
