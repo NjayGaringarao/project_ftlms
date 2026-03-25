@@ -32,7 +32,7 @@ export const FacultyClassTable = ({
     params.set("blockId", firstBlock.block_id);
     params.set("courseUtilizationId", firstBlock.course_utilization_id);
     params.set("facultyId", facultyId);
-    router.push(`/scheduler/${academicTermId}/mapper?${params.toString()}`);
+    router.push(`/scheduler/${academicTermId}?${params.toString()}`);
   };
 
   const totalAtl = rows.reduce((sum, r) => sum + r.atl, 0);

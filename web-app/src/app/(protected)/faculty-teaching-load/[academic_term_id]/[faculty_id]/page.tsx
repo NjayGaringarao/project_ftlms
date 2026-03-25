@@ -17,7 +17,7 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
     getUserOverviewById(faculty_id),
   ]);
 
-  if (!overview) redirect(`/faculty-teaching-load/${academic_term_id}/faculty`);
+  if (!overview) redirect(`/faculty-teaching-load/${academic_term_id}`);
 
   const termAtl = classRows.reduce((sum, r) => sum + r.atl, 0);
 
@@ -34,7 +34,6 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
           facultyId={faculty_id}
           facultyCampusCode={overview.campus?.code ?? null}
         />
-        
       </div>
 
       <div className="h-full max-w-92 overflow-hidden border rounded-md">

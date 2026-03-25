@@ -173,7 +173,7 @@ export const createProposalAction = async (formData: FormData) => {
   }
 
   revalidatePath(
-    `/faculty-teaching-load/${academicTermId}/faculty/${facultyId}`,
+    `/faculty-teaching-load/${academicTermId}/${facultyId}`,
   );
   revalidatePath(`/faculty-teaching-load/${academicTermId}`);
 };
@@ -237,7 +237,7 @@ export const submitEvaluationAction = async (formData: FormData) => {
   }
 
   revalidatePath(
-    `/faculty-teaching-load/${proposal.academic_term_id}/faculty/${proposal.user_id}`,
+    `/faculty-teaching-load/${proposal.academic_term_id}/${proposal.user_id}`,
   );
   revalidatePath(`/faculty-teaching-load/${proposal.academic_term_id}`);
 };

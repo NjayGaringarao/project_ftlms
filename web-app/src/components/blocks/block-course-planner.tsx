@@ -128,7 +128,7 @@ const BlockCoursePlanner = ({
       params.set("facultyId", row.faculty_id);
     }
 
-    router.push(`/scheduler/${academicTermId}/mapper?${params.toString()}`);
+    router.push(`/scheduler/${academicTermId}?${params.toString()}`);
   };
 
   const totalUnits: number = useMemo(

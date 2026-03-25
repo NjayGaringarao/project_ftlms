@@ -139,7 +139,7 @@ const TermSwitcher = ({
       <Button
         variant="outline"
         size={buttonSize}
-        className={buttonClassName ?? "max-w-xs bg-background/95 mx-4 py-4"}
+        className={buttonClassName ?? "max-w-sm bg-background/95 mx-4 py-4"}
         onClick={() => setOpen(true)}
         title="Change academic term"
       >

@@ -28,20 +28,11 @@ const AcademicTermIdLayout = async ({
     redirect("/scheduler");
   }
 
-  const basePath = `/scheduler/${academic_term_id}`;
-
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
       <TopBarNav
         title="Scheduler"
-        items={[
-          { label: "Overview", href: basePath },
-          {
-            label: "Mapper",
-            href: `${basePath}/mapper`,
-            activeMatch: "prefix",
-          },
-        ]}
+        items={[]}
       >
         <TermSwitcher
           terms={terms}

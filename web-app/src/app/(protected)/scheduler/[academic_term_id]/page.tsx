@@ -1,12 +1,18 @@
-const AcademicTermIdPage = () => {
+import ScheduleMapper from "@/components/scheduler/schedule-mapper";
+
+type AcademicTermIdPageProps = {
+  params: Promise<{
+    academic_term_id: string;
+  }>;
+};
+
+const AcademicTermIdPage = async ({ params }: AcademicTermIdPageProps) => {
+  const { academic_term_id } = await params;
+
   return (
-    <div className="flex h-full items-center justify-center p-6">
-      <div className="w-full max-w-3xl rounded-lg border border-dashed p-6">
-        <h1 className="text-lg font-semibold">Term Overview</h1>
-        <p className="mt-2 text-sm text-foreground/70">
-          This overview page is ready for the term-level scheduler summary,
-          metrics.
-        </p>
+    <div className="flex w-full h-full overflow-hidden p-4">
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <ScheduleMapper academic_term_id={academic_term_id} />
       </div>
     </div>
   );

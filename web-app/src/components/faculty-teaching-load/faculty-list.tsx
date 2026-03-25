@@ -21,7 +21,7 @@ export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) =
 
   const selectedId = useMemo(() => {
     const match = pathname.match(
-      /\/faculty-teaching-load\/[^/]+\/faculty\/([^/]+)/,
+      /\/faculty-teaching-load\/[^/]+\/([^/]+)/,
     );
     return match ? match[1] : null;
   }, [pathname]);
@@ -35,7 +35,7 @@ export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) =
   return (
     <div className="flex h-full flex-col gap-3 overflow-hidden">
       <Input
-        placeholder="Search faculty…"
+        placeholder="Search faculty..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="shrink-0"
@@ -56,7 +56,7 @@ export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) =
             isSelected={selectedId === faculty.id}
             onClick={() =>
               router.push(
-                `/faculty-teaching-load/${academicTermId}/faculty/${faculty.id}`,
+                `/faculty-teaching-load/${academicTermId}/${faculty.id}`,
               )
             }
             icon={<User className="h-6 w-6 text-background/70" />}

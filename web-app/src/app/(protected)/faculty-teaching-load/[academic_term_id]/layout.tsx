@@ -1,6 +1,8 @@
 import { TopBarNav } from "@/components/ui/topbar-nav";
+import { FacultyList } from "@/components/faculty-teaching-load/faculty-list";
 import TermSwitcher from "@/components/shared/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
+import { getFacultyListByTerm } from "@/lib/course-loading/queries";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
@@ -28,21 +30,11 @@ const AcademicTermIdLayout = async ({
     redirect("/faculty-teaching-load");
   }
 
-  const basePath = `/faculty-teaching-load/${academic_term_id}`;
+  const faculty = await getFacultyListByTerm(academic_term_id);
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
-      <TopBarNav
-        title="Faculty Teaching Load"
-        items={[
-          { label: "Overview", href: basePath },
-          {
-            label: "Faculty",
-            href: `${basePath}/faculty`,
-            activeMatch: "prefix",
-          },
-        ]}
-      >
+      <TopBarNav title="Faculty Teaching Load" items={[]}>
         <TermSwitcher
           terms={terms}
           selectedTermId={selectedTerm.id}
@@ -51,7 +43,12 @@ const AcademicTermIdLayout = async ({
           refreshOnSelect
         />
       </TopBarNav>
-      <div className="flex flex-col h-full overflow-hidden">{children}</div>
+      <div className="flex h-full gap-4 overflow-hidden p-4">
+        <div className="w-84 overflow-hidden">
+          <FacultyList facultyList={faculty} academicTermId={academic_term_id} />
+        </div>
+        <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
+      </div>
       <div className="absolute  h-full w-full bg-background z-100 lg:hidden flex flex-col items-center justify-center px-16">
         <SmallDisplayOverlay />
       </div>
