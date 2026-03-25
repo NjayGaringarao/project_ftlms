@@ -166,9 +166,10 @@ This project uses two migration management modes:
   - Typical command: `npx supabase migration new <name>`.
 
 - **Consolidation mode**
-  - Purpose: consolidate/clean migration history in development for a clearer canonical chain.
-  - Rule: may edit/delete/reorder existing migration files, but only in local development.
-  - Required follow-up: run the Migration Consistency Check section before continuing work.
+  - Purpose: fold append-only migrations into their canonical base files to keep a clean, readable history.
+  - Rule: may edit/delete/reorder existing migration files **only** in local development, and only after verifying no trigger/RPC dependencies are broken.
+  - Preferred approach: move the *latest* definition into the correct category file (schema → constraints → triggers → RPC) and delete the append-only file.
+  - Required follow-up: run the Migration Consistency Check section before continuing work (include `db reset --linked` when validating against the linked project).
 
 ### AI Agent Guidance
 
