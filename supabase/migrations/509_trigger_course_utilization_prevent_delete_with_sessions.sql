@@ -1,63 +1,37 @@
+-- Prevent deleting course_utilization when its class has sessions
+
+create or replace function public.prevent_course_utilization_delete_with_sessions()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.class_id is null then
+    return old;
+  end if;
+
+  if exists (
+    select 1
+    from public.session_class sc
+    where sc.class_id = old.class_id
+    limit 1
+  ) then
+    raise exception 'Cannot delete course utilization: class has scheduled sessions';
+  end if;
+
+  return old;
+end;
+$$;
+
+drop trigger if exists trg_prevent_delete_course_utilization_with_sessions on public.course_utilization;
+create trigger trg_prevent_delete_course_utilization_with_sessions
+before delete on public.course_utilization
+for each row
+execute function public.prevent_course_utilization_delete_with_sessions();
+
 -- =========================================================
--- FACULTY LOAD WORKFLOW: Evaluation metadata + proposal invalidation
+-- Proposal invalidation workflow
 -- =========================================================
 
--- Rename evaluation metadata table
-alter table if exists public.evaluation_mt
-  rename to evaluation_metadata;
-
--- Update evaluation table structure
-alter table if exists public.evaluation
-  drop column if exists evaluator_role;
-
-alter table if exists public.evaluation
-  add column if not exists evaluation_metadata_id uuid
-    references public.evaluation_metadata(id) on delete cascade;
-
-alter table if exists public.evaluation
-  add column if not exists evaluator_user_id uuid
-    references public."user"(id) on delete set null;
-
--- Drop uniqueness constraint so evaluation history can be append-only
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'evaluation_designation_proposal_unique'
-      AND conrelid = 'public.evaluation'::regclass
-  ) THEN
-    ALTER TABLE public.evaluation
-      DROP CONSTRAINT evaluation_designation_proposal_unique;
-  END IF;
-END $$;
-
--- Seed evaluation metadata
-INSERT INTO public.evaluation_metadata (evaluator_role, evaluation_level, campus_code)
-SELECT 'Campus Director', 0, c.code
-FROM public.campus c
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.evaluation_metadata em
-  WHERE em.evaluation_level = 0
-    AND em.campus_code = c.code
-);
-
-INSERT INTO public.evaluation_metadata (evaluator_role, evaluation_level, campus_code)
-SELECT 'Director for Instruction', 1, NULL
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.evaluation_metadata em
-  WHERE em.evaluation_level = 1
-    AND em.campus_code IS NULL
-);
-
-INSERT INTO public.evaluation_metadata (evaluator_role, evaluation_level, campus_code)
-SELECT 'University President', 2, NULL
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.evaluation_metadata em
-  WHERE em.evaluation_level = 2
-    AND em.campus_code IS NULL
-);
-
--- Proposal invalidation helpers
 create or replace function public.invalidate_proposals_for_user(p_user_id uuid)
 returns void
 language plpgsql
@@ -109,7 +83,6 @@ begin
 end;
 $$;
 
--- Invalidate when designation changes
 create or replace function public.trg_invalidate_proposals_on_designation()
 returns trigger
 language plpgsql
@@ -129,14 +102,13 @@ begin
 end;
 $$;
 
-DROP TRIGGER IF EXISTS invalidate_proposals_on_designation
-ON public.designation;
+drop trigger if exists invalidate_proposals_on_designation
+on public.designation;
 
 create trigger invalidate_proposals_on_designation
 after insert or update or delete on public.designation
 for each row execute function public.trg_invalidate_proposals_on_designation();
 
--- Invalidate when user_class changes
 create or replace function public.trg_invalidate_proposals_on_user_class()
 returns trigger
 language plpgsql
@@ -154,14 +126,13 @@ begin
 end;
 $$;
 
-DROP TRIGGER IF EXISTS invalidate_proposals_on_user_class
-ON public.user_class;
+drop trigger if exists invalidate_proposals_on_user_class
+on public.user_class;
 
 create trigger invalidate_proposals_on_user_class
 after insert or update or delete on public.user_class
 for each row execute function public.trg_invalidate_proposals_on_user_class();
 
--- Invalidate when course unit values change
 create or replace function public.trg_invalidate_proposals_on_course_units()
 returns trigger
 language plpgsql
@@ -187,14 +158,13 @@ begin
 end;
 $$;
 
-DROP TRIGGER IF EXISTS invalidate_proposals_on_course_units
-ON public.course;
+drop trigger if exists invalidate_proposals_on_course_units
+on public.course;
 
 create trigger invalidate_proposals_on_course_units
 after update on public.course
 for each row execute function public.trg_invalidate_proposals_on_course_units();
 
--- Invalidate when course utilization changes
 create or replace function public.trg_invalidate_proposals_on_course_utilization()
 returns trigger
 language plpgsql
@@ -257,8 +227,8 @@ begin
 end;
 $$;
 
-DROP TRIGGER IF EXISTS invalidate_proposals_on_course_utilization
-ON public.course_utilization;
+drop trigger if exists invalidate_proposals_on_course_utilization
+on public.course_utilization;
 
 create trigger invalidate_proposals_on_course_utilization
 after insert or update or delete on public.course_utilization

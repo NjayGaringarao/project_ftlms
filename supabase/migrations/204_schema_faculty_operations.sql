@@ -64,7 +64,7 @@ create table if not exists public.proposal (
   created_at timestamptz default now()
 );
 
-create table if not exists public.evaluation_mt (
+create table if not exists public.evaluation_metadata (
   id uuid primary key default gen_random_uuid(),
   evaluator_role text not null,
   evaluation_level integer not null,
@@ -75,8 +75,35 @@ create table if not exists public.evaluation (
   id uuid primary key default gen_random_uuid(),
   designation_id uuid references public.designation(id) on delete set null,
   proposal_id uuid not null references public.proposal(id) on delete cascade,
-  evaluator_role text not null,
+  evaluation_metadata_id uuid references public.evaluation_metadata(id) on delete cascade,
+  evaluator_user_id uuid references public."user"(id) on delete set null,
   status public.evaluation_status_enum not null default 'PENDING',
   comment text,
   created_at timestamptz default now()
+);
+
+-- Seed evaluation metadata defaults.
+insert into public.evaluation_metadata (evaluator_role, evaluation_level, campus_code)
+select 'Campus Director', 0, c.code
+from public.campus c
+where not exists (
+  select 1 from public.evaluation_metadata em
+  where em.evaluation_level = 0
+    and em.campus_code = c.code
+);
+
+insert into public.evaluation_metadata (evaluator_role, evaluation_level, campus_code)
+select 'Director for Instruction', 1, null
+where not exists (
+  select 1 from public.evaluation_metadata em
+  where em.evaluation_level = 1
+    and em.campus_code is null
+);
+
+insert into public.evaluation_metadata (evaluator_role, evaluation_level, campus_code)
+select 'University President', 2, null
+where not exists (
+  select 1 from public.evaluation_metadata em
+  where em.evaluation_level = 2
+    and em.campus_code is null
 );

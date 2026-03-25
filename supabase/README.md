@@ -59,35 +59,45 @@ Migrations are executed in alphabetical order. Files are organized by prefix:
 
 ```
 migrations/
-├── 000_extensions.sql              # pgcrypto, btree_gist
-├── 100_enum_employment_status.sql  # Regular, Part-time, Contract of Service, Temporary
-├── 101_enum_evaluation_status.sql  # PENDING, APPROVED, REJECTED
-├── 103_enum_academic_terms_type.sql
-├── 104_enum_academic_terms_term_order.sql
-├── 106_enum_designation_title.sql
-├── 107_enum_academic_level.sql
-├── 108_enum_session_type.sql
-├── 200_schema_core.sql             # Part 1/5: Key entities
-├── 201_schema_programs_curriculum.sql
-├── 202_schema_offerings_availability.sql
-├── 203_schema_user_domain.sql
-├── 204_schema_faculty_operations.sql
-├── 300_constraints_unique.sql
-├── 301_constraints_check.sql
-├── 302_constraints_academic_term.sql
-├── 303_constraints_offerings.sql
-├── 304_constraints_scheduling.sql
-├── 305_constraints_designation.sql
-├── 306_constraints_evaluation.sql
-├── 400_rls_enable.sql
-├── 500_triggers_updated_at.sql
-├── 501_triggers_auth_signup.sql
-├── 503_triggers_designation_uniqueness.sql
-├── 600_rpc_is_admin_exists.sql
-├── 601_rpc_get_user_overview.sql
-├── 602_rpc_get_user_roles.sql
-├── 603_rpc_schedule_conflict_detection.sql
-└── 604_constraints_designation_context_v2.sql
+- 000_extensions.sql
+- 100_enum_employment_status.sql
+- 101_enum_evaluation_status.sql
+- 102_enum_day_of_week.sql
+- 103_enum_academic_term_name.sql
+- 104_enum_designation_title.sql
+- 105_enum_academic_level.sql
+- 106_enum_session_type.sql
+- 200_schema_core.sql
+- 201_schema_programs_curriculum.sql
+- 202_schema_offerings_availability.sql
+- 203_schema_user_domain.sql
+- 204_schema_faculty_operations.sql
+- 300_constraints_unique.sql
+- 301_constraints_check.sql
+- 302_constraints_academic_term.sql
+- 303_constraints_offerings.sql
+- 304_constraints_scheduling.sql
+- 305_constraints_designation.sql
+- 306_constraints_evaluation.sql
+- 400_rls_enable.sql
+- 500_triggers_updated_at.sql
+- 501_triggers_auth_signup.sql
+- 503_triggers_designation_uniqueness.sql
+- 504_trigger_class_block_schedule_course_uniqueness.sql
+- 505_trigger_class_code_autogenerate.sql
+- 506_trigger_class_block_term_change.sql
+- 507_trigger_course_utilization_autocreate_class.sql
+- 508_trigger_session_code_autogenerate.sql
+- 509_trigger_course_utilization_prevent_delete_with_sessions.sql
+- 510_trigger_major_offering_code.sql
+- 511_trigger_block_code.sql
+- 512_trigger_program_offering_code.sql
+- 513_trigger_academic_term_code.sql
+- 514_trigger_academic_year_code.sql
+- 600_rpc_is_admin_exists.sql
+- 602_rpc_get_user_roles.sql
+- 605_rpc_get_scheduler_matrices.sql
+- 607_rpc_get_user_data.sql
 ```
 
 ### Constraint Ownership (3xx)
@@ -212,3 +222,5 @@ npx supabase start
 # Stop local development
 npx supabase stop
 ```
+
+

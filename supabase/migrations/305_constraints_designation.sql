@@ -10,7 +10,7 @@ begin
       add constraint designation_load_nonnegative check (load >= 0);
   end if;
 
-  -- Designation role should have consistent context rules.
+  -- Designation role should have consistent context rules (includes VPAA and QA).
   -- Note: uniqueness is enforced by 503_triggers_designation_uniqueness.sql.
   if not exists (
     select 1 from pg_constraint
@@ -21,7 +21,12 @@ begin
       add constraint designation_role_context_rules
       check (
         (
-          lower(trim(job_title::text)) in ('university president', 'director for instruction')
+          lower(trim(job_title::text)) in (
+            'university president',
+            'director for instruction',
+            'vice president for academic affairs',
+            'quality assurance'
+          )
           and campus_id is null
           and college_id is null
           and program_offering_id is null
@@ -52,6 +57,8 @@ begin
           lower(trim(job_title::text)) not in (
             'university president',
             'director for instruction',
+            'vice president for academic affairs',
+            'quality assurance',
             'program chairperson',
             'college dean',
             'campus director'
