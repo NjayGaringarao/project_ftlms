@@ -1,19 +1,22 @@
 import { NavigationItem } from "@/lib/navigation/types";
+import { UserRole } from "@/models";
+
+const ALL_ROLES : UserRole[] = [
+  "Admin",
+  "Program Chairperson",
+  "Faculty",
+  "Campus Director",
+  "College Dean",
+  "Vice President for Academic Affairs",
+  "Director for Instruction",
+]
 
 export const NAV_ITEMS: NavigationItem[] = [
   {
     label: "Home",
     href: "/home",
     icon: "home",
-    allowedRoles: [
-      "Admin",
-      "Program Chairperson",
-      "Faculty",
-      "Campus Director",
-      "College Dean",
-      "Vice President for Academic Affairs",
-      "Director for Instruction",
-    ],
+    allowedRoles: ALL_ROLES,
   },
   {
     label: "Campuses",
@@ -25,12 +28,6 @@ export const NAV_ITEMS: NavigationItem[] = [
     label: "Colleges",
     href: "/colleges",
     icon: "shapes",
-    allowedRoles: ["Admin"],
-  },
-  {
-    label: "Blocks",
-    href: "/blocks",
-    icon: "blocks",
     allowedRoles: ["Admin"],
   },
   {
@@ -46,9 +43,21 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
-    label: "Academic Years",
+    label: "Academic T&Y",
     href: "/academic-years",
     icon: "calendar-days",
+    allowedRoles: ["Admin"],
+  },
+  {
+    label: "Users",
+    href: "/users",
+    icon: "users",
+    allowedRoles: ["Admin"],
+  },
+  {
+    label: "Blocks",
+    href: "/blocks",
+    icon: "blocks",
     allowedRoles: ["Admin"],
   },
   {
@@ -59,10 +68,13 @@ export const NAV_ITEMS: NavigationItem[] = [
       "Admin",
       "Program Chairperson",
       "College Dean",
-      "Campus Director",
-      "Director for Instruction",
-      "Vice President for Academic Affairs",
     ],
+  },
+  {
+    label: "Scheduler",
+    href: "/scheduler",
+    icon: "clock",
+    allowedRoles: ["Admin", "Program Chairperson", "College Dean"],
   },
   {
     label: "FTL Evaluation",
@@ -76,29 +88,9 @@ export const NAV_ITEMS: NavigationItem[] = [
     ],
   },
   {
-    label: "Scheduler",
-    href: "/scheduler",
-    icon: "clock",
-    allowedRoles: ["Admin", "Program Chairperson", "College Dean"],
-  },
-  {
-    label: "Users",
-    href: "/users",
-    icon: "users",
-    allowedRoles: ["Admin"],
-  },
-  {
     label: "Me",
     href: "/me",
     icon: "user",
-    allowedRoles: [
-      "Admin",
-      "Program Chairperson",
-      "Faculty",
-      "Campus Director",
-      "College Dean",
-      "Vice President for Academic Affairs",
-      "Director for Instruction",
-    ],
+    allowedRoles: ALL_ROLES,
   },
 ];
