@@ -25,8 +25,8 @@ const getAccessLabel = (roles: UserRole[]) => {
   if (roles.includes("Program Chairperson")) return "Program Chair Access";
   if (roles.includes("College Dean")) return "Dean Access";
   if (roles.includes("Campus Director")) return "Campus Director Access";
-  if (roles.includes("University President"))
-    return "University President Access";
+  if (roles.includes("Vice President for Academic Affairs"))
+    return "VPAA Access";
   return "Faculty Access";
 };
 

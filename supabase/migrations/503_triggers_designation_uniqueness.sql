@@ -9,21 +9,6 @@ begin
   normalized_title := lower(trim(new.job_title::text));
   current_id := coalesce(new.id, '00000000-0000-0000-0000-000000000000'::uuid);
 
-  if normalized_title = 'university president' then
-    if exists (
-      select 1
-      from public.designation d
-      where lower(trim(d.job_title::text)) = 'university president'
-        and d.id <> current_id
-    ) then
-      raise exception
-        using
-          errcode = '23505',
-          message = 'duplicate key value violates unique constraint "designation_university_president_unique"',
-          detail = 'Only one university president designation is allowed.';
-    end if;
-  end if;
-
   if normalized_title = 'director for instruction' then
     if exists (
       select 1
@@ -36,6 +21,21 @@ begin
           errcode = '23505',
           message = 'duplicate key value violates unique constraint "designation_director_instruction_unique"',
           detail = 'Only one director for instruction designation is allowed.';
+    end if;
+  end if;
+
+  if normalized_title = 'vice president for academic affairs' then
+    if exists (
+      select 1
+      from public.designation d
+      where lower(trim(d.job_title::text)) = 'vice president for academic affairs'
+        and d.id <> current_id
+    ) then
+      raise exception
+        using
+          errcode = '23505',
+          message = 'duplicate key value violates unique constraint "designation_vpaa_unique"',
+          detail = 'Only one vice president for academic affairs designation is allowed.';
     end if;
   end if;
 

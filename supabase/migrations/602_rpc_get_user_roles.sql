@@ -8,7 +8,7 @@ as $$
     select distinct
       case
         when d.job_title::text in (
-          'University President',
+          'Vice President for Academic Affairs',
           'Director for Instruction',
           'College Dean',
           'Campus Director',

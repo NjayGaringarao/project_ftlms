@@ -75,7 +75,6 @@ const normalizeFullName = (name: string) =>
 const isHigherUpsTitle = (value?: string | null) => {
   const normalized = normalizeJobTitleKey(value);
   return (
-    normalized === "university president" ||
     normalized === "director for instruction" ||
     normalized === "vice president for academic affairs" ||
     normalized === "quality assurance"
@@ -484,7 +483,7 @@ export async function updateUserProfessional(
 
         return {
           error:
-            "Each designation must include at least one context: campus, college, program offering, or room (except University President, Director for Instruction, Vice President for Academic Affairs, and Quality Assurance).",
+            "Each designation must include at least one context: campus, college, program offering, or room (except Director for Instruction, Vice President for Academic Affairs, and Quality Assurance).",
         };
       }
 

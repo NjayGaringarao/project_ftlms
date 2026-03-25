@@ -1,7 +1,6 @@
 do $$
 begin
   create type public.designation_title_enum as enum (
-    'University President',
     'Director for Instruction',
     'College Dean',
     'Campus Director',

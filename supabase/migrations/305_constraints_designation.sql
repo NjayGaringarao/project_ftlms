@@ -22,7 +22,6 @@ begin
       check (
         (
           lower(trim(job_title::text)) in (
-            'university president',
             'director for instruction',
             'vice president for academic affairs',
             'quality assurance'
@@ -55,7 +54,6 @@ begin
         )
         or (
           lower(trim(job_title::text)) not in (
-            'university president',
             'director for instruction',
             'vice president for academic affairs',
             'quality assurance',

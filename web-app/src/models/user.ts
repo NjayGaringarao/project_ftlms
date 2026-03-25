@@ -26,6 +26,6 @@ export type UserRole =
   | "Program Chairperson"
   | "Campus Director"
   | "College Dean"
-  | "University President"
+  | "Vice President for Academic Affairs"
   | "Director for Instruction"
   | "Admin";

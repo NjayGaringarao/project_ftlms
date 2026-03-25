@@ -1,11 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import type { EvaluationMetadata, Proposal, Evaluation } from "@/models";
-
-export type EvaluationWithMetadata = Evaluation & {
-  evaluation_metadata: EvaluationMetadata | null;
-};
+import type { Proposal, IndividualProposalEvaluation } from "@/models";
 
 export const getLatestProposalByUserTerm = async (
   userId: string,
@@ -32,27 +28,21 @@ export const getLatestProposalByUserTerm = async (
 
 export const getEvaluationsByProposal = async (
   proposalId: string,
-): Promise<EvaluationWithMetadata[]> => {
+): Promise<IndividualProposalEvaluation[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("evaluation")
+    .from("individual_proposal_evaluation")
     .select(
       `
       id,
-      designation_id,
       proposal_id,
-      evaluation_metadata_id,
+      step,
+      designation_id,
       evaluator_user_id,
       status,
       comment,
-      created_at,
-      evaluation_metadata:evaluation_metadata_id (
-        id,
-        evaluator_role,
-        evaluation_level,
-        campus_code
-      )
+      created_at
     `,
     )
     .eq("proposal_id", proposalId)
@@ -63,40 +53,12 @@ export const getEvaluationsByProposal = async (
     return [];
   }
 
-  return (data ?? []) as EvaluationWithMetadata[];
+  return (data ?? []) as IndividualProposalEvaluation[];
 };
 
-export const getEvaluationMetadataByCampus = async (
-  campusCode: string | null,
-): Promise<EvaluationMetadata[]> => {
-  const supabase = await createClient();
-
-  const { data: globalRows, error: globalError } = await supabase
-    .from("evaluation_metadata")
-    .select("id, evaluator_role, evaluation_level, campus_code")
-    .in("evaluation_level", [1, 2]);
-
-  if (globalError) {
-    console.error("faculty-load.getEvaluationMetadata.global ::", globalError);
-  }
-
-  let campusRow: EvaluationMetadata | null = null;
-
-  if (campusCode) {
-    const { data: campusData, error: campusError } = await supabase
-      .from("evaluation_metadata")
-      .select("id, evaluator_role, evaluation_level, campus_code")
-      .eq("evaluation_level", 0)
-      .eq("campus_code", campusCode)
-      .maybeSingle();
-
-    if (campusError) {
-      console.error("faculty-load.getEvaluationMetadata.campus ::", campusError);
-    }
-
-    campusRow = (campusData as EvaluationMetadata | null) ?? null;
-  }
-
-  const merged = [campusRow, ...(globalRows ?? [])].filter(Boolean);
-  return merged as EvaluationMetadata[];
+export const getLatestEvaluationByProposal = async (
+  proposalId: string,
+): Promise<IndividualProposalEvaluation | null> => {
+  const rows = await getEvaluationsByProposal(proposalId);
+  return rows[0] ?? null;
 };

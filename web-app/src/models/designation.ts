@@ -16,7 +16,7 @@ export type AcademicJobTitle = "Program Chairperson" | "College Dean";
 
 // Administrative workflow job titles
 export type AdministrativeJobTitle =
-  | "University President"
+  | "Vice President for Academic Affairs"
   | "Director for Instruction"
   | "Campus Director";
 

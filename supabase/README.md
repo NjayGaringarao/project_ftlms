@@ -67,6 +67,8 @@ migrations/
 - 104_enum_designation_title.sql
 - 105_enum_academic_level.sql
 - 106_enum_session_type.sql
+- 107_enum_proposal_lifecycle.sql
+- 108_enum_proposal_evaluation_steps.sql
 - 200_schema_core.sql
 - 201_schema_programs_curriculum.sql
 - 202_schema_offerings_availability.sql
@@ -125,8 +127,8 @@ migrations/
   - Canonical owner of: `designation_load_nonnegative`, `designation_role_context_rules`.
 
 - `306_constraints_evaluation.sql`
-  - Evaluation uniqueness constraints.
-  - Canonical owner of: `evaluation_designation_schedule_unique`.
+  - Proposal lifecycle and evaluation workflow constraints.
+  - Canonical owner of: `proposal_current_user_term_unique`, `campus_proposal_current_campus_term_unique`, `individual_proposal_evaluation_step_unique`, `campus_proposal_evaluation_step_unique`.
 
 - `503_triggers_designation_uniqueness.sql`
   - Designation uniqueness enforcement logic (trigger/function), complementary to `305` checks.

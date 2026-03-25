@@ -5,12 +5,12 @@ import {
   submitEvaluationAction,
 } from "@/lib/faculty-load/actions";
 import {
-  getEvaluationMetadataByCampus,
   getEvaluationsByProposal,
   getLatestProposalByUserTerm,
 } from "@/lib/faculty-load/queries";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
+import type { ProposalLifecycleStatus, EvaluationStatus } from "@/models";
 
 type FacultyLoadStatusProps = {
   academicTermId: string;
@@ -18,15 +18,23 @@ type FacultyLoadStatusProps = {
   facultyCampusCode: string | null;
 };
 
-type StepStatus = "PENDING" | "APPROVED" | "REJECTED";
-
-const getRoleForLevel = (level: number): string => {
-  if (level === 0) return "Campus Director";
-  if (level === 1) return "Director for Instruction";
-  return "University President";
+const readableLifecycle: Record<ProposalLifecycleStatus, string> = {
+  ACTIVE: "Active proposal",
+  APPROVED: "Approved proposal",
+  REJECTED: "Rejected proposal",
+  INVALIDATED: "Invalidated proposal",
 };
 
-const isApproved = (status: StepStatus) => status === "APPROVED";
+const resolveCampusDirectorStatus = (
+  lifecycleStatus: ProposalLifecycleStatus,
+  latestEvaluationStatus?: EvaluationStatus | null,
+): "PENDING" | "APPROVED" | "REJECTED" => {
+  if (latestEvaluationStatus === "APPROVED") return "APPROVED";
+  if (latestEvaluationStatus === "REJECTED") return "REJECTED";
+  if (lifecycleStatus === "APPROVED") return "APPROVED";
+  if (lifecycleStatus === "REJECTED") return "REJECTED";
+  return "PENDING";
+};
 
 const FacultyLoadStatus = async ({
   academicTermId,
@@ -44,56 +52,37 @@ const FacultyLoadStatus = async ({
     roles.includes("Program Chairperson") ||
     roles.includes("College Dean");
 
-  const metadataList = await getEvaluationMetadataByCampus(facultyCampusCode);
   const evaluations = proposal
     ? await getEvaluationsByProposal(proposal.id)
     : [];
+  const latestEvaluation = evaluations[0] ?? null;
 
-  const latestByLevel = new Map<number, StepStatus>();
-  const latestEvaluationByLevel = new Map<number, (typeof evaluations)[number]>();
-  for (const evaluation of evaluations) {
-    const level = evaluation.evaluation_metadata?.evaluation_level;
-    if (level === undefined || level === null) continue;
-    if (!latestByLevel.has(level)) {
-      latestByLevel.set(level, evaluation.status as StepStatus);
-      latestEvaluationByLevel.set(level, evaluation);
-    }
-  }
+  const campusDirectorStatus = proposal
+    ? resolveCampusDirectorStatus(
+        proposal.lifecycle_status,
+        latestEvaluation?.status ?? null,
+      )
+    : "PENDING";
 
-  const steps = [0, 1, 2].map((level) => {
-    const metadata = metadataList.find(
-      (item) => item.evaluation_level === level,
-    );
-    const status = latestByLevel.get(level) ?? "PENDING";
-    const label =
-      level === 0 && facultyCampusCode
-        ? `Campus Director (${facultyCampusCode})`
-        : getRoleForLevel(level);
-
-    return {
-      level,
-      label,
-      metadata,
-      status,
-    };
-  });
-
-  const currentStep = steps.find((step) => !isApproved(step.status));
-  const isFinal = proposal?.is_valid && !currentStep;
-
-  const matchingDesignation = currentStep
-    ? currentUserData?.designations.find((designation) => {
-        if (designation.job_title !== getRoleForLevel(currentStep.level))
-          return false;
-        if (designation.job_title !== "Campus Director") return true;
-        return designation.campus?.code === facultyCampusCode;
-      })
+  const matchingDesignation = proposal
+    ? currentUserData?.designations.find(
+        (designation) =>
+          designation.job_title === "Campus Director" &&
+          designation.campus?.code === facultyCampusCode,
+      )
     : null;
 
   const canApprove =
-    !!proposal?.is_valid &&
-    !!currentStep?.metadata?.id &&
+    !!proposal &&
+    proposal.lifecycle_status === "ACTIVE" &&
+    !latestEvaluation &&
     !!matchingDesignation;
+
+  const canRecreate =
+    !!proposal &&
+    canCreateProposal &&
+    (proposal.lifecycle_status === "INVALIDATED" ||
+      proposal.lifecycle_status === "REJECTED");
 
   return (
     <Card className="flex flex-col overflow-hidden">
@@ -101,7 +90,7 @@ const FacultyLoadStatus = async ({
         <CardTitle className="text-lg">FTL Status</CardTitle>
         {proposal && (
           <span className="text-xs text-foreground/60">
-            {proposal.is_valid ? "Valid proposal" : "Invalid proposal"}
+            {readableLifecycle[proposal.lifecycle_status]}
           </span>
         )}
       </CardHeader>
@@ -121,48 +110,56 @@ const FacultyLoadStatus = async ({
 
         {proposal && (
           <>
-            {!proposal.is_valid && (
+            {proposal.lifecycle_status === "INVALIDATED" && (
               <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                Proposal invalidated by load/designation changes.
+                Proposal invalidated
+                {proposal.invalidated_reason
+                  ? ` (${proposal.invalidated_reason.replaceAll("_", " ")})`
+                  : "."}
+              </div>
+            )}
+
+            {proposal.lifecycle_status === "REJECTED" && (
+              <div className="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+                Proposal rejected by Campus Director.
               </div>
             )}
 
             <div className="grid gap-2 text-sm">
-              {steps.map((step) => (
-                <div
-                  key={step.level}
-                  className="flex items-center justify-between rounded-md border px-3 py-2"
-                >
-                  <div className="flex flex-col">
-                    <span>{step.label}</span>
-                    {latestEvaluationByLevel.get(step.level)?.comment && (
-                      <span className="text-xs text-foreground/60">
-                        {latestEvaluationByLevel.get(step.level)?.comment}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className={
-                      step.status === "APPROVED"
-                        ? "text-emerald-700"
-                        : step.status === "REJECTED"
-                          ? "text-rose-700"
-                          : "text-foreground/60"
-                    }
-                  >
-                    {step.status}
+              <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                <div className="flex flex-col">
+                  <span>
+                    {facultyCampusCode
+                      ? `Campus Director (${facultyCampusCode})`
+                      : "Campus Director"}
                   </span>
+                  {latestEvaluation?.comment && (
+                    <span className="text-xs text-foreground/60">
+                      {latestEvaluation.comment}
+                    </span>
+                  )}
                 </div>
-              ))}
+                <span
+                  className={
+                    campusDirectorStatus === "APPROVED"
+                      ? "text-emerald-700"
+                      : campusDirectorStatus === "REJECTED"
+                        ? "text-rose-700"
+                        : "text-foreground/60"
+                  }
+                >
+                  {campusDirectorStatus}
+                </span>
+              </div>
             </div>
 
-            {isFinal && (
+            {proposal.lifecycle_status === "APPROVED" && (
               <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                Finalized. All approval steps are complete.
+                Finalized for campus-level consolidation.
               </div>
             )}
 
-            {canCreateProposal && !proposal.is_valid && (
+            {canRecreate && (
               <form action={createProposalAction} className="flex justify-end">
                 <input type="hidden" name="academicTermId" value={academicTermId} />
                 <input type="hidden" name="facultyId" value={facultyId} />
@@ -170,16 +167,11 @@ const FacultyLoadStatus = async ({
               </form>
             )}
 
-            {canApprove && currentStep && (
+            {canApprove && (
               <form action={submitEvaluationAction} className="space-y-2">
                 <input type="hidden" name="proposalId" value={proposal.id} />
-                <input
-                  type="hidden"
-                  name="evaluationMetadataId"
-                  value={currentStep.metadata?.id ?? ""}
-                />
                 <div className="text-sm font-medium">
-                  Action required: {currentStep.label}
+                  Action required: Campus Director
                 </div>
                 <textarea
                   name="comment"

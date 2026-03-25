@@ -1,5 +1,4 @@
 export const DESIGNATION_TITLE_ENUM_VALUES = [
-  "University President",
   "Director for Instruction",
   "College Dean",
   "Campus Director",
@@ -40,7 +39,6 @@ export const DESIGNATION_TITLE_ENUM_VALUES = [
 ] as const;
 
 export const DESIGNATION_PRIMARY_OPTIONS = [
-  { value: "University President", label: "University President" },
   { value: "Director for Instruction", label: "Director for Instruction" },
   { value: "College Dean", label: "College Dean" },
   { value: "Campus Director", label: "Campus Director" },
