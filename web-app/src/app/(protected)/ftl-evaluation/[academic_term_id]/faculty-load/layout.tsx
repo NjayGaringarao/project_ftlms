@@ -1,6 +1,9 @@
 import React from "react";
 import { getFacultyListByTerm } from "@/lib/course-loading/queries";
 import FacultyEvaluationList from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-list";
+import { getUserRole } from "@/lib/auth/utils";
+import { getCurrentUserData } from "@/lib/user-data/queries";
+import { redirect } from "next/navigation";
 
 type FacultyLoadLayoutProps = {
   children: React.ReactNode;
@@ -9,13 +12,45 @@ type FacultyLoadLayoutProps = {
 
 const FacultyLoadLayout = async ({ children, params }: FacultyLoadLayoutProps) => {
   const { academic_term_id } = await params;
-  const faculty = await getFacultyListByTerm(academic_term_id);
+  const [roles, faculty, currentUserData] = await Promise.all([
+    getUserRole(),
+    getFacultyListByTerm(academic_term_id),
+    getCurrentUserData({ includeDesignations: true }),
+  ]);
+
+  const canAccess = roles.includes("Campus Director") || roles.includes("Admin");
+  if (!canAccess) {
+    if (
+      roles.includes("Director for Instruction") ||
+      roles.includes("Vice President for Academic Affairs")
+    ) {
+      redirect(`/ftl-evaluation/${academic_term_id}/campus-load`);
+    }
+
+    redirect("/home");
+  }
+
+  const allowedCampusIds = new Set(
+    (currentUserData?.designations ?? [])
+      .filter(
+        (designation) =>
+          designation.job_title === "Campus Director" && designation.campus_id,
+      )
+      .map((designation) => designation.campus_id as string),
+  );
+
+  const filteredFaculty = roles.includes("Admin")
+    ? faculty
+    : faculty.filter(
+        (facultyRow) =>
+          !!facultyRow.campus_id && allowedCampusIds.has(facultyRow.campus_id),
+      );
 
   return (
     <div className="flex h-full gap-4 overflow-hidden p-4">
       <div className="w-84 overflow-hidden">
         <FacultyEvaluationList
-          facultyList={faculty}
+          facultyList={filteredFaculty}
           academicTermId={academic_term_id}
         />
       </div>

@@ -22,6 +22,14 @@ const FTLEvaluationAcademicTermLayout = async ({
     getUserRole(),
   ]);
 
+  if (
+    !roles.includes("Campus Director") &&
+    !roles.includes("Director for Instruction") &&
+    !roles.includes("Vice President for Academic Affairs")
+  ) {
+    redirect("/home");
+  }
+
   if (!selectedTerm) {
     if (terms.length > 0) {
       redirect(`/ftl-evaluation/${terms[0].id}`);
@@ -30,33 +38,9 @@ const FTLEvaluationAcademicTermLayout = async ({
     redirect("/ftl-evaluation");
   }
 
-  const canAccessFacultyLoad =
-    roles.includes("Campus Director") || roles.includes("Admin");
-  const canAccessCampusLoad =
-    roles.includes("Director for Instruction") ||
-    roles.includes("Vice President for Academic Affairs") ||
-    roles.includes("Admin");
-
-  const navItems = [
-    canAccessFacultyLoad
-      ? {
-          label: "Faculty Load",
-          href: `/ftl-evaluation/${academic_term_id}/faculty-load`,
-          activeMatch: "prefix" as const,
-        }
-      : null,
-    canAccessCampusLoad
-      ? {
-          label: "Campus Load",
-          href: `/ftl-evaluation/${academic_term_id}/campus-load`,
-          activeMatch: "prefix" as const,
-        }
-      : null,
-  ].filter(Boolean);
-
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
-      <TopBarNav title="FTL Evaluation" items={navItems}>
+      <TopBarNav title="FTL Evaluation" items={[]}>
         <TermSwitcher
           terms={terms}
           selectedTermId={selectedTerm.id}

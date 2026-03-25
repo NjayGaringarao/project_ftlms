@@ -48,18 +48,28 @@ export const getFacultyListByTerm = async (
         error,
       );
     } else if (data && data.length > 0) {
-      return data.map((row) => ({
-        id: row.id,
-        name: row.identity?.name?.trim() || "Unnamed Faculty",
-        latest_degree_title: null,
-        total_working_load: 0,
-        campus_id: row.campus_id ?? null,
-        campus_code: row.campus?.code ?? null,
-        campus_name: row.campus?.name ?? null,
-        college_id: row.college_id ?? null,
-        college_code: row.college?.code ?? null,
-        college_name: row.college?.name ?? null,
-      }));
+      return data.map((row) => {
+        const identity = Array.isArray(row.identity)
+          ? row.identity[0]
+          : row.identity;
+        const campus = Array.isArray(row.campus) ? row.campus[0] : row.campus;
+        const college = Array.isArray(row.college)
+          ? row.college[0]
+          : row.college;
+
+        return {
+          id: row.id,
+          name: identity?.name?.trim() || "Unnamed Faculty",
+          latest_degree_title: null,
+          total_working_load: 0,
+          campus_id: row.campus_id ?? null,
+          campus_code: campus?.code ?? null,
+          campus_name: campus?.name ?? null,
+          college_id: row.college_id ?? null,
+          college_code: college?.code ?? null,
+          college_name: college?.name ?? null,
+        };
+      });
     }
   }
 
@@ -182,6 +192,7 @@ export const getClassesByBlockAndTerm = async (
   blockId: string,
   _termId: string,
 ): Promise<BlockClassRow[]> => {
+  void _termId;
   const supabase = await createClient();
 
   const { data, error } = await supabase

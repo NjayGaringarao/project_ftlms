@@ -176,6 +176,9 @@ export const createProposalAction = async (formData: FormData) => {
     `/faculty-teaching-load/${academicTermId}/${facultyId}`,
   );
   revalidatePath(`/faculty-teaching-load/${academicTermId}`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load/${facultyId}`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load`);
 };
 
 export const submitEvaluationAction = async (formData: FormData) => {
@@ -199,6 +202,14 @@ export const submitEvaluationAction = async (formData: FormData) => {
     return;
   }
 
+  const rawCampus = proposal.campus as
+    | { code?: string | null }
+    | Array<{ code?: string | null }>
+    | null;
+  const proposalCampusCode = Array.isArray(rawCampus)
+    ? rawCampus[0]?.code
+    : rawCampus?.code;
+
   const { data: existingEvaluation } = await supabase
     .from("individual_proposal_evaluation")
     .select("id")
@@ -215,7 +226,7 @@ export const submitEvaluationAction = async (formData: FormData) => {
   const matchingDesignation = currentUserData?.designations.find(
     (designation) =>
       designation.job_title === "Campus Director" &&
-      designation.campus?.code === proposal.campus?.code,
+      designation.campus?.code === proposalCampusCode,
   );
 
   if (!matchingDesignation) return;
@@ -240,6 +251,10 @@ export const submitEvaluationAction = async (formData: FormData) => {
     `/faculty-teaching-load/${proposal.academic_term_id}/${proposal.user_id}`,
   );
   revalidatePath(`/faculty-teaching-load/${proposal.academic_term_id}`);
+  revalidatePath(
+    `/ftl-evaluation/${proposal.academic_term_id}/faculty-load/${proposal.user_id}`,
+  );
+  revalidatePath(`/ftl-evaluation/${proposal.academic_term_id}/faculty-load`);
 };
 
 export const createCampusProposalAction = async (formData: FormData) => {
@@ -368,6 +383,9 @@ export const createCampusProposalAction = async (formData: FormData) => {
   }
 
   revalidatePath(`/faculty-teaching-load/${academicTermId}`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/${campusId}`);
 };
 
 export const submitCampusProposalEvaluationAction = async (
@@ -407,7 +425,7 @@ export const submitCampusProposalEvaluationAction = async (
   const supabase = await createClient();
   const { data: campusProposal } = await supabase
     .from("campus_proposal")
-    .select("id, academic_term_id, lifecycle_status")
+    .select("id, campus_id, academic_term_id, lifecycle_status")
     .eq("id", campusProposalId)
     .maybeSingle();
 
@@ -450,6 +468,10 @@ export const submitCampusProposalEvaluationAction = async (
   }
 
   revalidatePath(`/faculty-teaching-load/${campusProposal.academic_term_id}`);
+  revalidatePath(`/ftl-evaluation/${campusProposal.academic_term_id}/campus-load`);
+  revalidatePath(
+    `/ftl-evaluation/${campusProposal.academic_term_id}/campus-load/${campusProposal.campus_id}`,
+  );
 };
 
 export const invalidateIndividualProposalsAction = async (formData: FormData) => {
@@ -469,7 +491,7 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
   const supabase = await createClient();
   const { data: proposals, error: proposalFetchError } = await supabase
     .from("proposal")
-    .select("id, campus_id, academic_term_id, lifecycle_status")
+    .select("id, user_id, campus_id, academic_term_id, lifecycle_status")
     .in("id", proposalIds)
     .eq("academic_term_id", academicTermId);
 
@@ -528,4 +550,13 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
   }
 
   revalidatePath(`/faculty-teaching-load/${academicTermId}`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load`);
+  if (campusId) {
+    revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/${campusId}`);
+  }
+  for (const proposal of proposals) {
+    revalidatePath(
+      `/ftl-evaluation/${academicTermId}/faculty-load/${proposal.user_id}`,
+    );
+  }
 };
