@@ -65,6 +65,17 @@ export const NAV_ITEMS: NavigationItem[] = [
     ],
   },
   {
+    label: "FTL Evaluation",
+    href: "/ftl-evaluation",
+    icon: "book-copy",
+    allowedRoles: [
+      "Admin",
+      "Campus Director",
+      "Director for Instruction",
+      "Vice President for Academic Affairs",
+    ],
+  },
+  {
     label: "Scheduler",
     href: "/scheduler",
     icon: "clock",
