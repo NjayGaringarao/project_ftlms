@@ -17,6 +17,7 @@ import {
 
 export const getFacultyListByTerm = async (
   termId: string,
+  options?: { includeEmpty?: boolean },
 ): Promise<FacultyListItem[]> => {
   const rows = await getUserDataList({
     academicTermId: termId,
@@ -25,8 +26,48 @@ export const getFacultyListByTerm = async (
     includeLoads: true,
   });
 
-  const withClasses = rows.filter((row) => row.classes.length > 0);
-  return withClasses.map(mapFacultyListItem);
+  if (rows.length === 0) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("user")
+      .select(
+        `
+        id,
+        campus_id,
+        college_id,
+        identity:identity (name),
+        campus:campus_id (id, code, name),
+        college:college_id (id, code, name)
+      `,
+      )
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.error(
+        "lib.course-loading.getFacultyListByTerm.fallback ::",
+        error,
+      );
+    } else if (data && data.length > 0) {
+      return data.map((row) => ({
+        id: row.id,
+        name: row.identity?.name?.trim() || "Unnamed Faculty",
+        latest_degree_title: null,
+        total_working_load: 0,
+        campus_id: row.campus_id ?? null,
+        campus_code: row.campus?.code ?? null,
+        campus_name: row.campus?.name ?? null,
+        college_id: row.college_id ?? null,
+        college_code: row.college?.code ?? null,
+        college_name: row.college?.name ?? null,
+      }));
+    }
+  }
+
+  const includeEmpty = options?.includeEmpty ?? false;
+  const filtered = includeEmpty
+    ? rows
+    : rows.filter((row) => row.classes.length > 0);
+  return filtered.map(mapFacultyListItem);
 };
 
 export const getBlockListByTerm = async (

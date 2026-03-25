@@ -248,7 +248,9 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         ]);
 
         const [facultyRows, roomRows, blockRows] = await Promise.all([
-          courseLoadingModule.getFacultyListByTerm(academic_term_id),
+          courseLoadingModule.getFacultyListByTerm(academic_term_id, {
+            includeEmpty: true,
+          }),
           roomModule.getRooms(),
           courseLoadingModule.getBlockListByTerm(academic_term_id),
         ]);
