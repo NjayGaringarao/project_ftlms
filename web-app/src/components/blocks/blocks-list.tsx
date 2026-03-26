@@ -202,16 +202,6 @@ export const BlocksList = ({
     },
   });
 
-  useEffect(() => {
-    if (!campusDialogOpen) return;
-    setCampusQuery("");
-  }, [campusDialogOpen]);
-
-  useEffect(() => {
-    if (!programOfferingDialogOpen) return;
-    setProgramOfferingQuery("");
-  }, [programOfferingDialogOpen]);
-
   const renderFilterButton = (
     label: string,
     selectedLabel: string | null,
@@ -271,7 +261,10 @@ export const BlocksList = ({
               {renderFilterButton(
                 "Campus",
                 selectedCampus ? selectedCampus.code : null,
-                () => setCampusDialogOpen(true),
+                () => {
+                  setCampusQuery("");
+                  setCampusDialogOpen(true);
+                },
                 campusId ? () => setCampus("") : undefined,
               )}
 
@@ -281,7 +274,10 @@ export const BlocksList = ({
                     selectedProgramOffering
                       ? `${selectedProgramOffering.program?.code ?? "Program"}`
                       : null,
-                    () => setProgramOfferingDialogOpen(true),
+                    () => {
+                      setProgramOfferingQuery("");
+                      setProgramOfferingDialogOpen(true);
+                    },
                     programOfferingId ? clearProgramOffering : undefined,
                   )
                 : null}

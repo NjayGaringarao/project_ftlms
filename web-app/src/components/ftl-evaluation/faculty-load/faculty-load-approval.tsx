@@ -104,7 +104,7 @@ const FacultyLoadApproval = ({
             </p>
           )}
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 mt-2">
           {canSubmitProposal && (
             <form action={createProposalAction}>
               <input type="hidden" name="academicTermId" value={academicTermId} />
@@ -115,9 +115,9 @@ const FacultyLoadApproval = ({
 
           {proposal?.lifecycle_status === "INVALIDATED" && (
             <p className="text-sm text-foreground/70">
-              Invalidated
+              Invalidation Reason:
               {proposal.invalidated_reason
-                ? ` (${proposal.invalidated_reason.replaceAll("_", " ")})`
+                ? ` ${proposal.invalidated_reason.replaceAll("_", " ")}`
                 : "."}
             </p>
           )}

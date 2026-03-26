@@ -86,12 +86,12 @@ export const FacultyScheduleCard = ({
   headerActions,
 }: FacultyScheduleCardProps) => {
   return (
-    <Card className={cn("gap-2 overflow-hidden flex flex-col", className)}>
+    <Card className={cn("gap-2 overflow-hidden flex flex-col pb-0", className)}>
       <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-base">{title}</CardTitle>
         {headerActions ? <div className="flex gap-2">{headerActions}</div> : null}
       </CardHeader>
-      <CardContent className="min-h-0 overflow-auto">
+      <CardContent className="flex-1 min-h-0 overflow-auto">
         {!hasSchedule ? (
           <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
             No schedule has been created for this academic term.
@@ -101,8 +101,8 @@ export const FacultyScheduleCard = ({
             Schedule exists, but there are no session entries yet.
           </p>
         ) : (
-          <div className="space-y-2 overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="space-y-2 overflow-x-auto h-full">
+            <table className="w-full text-xs pb-4">
               <thead>
                 <tr className="border-b text-left text-foreground/70">
                   <th className="px-1.5 py-1.5 min-w-20">Time</th>
@@ -131,7 +131,7 @@ export const FacultyScheduleCard = ({
                     </td>
                     <td className="px-1.5 py-1.5">
                       <span className="font-medium">{row.course_code}</span>
-                      {` - ${row.course_title}`}
+                      {` : ${row.course_title}`}
                     </td>
                     <td className="px-1.5 py-1.5  tabular-nums">
                       {row.lecture_hours !== null ? numberToHourDuration(row.lecture_hours) : "-"}

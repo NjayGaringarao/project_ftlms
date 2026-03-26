@@ -33,15 +33,21 @@ const CampusFacultyEvaluationPage = async ({
   params,
 }: CampusFacultyEvaluationPageProps) => {
   const { academic_term_id, faculty_id } = await params;
-  const [overview, roles, currentUserData, selectedTerm, proposal, scheduleSnapshot] =
-    await Promise.all([
-      getUserOverviewById(faculty_id),
-      getUserRole(),
-      getCurrentUserData({ includeDesignations: true }),
-      getTermById(academic_term_id),
-      getLatestProposalByUserTerm(faculty_id, academic_term_id),
-      getFacultyScheduleTermSnapshot(faculty_id, academic_term_id),
-    ]);
+  const [
+    overview,
+    roles,
+    currentUserData,
+    selectedTerm,
+    proposal,
+    scheduleSnapshot,
+  ] = await Promise.all([
+    getUserOverviewById(faculty_id),
+    getUserRole(),
+    getCurrentUserData({ includeDesignations: true }),
+    getTermById(academic_term_id),
+    getLatestProposalByUserTerm(faculty_id, academic_term_id),
+    getFacultyScheduleTermSnapshot(faculty_id, academic_term_id),
+  ]);
 
   if (!overview) {
     redirect(`/ftl-evaluation/${academic_term_id}/campus-load/faculty-load`);
@@ -64,7 +70,9 @@ const CampusFacultyEvaluationPage = async ({
     }
   }
 
-  const evaluations = proposal ? await getEvaluationsByProposal(proposal.id) : [];
+  const evaluations = proposal
+    ? await getEvaluationsByProposal(proposal.id)
+    : [];
   const latestEvaluation = evaluations[0] ?? null;
   const campusDirectorDesignation = overview.campus_id
     ? (currentUserData?.designations ?? []).find(
@@ -89,29 +97,27 @@ const CampusFacultyEvaluationPage = async ({
   const academicTermCode = selectedTerm?.code ?? "Unknown term";
 
   return (
-    <div className="flex flex-row gap-4 h-full">
-      <div className="min-h-0 flex flex-col gap-4">
-        <div className="min-h-0 flex-1 overflow-hidden">
+    <div className="flex flex-col gap-4 h-full">
+      <div className="flex-1 flex flex-row gap-4 overflow-hidden">
           <FacultyEvaluationSchedule scheduleSnapshot={scheduleSnapshot} />
+
+        <div className="flex flex-col w-94 overflow-hidden">
+          <ProposalDetailedSummary
+            overview={overview}
+            academicTermCode={academicTermCode}
+            proposal={proposal}
+          />
         </div>
-        <FacultyLoadApproval
-          proposal={proposal}
-          latestEvaluation={latestEvaluation}
-          campusDirectorStatus={campusDirectorStatus}
-          canEvaluateProposal={canEvaluateProposal}
-        />
       </div>
 
-      <div className="min-h-0 w-84 overflow-hidden">
-        <ProposalDetailedSummary
-          overview={overview}
-          academicTermCode={academicTermCode}
-          proposal={proposal}
-        />
-      </div>
+      <FacultyLoadApproval
+        proposal={proposal}
+        latestEvaluation={latestEvaluation}
+        campusDirectorStatus={campusDirectorStatus}
+        canEvaluateProposal={canEvaluateProposal}
+      />
     </div>
   );
 };
 
 export default CampusFacultyEvaluationPage;
-

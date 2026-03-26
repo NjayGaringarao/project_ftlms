@@ -39,19 +39,12 @@ const ProposalDetailedSummary = ({
   const collegeName = overview.college?.name ?? "No college assigned";
 
   return (
-    <Card className="h-full">
+    <Card className="flex-1 overflow-hidden">
       <CardHeader className="flex items-center justify-between">
-        <CardTitle className="text-base">Proposal Summary</CardTitle>
-        {proposal && (
-          <span
-            className={`rounded-md border px-2 py-1 text-xs font-medium ${lifecycleStyle[proposal.lifecycle_status]}`}
-          >
-            {lifecycleLabel[proposal.lifecycle_status]}
-          </span>
-        )}
+        <CardTitle className="text-base">Proposal Details</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm overflow-y-auto">
-        <div className="flex flex-col gap-4">
+      <CardContent className="text-sm flex-1 overflow-auto">
+        <div className="grid grid-cols-1 gap-4">
           <FieldView label="Faculty" value={facultyName} />
           <FieldView label="Campus" value={campusName} />
           <FieldView label="College" value={collegeName} />
@@ -82,6 +75,7 @@ const ProposalDetailedSummary = ({
               />
 
               <div className="grid grid-cols-2 gap-4">
+
                 <FieldView
                   label="ETL"
                   value={toFixed(proposal.equivalent_teaching_load)}
@@ -103,6 +97,7 @@ const ProposalDetailedSummary = ({
                   value={String(proposal.preparation_count ?? "-")}
                 />
               </div>
+            
               <FieldView
                 label="Created At"
                 value={formatDateTime(proposal.created_at ?? undefined)}
@@ -117,13 +112,7 @@ const ProposalDetailedSummary = ({
           </div>
         )}
 
-        {proposal &&
-          proposal.lifecycle_status === "INVALIDATED" &&
-          proposal.invalidated_reason && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-              Invalidated reason: {proposal.invalidated_reason}
-            </div>
-          )}
+       
       </CardContent>
     </Card>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown, User, X } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
@@ -28,34 +28,34 @@ type FacultyPickerDialogProps = {
 
 const toFixed = (value: number) => value.toFixed(2);
 
-const FacultyPickerDialog = ({
-  open,
-  onOpenChange,
-  title = "Select Faculty",
-  description = "Select faculty.",
+type FacultyPickerDialogBodyProps = {
+  items: FacultyListItem[];
+  selectedId?: string | null;
+  onSelect: (id: string) => void;
+  searchPlaceholder: string;
+  defaultCampusId?: string | null;
+  defaultCollegeId?: string | null;
+  renderSubtitle?: (item: FacultyListItem) => string[];
+  renderAnnotation?: (item: FacultyListItem) => ReactNode;
+};
+
+const FacultyPickerDialogBody = ({
   items,
   selectedId,
   onSelect,
-  searchPlaceholder = "Search faculty",
+  searchPlaceholder,
   defaultCampusId,
   defaultCollegeId,
   renderSubtitle,
   renderAnnotation,
-}: FacultyPickerDialogProps) => {
+}: FacultyPickerDialogBodyProps) => {
   const [facultyQuery, setFacultyQuery] = useState("");
-  const [campusFilterId, setCampusFilterId] = useState("");
-  const [collegeFilterId, setCollegeFilterId] = useState("");
+  const [campusFilterId, setCampusFilterId] = useState(defaultCampusId ?? "");
+  const [collegeFilterId, setCollegeFilterId] = useState(defaultCollegeId ?? "");
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
   const [collegeDialogOpen, setCollegeDialogOpen] = useState(false);
   const [campusQuery, setCampusQuery] = useState("");
   const [collegeQuery, setCollegeQuery] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    setFacultyQuery("");
-    setCampusFilterId(defaultCampusId ?? "");
-    setCollegeFilterId(defaultCollegeId ?? "");
-  }, [open, defaultCampusId, defaultCollegeId]);
 
   const campusOptions = useMemo(() => {
     const map = new Map<string, { id: string; code: string; name: string }>();
@@ -84,16 +84,6 @@ const FacultyPickerDialog = ({
     });
     return Array.from(map.values());
   }, [items]);
-
-  useEffect(() => {
-    if (!campusDialogOpen) return;
-    setCampusQuery("");
-  }, [campusDialogOpen]);
-
-  useEffect(() => {
-    if (!collegeDialogOpen) return;
-    setCollegeQuery("");
-  }, [collegeDialogOpen]);
 
   const selectedCampus =
     campusOptions.find((campus) => campus.id === campusFilterId) ?? null;
@@ -148,14 +138,6 @@ const FacultyPickerDialog = ({
 
   return (
     <>
-    
-    <AppDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title={title}
-      description={description}
-      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
-    >
       <div className="flex h-full flex-col gap-3 overflow-hidden">
         <div className="flex flex-col gap-2">
           <Input
@@ -165,19 +147,25 @@ const FacultyPickerDialog = ({
           />
           <div className="flex flex-row gap-2">
             {renderFilterButton(
-            "All Campus",
-            selectedCampus ? selectedCampus.code || selectedCampus.name : null,
-            () => setCampusDialogOpen(true),
-            campusFilterId ? () => setCampusFilterId("") : undefined,
-          )}
-          {renderFilterButton(
-            "All College",
-            selectedCollege ? selectedCollege.code || selectedCollege.name : null,
-            () => setCollegeDialogOpen(true),
-            collegeFilterId ? () => setCollegeFilterId("") : undefined,
-          )}
+              "All Campus",
+              selectedCampus ? selectedCampus.code || selectedCampus.name : null,
+              () => {
+                setCampusQuery("");
+                setCampusDialogOpen(true);
+              },
+              campusFilterId ? () => setCampusFilterId("") : undefined,
+            )}
+            {renderFilterButton(
+              "All College",
+              selectedCollege ? selectedCollege.code || selectedCollege.name : null,
+              () => {
+                setCollegeQuery("");
+                setCollegeDialogOpen(true);
+              },
+              collegeFilterId ? () => setCollegeFilterId("") : undefined,
+            )}
 
-          <button
+            <button
               type="button"
               className="text-xs text-foreground/60 hover:text-foreground"
               onClick={() => {
@@ -186,9 +174,8 @@ const FacultyPickerDialog = ({
               }}
             >
               Reset filters
-            </button> 
+            </button>
           </div>
-         
         </div>
 
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
@@ -196,9 +183,13 @@ const FacultyPickerDialog = ({
             <ListItemSmall
               key={item.id}
               title={item.name}
-              subtitle={[
-                `${item.campus_name ?? "No Home"} Campus | ${item.college_name ?? "No Home College"}`
-              ]}
+              subtitle={
+                renderSubtitle
+                  ? renderSubtitle(item)
+                  : [
+                      `${item.campus_name ?? "No Home"} Campus | ${item.college_name ?? "No Home College"}`,
+                    ]
+              }
               isSelected={item.id === selectedId}
               onClick={() => onSelect(item.id)}
               icon={<User className="h-5 w-5 text-background/80" />}
@@ -210,7 +201,6 @@ const FacultyPickerDialog = ({
                     <span className="rounded-md bg-foreground/10 px-1.5 py-1 text-xs">
                       TWL: {toFixed(item.total_working_load)}
                     </span>
-                   
                   </div>
                 )
               }
@@ -218,46 +208,83 @@ const FacultyPickerDialog = ({
           ))}
         </div>
       </div>
-    </AppDialog>
 
-    <CampusPickerDialog
-      open={campusDialogOpen}
-      onOpenChange={setCampusDialogOpen}
-      campuses={campusOptions.map((campus) => ({
-        id: campus.id,
-        code: campus.code,
-        name: campus.name,
-        address: null,
-      }))}
-      selectedCampusId={campusFilterId}
-      query={campusQuery}
-      onQueryChange={setCampusQuery}
-      onSelect={(nextCampusId) => {
-        setCampusFilterId(nextCampusId);
-        setCampusDialogOpen(false);
-      }}
-      emptyState="No campuses found."
-    />
+      <CampusPickerDialog
+        open={campusDialogOpen}
+        onOpenChange={setCampusDialogOpen}
+        campuses={campusOptions.map((campus) => ({
+          id: campus.id,
+          code: campus.code,
+          name: campus.name,
+          address: null,
+        }))}
+        selectedCampusId={campusFilterId}
+        query={campusQuery}
+        onQueryChange={setCampusQuery}
+        onSelect={(nextCampusId) => {
+          setCampusFilterId(nextCampusId);
+          setCampusDialogOpen(false);
+        }}
+        emptyState="No campuses found."
+      />
 
-    <CollegePickerDialog
-      open={collegeDialogOpen}
-      onOpenChange={setCollegeDialogOpen}
-      colleges={collegeOptions.map((college) => ({
-        id: college.id,
-        code: college.code,
-        name: college.name,
-        description: null,
-      }))}
-      selectedCollegeId={collegeFilterId}
-      query={collegeQuery}
-      onQueryChange={setCollegeQuery}
-      onSelect={(nextCollegeId) => {
-        setCollegeFilterId(nextCollegeId);
-        setCollegeDialogOpen(false);
-      }}
-      emptyState="No colleges found."
-    />
+      <CollegePickerDialog
+        open={collegeDialogOpen}
+        onOpenChange={setCollegeDialogOpen}
+        colleges={collegeOptions.map((college) => ({
+          id: college.id,
+          code: college.code,
+          name: college.name,
+          description: null,
+        }))}
+        selectedCollegeId={collegeFilterId}
+        query={collegeQuery}
+        onQueryChange={setCollegeQuery}
+        onSelect={(nextCollegeId) => {
+          setCollegeFilterId(nextCollegeId);
+          setCollegeDialogOpen(false);
+        }}
+        emptyState="No colleges found."
+      />
     </>
+  );
+};
+
+const FacultyPickerDialog = ({
+  open,
+  onOpenChange,
+  title = "Select Faculty",
+  description = "Select faculty.",
+  items,
+  selectedId,
+  onSelect,
+  searchPlaceholder = "Search faculty",
+  defaultCampusId,
+  defaultCollegeId,
+  renderSubtitle,
+  renderAnnotation,
+}: FacultyPickerDialogProps) => {
+  return (
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+    >
+      {open ? (
+        <FacultyPickerDialogBody
+          items={items}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          searchPlaceholder={searchPlaceholder}
+          defaultCampusId={defaultCampusId}
+          defaultCollegeId={defaultCollegeId}
+          renderSubtitle={renderSubtitle}
+          renderAnnotation={renderAnnotation}
+        />
+      ) : null}
+    </AppDialog>
   );
 };
 

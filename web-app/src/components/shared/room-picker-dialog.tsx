@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown, DoorOpen, X } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
@@ -26,25 +26,34 @@ type RoomPickerDialogProps = {
   defaultCampusId?: string | null;
 };
 
-const RoomPickerDialog = ({
-  open,
-  onOpenChange,
+type RoomPickerDialogBodyProps = {
+  items: ExtendedRoom[];
+  selectedId?: string | null;
+  onSelect: (id: string | null) => void;
+  searchPlaceholder: string;
+  allowOnline: boolean;
+  onlineLabel: string;
+  renderSubtitle?: (item: ExtendedRoom) => string[];
+  renderAnnotation?: (item: ExtendedRoom) => ReactNode;
+  defaultCampusId?: string | null;
+};
+
+const RoomPickerDialogBody = ({
   items,
   selectedId,
   onSelect,
-  title = "Select Room",
-  description = "Select room to map. You can select faculty and block independently.",
-  searchPlaceholder = "Search rooms",
-  allowOnline = false,
-  onlineLabel = "Online / No Room",
+  searchPlaceholder,
+  allowOnline,
+  onlineLabel,
   renderSubtitle,
   renderAnnotation,
   defaultCampusId,
-}: RoomPickerDialogProps) => {
+}: RoomPickerDialogBodyProps) => {
   const [roomQuery, setRoomQuery] = useState("");
-  const [roomCampusFilter, setRoomCampusFilter] = useState("");
+  const [roomCampusFilter, setRoomCampusFilter] = useState(defaultCampusId ?? "");
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
   const [campusQuery, setCampusQuery] = useState("");
+
   const roomCampusOptions = useMemo(() => {
     const map = new Map<string, Campus>();
     items.forEach((item) => {
@@ -53,7 +62,7 @@ const RoomPickerDialog = ({
           id: item.campus.id,
           code: item.campus.code ?? "",
           name: item.campus.name ?? "Unknown Campus",
-          address: item.campus.address
+          address: item.campus.address,
         });
       }
     });
@@ -77,17 +86,6 @@ const RoomPickerDialog = ({
       );
     });
   }, [items, roomQuery, roomCampusFilter]);
-
-  useEffect(() => {
-    if (!open) return;
-    setRoomQuery("");
-    setRoomCampusFilter(defaultCampusId ?? "");
-  }, [open]);
-
-  useEffect(() => {
-    if (!campusDialogOpen) return;
-    setCampusQuery("");
-  }, [campusDialogOpen]);
 
   const selectedCampus =
     roomCampusOptions.find((campus) => campus.id === roomCampusFilter) ?? null;
@@ -124,14 +122,6 @@ const RoomPickerDialog = ({
 
   return (
     <>
-    
-    <AppDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title={title}
-      description={description}
-      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
-    >
       <div className="flex h-full flex-col gap-1 overflow-hidden">
         <Input
           placeholder={searchPlaceholder}
@@ -142,7 +132,10 @@ const RoomPickerDialog = ({
         {renderFilterButton(
           "All Campus",
           selectedCampus ? selectedCampus.name : null,
-          () => setCampusDialogOpen(true),
+          () => {
+            setCampusQuery("");
+            setCampusDialogOpen(true);
+          },
           roomCampusFilter ? () => setRoomCampusFilter("") : undefined,
         )}
 
@@ -163,9 +156,7 @@ const RoomPickerDialog = ({
               subtitle={
                 renderSubtitle
                   ? renderSubtitle(item)
-                  : [
-                      `${item.name} | ${item.campus?.name ?? "Unknown Campus"}`,
-                    ]
+                  : [`${item.name} | ${item.campus?.name ?? "Unknown Campus"}`]
               }
               isSelected={item.id === selectedId}
               onClick={() => onSelect(item.id)}
@@ -183,27 +174,66 @@ const RoomPickerDialog = ({
           ))}
         </div>
       </div>
-    </AppDialog>
 
-    <CampusPickerDialog
-      open={campusDialogOpen}
-      onOpenChange={setCampusDialogOpen}
-      campuses={roomCampusOptions.map((campus) => ({
-        id: campus.id,
-        code: campus.code,
-        name: campus.name,
-        address: campus.address,
-      }))}
-      selectedCampusId={roomCampusFilter}
-      query={campusQuery}
-      onQueryChange={setCampusQuery}
-      onSelect={(nextCampusId) => {
-        setRoomCampusFilter(nextCampusId);
-        setCampusDialogOpen(false);
-      }}
-      emptyState="No campuses found."
-    />
-      </>
+      <CampusPickerDialog
+        open={campusDialogOpen}
+        onOpenChange={setCampusDialogOpen}
+        campuses={roomCampusOptions.map((campus) => ({
+          id: campus.id,
+          code: campus.code,
+          name: campus.name,
+          address: campus.address,
+        }))}
+        selectedCampusId={roomCampusFilter}
+        query={campusQuery}
+        onQueryChange={setCampusQuery}
+        onSelect={(nextCampusId) => {
+          setRoomCampusFilter(nextCampusId);
+          setCampusDialogOpen(false);
+        }}
+        emptyState="No campuses found."
+      />
+    </>
+  );
+};
+
+const RoomPickerDialog = ({
+  open,
+  onOpenChange,
+  items,
+  selectedId,
+  onSelect,
+  title = "Select Room",
+  description = "Select room to map. You can select faculty and block independently.",
+  searchPlaceholder = "Search rooms",
+  allowOnline = false,
+  onlineLabel = "Online / No Room",
+  renderSubtitle,
+  renderAnnotation,
+  defaultCampusId,
+}: RoomPickerDialogProps) => {
+  return (
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+    >
+      {open ? (
+        <RoomPickerDialogBody
+          items={items}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          searchPlaceholder={searchPlaceholder}
+          allowOnline={allowOnline}
+          onlineLabel={onlineLabel}
+          renderSubtitle={renderSubtitle}
+          renderAnnotation={renderAnnotation}
+          defaultCampusId={defaultCampusId}
+        />
+      ) : null}
+    </AppDialog>
   );
 };
 
