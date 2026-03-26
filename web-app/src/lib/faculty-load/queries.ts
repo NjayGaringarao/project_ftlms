@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { getFacultyListByTerm } from "@/lib/course-loading/queries";
 import type {
   Proposal,
   ProposalLifecycleStatus,
@@ -9,6 +10,73 @@ import type {
   CampusProposalEvaluation,
   CampusProposalMember,
 } from "@/models";
+import type {
+  FacultyEvaluationListItem,
+  FacultyProposalApprovalFilterStatus,
+} from "@/lib/course-loading/types";
+
+const toProposalFilterStatus = (
+  lifecycleStatus: ProposalLifecycleStatus | null,
+): FacultyProposalApprovalFilterStatus => {
+  if (lifecycleStatus === "ACTIVE") return "PENDING";
+  if (lifecycleStatus === "APPROVED") return "APPROVED";
+  if (lifecycleStatus === "REJECTED") return "REJECTED";
+  if (lifecycleStatus === "INVALIDATED") return "INVALIDATED";
+  return "NO_PROPOSAL";
+};
+
+export const getFacultyEvaluationListByTerm = async (
+  academicTermId: string,
+): Promise<FacultyEvaluationListItem[]> => {
+  const facultyList = await getFacultyListByTerm(academicTermId);
+  if (facultyList.length === 0) return [];
+
+  const facultyIds = facultyList.map((item) => item.id);
+  const supabase = await createClient();
+  const { data: proposalRows, error } = await supabase
+    .from("proposal")
+    .select("id, user_id, lifecycle_status, created_at")
+    .eq("academic_term_id", academicTermId)
+    .in("user_id", facultyIds)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("faculty-load.getFacultyEvaluationListByTerm.proposals ::", error);
+    return facultyList.map((item) => ({
+      ...item,
+      latest_proposal_id: null,
+      latest_proposal_lifecycle_status: null,
+      proposal_filter_status: "NO_PROPOSAL",
+    }));
+  }
+
+  const latestProposalByFacultyId = new Map<
+    string,
+    {
+      id: string;
+      lifecycle_status: ProposalLifecycleStatus;
+    }
+  >();
+
+  for (const row of proposalRows ?? []) {
+    if (!row.user_id || latestProposalByFacultyId.has(row.user_id)) continue;
+    latestProposalByFacultyId.set(row.user_id, {
+      id: row.id,
+      lifecycle_status: row.lifecycle_status as ProposalLifecycleStatus,
+    });
+  }
+
+  return facultyList.map((item) => {
+    const latestProposal = latestProposalByFacultyId.get(item.id) ?? null;
+    const lifecycleStatus = latestProposal?.lifecycle_status ?? null;
+    return {
+      ...item,
+      latest_proposal_id: latestProposal?.id ?? null,
+      latest_proposal_lifecycle_status: lifecycleStatus,
+      proposal_filter_status: toProposalFilterStatus(lifecycleStatus),
+    };
+  });
+};
 
 export const getLatestProposalByUserTerm = async (
   userId: string,

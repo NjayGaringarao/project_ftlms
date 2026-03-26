@@ -5,6 +5,7 @@ import { SessionDay, SessionType } from "@/models";
 import {
   FacultySchedulePageData,
   FacultyScheduleRow,
+  FacultyScheduleTermSnapshot,
   FacultyScheduleSessionInfo,
   FacultyTeachingLoadRow,
   ScheduleAcademicTermOption,
@@ -13,10 +14,14 @@ import {
   computeTeachingLoad,
   mergeBlockLabels,
   sortScheduleRows,
+  toMinutes,
 } from "./utils";
 
 type ClassBlockRow = {
   block?: {
+    id?: string | null;
+    code?: string | null;
+    student_count?: number | null;
     year_level?: number | null;
     section?: string | null;
     major_offering?: {
@@ -61,6 +66,16 @@ type ClassRow = {
   session_class?: Array<{
     session?: ClassSessionRow | ClassSessionRow[] | null;
   }> | null;
+};
+
+const SESSION_DAY_ORDER: Record<SessionDay, number> = {
+  Sunday: 1,
+  Monday: 2,
+  Tuesday: 3,
+  Wednesday: 4,
+  Thursday: 5,
+  Friday: 6,
+  Saturday: 7,
 };
 
 type RawScheduleTermRow = {
@@ -152,6 +167,9 @@ const getClassRowsByFacultyAndTerm = async (
         course_utilization(
           course:course_id(code, title, lecture_unit, laboratory_unit),
           block:block_id(
+            id,
+            code,
+            student_count,
             year_level,
             section,
             major_offering:major_offering_id(
@@ -209,6 +227,19 @@ const mapSession = (session: ClassSessionRow): FacultyScheduleSessionInfo => {
   };
 };
 
+const formatRoomLabel = (session: FacultyScheduleSessionInfo): string | null => {
+  if (!session.room_code && !session.room_name) return null;
+  if (!session.room_code) return session.room_name ?? null;
+  if (!session.room_name) return session.room_code;
+  return `${session.room_code}`;
+};
+
+const toSessionHours = (session: FacultyScheduleSessionInfo): number => {
+  const durationMinutes = toMinutes(session.end_time) - toMinutes(session.start_time);
+  if (durationMinutes <= 0) return 0;
+  return Number((durationMinutes / 60).toFixed(2));
+};
+
 const mapTeachingLoadRows = (classRows: ClassRow[]): FacultyTeachingLoadRow[] => {
   return classRows.map((item) => {
     const firstUtil = (item.course_utilization ?? [])[0];
@@ -258,15 +289,32 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
   classRows.forEach((item) => {
     const firstUtil = (item.course_utilization ?? [])[0];
     const course = first(firstUtil?.course);
-    const blocks = (item.course_utilization ?? [])
+    const blockRows = (item.course_utilization ?? [])
       .map((entry) => first(entry.block))
-      .filter(Boolean)
-      .map((block) =>
-        formatBlockLabel(block?.year_level ?? null, block?.section ?? null),
-      )
-      .filter((value): value is string => Boolean(value));
+      .filter((block): block is NonNullable<typeof block> => Boolean(block));
 
-    const mergedBlockLabel = mergeBlockLabels(blocks);
+    const blockCodes = Array.from(
+      new Set(
+        blockRows
+          .map((block) => block.code?.trim() ?? "")
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    const seenBlockIds = new Set<string>();
+    const uniqueBlockRows = blockRows.filter((block) => {
+      const dedupeKey = block.id?.trim() || block.code?.trim() || "";
+      if (!dedupeKey) return true;
+      if (seenBlockIds.has(dedupeKey)) return false;
+      seenBlockIds.add(dedupeKey);
+      return true;
+    });
+
+    const studentCount = uniqueBlockRows.reduce(
+      (sum, block) => sum + Number(block.student_count ?? 0),
+      0,
+    );
+    const mergedBlockCodeLabel = mergeBlockLabels(blockCodes);
     const sessions = (item.session_class ?? [])
       .map((entry) => first(entry.session))
       .filter((session): session is ClassSessionRow => Boolean(session))
@@ -278,22 +326,79 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
         class_id: item.id,
         course_code: course?.code ?? "Unknown",
         course_title: course?.title ?? "Untitled Course",
-        merged_block_label: mergedBlockLabel,
+        block_codes_label: mergedBlockCodeLabel,
+        student_count: studentCount > 0 ? studentCount : null,
+        lecture_hours: null,
+        lecture_room: null,
+        laboratory_hours: null,
+        laboratory_room: null,
+        session_days: [],
         session: null,
       });
       return;
     }
 
+    const groupedSessions = new Map<
+      string,
+      { representative: FacultyScheduleSessionInfo; days: Set<SessionDay> }
+    >();
+
     sessions.forEach((session) => {
-      rows.push({
-        row_id: `${item.id}:${session.id}`,
+      const roomKey = session.room_code ?? session.room_name ?? "";
+      const sessionGroupKey = [
+        session.type,
+        session.start_time,
+        session.end_time,
+        roomKey,
+      ].join("|");
+
+      const existingGroup = groupedSessions.get(sessionGroupKey);
+      if (!existingGroup) {
+        groupedSessions.set(sessionGroupKey, {
+          representative: session,
+          days: new Set([session.day]),
+        });
+        return;
+      }
+
+      existingGroup.days.add(session.day);
+
+      const existingDayOrder = SESSION_DAY_ORDER[existingGroup.representative.day];
+      const currentDayOrder = SESSION_DAY_ORDER[session.day];
+      if (currentDayOrder < existingDayOrder) {
+        existingGroup.representative = session;
+      }
+    });
+
+    const compressedRows = Array.from(groupedSessions.values()).map((group) => {
+      const sessionDays = Array.from(group.days).sort(
+        (left, right) => SESSION_DAY_ORDER[left] - SESSION_DAY_ORDER[right],
+      );
+      const representativeSession = {
+        ...group.representative,
+        day: sessionDays[0] ?? group.representative.day,
+      };
+      const sessionHours = toSessionHours(representativeSession);
+      const roomLabel = formatRoomLabel(representativeSession);
+      const isLecture = representativeSession.type === "Lecture";
+
+      return {
+        row_id: `${item.id}:${representativeSession.type}:${representativeSession.start_time}:${representativeSession.end_time}:${roomLabel ?? ""}:${sessionDays.join(",")}`,
         class_id: item.id,
         course_code: course?.code ?? "Unknown",
         course_title: course?.title ?? "Untitled Course",
-        merged_block_label: mergedBlockLabel,
-        session,
-      });
+        block_codes_label: mergedBlockCodeLabel,
+        student_count: studentCount > 0 ? studentCount : null,
+        lecture_hours: isLecture ? sessionHours : null,
+        lecture_room: isLecture ? roomLabel : null,
+        laboratory_hours: !isLecture ? sessionHours : null,
+        laboratory_room: !isLecture ? roomLabel : null,
+        session_days: sessionDays,
+        session: representativeSession,
+      } satisfies FacultyScheduleRow;
     });
+
+    rows.push(...compressedRows);
   });
 
   return sortScheduleRows(rows);
@@ -312,6 +417,36 @@ const emptyPageData = (
   total_teaching_load: 0,
 });
 
+export const getFacultyScheduleTermSnapshot = async (
+  userId: string,
+  academicTermId: string,
+): Promise<FacultyScheduleTermSnapshot> => {
+  const classRows = await getClassRowsByFacultyAndTerm(userId, academicTermId);
+
+  if (classRows.length === 0) {
+    return {
+      has_schedule: false,
+      teaching_load_rows: [],
+      schedule_rows: [],
+      total_teaching_load: 0,
+    };
+  }
+
+  const teachingLoadRows = mapTeachingLoadRows(classRows);
+  const scheduleRows = mapScheduleRows(classRows);
+  const totalTeachingLoad = teachingLoadRows.reduce(
+    (sum, item) => sum + item.load,
+    0,
+  );
+
+  return {
+    has_schedule: true,
+    teaching_load_rows: teachingLoadRows,
+    schedule_rows: scheduleRows,
+    total_teaching_load: totalTeachingLoad,
+  };
+};
+
 export const getFacultySchedulePageData = async (
   userId: string,
   requestedTermId: string | null,
@@ -323,29 +458,15 @@ export const getFacultySchedulePageData = async (
     return emptyPageData(terms, null);
   }
 
-  const classRows = await getClassRowsByFacultyAndTerm(
+  const termSnapshot = await getFacultyScheduleTermSnapshot(
     userId,
     selectedTerm.id,
-  );
-
-  if (classRows.length === 0) {
-    return emptyPageData(terms, selectedTerm);
-  }
-
-  const teachingLoadRows = mapTeachingLoadRows(classRows);
-  const scheduleRows = mapScheduleRows(classRows);
-  const totalTeachingLoad = teachingLoadRows.reduce(
-    (sum, item) => sum + item.load,
-    0,
   );
 
   return {
     terms,
     selected_term_id: selectedTerm.id,
     selected_term: selectedTerm,
-    has_schedule: true,
-    teaching_load_rows: teachingLoadRows,
-    schedule_rows: scheduleRows,
-    total_teaching_load: totalTeachingLoad,
+    ...termSnapshot,
   };
 };

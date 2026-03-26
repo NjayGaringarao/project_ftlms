@@ -1,17 +1,21 @@
 "use client";
 
 import { cn } from "@/utils/style";
-import { ArrowRight, Dot } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import React from "react";
 
 type ListItemSmallProps = {
-  key: string;
   title: string;
   subtitle: string[] | React.ReactNode;
   onClick?: () => void;
+  onPointerDown?: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerUp?: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerLeave?: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerCancel?: React.PointerEventHandler<HTMLButtonElement>;
   isSelected?: boolean;
   icon?: React.ReactNode;
   annotations?: React.ReactNode;
+  indicator?: React.ReactNode;
   className?: string;
   listType?: "layout" | "modal";
 };
@@ -20,9 +24,14 @@ const ListItemSmall = ({
   title,
   subtitle,
   onClick,
+  onPointerDown,
+  onPointerUp,
+  onPointerLeave,
+  onPointerCancel,
   isSelected,
   icon,
   annotations,
+  indicator,
   className,
   listType = "layout",
 }: ListItemSmallProps) => {
@@ -39,7 +48,15 @@ const ListItemSmall = ({
         className
       )}
     >
-      <button onClick={onClick} className="flex-1 flex flex-row items-center">
+      <button
+        type="button"
+        onClick={onClick}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerLeave}
+        onPointerCancel={onPointerCancel}
+        className="flex-1 flex flex-row items-center"
+      >
 
       <div
         className={cn(
@@ -75,13 +92,13 @@ const ListItemSmall = ({
       </button>
       <div className="h-full flex flex-col items-center p-2">
         {annotations && annotations}
-        {isSelected && (
-          
-            listType === "layout" ? (
+        {indicator ??
+          (isSelected &&
+            (listType === "layout" ? (
               <ArrowRight className="h-6 w-6 text-foreground/70" />
-            ) : (<div className="h-3 w-3 bg-foreground/50 mt-1 rounded-full" />)
-          
-        )}
+            ) : (
+              <div className="h-3 w-3 bg-foreground/50 mt-1 rounded-full" />
+            )))}
       </div>
     </div>
   );

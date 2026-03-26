@@ -33,7 +33,13 @@ export type FacultyScheduleRow = {
   class_id: string;
   course_code: string;
   course_title: string;
-  merged_block_label: string;
+  block_codes_label: string;
+  student_count: number | null;
+  lecture_hours: number | null;
+  lecture_room: string | null;
+  laboratory_hours: number | null;
+  laboratory_room: string | null;
+  session_days: SessionDay[];
   session: FacultyScheduleSessionInfo | null;
 };
 
@@ -46,3 +52,8 @@ export type FacultySchedulePageData = {
   schedule_rows: FacultyScheduleRow[];
   total_teaching_load: number;
 };
+
+export type FacultyScheduleTermSnapshot = Pick<
+  FacultySchedulePageData,
+  "has_schedule" | "teaching_load_rows" | "schedule_rows" | "total_teaching_load"
+>;

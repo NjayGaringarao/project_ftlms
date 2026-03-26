@@ -18,6 +18,42 @@ const isFinalDecisionStatus = (
 ): value is "APPROVED" | "REJECTED" =>
   value === "APPROVED" || value === "REJECTED";
 
+const parseProposalIds = (rawValue: string): string[] =>
+  Array.from(
+    new Set(
+      rawValue
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
+  );
+
+const parseFacultyIds = (rawValue: string): string[] =>
+  Array.from(
+    new Set(
+      rawValue
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
+  );
+
+const toCampusDirectorDesignationByCampus = (
+  designations: Array<{
+    id: string;
+    job_title: string;
+    campus_id: string | null;
+  }>,
+) =>
+  new Map(
+    designations
+      .filter(
+        (designation) =>
+          designation.job_title === "Campus Director" && designation.campus_id,
+      )
+      .map((designation) => [designation.campus_id as string, designation.id]),
+  );
+
 const pickDegreeTitle = (
   degrees: Degree[],
   level: string,
@@ -86,58 +122,82 @@ const resolveCreatorDesignationId = (
   return preferred?.id ?? null;
 };
 
-export const createProposalAction = async (formData: FormData) => {
-  const academicTermId = String(formData.get("academicTermId") ?? "");
-  const facultyId = String(formData.get("facultyId") ?? "");
+type CreateProposalOptions = {
+  academicTermId: string;
+  facultyId: string;
+  currentUserId: string;
+  creatorDesignationId: string | null;
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  allowExistingProposals: boolean;
+};
 
-  if (!academicTermId || !facultyId) return;
+type CreateProposalResult =
+  | { success: true; facultyId: string; campusId: string }
+  | { success: false };
 
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return;
+const createIndividualProposalForFaculty = async ({
+  academicTermId,
+  facultyId,
+  currentUserId,
+  creatorDesignationId,
+  supabase,
+  allowExistingProposals,
+}: CreateProposalOptions): Promise<CreateProposalResult> => {
+  const userData = await getUserDataById(facultyId, {
+    academicTermId,
+    includeDegrees: true,
+    includeDesignations: true,
+    includeClasses: true,
+    includeLoads: true,
+  });
 
-  const roles = await getUserRole();
-  if (!canCreateProposalFromRoles(roles)) return;
-
-  const [userData, currentUserData] = await Promise.all([
-    getUserDataById(facultyId, {
-      academicTermId,
-      includeDegrees: true,
-      includeDesignations: true,
-      includeClasses: true,
-      includeLoads: true,
-    }),
-    getCurrentUserData({ includeDesignations: true }),
-  ]);
-
-  if (!userData) return;
+  if (!userData) return { success: false };
   if (!userData.campus_id) {
     console.error("createProposalAction :: faculty campus is missing");
-    return;
+    return { success: false };
+  }
+
+  if (!allowExistingProposals) {
+    const { data: existingProposal, error: existingProposalError } = await supabase
+      .from("proposal")
+      .select("id")
+      .eq("user_id", facultyId)
+      .eq("academic_term_id", academicTermId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingProposalError) {
+      console.error(
+        "createProposal.checkExistingProposal ::",
+        existingProposalError,
+      );
+      return { success: false };
+    }
+
+    if (existingProposal?.id) {
+      return { success: false };
+    }
+  } else {
+    const { error: invalidateCurrentError } = await supabase
+      .from("proposal")
+      .update({
+        lifecycle_status: "INVALIDATED",
+        invalidated_reason: "RECREATED_BY_NEW_PROPOSAL",
+      })
+      .eq("user_id", facultyId)
+      .eq("academic_term_id", academicTermId)
+      .in("lifecycle_status", ["ACTIVE", "APPROVED"]);
+
+    if (invalidateCurrentError) {
+      console.error(
+        "createProposal.invalidateCurrent ::",
+        invalidateCurrentError,
+      );
+      return { success: false };
+    }
   }
 
   const snapshot = computeProposalSnapshot(userData);
-  const creatorDesignationId = resolveCreatorDesignationId(
-    currentUserData?.designations ?? [],
-  );
-  const supabase = await createClient();
-
-  const { error: invalidateCurrentError } = await supabase
-    .from("proposal")
-    .update({
-      lifecycle_status: "INVALIDATED",
-      invalidated_reason: "RECREATED_BY_NEW_PROPOSAL",
-    })
-    .eq("user_id", facultyId)
-    .eq("academic_term_id", academicTermId)
-    .in("lifecycle_status", ["ACTIVE", "APPROVED"]);
-
-  if (invalidateCurrentError) {
-    console.error(
-      "createProposal.invalidateCurrent ::",
-      invalidateCurrentError,
-    );
-    return;
-  }
 
   const { error: insertError } = await supabase.from("proposal").insert({
     user_id: facultyId,
@@ -145,14 +205,14 @@ export const createProposalAction = async (formData: FormData) => {
     academic_term_id: academicTermId,
     lifecycle_status: "ACTIVE",
     invalidated_reason: null,
-    created_by_user_id: currentUser.id,
+    created_by_user_id: currentUserId,
     created_by_designation_id: creatorDesignationId,
     ...snapshot,
   });
 
   if (insertError) {
     console.error("createProposal.insert ::", insertError);
-    return;
+    return { success: false };
   }
 
   const { error: invalidateCampusProposalError } = await supabase
@@ -172,6 +232,46 @@ export const createProposalAction = async (formData: FormData) => {
     );
   }
 
+  return {
+    success: true,
+    facultyId,
+    campusId: userData.campus_id,
+  };
+};
+
+export const createProposalAction = async (formData: FormData) => {
+  const academicTermId = String(formData.get("academicTermId") ?? "");
+  const facultyId = String(formData.get("facultyId") ?? "");
+
+  if (!academicTermId || !facultyId) return;
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return;
+
+  const roles = await getUserRole();
+  if (!canCreateProposalFromRoles(roles)) return;
+
+  const [currentUserData, supabase] = await Promise.all([
+    getCurrentUserData({ includeDesignations: true }),
+    createClient(),
+  ]);
+  const creatorDesignationId = resolveCreatorDesignationId(
+    currentUserData?.designations ?? [],
+  );
+
+  const result = await createIndividualProposalForFaculty({
+    academicTermId,
+    facultyId,
+    currentUserId: currentUser.id,
+    creatorDesignationId,
+    supabase,
+    allowExistingProposals: true,
+  });
+
+  if (!result.success) {
+    return;
+  }
+
   revalidatePath(
     `/faculty-teaching-load/${academicTermId}/${facultyId}`,
   );
@@ -184,6 +284,7 @@ export const createProposalAction = async (formData: FormData) => {
     `/ftl-evaluation/${academicTermId}/campus-load/campus-proposal-control`,
   );
   revalidatePath(`/ftl-evaluation/${academicTermId}/university-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/university-load/${result.campusId}`);
   revalidatePath(`/ftl-evaluation/${academicTermId}`);
 };
 
@@ -193,28 +294,33 @@ export const submitEvaluationAction = async (formData: FormData) => {
   const comment = String(formData.get("comment") ?? "").trim();
 
   if (!proposalId || !isFinalDecisionStatus(status)) return;
+  if (status === "REJECTED" && comment.length === 0) return;
 
   const currentUser = await getCurrentUser();
   if (!currentUser) return;
 
+  const currentUserData = await getCurrentUserData({
+    includeDesignations: true,
+  });
+  const designationByCampus = toCampusDirectorDesignationByCampus(
+    currentUserData?.designations ?? [],
+  );
+
   const supabase = await createClient();
   const { data: proposal, error: proposalError } = await supabase
     .from("proposal")
-    .select("id, user_id, academic_term_id, lifecycle_status, campus:campus_id (id, code)")
+    .select("id, user_id, campus_id, academic_term_id, lifecycle_status")
     .eq("id", proposalId)
     .maybeSingle();
 
-  if (proposalError || !proposal || proposal.lifecycle_status !== "ACTIVE") {
+  if (
+    proposalError ||
+    !proposal ||
+    proposal.lifecycle_status !== "ACTIVE" ||
+    !proposal.campus_id
+  ) {
     return;
   }
-
-  const rawCampus = proposal.campus as
-    | { code?: string | null }
-    | Array<{ code?: string | null }>
-    | null;
-  const proposalCampusCode = Array.isArray(rawCampus)
-    ? rawCampus[0]?.code
-    : rawCampus?.code;
 
   const { data: existingEvaluation } = await supabase
     .from("individual_proposal_evaluation")
@@ -225,17 +331,8 @@ export const submitEvaluationAction = async (formData: FormData) => {
 
   if (existingEvaluation?.id) return;
 
-  const currentUserData = await getCurrentUserData({
-    includeDesignations: true,
-  });
-
-  const matchingDesignation = currentUserData?.designations.find(
-    (designation) =>
-      designation.job_title === "Campus Director" &&
-      designation.campus?.code === proposalCampusCode,
-  );
-
-  if (!matchingDesignation) return;
+  const designationId = designationByCampus.get(proposal.campus_id);
+  if (!designationId) return;
 
   const { error: insertError } = await supabase
     .from("individual_proposal_evaluation")
@@ -243,7 +340,7 @@ export const submitEvaluationAction = async (formData: FormData) => {
       proposal_id: proposalId,
       step: "CAMPUS_DIRECTOR",
       evaluator_user_id: currentUser.id,
-      designation_id: matchingDesignation.id,
+      designation_id: designationId,
       status,
       comment: comment.length > 0 ? comment : null,
     });
@@ -266,6 +363,274 @@ export const submitEvaluationAction = async (formData: FormData) => {
   revalidatePath(
     `/ftl-evaluation/${proposal.academic_term_id}/campus-load/campus-proposal-control`,
   );
+};
+
+export const submitBulkEvaluationAction = async (
+  formData: FormData,
+): Promise<{ success: boolean; processed: number }> => {
+  const academicTermId = String(formData.get("academicTermId") ?? "");
+  const proposalIdsRaw = String(formData.get("proposalIds") ?? "");
+  const status = String(formData.get("status") ?? "");
+  const comment = String(formData.get("comment") ?? "").trim();
+
+  if (!academicTermId || !isFinalDecisionStatus(status)) {
+    return { success: false, processed: 0 };
+  }
+  if (status === "REJECTED" && comment.length === 0) {
+    return { success: false, processed: 0 };
+  }
+
+  const proposalIds = parseProposalIds(proposalIdsRaw);
+  if (proposalIds.length === 0) {
+    return { success: false, processed: 0 };
+  }
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, processed: 0 };
+  }
+
+  const currentUserData = await getCurrentUserData({
+    includeDesignations: true,
+  });
+  const designationByCampus = toCampusDirectorDesignationByCampus(
+    currentUserData?.designations ?? [],
+  );
+  if (designationByCampus.size === 0) {
+    return { success: false, processed: 0 };
+  }
+
+  const supabase = await createClient();
+  const { data: proposals, error: proposalsError } = await supabase
+    .from("proposal")
+    .select("id, user_id, campus_id, academic_term_id, lifecycle_status")
+    .in("id", proposalIds)
+    .eq("academic_term_id", academicTermId);
+
+  if (proposalsError || !proposals || proposals.length === 0) {
+    return { success: false, processed: 0 };
+  }
+
+  const candidateProposals = proposals.filter(
+    (proposal) =>
+      proposal.lifecycle_status === "ACTIVE" &&
+      !!proposal.campus_id &&
+      designationByCampus.has(proposal.campus_id),
+  );
+
+  if (candidateProposals.length === 0) {
+    return { success: false, processed: 0 };
+  }
+
+  const { data: existingEvaluations, error: existingEvaluationError } = await supabase
+    .from("individual_proposal_evaluation")
+    .select("proposal_id")
+    .in(
+      "proposal_id",
+      candidateProposals.map((proposal) => proposal.id),
+    )
+    .eq("step", "CAMPUS_DIRECTOR");
+
+  if (existingEvaluationError) {
+    console.error(
+      "submitBulkEvaluation.existingEvaluations ::",
+      existingEvaluationError,
+    );
+    return { success: false, processed: 0 };
+  }
+
+  const evaluatedProposalIds = new Set(
+    (existingEvaluations ?? [])
+      .map((row) => row.proposal_id)
+      .filter((value): value is string => typeof value === "string"),
+  );
+
+  const acceptedProposals = candidateProposals.filter(
+    (proposal) => !evaluatedProposalIds.has(proposal.id),
+  );
+
+  if (acceptedProposals.length === 0) {
+    return { success: false, processed: 0 };
+  }
+
+  const successfullyEvaluated = new Array<{
+    id: string;
+    user_id: string;
+    campus_id: string;
+  }>();
+
+  for (const proposal of acceptedProposals) {
+    if (!proposal.campus_id) continue;
+    const designationId = designationByCampus.get(proposal.campus_id);
+    if (!designationId) continue;
+
+    const { error: insertError } = await supabase
+      .from("individual_proposal_evaluation")
+      .insert({
+        proposal_id: proposal.id,
+        step: "CAMPUS_DIRECTOR",
+        evaluator_user_id: currentUser.id,
+        designation_id: designationId,
+        status,
+        comment: comment.length > 0 ? comment : null,
+      });
+
+    if (insertError) {
+      console.error("submitBulkEvaluation.insert ::", {
+        proposalId: proposal.id,
+        error: insertError,
+      });
+      continue;
+    }
+
+    successfullyEvaluated.push({
+      id: proposal.id,
+      user_id: proposal.user_id,
+      campus_id: proposal.campus_id,
+    });
+  }
+
+  if (successfullyEvaluated.length === 0) {
+    return { success: false, processed: 0 };
+  }
+
+  revalidatePath(`/faculty-teaching-load/${academicTermId}`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/faculty-load`);
+  revalidatePath(
+    `/ftl-evaluation/${academicTermId}/campus-load/campus-proposal-control`,
+  );
+  revalidatePath(`/ftl-evaluation/${academicTermId}/university-load`);
+
+  const campusIds = Array.from(
+    new Set(successfullyEvaluated.map((proposal) => proposal.campus_id)),
+  );
+  for (const campusId of campusIds) {
+    revalidatePath(`/ftl-evaluation/${academicTermId}/university-load/${campusId}`);
+  }
+
+  for (const proposal of successfullyEvaluated) {
+    revalidatePath(`/faculty-teaching-load/${academicTermId}/${proposal.user_id}`);
+    revalidatePath(
+      `/ftl-evaluation/${academicTermId}/campus-load/faculty-load/${proposal.user_id}`,
+    );
+  }
+
+  return { success: true, processed: successfullyEvaluated.length };
+};
+
+export const submitBulkCreateProposalAction = async (
+  formData: FormData,
+): Promise<{ success: boolean; processed: number; skipped: number }> => {
+  const academicTermId = String(formData.get("academicTermId") ?? "");
+  const facultyIdsRaw = String(formData.get("facultyIds") ?? "");
+
+  if (!academicTermId) {
+    return { success: false, processed: 0, skipped: 0 };
+  }
+
+  const facultyIds = parseFacultyIds(facultyIdsRaw);
+  if (facultyIds.length === 0) {
+    return { success: false, processed: 0, skipped: 0 };
+  }
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, processed: 0, skipped: facultyIds.length };
+  }
+
+  const roles = await getUserRole();
+  if (!canCreateProposalFromRoles(roles)) {
+    return { success: false, processed: 0, skipped: facultyIds.length };
+  }
+
+  const [currentUserData, supabase] = await Promise.all([
+    getCurrentUserData({ includeDesignations: true }),
+    createClient(),
+  ]);
+
+  const creatorDesignationId = resolveCreatorDesignationId(
+    currentUserData?.designations ?? [],
+  );
+
+  const { data: selectedFacultyProposalRows, error: selectedFacultyProposalError } =
+    await supabase
+      .from("proposal")
+      .select("user_id, lifecycle_status, created_at")
+      .eq("academic_term_id", academicTermId)
+      .in("user_id", facultyIds)
+      .order("created_at", { ascending: false });
+
+  if (selectedFacultyProposalError) {
+    console.error(
+      "submitBulkCreateProposalAction.selectedFacultyProposalRows ::",
+      selectedFacultyProposalError,
+    );
+    return { success: false, processed: 0, skipped: facultyIds.length };
+  }
+
+  const latestProposalStatusByFaculty = new Map<string, string>();
+  for (const row of selectedFacultyProposalRows ?? []) {
+    if (!row.user_id || latestProposalStatusByFaculty.has(row.user_id)) continue;
+    latestProposalStatusByFaculty.set(row.user_id, row.lifecycle_status);
+  }
+
+  let processed = 0;
+  let skipped = 0;
+  const successfulFacultyIds = new Set<string>();
+  const successfulCampusIds = new Set<string>();
+
+  for (const facultyId of facultyIds) {
+    const latestProposalStatus = latestProposalStatusByFaculty.get(facultyId) ?? null;
+    const isEligible =
+      latestProposalStatus === null || latestProposalStatus === "INVALIDATED";
+    if (!isEligible) {
+      skipped += 1;
+      continue;
+    }
+
+    const result = await createIndividualProposalForFaculty({
+      academicTermId,
+      facultyId,
+      currentUserId: currentUser.id,
+      creatorDesignationId,
+      supabase,
+      allowExistingProposals: true,
+    });
+
+    if (!result.success) {
+      skipped += 1;
+      continue;
+    }
+
+    processed += 1;
+    successfulFacultyIds.add(result.facultyId);
+    successfulCampusIds.add(result.campusId);
+  }
+
+  if (processed === 0) {
+    return { success: false, processed: 0, skipped };
+  }
+
+  revalidatePath(`/faculty-teaching-load/${academicTermId}`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/faculty-load`);
+  revalidatePath(
+    `/ftl-evaluation/${academicTermId}/campus-load/campus-proposal-control`,
+  );
+  revalidatePath(`/ftl-evaluation/${academicTermId}/university-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}`);
+
+  for (const facultyId of successfulFacultyIds) {
+    revalidatePath(`/faculty-teaching-load/${academicTermId}/${facultyId}`);
+    revalidatePath(
+      `/ftl-evaluation/${academicTermId}/campus-load/faculty-load/${facultyId}`,
+    );
+  }
+
+  for (const campusId of successfulCampusIds) {
+    revalidatePath(`/ftl-evaluation/${academicTermId}/university-load/${campusId}`);
+  }
+
+  return { success: true, processed, skipped };
 };
 
 export const createCampusProposalAction = async (formData: FormData) => {
@@ -495,10 +860,7 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
   const academicTermId = String(formData.get("academicTermId") ?? "");
   const proposalIdsRaw = String(formData.get("proposalIds") ?? "");
 
-  const proposalIds = proposalIdsRaw
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
+  const proposalIds = parseProposalIds(proposalIdsRaw);
 
   if (!academicTermId || proposalIds.length === 0) return;
 

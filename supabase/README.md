@@ -96,6 +96,8 @@ migrations/
 - 512_trigger_program_offering_code.sql
 - 513_trigger_academic_term_code.sql
 - 514_trigger_academic_year_code.sql
+- 515_fix_individual_proposal_evaluation_lifecycle_cast.sql
+- 516_invalidate_rejected_individual_proposals_on_load_change.sql
 - 600_rpc_is_admin_exists.sql
 - 602_rpc_get_user_roles.sql
 - 605_rpc_get_scheduler_matrices.sql

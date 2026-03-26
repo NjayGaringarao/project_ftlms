@@ -1,7 +1,18 @@
 import { redirect } from "next/navigation";
 import { getTermsList } from "@/lib/admin/terms";
+import { getUserRole } from "@/lib/auth/utils";
 
 const FacultyTeachingLoadPage = async () => {
+  const roles = await getUserRole();
+  const canAccess =
+    roles.includes("Admin") ||
+    roles.includes("Program Chairperson") ||
+    roles.includes("College Dean");
+
+  if (!canAccess) {
+    redirect("/home");
+  }
+
   const terms = await getTermsList();
 
   if (terms.length > 0) {

@@ -72,6 +72,24 @@ export type FacultyListItem = {
   college_name: string | null;
 };
 
+export type FacultyProposalApprovalFilterStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "INVALIDATED"
+  | "NO_PROPOSAL";
+
+export type FacultyEvaluationListItem = FacultyListItem & {
+  latest_proposal_id: string | null;
+  latest_proposal_lifecycle_status:
+    | "ACTIVE"
+    | "APPROVED"
+    | "REJECTED"
+    | "INVALIDATED"
+    | null;
+  proposal_filter_status: FacultyProposalApprovalFilterStatus;
+};
+
 export type CourseLoadingBlockListItem = {
   id: string;
   code: string;

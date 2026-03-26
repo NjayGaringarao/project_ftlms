@@ -2,7 +2,8 @@ import { TopBarNav } from "@/components/ui/topbar-nav";
 import { FacultyList } from "@/components/faculty-teaching-load/faculty-list";
 import TermSwitcher from "@/components/shared/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
-import { getFacultyListByTerm } from "@/lib/course-loading/queries";
+import { getUserRole } from "@/lib/auth/utils";
+import { getFacultyEvaluationListByTerm } from "@/lib/faculty-load/queries";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
@@ -17,10 +18,20 @@ const AcademicTermIdLayout = async ({
   params,
 }: AcademicTermIdLayoutProps) => {
   const { academic_term_id } = await params;
-  const [terms, selectedTerm] = await Promise.all([
+  const [roles, terms, selectedTerm] = await Promise.all([
+    getUserRole(),
     getTermsList(),
     getTermById(academic_term_id),
   ]);
+
+  const canAccess =
+    roles.includes("Admin") ||
+    roles.includes("Program Chairperson") ||
+    roles.includes("College Dean");
+
+  if (!canAccess) {
+    redirect("/home");
+  }
 
   if (!selectedTerm) {
     if (terms.length > 0) {
@@ -30,7 +41,7 @@ const AcademicTermIdLayout = async ({
     redirect("/faculty-teaching-load");
   }
 
-  const faculty = await getFacultyListByTerm(academic_term_id);
+  const faculty = await getFacultyEvaluationListByTerm(academic_term_id);
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">

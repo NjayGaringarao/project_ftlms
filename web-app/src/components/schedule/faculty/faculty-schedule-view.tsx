@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { Calendar, ChevronDown, Download, Printer } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AcademicTermPickerDialog } from "@/components/schedule/academic-term-picker-dialog";
+import {
+  FacultyScheduleCard,
+  FacultyTeachingLoadCard,
+} from "@/components/schedule/faculty/faculty-load-schedule-cards";
 import { AddTile } from "@/components/ui/add-tile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +15,6 @@ import {
   ACADEMIC_TERM_QUERY_PARAM,
   FacultySchedulePageData,
 } from "@/lib/schedule/types";
-import { dayLabel, toDisplayTime } from "@/lib/schedule/utils";
 import { formatAcademicTermLabel } from "@/utils/string";
 
 type FacultyScheduleViewProps = {
@@ -90,140 +93,29 @@ export const FacultyScheduleView = ({ data }: FacultyScheduleViewProps) => {
             ) : null}
           </CardContent>
         </Card>
-        <Card className="flex-1 gap-2 overflow-hidden flex flex-col">
-          <CardHeader className="pb-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="text-base">Teaching Load</CardTitle>
-              <span className="inline-flex items-center rounded-full border bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
-                Total Load: {data.total_teaching_load.toFixed(2)}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="min-h-0 overflow-auto">
-            {data.teaching_load_rows.length === 0 ? (
-              <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                No classes found for the selected academic term.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-foreground/70">
-                      <th className="px-2 py-1.5 min-w-24">Course</th>
-                      <th className="px-2 py-1.5 min-w-48">Title</th>
-                      <th className="px-2 py-1.5 min-w-40">Block(s)</th>
-                      <th className="px-2 py-1.5 min-w-28">Campus</th>
-                      <th className="px-2 py-1.5 text-right">Load</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.teaching_load_rows.map((row) => (
-                      <tr key={row.class_id} className="border-b">
-                        <td className="px-2 py-1.5 font-medium">
-                          {row.course_code}
-                        </td>
-                        <td className="px-2 py-1.5">{row.course_title}</td>
-                        <td className="px-2 py-1.5 text-xs text-foreground/80">
-                          {row.merged_block_label}
-                        </td>
-                        <td className="px-2 py-1.5 text-xs text-foreground/80">
-                          {row.campus_label}
-                        </td>
-                        <td className="px-2 py-1.5 text-right tabular-nums">
-                          {row.load.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <FacultyTeachingLoadCard
+          className="flex-1"
+          teachingLoadRows={data.teaching_load_rows}
+          totalTeachingLoad={data.total_teaching_load}
+        />
       </div>
 
       <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-4">
-        <Card className="flex-1 gap-2 overflow-hidden flex flex-col">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-base">Schedule</CardTitle>
-            <div className="flex gap-2">
+        <FacultyScheduleCard
+          className="flex-1"
+          hasSchedule={data.has_schedule}
+          scheduleRows={data.schedule_rows}
+          headerActions={
+            <>
               <Button title="Export to PDF">
                 <Download className="text-background" />
               </Button>
               <Button title="Print Schedule">
                 <Printer className="text-background" />
               </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="min-h-0 overflow-auto">
-            {!data.has_schedule ? (
-              <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                No schedule has been created for this academic term.
-              </p>
-            ) : data.schedule_rows.length === 0 ? (
-              <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                Schedule exists, but there are no session entries yet.
-              </p>
-            ) : (
-              <div className="space-y-2 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-foreground/70">
-                      <th className="px-1.5 py-1.5 min-w-24">Course</th>
-                      <th className="px-1.5 py-1.5 min-w-36">Block(s)</th>
-                      <th className="px-1.5 py-1.5 min-w-24">Day</th>
-                      <th className="px-1.5 py-1.5 min-w-24">Start</th>
-                      <th className="px-1.5 py-1.5 min-w-24">End</th>
-                      <th className="px-1.5 py-1.5 min-w-40">Room</th>
-                      <th className="px-1.5 py-1.5 min-w-24">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.schedule_rows.map((row) => (
-                      <tr key={row.row_id} className="border-b">
-                        <td className="px-1.5 py-1.5 font-medium">
-                          {row.course_code}
-                        </td>
-                        <td className="px-1.5 py-1.5 text-xs text-foreground/80">
-                          {row.merged_block_label}
-                        </td>
-                        {row.session ? (
-                          <>
-                            <td className="px-1.5 py-1.5">
-                              {dayLabel(row.session.day)}
-                            </td>
-                            <td className="px-1.5 py-1.5">
-                              {toDisplayTime(row.session.start_time)}
-                            </td>
-                            <td className="px-1.5 py-1.5">
-                              {toDisplayTime(row.session.end_time)}
-                            </td>
-                            <td className="px-1.5 py-1.5 text-xs">
-                              {row.session.room_code ?? "Unknown"}
-                              {row.session.room_name
-                                ? ` - ${row.session.room_name}`
-                                : ""}
-                            </td>
-                            <td className="px-1.5 py-1.5">
-                              {row.session.type}
-                            </td>
-                          </>
-                        ) : (
-                          <td
-                            colSpan={5}
-                            className="px-1.5 py-1.5 text-xs text-foreground/70"
-                          >
-                            No session schedule has been assigned yet.
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </>
+          }
+        />
       </div>
 
       <AcademicTermPickerDialog
