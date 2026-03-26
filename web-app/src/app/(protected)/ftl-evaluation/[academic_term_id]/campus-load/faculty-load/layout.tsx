@@ -2,7 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
-import { getFacultyEvaluationListByTerm } from "@/lib/faculty-load/queries";
+import { getFacultyProposalListByTerm } from "@/lib/proposal/queries";
 import FacultyEvaluationList from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-list";
 
 type CampusFacultyLoadLayoutProps = {
@@ -17,7 +17,7 @@ const CampusFacultyLoadLayout = async ({
   const { academic_term_id } = await params;
   const [roles, faculty, currentUserData] = await Promise.all([
     getUserRole(),
-    getFacultyEvaluationListByTerm(academic_term_id),
+    getFacultyProposalListByTerm(academic_term_id),
     getCurrentUserData({ includeDesignations: true }),
   ]);
 
@@ -62,3 +62,5 @@ const CampusFacultyLoadLayout = async ({
 };
 
 export default CampusFacultyLoadLayout;
+
+

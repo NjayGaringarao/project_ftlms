@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createCampusProposalAction } from "@/lib/faculty-load/actions";
-import { getCampusProposalReviewBundle } from "@/lib/faculty-load/queries";
+import { createCampusProposalAction } from "@/lib/proposal/actions";
+import { getCampusProposalReviewBundle } from "@/lib/proposal/queries";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import CampusProposalSummary from "@/components/ftl-evaluation/shared/campus-proposal-summary";
 import type { ProposalLifecycleStatus } from "@/models";
@@ -127,3 +127,4 @@ const CampusProposalControlWorkspace = async ({
 };
 
 export default CampusProposalControlWorkspace;
+

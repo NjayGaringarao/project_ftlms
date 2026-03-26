@@ -5,7 +5,7 @@ import type {
   EvaluationStatus,
   ProposalLifecycleStatus,
 } from "@/models";
-import type { CampusProposalMemberWithFaculty } from "@/lib/faculty-load/queries";
+import type { CampusProposalMemberWithFaculty } from "@/lib/proposal/queries";
 import { formatDateTime } from "@/utils/time";
 
 type CampusProposalSummaryProps = {
@@ -196,3 +196,4 @@ const CampusProposalSummary = ({
 };
 
 export default CampusProposalSummary;
+

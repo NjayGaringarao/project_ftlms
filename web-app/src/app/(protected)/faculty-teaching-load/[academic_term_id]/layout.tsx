@@ -3,7 +3,7 @@ import { FacultyList } from "@/components/faculty-teaching-load/faculty-list";
 import TermSwitcher from "@/components/shared/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
 import { getUserRole } from "@/lib/auth/utils";
-import { getFacultyEvaluationListByTerm } from "@/lib/faculty-load/queries";
+import { getFacultyProposalListByTerm } from "@/lib/proposal/queries";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
@@ -41,7 +41,7 @@ const AcademicTermIdLayout = async ({
     redirect("/faculty-teaching-load");
   }
 
-  const faculty = await getFacultyEvaluationListByTerm(academic_term_id);
+  const faculty = await getFacultyProposalListByTerm(academic_term_id);
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
@@ -68,3 +68,5 @@ const AcademicTermIdLayout = async ({
 };
 
 export default AcademicTermIdLayout;
+
+

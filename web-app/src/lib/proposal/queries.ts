@@ -11,13 +11,13 @@ import type {
   CampusProposalMember,
 } from "@/models";
 import type {
-  FacultyEvaluationListItem,
-  FacultyProposalApprovalFilterStatus,
-} from "@/lib/course-loading/types";
+  FacultyProposalListItem,
+  ProposalStatusFilter,
+} from "@/lib/proposal/types";
 
 const toProposalFilterStatus = (
   lifecycleStatus: ProposalLifecycleStatus | null,
-): FacultyProposalApprovalFilterStatus => {
+): ProposalStatusFilter => {
   if (lifecycleStatus === "ACTIVE") return "PENDING";
   if (lifecycleStatus === "APPROVED") return "APPROVED";
   if (lifecycleStatus === "REJECTED") return "REJECTED";
@@ -25,9 +25,9 @@ const toProposalFilterStatus = (
   return "NO_PROPOSAL";
 };
 
-export const getFacultyEvaluationListByTerm = async (
+export const getFacultyProposalListByTerm = async (
   academicTermId: string,
-): Promise<FacultyEvaluationListItem[]> => {
+): Promise<FacultyProposalListItem[]> => {
   const facultyList = await getFacultyListByTerm(academicTermId);
   if (facultyList.length === 0) return [];
 
@@ -41,7 +41,7 @@ export const getFacultyEvaluationListByTerm = async (
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("faculty-load.getFacultyEvaluationListByTerm.proposals ::", error);
+    console.error("proposal.getFacultyProposalListByTerm.proposals ::", error);
     return facultyList.map((item) => ({
       ...item,
       latest_proposal_id: null,
@@ -94,7 +94,7 @@ export const getLatestProposalByUserTerm = async (
     .maybeSingle();
 
   if (error) {
-    console.error("faculty-load.getLatestProposal ::", error);
+    console.error("proposal.getLatestProposal ::", error);
     return null;
   }
 
@@ -124,7 +124,7 @@ export const getEvaluationsByProposal = async (
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("faculty-load.getEvaluationsByProposal ::", error);
+    console.error("proposal.getEvaluationsByProposal ::", error);
     return [];
   }
 
@@ -163,7 +163,7 @@ export const getLatestCampusProposalByCampusTerm = async (
     .maybeSingle();
 
   if (error) {
-    console.error("faculty-load.getLatestCampusProposalByCampusTerm ::", error);
+    console.error("proposal.getLatestCampusProposalByCampusTerm ::", error);
     return null;
   }
 
@@ -208,7 +208,7 @@ export const getCampusProposalMembers = async (
     .order("source_proposal_created_at", { ascending: false });
 
   if (error) {
-    console.error("faculty-load.getCampusProposalMembers ::", error);
+    console.error("proposal.getCampusProposalMembers ::", error);
     return [];
   }
 
@@ -262,7 +262,7 @@ export const getCampusProposalEvaluations = async (
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("faculty-load.getCampusProposalEvaluations ::", error);
+    console.error("proposal.getCampusProposalEvaluations ::", error);
     return [];
   }
 
@@ -289,7 +289,7 @@ export const getCurrentIndividualProposalsByCampusTerm = async (
 
   if (error) {
     console.error(
-      "faculty-load.getCurrentIndividualProposalsByCampusTerm ::",
+      "proposal.getCurrentIndividualProposalsByCampusTerm ::",
       error,
     );
     return [];

@@ -8,18 +8,18 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
-import type { FacultyProposalApprovalFilterStatus } from "@/lib/course-loading/types";
+import type { ProposalStatusFilter } from "@/lib/proposal/types";
 import { cn } from "@/utils/style";
 
 type ProposalStatusFilterChipsProps = {
-  activeStatus: FacultyProposalApprovalFilterStatus;
-  counts: Record<FacultyProposalApprovalFilterStatus, number>;
-  onChange: (status: FacultyProposalApprovalFilterStatus) => void;
+  activeStatus: ProposalStatusFilter;
+  counts: Record<ProposalStatusFilter, number>;
+  onChange: (status: ProposalStatusFilter) => void;
   className?: string;
 };
 
 const chipConfig: Array<{
-  status: FacultyProposalApprovalFilterStatus;
+  status: ProposalStatusFilter;
   label: string;
   Icon: LucideIcon;
 }> = [

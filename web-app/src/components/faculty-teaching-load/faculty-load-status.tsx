@@ -2,7 +2,7 @@ import FacultyLoadApproval from "@/components/ftl-evaluation/faculty-load/facult
 import {
   getEvaluationsByProposal,
   getLatestProposalByUserTerm,
-} from "@/lib/faculty-load/queries";
+} from "@/lib/proposal/queries";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import type { ProposalLifecycleStatus, EvaluationStatus } from "@/models";
@@ -88,3 +88,4 @@ const FacultyLoadStatus = async ({
 };
 
 export default FacultyLoadStatus;
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CheckSquare, Square, User } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
@@ -9,22 +9,18 @@ import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
 import ProposalStatusFilterChips from "@/components/ui/proposal-status-filter-chips";
 import RejectionCommentDialog from "@/components/ftl-evaluation/faculty-load/rejection-comment-dialog";
-import { submitBulkEvaluationAction } from "@/lib/faculty-load/actions";
-import type {
-  FacultyEvaluationListItem,
-  FacultyProposalApprovalFilterStatus,
-} from "@/lib/course-loading/types";
+import { useProposalListController } from "@/components/proposal/list/use-proposal-list-controller";
+import { submitBulkEvaluationAction } from "@/lib/proposal/actions";
+import type { FacultyProposalListItem } from "@/lib/proposal/types";
 
 type FacultyEvaluationListProps = {
-  facultyList: FacultyEvaluationListItem[];
+  facultyList: FacultyProposalListItem[];
   academicTermId: string;
 };
 
 const toFixed = (v: number) => v.toFixed(2);
 
-const longPressDelayMs = 450;
-
-const isPendingProposal = (faculty: FacultyEvaluationListItem): boolean =>
+const isPendingProposal = (faculty: FacultyProposalListItem): boolean =>
   faculty.proposal_filter_status === "PENDING" && !!faculty.latest_proposal_id;
 
 const FacultyEvaluationList = ({
@@ -33,15 +29,8 @@ const FacultyEvaluationList = ({
 }: FacultyEvaluationListProps) => {
   const router = useRouter();
   const pathname = usePathname();
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] =
-    useState<FacultyProposalApprovalFilterStatus>("PENDING");
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedFacultyIds, setSelectedFacultyIds] = useState<string[]>([]);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [isBulkRejectDialogOpen, setIsBulkRejectDialogOpen] = useState(false);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const suppressedClickFacultyIdRef = useRef<string | null>(null);
 
   const selectedRouteFacultyId = useMemo(() => {
     const match = pathname.match(
@@ -50,130 +39,43 @@ const FacultyEvaluationList = ({
     return match ? match[1] : null;
   }, [pathname]);
 
-  const selectedFacultyIdSet = useMemo(
-    () => new Set(selectedFacultyIds),
-    [selectedFacultyIds],
-  );
-
-  const searchMatchedFaculty = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return facultyList;
-    return facultyList.filter((faculty) => faculty.name.toLowerCase().includes(q));
-  }, [facultyList, query]);
-
-  const statusCounts = useMemo(
-    () =>
-      searchMatchedFaculty.reduce(
-        (acc, faculty) => {
-          acc[faculty.proposal_filter_status] += 1;
-          return acc;
-        },
-        {
-          PENDING: 0,
-          APPROVED: 0,
-          REJECTED: 0,
-          INVALIDATED: 0,
-          NO_PROPOSAL: 0,
-        } satisfies Record<FacultyProposalApprovalFilterStatus, number>,
-      ),
-    [searchMatchedFaculty],
-  );
-
-  const filteredFaculty = useMemo(
-    () =>
-      searchMatchedFaculty.filter(
-        (faculty) => faculty.proposal_filter_status === statusFilter,
-      ),
-    [searchMatchedFaculty, statusFilter],
-  );
-
-  const selectableFilteredFacultyIds = useMemo(
-    () => filteredFaculty.filter(isPendingProposal).map((faculty) => faculty.id),
-    [filteredFaculty],
-  );
+  const {
+    query,
+    setQuery,
+    statusFilter,
+    setStatusFilter,
+    isSelectionMode,
+    selectedIdSet,
+    statusCounts,
+    filteredItems,
+    selectableFilteredIds,
+    clearLongPressTimer,
+    exitSelectionMode,
+    onItemClick,
+    onItemPointerDown,
+    selectAllFiltered,
+  } = useProposalListController({
+    items: facultyList,
+    defaultStatus: "PENDING",
+    isSelectable: isPendingProposal,
+  });
 
   const selectedProposalIds = useMemo(() => {
     const proposalIdSet = new Set<string>();
     for (const faculty of facultyList) {
-      if (!selectedFacultyIdSet.has(faculty.id)) continue;
+      if (!selectedIdSet.has(faculty.id)) continue;
       if (!isPendingProposal(faculty) || !faculty.latest_proposal_id) continue;
       proposalIdSet.add(faculty.latest_proposal_id);
     }
     return Array.from(proposalIdSet);
-  }, [facultyList, selectedFacultyIdSet]);
+  }, [facultyList, selectedIdSet]);
 
   const selectedProposalIdsValue = selectedProposalIds.join(",");
 
-  const clearLongPressTimer = () => {
-    if (!longPressTimerRef.current) return;
-    clearTimeout(longPressTimerRef.current);
-    longPressTimerRef.current = null;
-  };
-
-  useEffect(
-    () => () => {
-      clearLongPressTimer();
-    },
-    [],
-  );
-
-  const exitSelectionMode = () => {
-    setIsSelectionMode(false);
-    setSelectedFacultyIds([]);
+  const exitSelectionModeAndDialogs = () => {
     setIsBulkDialogOpen(false);
     setIsBulkRejectDialogOpen(false);
-    suppressedClickFacultyIdRef.current = null;
-  };
-
-  const toggleFacultySelection = (facultyId: string) => {
-    setSelectedFacultyIds((previous) => {
-      const next = previous.includes(facultyId)
-        ? previous.filter((id) => id !== facultyId)
-        : [...previous, facultyId];
-
-      if (next.length === 0) {
-        setIsSelectionMode(false);
-        setIsBulkDialogOpen(false);
-        setIsBulkRejectDialogOpen(false);
-      }
-
-      return next;
-    });
-  };
-
-  const handleFacultyClick = (faculty: FacultyEvaluationListItem) => {
-    if (suppressedClickFacultyIdRef.current === faculty.id) {
-      suppressedClickFacultyIdRef.current = null;
-      return;
-    }
-    if (suppressedClickFacultyIdRef.current !== null) {
-      suppressedClickFacultyIdRef.current = null;
-    }
-
-    if (isSelectionMode) {
-      if (!isPendingProposal(faculty)) return;
-      toggleFacultySelection(faculty.id);
-      return;
-    }
-
-    router.push(
-      `/ftl-evaluation/${academicTermId}/campus-load/faculty-load/${faculty.id}`,
-    );
-  };
-
-  const handleLongPressStart = (faculty: FacultyEvaluationListItem) => {
-    if (isSelectionMode || !isPendingProposal(faculty)) return;
-    clearLongPressTimer();
-    longPressTimerRef.current = setTimeout(() => {
-      suppressedClickFacultyIdRef.current = faculty.id;
-      setIsSelectionMode(true);
-      setSelectedFacultyIds([faculty.id]);
-      longPressTimerRef.current = null;
-    }, longPressDelayMs);
-  };
-
-  const handleSelectAll = () => {
-    setSelectedFacultyIds(selectableFilteredFacultyIds);
+    exitSelectionMode();
   };
 
   const handleBulkApproveSubmit = async (formData: FormData) => {
@@ -214,8 +116,8 @@ const FacultyEvaluationList = ({
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            onClick={handleSelectAll}
-            disabled={selectableFilteredFacultyIds.length === 0}
+            onClick={selectAllFiltered}
+            disabled={selectableFilteredIds.length === 0}
           >
             Select all
           </Button>
@@ -224,7 +126,7 @@ const FacultyEvaluationList = ({
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            onClick={exitSelectionMode}
+            onClick={exitSelectionModeAndDialogs}
           >
             Cancel selection
           </Button>
@@ -241,17 +143,17 @@ const FacultyEvaluationList = ({
       )}
 
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
-        {filteredFaculty.length === 0 && (
+        {filteredItems.length === 0 && (
           <p className="p-4 text-center text-sm text-foreground/70">
             No faculty found.
           </p>
         )}
 
-        {filteredFaculty.map((faculty) => {
+        {filteredItems.map((faculty) => {
           const isSelectableInSelectionMode =
             isSelectionMode && isPendingProposal(faculty);
           const isSelected = isSelectionMode
-            ? selectedFacultyIdSet.has(faculty.id)
+            ? selectedIdSet.has(faculty.id)
             : selectedRouteFacultyId === faculty.id;
 
           return (
@@ -264,8 +166,14 @@ const FacultyEvaluationList = ({
                 }`,
               ]}
               isSelected={isSelected}
-              onClick={() => handleFacultyClick(faculty)}
-              onPointerDown={() => handleLongPressStart(faculty)}
+              onClick={() =>
+                onItemClick(faculty, () =>
+                  router.push(
+                    `/ftl-evaluation/${academicTermId}/campus-load/faculty-load/${faculty.id}`,
+                  ),
+                )
+              }
+              onPointerDown={() => onItemPointerDown(faculty)}
               onPointerUp={clearLongPressTimer}
               onPointerLeave={clearLongPressTimer}
               onPointerCancel={clearLongPressTimer}
@@ -322,9 +230,7 @@ const FacultyEvaluationList = ({
           >
             Reject selected
           </Button>
-          <form
-            action={handleBulkApproveSubmit}
-          >
+          <form action={handleBulkApproveSubmit}>
             <input type="hidden" name="academicTermId" value={academicTermId} />
             <input type="hidden" name="proposalIds" value={selectedProposalIdsValue} />
             <input type="hidden" name="status" value="APPROVED" />

@@ -4,7 +4,7 @@ import { getTermById } from "@/lib/admin/terms";
 import {
   getEvaluationsByProposal,
   getLatestProposalByUserTerm,
-} from "@/lib/faculty-load/queries";
+} from "@/lib/proposal/queries";
 import { getFacultyScheduleTermSnapshot } from "@/lib/schedule/faculty-schedule";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
@@ -114,3 +114,4 @@ const CampusFacultyEvaluationPage = async ({
 };
 
 export default CampusFacultyEvaluationPage;
+

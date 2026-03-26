@@ -92,11 +92,13 @@ const SelectCourseOfferingDialog = ({
     return sorted;
   }, [filtered, sortOrder]);
 
-  useEffect(() => {
-    if (!open) return;
-    setQuery("");
-    setSortOrder("desc");
-  }, [open]);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setQuery("");
+      setSortOrder("desc");
+    }
+    onOpenChange(nextOpen);
+  };
 
   useEffect(() => {
     if (!mergeDialogOpen || !mergeOffering) return;
@@ -338,7 +340,7 @@ const SelectCourseOfferingDialog = ({
     <>
       <AppDialog
         open={open}
-        onOpenChange={onOpenChange}
+        onOpenChange={handleOpenChange}
         title="Select Course Offering"
         description="Choose a course offering to schedule."
         contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"

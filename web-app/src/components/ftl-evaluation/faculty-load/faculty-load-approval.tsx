@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   createProposalAction,
   submitEvaluationAction,
-} from "@/lib/faculty-load/actions";
+} from "@/lib/proposal/actions";
 import type {
   EvaluationStatus,
   IndividualProposalEvaluation,
@@ -128,11 +128,7 @@ const FacultyLoadApproval = ({
             </p>
           )}
 
-          {proposal?.lifecycle_status === "APPROVED" && (
-            <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              Finalized for campus-level consolidation.
-            </p>
-          )}
+        
 
           {proposal?.lifecycle_status === "REJECTED" &&
             latestEvaluation &&
@@ -170,3 +166,4 @@ const FacultyLoadApproval = ({
 };
 
 export default FacultyLoadApproval;
+

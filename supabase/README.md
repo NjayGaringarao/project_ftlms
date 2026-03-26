@@ -102,6 +102,7 @@ migrations/
 - 602_rpc_get_user_roles.sql
 - 605_rpc_get_scheduler_matrices.sql
 - 607_rpc_get_user_data.sql
+- 608_rpc_proposal_transactions.sql
 ```
 
 ### Constraint Ownership (3xx)
