@@ -11,19 +11,19 @@ const FTLEvaluationAcademicTermPage = async ({
   const { academic_term_id } = await params;
   const roles = await getUserRole();
 
-  if (roles.includes("Campus Director")) {
-    redirect(`/ftl-evaluation/${academic_term_id}/faculty-load`);
-  }
-
-  if (
+  const canAccessCampusDirectorFlow =
+    roles.includes("Campus Director") || roles.includes("Admin");
+  const canAccessUniversityFlow =
     roles.includes("Director for Instruction") ||
-    roles.includes("Vice President for Academic Affairs")
-  ) {
-    redirect(`/ftl-evaluation/${academic_term_id}/campus-load`);
+    roles.includes("Vice President for Academic Affairs") ||
+    roles.includes("Admin");
+
+  if (canAccessCampusDirectorFlow) {
+    redirect(`/ftl-evaluation/${academic_term_id}/campus-load/faculty-load`);
   }
 
-  if (roles.includes("Admin")) {
-    redirect(`/ftl-evaluation/${academic_term_id}/faculty-load`);
+  if (canAccessUniversityFlow) {
+    redirect(`/ftl-evaluation/${academic_term_id}/university-load`);
   }
 
   redirect("/home");

@@ -2,14 +2,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  createCampusProposalAction,
   invalidateIndividualProposalsAction,
   submitEvaluationAction,
 } from "@/lib/faculty-load/actions";
 import {
-  getCurrentIndividualProposalsByCampusTerm,
   getEvaluationsByProposal,
-  getLatestCampusProposalByCampusTerm,
   getLatestProposalByUserTerm,
 } from "@/lib/faculty-load/queries";
 import { getCurrentUserData } from "@/lib/user-data/queries";
@@ -21,7 +18,6 @@ type FacultyEvaluationWorkspaceProps = {
   facultyId: string;
   facultyName: string;
   facultyCampusId: string | null;
-  facultyCampusCode: string | null;
   campusName: string;
   collegeName: string;
 };
@@ -56,7 +52,6 @@ const FacultyEvaluationWorkspace = async ({
   facultyId,
   facultyName,
   facultyCampusId,
-  facultyCampusCode,
   campusName,
   collegeName,
 }: FacultyEvaluationWorkspaceProps) => {
@@ -65,16 +60,9 @@ const FacultyEvaluationWorkspace = async ({
     getCurrentUserData({ includeDesignations: true }),
   ]);
 
-  const [evaluations, latestCampusProposal, currentCampusProposals] =
-    await Promise.all([
-      proposal ? getEvaluationsByProposal(proposal.id) : Promise.resolve([]),
-      facultyCampusId
-        ? getLatestCampusProposalByCampusTerm(facultyCampusId, academicTermId)
-        : Promise.resolve(null),
-      facultyCampusId
-        ? getCurrentIndividualProposalsByCampusTerm(facultyCampusId, academicTermId)
-        : Promise.resolve([]),
-    ]);
+  const evaluations = proposal
+    ? await getEvaluationsByProposal(proposal.id)
+    : [];
 
   const latestEvaluation = evaluations[0] ?? null;
   const campusDirectorDesignation = facultyCampusId
@@ -96,19 +84,6 @@ const FacultyEvaluationWorkspace = async ({
     !!campusDirectorDesignation &&
     (proposal.lifecycle_status === "ACTIVE" ||
       proposal.lifecycle_status === "APPROVED");
-
-  const approvedIndividuals = currentCampusProposals.filter(
-    (item) => item.lifecycle_status === "APPROVED",
-  ).length;
-  const activeIndividuals = currentCampusProposals.filter(
-    (item) => item.lifecycle_status === "ACTIVE",
-  ).length;
-
-  const canCreateCampusProposal =
-    !!facultyCampusId &&
-    !!campusDirectorDesignation &&
-    approvedIndividuals > 0 &&
-    activeIndividuals === 0;
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden">
@@ -211,106 +186,58 @@ const FacultyEvaluationWorkspace = async ({
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-2 flex min-h-0 flex-col gap-4 overflow-hidden">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Campus Director Action</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {!proposal && (
-                <p className="text-foreground/70">No proposal available to evaluate.</p>
-              )}
+        <Card className="lg:col-span-2 h-fit">
+          <CardHeader>
+            <CardTitle className="text-base">Campus Director Action</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {!proposal && (
+              <p className="text-foreground/70">No proposal available to evaluate.</p>
+            )}
 
-              {proposal && canEvaluateProposal && (
-                <form action={submitEvaluationAction} className="space-y-2">
-                  <input type="hidden" name="proposalId" value={proposal.id} />
-                  <textarea
-                    name="comment"
-                    placeholder="Comment (optional)"
-                    className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                  />
-                  <div className="flex items-center gap-2">
-                    <Button type="submit" name="status" value="APPROVED" size="sm">
-                      Approve
-                    </Button>
-                    <Button
-                      type="submit"
-                      name="status"
-                      value="REJECTED"
-                      variant="outline"
-                      size="sm"
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                </form>
-              )}
-
-              {proposal && !canEvaluateProposal && (
-                <p className="text-foreground/70">
-                  Evaluation is not available for your current role or this proposal
-                  state.
-                </p>
-              )}
-
-              {proposal && canInvalidateProposal && (
-                <form action={invalidateIndividualProposalsAction}>
-                  <input type="hidden" name="academicTermId" value={academicTermId} />
-                  <input type="hidden" name="proposalIds" value={proposal.id} />
-                  <Button size="sm" variant="outline">
-                    Invalidate This Proposal
+            {proposal && canEvaluateProposal && (
+              <form action={submitEvaluationAction} className="space-y-2">
+                <input type="hidden" name="proposalId" value={proposal.id} />
+                <textarea
+                  name="comment"
+                  placeholder="Comment (optional)"
+                  className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                />
+                <div className="flex items-center gap-2">
+                  <Button type="submit" name="status" value="APPROVED" size="sm">
+                    Approve
                   </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+                  <Button
+                    type="submit"
+                    name="status"
+                    value="REJECTED"
+                    variant="outline"
+                    size="sm"
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </form>
+            )}
 
-          <Card className="min-h-0 flex-1 overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-base">Campus Proposal Control</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm overflow-y-auto">
-              <p>
-                Current campus:{" "}
-                <b>{facultyCampusCode ? `${facultyCampusCode} Campus` : campusName}</b>
-              </p>
+            {proposal && !canEvaluateProposal && (
               <p className="text-foreground/70">
-                Ready for campus proposal creation when all current individual
-                proposals are approved.
+                Evaluation is not available for your current role or this proposal
+                state.
               </p>
-              <div className="rounded-md border p-3 space-y-1">
-                <p>Approved Individuals: {approvedIndividuals}</p>
-                <p>Active Individuals: {activeIndividuals}</p>
-                <p>
-                  Current Campus Proposal:{" "}
-                  {latestCampusProposal ? (
-                    <span
-                      className={`rounded border px-1.5 py-0.5 text-xs ${lifecycleStyle[latestCampusProposal.lifecycle_status]}`}
-                    >
-                      {lifecycleLabel[latestCampusProposal.lifecycle_status]}
-                    </span>
-                  ) : (
-                    "None"
-                  )}
-                </p>
-              </div>
+            )}
 
-              <form action={createCampusProposalAction}>
+            {proposal && canInvalidateProposal && (
+              <form action={invalidateIndividualProposalsAction}>
                 <input type="hidden" name="academicTermId" value={academicTermId} />
-                <input type="hidden" name="campusId" value={facultyCampusId ?? ""} />
-                <Button size="sm" disabled={!canCreateCampusProposal}>
-                  Create / Recreate Campus Proposal
+                <input type="hidden" name="proposalIds" value={proposal.id} />
+                <Button size="sm" variant="outline">
+                  Invalidate This Proposal
                 </Button>
               </form>
-              {!canCreateCampusProposal && (
-                <p className="text-xs text-foreground/60">
-                  Requires at least one approved individual proposal and zero active
-                  pending proposals.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

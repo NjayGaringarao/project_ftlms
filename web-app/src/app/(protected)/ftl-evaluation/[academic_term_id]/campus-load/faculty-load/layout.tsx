@@ -1,16 +1,19 @@
 import React from "react";
-import { getFacultyListByTerm } from "@/lib/course-loading/queries";
-import FacultyEvaluationList from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-list";
+import { redirect } from "next/navigation";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
-import { redirect } from "next/navigation";
+import { getFacultyListByTerm } from "@/lib/course-loading/queries";
+import FacultyEvaluationList from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-list";
 
-type FacultyLoadLayoutProps = {
+type CampusFacultyLoadLayoutProps = {
   children: React.ReactNode;
   params: Promise<{ academic_term_id: string }>;
 };
 
-const FacultyLoadLayout = async ({ children, params }: FacultyLoadLayoutProps) => {
+const CampusFacultyLoadLayout = async ({
+  children,
+  params,
+}: CampusFacultyLoadLayoutProps) => {
   const { academic_term_id } = await params;
   const [roles, faculty, currentUserData] = await Promise.all([
     getUserRole(),
@@ -24,9 +27,8 @@ const FacultyLoadLayout = async ({ children, params }: FacultyLoadLayoutProps) =
       roles.includes("Director for Instruction") ||
       roles.includes("Vice President for Academic Affairs")
     ) {
-      redirect(`/ftl-evaluation/${academic_term_id}/campus-load`);
+      redirect(`/ftl-evaluation/${academic_term_id}/university-load`);
     }
-
     redirect("/home");
   }
 
@@ -59,4 +61,4 @@ const FacultyLoadLayout = async ({ children, params }: FacultyLoadLayoutProps) =
   );
 };
 
-export default FacultyLoadLayout;
+export default CampusFacultyLoadLayout;

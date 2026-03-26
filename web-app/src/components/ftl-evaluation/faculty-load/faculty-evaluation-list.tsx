@@ -23,7 +23,9 @@ const FacultyEvaluationList = ({
   const [query, setQuery] = useState("");
 
   const selectedId = useMemo(() => {
-    const match = pathname.match(/\/ftl-evaluation\/[^/]+\/faculty-load\/([^/]+)/);
+    const match = pathname.match(
+      /\/ftl-evaluation\/[^/]+\/campus-load\/faculty-load\/([^/]+)/,
+    );
     return match ? match[1] : null;
   }, [pathname]);
 
@@ -61,7 +63,7 @@ const FacultyEvaluationList = ({
             isSelected={selectedId === faculty.id}
             onClick={() =>
               router.push(
-                `/ftl-evaluation/${academicTermId}/faculty-load/${faculty.id}`,
+                `/ftl-evaluation/${academicTermId}/campus-load/faculty-load/${faculty.id}`,
               )
             }
             icon={<User className="h-6 w-6 text-background/70" />}

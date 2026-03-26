@@ -1,21 +1,23 @@
 import { redirect } from "next/navigation";
 import { getCampusById } from "@/lib/admin/campuses";
-import CampusEvaluationWorkspace from "@/components/ftl-evaluation/campus-load/campus-evaluation-workspace";
+import UniversityEvaluationWorkspace from "@/components/ftl-evaluation/university-load/university-evaluation-workspace";
 
-type CampusEvaluationPageProps = {
+type UniversityEvaluationPageProps = {
   params: Promise<{ academic_term_id: string; campus_id: string }>;
 };
 
-const CampusEvaluationPage = async ({ params }: CampusEvaluationPageProps) => {
+const UniversityEvaluationPage = async ({
+  params,
+}: UniversityEvaluationPageProps) => {
   const { academic_term_id, campus_id } = await params;
   const campus = await getCampusById(campus_id);
 
   if (!campus) {
-    redirect(`/ftl-evaluation/${academic_term_id}/campus-load`);
+    redirect(`/ftl-evaluation/${academic_term_id}/university-load`);
   }
 
   return (
-    <CampusEvaluationWorkspace
+    <UniversityEvaluationWorkspace
       academicTermId={academic_term_id}
       campusId={campus_id}
       campusCode={campus.code}
@@ -24,4 +26,4 @@ const CampusEvaluationPage = async ({ params }: CampusEvaluationPageProps) => {
   );
 };
 
-export default CampusEvaluationPage;
+export default UniversityEvaluationPage;

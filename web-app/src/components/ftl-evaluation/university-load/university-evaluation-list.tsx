@@ -7,21 +7,23 @@ import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
 import type { CampusListItem } from "@/lib/admin/campuses";
 
-type CampusEvaluationListProps = {
+type UniversityEvaluationListProps = {
   campuses: CampusListItem[];
   academicTermId: string;
 };
 
-const CampusEvaluationList = ({
+const UniversityEvaluationList = ({
   campuses,
   academicTermId,
-}: CampusEvaluationListProps) => {
+}: UniversityEvaluationListProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
 
   const selectedId = useMemo(() => {
-    const match = pathname.match(/\/ftl-evaluation\/[^/]+\/campus-load\/([^/]+)/);
+    const match = pathname.match(
+      /\/ftl-evaluation\/[^/]+\/university-load\/([^/]+)/,
+    );
     return match ? match[1] : null;
   }, [pathname]);
 
@@ -58,7 +60,7 @@ const CampusEvaluationList = ({
             isSelected={selectedId === campus.id}
             onClick={() =>
               router.push(
-                `/ftl-evaluation/${academicTermId}/campus-load/${campus.id}`,
+                `/ftl-evaluation/${academicTermId}/university-load/${campus.id}`,
               )
             }
             icon={<Landmark className="h-6 w-6 text-background/70" />}
@@ -69,4 +71,4 @@ const CampusEvaluationList = ({
   );
 };
 
-export default CampusEvaluationList;
+export default UniversityEvaluationList;

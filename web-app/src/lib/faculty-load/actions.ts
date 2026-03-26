@@ -176,9 +176,15 @@ export const createProposalAction = async (formData: FormData) => {
     `/faculty-teaching-load/${academicTermId}/${facultyId}`,
   );
   revalidatePath(`/faculty-teaching-load/${academicTermId}`);
-  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load/${facultyId}`);
-  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load`);
-  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load`);
+  revalidatePath(
+    `/ftl-evaluation/${academicTermId}/campus-load/faculty-load/${facultyId}`,
+  );
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/faculty-load`);
+  revalidatePath(
+    `/ftl-evaluation/${academicTermId}/campus-load/campus-proposal-control`,
+  );
+  revalidatePath(`/ftl-evaluation/${academicTermId}/university-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}`);
 };
 
 export const submitEvaluationAction = async (formData: FormData) => {
@@ -252,9 +258,14 @@ export const submitEvaluationAction = async (formData: FormData) => {
   );
   revalidatePath(`/faculty-teaching-load/${proposal.academic_term_id}`);
   revalidatePath(
-    `/ftl-evaluation/${proposal.academic_term_id}/faculty-load/${proposal.user_id}`,
+    `/ftl-evaluation/${proposal.academic_term_id}/campus-load/faculty-load/${proposal.user_id}`,
   );
-  revalidatePath(`/ftl-evaluation/${proposal.academic_term_id}/faculty-load`);
+  revalidatePath(
+    `/ftl-evaluation/${proposal.academic_term_id}/campus-load/faculty-load`,
+  );
+  revalidatePath(
+    `/ftl-evaluation/${proposal.academic_term_id}/campus-load/campus-proposal-control`,
+  );
 };
 
 export const createCampusProposalAction = async (formData: FormData) => {
@@ -383,9 +394,12 @@ export const createCampusProposalAction = async (formData: FormData) => {
   }
 
   revalidatePath(`/faculty-teaching-load/${academicTermId}`);
-  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load`);
-  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load`);
-  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/${campusId}`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/faculty-load`);
+  revalidatePath(
+    `/ftl-evaluation/${academicTermId}/campus-load/campus-proposal-control`,
+  );
+  revalidatePath(`/ftl-evaluation/${academicTermId}/university-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/university-load/${campusId}`);
 };
 
 export const submitCampusProposalEvaluationAction = async (
@@ -468,9 +482,12 @@ export const submitCampusProposalEvaluationAction = async (
   }
 
   revalidatePath(`/faculty-teaching-load/${campusProposal.academic_term_id}`);
-  revalidatePath(`/ftl-evaluation/${campusProposal.academic_term_id}/campus-load`);
   revalidatePath(
-    `/ftl-evaluation/${campusProposal.academic_term_id}/campus-load/${campusProposal.campus_id}`,
+    `/ftl-evaluation/${campusProposal.academic_term_id}/campus-load/campus-proposal-control`,
+  );
+  revalidatePath(`/ftl-evaluation/${campusProposal.academic_term_id}/university-load`);
+  revalidatePath(
+    `/ftl-evaluation/${campusProposal.academic_term_id}/university-load/${campusProposal.campus_id}`,
   );
 };
 
@@ -550,13 +567,17 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
   }
 
   revalidatePath(`/faculty-teaching-load/${academicTermId}`);
-  revalidatePath(`/ftl-evaluation/${academicTermId}/faculty-load`);
+  revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/faculty-load`);
+  revalidatePath(
+    `/ftl-evaluation/${academicTermId}/campus-load/campus-proposal-control`,
+  );
+  revalidatePath(`/ftl-evaluation/${academicTermId}/university-load`);
   if (campusId) {
-    revalidatePath(`/ftl-evaluation/${academicTermId}/campus-load/${campusId}`);
+    revalidatePath(`/ftl-evaluation/${academicTermId}/university-load/${campusId}`);
   }
   for (const proposal of proposals) {
     revalidatePath(
-      `/ftl-evaluation/${academicTermId}/faculty-load/${proposal.user_id}`,
+      `/ftl-evaluation/${academicTermId}/campus-load/faculty-load/${proposal.user_id}`,
     );
   }
 };

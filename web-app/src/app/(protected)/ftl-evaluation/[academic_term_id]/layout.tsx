@@ -1,8 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { TopBarNav } from "@/components/ui/topbar-nav";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
-import TermSwitcher from "@/components/shared/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
 import { getUserRole } from "@/lib/auth/utils";
 
@@ -22,10 +20,16 @@ const FTLEvaluationAcademicTermLayout = async ({
     getUserRole(),
   ]);
 
+  const canAccessCampusDirectorFlow =
+    roles.includes("Campus Director") || roles.includes("Admin");
+  const canAccessUniversityFlow =
+    roles.includes("Director for Instruction") ||
+    roles.includes("Vice President for Academic Affairs") ||
+    roles.includes("Admin");
+
   if (
-    !roles.includes("Campus Director") &&
-    !roles.includes("Director for Instruction") &&
-    !roles.includes("Vice President for Academic Affairs")
+    !canAccessCampusDirectorFlow &&
+    !canAccessUniversityFlow
   ) {
     redirect("/home");
   }
@@ -40,15 +44,6 @@ const FTLEvaluationAcademicTermLayout = async ({
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
-      <TopBarNav title="FTL Evaluation" items={[]}>
-        <TermSwitcher
-          terms={terms}
-          selectedTermId={selectedTerm.id}
-          routeConfig={{ mode: "segment", baseSegment: "ftl-evaluation" }}
-          description="Search and switch the active FTL evaluation term."
-          refreshOnSelect
-        />
-      </TopBarNav>
       <div className="flex flex-col h-full overflow-hidden">{children}</div>
       <div className="absolute h-full w-full bg-background z-100 lg:hidden flex flex-col items-center justify-center px-16">
         <SmallDisplayOverlay />

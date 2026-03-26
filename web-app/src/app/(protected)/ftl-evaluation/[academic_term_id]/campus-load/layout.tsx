@@ -1,8 +1,9 @@
 import React from "react";
-import { getCampusesList } from "@/lib/admin/campuses";
-import CampusEvaluationList from "@/components/ftl-evaluation/campus-load/campus-evaluation-list";
-import { getUserRole } from "@/lib/auth/utils";
 import { redirect } from "next/navigation";
+import { TopBarNav } from "@/components/ui/topbar-nav";
+import TermSwitcher from "@/components/shared/term-switcher";
+import { getUserRole } from "@/lib/auth/utils";
+import { getTermsList } from "@/lib/admin/terms";
 
 type CampusLoadLayoutProps = {
   children: React.ReactNode;
@@ -11,31 +12,48 @@ type CampusLoadLayoutProps = {
 
 const CampusLoadLayout = async ({ children, params }: CampusLoadLayoutProps) => {
   const { academic_term_id } = await params;
-  const roles = await getUserRole();
+  const [roles, terms] = await Promise.all([getUserRole(), getTermsList()]);
+
   const canAccess =
-    roles.includes("Director for Instruction") ||
-    roles.includes("Vice President for Academic Affairs") ||
-    roles.includes("Admin");
+    roles.includes("Campus Director") || roles.includes("Admin");
 
   if (!canAccess) {
-    if (roles.includes("Campus Director")) {
-      redirect(`/ftl-evaluation/${academic_term_id}/faculty-load`);
+    if (
+      roles.includes("Director for Instruction") ||
+      roles.includes("Vice President for Academic Affairs")
+    ) {
+      redirect(`/ftl-evaluation/${academic_term_id}/university-load`);
     }
 
     redirect("/home");
   }
 
-  const campuses = await getCampusesList();
-
   return (
-    <div className="flex h-full gap-4 overflow-hidden p-4">
-      <div className="w-84 overflow-hidden">
-        <CampusEvaluationList
-          campuses={campuses}
-          academicTermId={academic_term_id}
+    <div className="h-full flex flex-col overflow-hidden">
+      <TopBarNav
+        title="Campus Load"
+        items={[
+          {
+            label: "Faculty Load",
+            href: `/ftl-evaluation/${academic_term_id}/campus-load/faculty-load`,
+            activeMatch: "prefix",
+          },
+          {
+            label: "Campus Proposal Control",
+            href: `/ftl-evaluation/${academic_term_id}/campus-load/campus-proposal-control`,
+            activeMatch: "prefix",
+          },
+        ]}
+      >
+        <TermSwitcher
+          terms={terms}
+          selectedTermId={academic_term_id}
+          routeConfig={{ mode: "segment", baseSegment: "ftl-evaluation" }}
+          description="Search and switch the active campus-load evaluation term."
+          refreshOnSelect
         />
-      </div>
-      <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
+      </TopBarNav>
+      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>
   );
 };

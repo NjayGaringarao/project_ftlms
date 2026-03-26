@@ -235,3 +235,41 @@ export const getCurrentIndividualProposalsByCampusTerm = async (
     }),
   );
 };
+
+export type CampusProposalReviewBundle = {
+  campusProposal: CampusProposal | null;
+  members: CampusProposalMemberWithFaculty[];
+  evaluations: CampusProposalEvaluation[];
+  currentIndividualProposals: CurrentCampusIndividualProposal[];
+};
+
+export const getCampusProposalReviewBundle = async (
+  campusId: string,
+  academicTermId: string,
+): Promise<CampusProposalReviewBundle> => {
+  const [campusProposal, currentIndividualProposals] = await Promise.all([
+    getLatestCampusProposalByCampusTerm(campusId, academicTermId),
+    getCurrentIndividualProposalsByCampusTerm(campusId, academicTermId),
+  ]);
+
+  if (!campusProposal) {
+    return {
+      campusProposal: null,
+      members: [],
+      evaluations: [],
+      currentIndividualProposals,
+    };
+  }
+
+  const [members, evaluations] = await Promise.all([
+    getCampusProposalMembers(campusProposal.id),
+    getCampusProposalEvaluations(campusProposal.id),
+  ]);
+
+  return {
+    campusProposal,
+    members,
+    evaluations,
+    currentIndividualProposals,
+  };
+};
