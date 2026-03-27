@@ -5,7 +5,7 @@ import type {
   EvaluationStatus,
   ProposalLifecycleStatus,
 } from "@/models";
-import type { CampusProposalMemberWithFaculty } from "@/lib/proposal/queries";
+import type { CampusProposalMemberWithFaculty } from "@/lib/proposal/read-models";
 import { formatDateTime } from "@/utils/time";
 
 type CampusProposalDetailsPanelProps = {

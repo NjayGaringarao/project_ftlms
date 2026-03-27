@@ -17,10 +17,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type {
   CampusEtlAtlFacultyMetric,
-  CampusLoadDistribution,
-} from "@/lib/proposal/queries";
+} from "@/lib/proposal/read-models";
 import { ArrowDownFromLine, ArrowUpFromLine, Check, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { computeCampusLoadDistribution } from "@/lib/proposal/derivations";
 
 const PIE_COLORS = {
   OVERLOAD: "var(--color-red-400)",
@@ -58,26 +58,6 @@ const LoadInsightCard = ({ title, value, icon, containerClassName }: LoadInsight
 
 type InsightsFilterMode = "APPROVED" | "ALL";
 
-const computeDistribution = (
-  rows: Pick<CampusEtlAtlFacultyMetric, "load_band">[],
-): CampusLoadDistribution => {
-  return rows.reduce(
-    (acc, row) => {
-      if (row.load_band === "OVERLOAD") acc.overload += 1;
-      if (row.load_band === "UNDERLOAD") acc.underload += 1;
-      if (row.load_band === "NORMAL") acc.normal += 1;
-      acc.total += 1;
-      return acc;
-    },
-    {
-      overload: 0,
-      underload: 0,
-      normal: 0,
-      total: 0,
-    } as CampusLoadDistribution,
-  );
-};
-
 const CampusLoadInsights = ({
   etlAtlPerFaculty,
   proposalFacultyIds,
@@ -106,11 +86,11 @@ const CampusLoadInsights = ({
   );
 
   const proposalDistribution = useMemo(
-    () => computeDistribution(proposalRows),
+    () => computeCampusLoadDistribution(proposalRows),
     [proposalRows],
   );
   const approvedDistribution = useMemo(
-    () => computeDistribution(approvedRows),
+    () => computeCampusLoadDistribution(approvedRows),
     [approvedRows],
   );
 
