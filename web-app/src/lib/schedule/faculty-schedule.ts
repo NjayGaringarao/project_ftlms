@@ -40,6 +40,7 @@ type ClassSessionRow = {
   start_time: string;
   end_time: string;
   type: SessionType;
+  room_id?: string | null;
   room?: {
     code?: string | null;
     name?: string | null;
@@ -188,6 +189,7 @@ const getClassRowsByFacultyAndTerm = async (
             start_time,
             end_time,
             type,
+            room_id,
             room:room_id(code, name)
           )
         )
@@ -224,6 +226,7 @@ const mapSession = (session: ClassSessionRow): FacultyScheduleSessionInfo => {
     start_time: session.start_time,
     end_time: session.end_time,
     type: session.type,
+    room_id: session.room_id ?? null,
     room_code: session.room?.code ?? null,
     room_name: session.room?.name ?? null,
   };
@@ -351,12 +354,14 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
     >();
 
     sessions.forEach((session) => {
-      const roomKey = session.room_code ?? session.room_name ?? "";
+      const roomMergeKey = session.room_id
+        ? `id:${session.room_id}`
+        : `label:${session.room_code ?? ""}:${session.room_name ?? ""}`;
       const sessionGroupKey = [
         session.type,
         session.start_time,
         session.end_time,
-        roomKey,
+        roomMergeKey,
       ].join("|");
 
       const existingGroup = groupedSessions.get(sessionGroupKey);
@@ -385,7 +390,9 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
         ...group.representative,
         day: sessionDays[0] ?? group.representative.day,
       };
-      const sessionHours = toSessionHours(representativeSession);
+      const sessionHours = Number(
+        (toSessionHours(representativeSession) * sessionDays.length).toFixed(2),
+      );
       const roomLabel = formatRoomLabel(representativeSession);
       const isLecture = representativeSession.type === "Lecture";
 

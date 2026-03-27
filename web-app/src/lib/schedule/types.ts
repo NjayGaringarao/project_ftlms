@@ -24,6 +24,7 @@ export type FacultyScheduleSessionInfo = {
   start_time: string;
   end_time: string;
   type: SessionType;
+  room_id: string | null;
   room_code: string | null;
   room_name: string | null;
 };
