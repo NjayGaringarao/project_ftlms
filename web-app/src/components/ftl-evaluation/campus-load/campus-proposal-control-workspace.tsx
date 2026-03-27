@@ -3,7 +3,6 @@ import { getCampusProposalInsightsBundle } from "@/lib/proposal/queries";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import CampusLoadInsights from "@/components/ftl-evaluation/shared/campus-load-insights";
 import CampusProposalDetailsPanel from "@/components/ftl-evaluation/shared/campus-proposal-details-panel";
-import CampusProposalControlActionPanel from "@/components/ftl-evaluation/campus-load/campus-proposal-control-action-panel";
 
 type CampusProposalControlWorkspaceProps = {
   academicTermId: string;
@@ -51,32 +50,23 @@ const CampusProposalControlWorkspace = async ({
         etlAtlPerFaculty={etlAtlPerFaculty}
         proposalFacultyIds={proposalFacultyIds}
         approvedFacultyIds={approvedFacultyIds}
+        campusCode={campusCode}
+        campusName={campusName}
+        academicTermCode={academicTermCode}
       />
 
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3">
-          <CampusProposalDetailsPanel
-            academicTermCode={academicTermCode}
-            campusCode={campusCode}
-            campusName={campusName}
-            campusProposal={campusProposal}
-            members={members}
-            evaluations={evaluations}
-          />
-        </div>
-        <div className="col-span-2">
-          <CampusProposalControlActionPanel
-            academicTermId={academicTermId}
-            campusId={campusId}
-            campusCode={campusCode}
-            campusName={campusName}
-            campusProposal={campusProposal}
-            approvedIndividuals={approvedIndividualCount}
-            activeIndividuals={activeIndividualCount}
-            hasCampusDirectorDesignation={!!campusDirectorDesignation}
-          />
-        </div>
-      </div>
+      <CampusProposalDetailsPanel
+        campusProposal={campusProposal}
+        members={members}
+        evaluations={evaluations}
+        control={{
+          academicTermId,
+          campusId,
+          hasCampusDirectorDesignation: !!campusDirectorDesignation,
+          approvedIndividuals: approvedIndividualCount,
+          activeIndividuals: activeIndividualCount,
+        }}
+      />
     </div>
   );
 };

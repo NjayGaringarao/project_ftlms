@@ -15,9 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type {
-  CampusEtlAtlFacultyMetric,
-} from "@/lib/proposal/read-models";
+import type { CampusEtlAtlFacultyMetric } from "@/lib/proposal/read-models";
 import { ArrowDownFromLine, ArrowUpFromLine, Check, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { computeCampusLoadDistribution } from "@/lib/proposal/derivations";
@@ -34,6 +32,9 @@ type CampusLoadInsightsProps = {
   etlAtlPerFaculty: CampusEtlAtlFacultyMetric[];
   proposalFacultyIds: string[];
   approvedFacultyIds: string[];
+  campusName: string;
+  campusCode: string;
+  academicTermCode: string;
 };
 
 type LoadInsightCardProps = {
@@ -41,15 +42,23 @@ type LoadInsightCardProps = {
   value: number;
   icon: React.ReactNode;
   containerClassName?: string;
+  valueClassName?: string;
 };
 
-const LoadInsightCard = ({ title, value, icon, containerClassName }: LoadInsightCardProps) => {
+const LoadInsightCard = ({
+  title,
+  value,
+  icon,
+  containerClassName,
+  valueClassName,
+}: LoadInsightCardProps) => {
   return (
-    <div className={`flex flex-col gap-3 rounded-md border p-4 ${containerClassName}`}>
-
+    <div
+      className={`flex flex-col gap-3 rounded-md border p-4 ${containerClassName}`}
+    >
       <p className="text-sm font-medium">{title}</p>
       <div className="flex-1 flex flex-row justify-end items-center gap-3">
-        <p className="text-lg font-semibold">{value}</p>
+        <p className={`text-2xl font-semibold ${valueClassName}`}>{value}</p>
         {icon}
       </div>
     </div>
@@ -62,6 +71,9 @@ const CampusLoadInsights = ({
   etlAtlPerFaculty,
   proposalFacultyIds,
   approvedFacultyIds,
+  campusName,
+  campusCode,
+  academicTermCode,
 }: CampusLoadInsightsProps) => {
   const [filterMode, setFilterMode] = useState<InsightsFilterMode>("APPROVED");
 
@@ -76,12 +88,15 @@ const CampusLoadInsights = ({
 
   const proposalRows = useMemo(
     () =>
-      etlAtlPerFaculty.filter((row) => proposalFacultyIdSet.has(row.faculty_id)),
+      etlAtlPerFaculty.filter((row) =>
+        proposalFacultyIdSet.has(row.faculty_id),
+      ),
     [proposalFacultyIdSet, etlAtlPerFaculty],
   );
 
   const approvedRows = useMemo(
-    () => proposalRows.filter((row) => approvedFacultyIdSet.has(row.faculty_id)),
+    () =>
+      proposalRows.filter((row) => approvedFacultyIdSet.has(row.faculty_id)),
     [approvedFacultyIdSet, proposalRows],
   );
 
@@ -126,7 +141,12 @@ const CampusLoadInsights = ({
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="flex flex-row gap-4 items-center justify-between">
-        <CardTitle className="text-base">Campus Load Insights</CardTitle>
+        <div className="flex flex-row gap-2 items-center">
+          <CardTitle className="text-base">Campus Load Insights</CardTitle>
+          <p className="text-sm text-foreground/80">
+            ({campusName} Campus - {academicTermCode})
+          </p>
+        </div>
         <div className="flex gap-2 text-sm">
           <Button
             type="button"
@@ -134,7 +154,7 @@ const CampusLoadInsights = ({
             variant={filterMode === "APPROVED" ? "default" : "outline"}
             onClick={() => setFilterMode("APPROVED")}
           >
-            Approved ({approvedDistribution.total})
+            Approved Proposals ({approvedDistribution.total})
           </Button>
           <Button
             type="button"
@@ -142,7 +162,7 @@ const CampusLoadInsights = ({
             variant={filterMode === "ALL" ? "default" : "outline"}
             onClick={() => setFilterMode("ALL")}
           >
-            All ({proposalDistribution.total})
+            All Proposals ({proposalDistribution.total})
           </Button>
         </div>
       </CardHeader>
@@ -154,25 +174,28 @@ const CampusLoadInsights = ({
               value={filteredDistribution.total}
               icon={<User className="text-gray-400" />}
               containerClassName="bg-gray-50 border-gray-200"
+              valueClassName="text-gray-600"
             />
             <LoadInsightCard
               title="Normal Load"
               value={filteredDistribution.normal}
               icon={<Check className="text-green-400" />}
               containerClassName="bg-green-50 border-green-200"
-
+              valueClassName="text-green-600"
             />
             <LoadInsightCard
               title="OverLoad"
               value={filteredDistribution.overload}
               icon={<ArrowUpFromLine className="text-red-400" />}
               containerClassName="bg-red-50 border-red-200"
+              valueClassName="text-red-600"
             />
             <LoadInsightCard
               title="UnderLoad"
               value={filteredDistribution.underload}
               icon={<ArrowDownFromLine className="text-amber-400" />}
               containerClassName="bg-amber-50 border-amber-200"
+              valueClassName="text-amber-600"
             />
           </div>
 
@@ -213,28 +236,30 @@ const CampusLoadInsights = ({
             {emptyStateMessage}
           </p>
         ) : (
-          <div className="rounded-md border p-3">
+          <div className="rounded-md border p-4">
             <p className="mb-2 text-sm font-medium">ETL vs ATL Per Faculty</p>
-            <div className="overflow-x-auto">
+            <div className="h-80 overflow-x-auto">
               <BarChart
-                width={barChartWidth}
-                height={280}
+                width={Math.max(256, filteredRows.length * 88)}
+                height={320}
                 data={filteredRows}
-                margin={{ top: 8, right: 16, left: 0, bottom: 40 }}
+                margin={{ top: 8, right: 0, left: 0, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="faculty_name"
                   angle={-28}
                   textAnchor="end"
-                  interval={0}
+                  interval={"preserveStartEnd"}
                   height={56}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 10 }}
+                  
                 />
                 <YAxis />
                 <Tooltip
                   formatter={(value) => toFixed(Number(value ?? 0))}
                   labelFormatter={(value) => `Faculty: ${value}`}
+                  
                 />
                 <Legend />
                 <Bar
@@ -242,12 +267,14 @@ const CampusLoadInsights = ({
                   name="ETL"
                   fill="var(--color-blue-400)"
                   radius={[4, 4, 0, 0]}
+                  barSize={12}
                 />
                 <Bar
                   dataKey="atl"
                   name="ATL"
                   fill="var(--color-green-400)"
                   radius={[4, 4, 0, 0]}
+                  barSize={12}
                 />
               </BarChart>
             </div>

@@ -54,14 +54,14 @@ const UniversityEvaluationWorkspace = async ({
             etlAtlPerFaculty={etlAtlPerFaculty}
             proposalFacultyIds={proposalFacultyIds}
             approvedFacultyIds={approvedFacultyIds}
+            campusCode={campusCode}
+            campusName={campusName}
+            academicTermCode={academicTermCode}
           />
         </div>
 
         <div className="min-h-0 lg:col-span-3">
           <CampusProposalDetailsPanel
-            academicTermCode={academicTermCode}
-            campusCode={campusCode}
-            campusName={campusName}
             campusProposal={campusProposal}
             members={members}
             evaluations={evaluations}
