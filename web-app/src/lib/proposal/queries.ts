@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getFacultyListByTerm } from "@/lib/course-loading/queries";
+import { getUserDataList } from "@/lib/user-data/queries";
 import type {
   Proposal,
   ProposalLifecycleStatus,
@@ -311,6 +312,37 @@ export type CampusProposalReviewBundle = {
   currentIndividualProposals: CurrentCampusIndividualProposal[];
 };
 
+export type CampusLoadBand = "OVERLOAD" | "UNDERLOAD" | "NORMAL";
+
+export type CampusLoadDistribution = {
+  overload: number;
+  underload: number;
+  normal: number;
+  total: number;
+};
+
+export type CampusEtlAtlFacultyMetric = {
+  faculty_id: string;
+  faculty_name: string;
+  etl: number;
+  atl: number;
+  twl: number;
+  load_band: CampusLoadBand;
+};
+
+export type CampusProposalInsightsBundle = CampusProposalReviewBundle & {
+  approvedIndividualCount: number;
+  activeIndividualCount: number;
+  liveLoadDistribution: CampusLoadDistribution;
+  etlAtlPerFaculty: CampusEtlAtlFacultyMetric[];
+};
+
+const classifyLoadBand = (twl: number): CampusLoadBand => {
+  if (twl > 24) return "OVERLOAD";
+  if (twl < 21) return "UNDERLOAD";
+  return "NORMAL";
+};
+
 export const getCampusProposalReviewBundle = async (
   campusId: string,
   academicTermId: string,
@@ -339,5 +371,73 @@ export const getCampusProposalReviewBundle = async (
     members,
     evaluations,
     currentIndividualProposals,
+  };
+};
+
+export const getCampusProposalInsightsBundle = async (
+  campusId: string,
+  academicTermId: string,
+): Promise<CampusProposalInsightsBundle> => {
+  const [reviewBundle, userDataRows, facultyList] = await Promise.all([
+    getCampusProposalReviewBundle(campusId, academicTermId),
+    getUserDataList({
+      academicTermId,
+      includeLoads: true,
+    }),
+    getFacultyListByTerm(academicTermId),
+  ]);
+
+  const facultyIdSet = new Set(facultyList.map((faculty) => faculty.id));
+
+  const etlAtlPerFaculty = userDataRows
+    .filter((row) => row.accountType !== "Admin")
+    .filter((row) => facultyIdSet.has(row.id))
+    .filter((row) => row.campus_id === campusId)
+    .map((row) => {
+      const etl = Number(row.designationLoad ?? 0);
+      const atl = Number(row.actualTeachingLoad ?? 0);
+      const twl = Number(row.totalWorkingLoad ?? etl + atl);
+      return {
+        faculty_id: row.id,
+        faculty_name: row.identity?.name ?? "Unknown Faculty",
+        etl,
+        atl,
+        twl,
+        load_band: classifyLoadBand(twl),
+      } satisfies CampusEtlAtlFacultyMetric;
+    })
+    .sort((a, b) => a.faculty_name.localeCompare(b.faculty_name));
+
+  const liveLoadDistribution = etlAtlPerFaculty.reduce<CampusLoadDistribution>(
+    (acc, item) => {
+      if (item.load_band === "OVERLOAD") acc.overload += 1;
+      if (item.load_band === "UNDERLOAD") acc.underload += 1;
+      if (item.load_band === "NORMAL") acc.normal += 1;
+      acc.total += 1;
+      return acc;
+    },
+    {
+      overload: 0,
+      underload: 0,
+      normal: 0,
+      total: 0,
+    },
+  );
+
+  const approvedIndividualCount =
+    reviewBundle.currentIndividualProposals.filter(
+      (item) => item.lifecycle_status === "APPROVED",
+    ).length;
+
+  const activeIndividualCount = reviewBundle.currentIndividualProposals.filter(
+    (item) => item.lifecycle_status === "ACTIVE",
+  ).length;
+
+  return {
+    ...reviewBundle,
+    approvedIndividualCount,
+    activeIndividualCount,
+    liveLoadDistribution,
+    etlAtlPerFaculty,
   };
 };
