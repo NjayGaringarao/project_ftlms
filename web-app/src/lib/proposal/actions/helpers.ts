@@ -1,8 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { getUserDataById } from "@/lib/user-data/queries";
-import type { UserDataReadModel } from "@/lib/user-data/types";
-import type { Degree } from "@/models";
-import { calculateLaboratoryContactHours } from "@/lib/course-loading/calculations";
+import { buildFacultyLoadSnapshot } from "@/lib/proposal/snapshot";
 
 type RawRpcResult = {
   success?: boolean;
@@ -37,58 +35,6 @@ const parseRpcResult = (value: unknown): RawRpcResult => {
   const payload = Array.isArray(value) ? value[0] : value;
   if (!canReadRpcResult(payload)) return {};
   return payload;
-};
-
-const pickDegreeTitle = (
-  degrees: Degree[],
-  level: string,
-): string | null => {
-  const matches = degrees.filter((degree) => degree.academic_level === level);
-  if (matches.length === 0) return null;
-
-  const sorted = [...matches].sort((a, b) => {
-    const yearDiff = (b.year_graduated ?? 0) - (a.year_graduated ?? 0);
-    if (yearDiff !== 0) return yearDiff;
-    return String(b.created_at ?? "").localeCompare(String(a.created_at ?? ""));
-  });
-
-  return sorted[0]?.title ?? null;
-};
-
-const computeProposalSnapshot = (userData: UserDataReadModel) => {
-  const lectureSum = userData.classes.reduce(
-    (sum, cls) => sum + Number(cls.lecture_unit ?? 0),
-    0,
-  );
-  const labSum = userData.classes.reduce(
-    (sum, cls) =>
-      sum + calculateLaboratoryContactHours(Number(cls.laboratory_unit ?? 0)),
-    0,
-  );
-
-  const preparationCount = new Set(
-    userData.classes.map((cls) => cls.course_code).filter(Boolean),
-  ).size;
-
-  const designations = userData.designations
-    .map((designation) => designation.job_title)
-    .filter(Boolean)
-    .join(", ");
-
-  return {
-    employment_status: userData.employmentStatus,
-    academic_rank: userData.rank?.title ?? null,
-    bachelors_degree: pickDegreeTitle(userData.degrees, "Bachelor's Degree"),
-    masters_degree: pickDegreeTitle(userData.degrees, "Master's Degree"),
-    doctorate_degree: pickDegreeTitle(userData.degrees, "Doctorate Degree"),
-    designations: designations.length > 0 ? designations : null,
-    equivalent_teaching_load: userData.designationLoad,
-    total_lecture_hours: lectureSum,
-    total_lab_hours: labSum,
-    preparation_count: preparationCount,
-    actual_teaching_load: userData.actualTeachingLoad,
-    advisory_class: null,
-  };
 };
 
 export const canCreateProposalFromRoles = (roles: string[]): boolean =>
@@ -188,7 +134,7 @@ export const createIndividualProposalViaRpc = async ({
     };
   }
 
-  const snapshot = computeProposalSnapshot(userData);
+  const snapshot = buildFacultyLoadSnapshot(userData);
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_individual_proposal", {
     p_user_id: facultyId,

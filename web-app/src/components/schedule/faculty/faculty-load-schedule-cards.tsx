@@ -1,9 +1,14 @@
+"use client";
+
+import Link from "next/link";
 import type { ReactNode } from "react";
+import { ClipboardClock, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { FacultyScheduleRow, FacultyTeachingLoadRow } from "@/lib/schedule/types";
 import { dayLabel, toDisplayTime } from "@/lib/schedule/utils";
 import { cn } from "@/utils/style";
 import { numberToHourDuration } from "@/utils/time";
+import { Popover } from "radix-ui";
 
 type FacultyTeachingLoadCardProps = {
   teachingLoadRows: FacultyTeachingLoadRow[];
@@ -76,6 +81,7 @@ type FacultyScheduleCardProps = {
   title?: string;
   className?: string;
   headerActions?: ReactNode;
+  manageScheduleLinksByClassId?: Record<string, string>;
 };
 
 export const FacultyScheduleCard = ({
@@ -84,7 +90,10 @@ export const FacultyScheduleCard = ({
   title = "Schedule",
   className,
   headerActions,
+  manageScheduleLinksByClassId,
 }: FacultyScheduleCardProps) => {
+  const hasManageActions = !!manageScheduleLinksByClassId;
+
   return (
     <Card className={cn("gap-2 overflow-hidden flex flex-col pb-0", className)}>
       <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
@@ -114,47 +123,95 @@ export const FacultyScheduleCard = ({
                   <th className="px-1.5 py-1.5 min-w-32">Lab. Rm</th>
                   <th className="px-1.5 py-1.5 min-w-20">Block(s) (Code)</th>
                   <th className="px-1.5 py-1.5 min-w-14">No of Students</th>
+                  {hasManageActions ? <th className="px-1.5 py-1.5 w-10" /> : null}
                 </tr>
               </thead>
               <tbody>
-                {scheduleRows.map((row) => (
-                  <tr key={row.row_id} className="border-b">
-                    <td className="px-1.5 py-1.5">
-                      {row.session
-                        ? `${toDisplayTime(row.session.start_time)} - ${toDisplayTime(row.session.end_time)}`
-                        : "-"}
-                    </td>
-                    <td className="px-1.5 py-1.5">
-                      {row.session_days.length > 0
-                        ? row.session_days.map((day) => dayLabel(day)).join(" / ")
-                        : "-"}
-                    </td>
-                    <td className="px-1.5 py-1.5">
-                      <span className="font-medium">{row.course_code}</span>
-                      {` : ${row.course_title}`}
-                    </td>
-                    <td className="px-1.5 py-1.5  tabular-nums">
-                      {row.lecture_hours !== null ? numberToHourDuration(row.lecture_hours) : "-"}
-                    </td>
-                    <td className="px-1.5 py-1.5 text-xs">
-                      {row.lecture_room ?? "-"}
-                    </td>
-                    <td className="px-1.5 py-1.5  tabular-nums">
-                      {row.laboratory_hours !== null
-                        ? numberToHourDuration(row.laboratory_hours)
-                        : "-"}
-                    </td>
-                    <td className="px-1.5 py-1.5 text-xs">
-                      {row.laboratory_room ?? "-"}
-                    </td>
-                    <td className="px-1.5 py-1.5 text-xs text-foreground/80">
-                      {row.block_codes_label}
-                    </td>
-                    <td className="px-1.5 py-1.5  tabular-nums">
-                      {row.student_count ?? "-"}
-                    </td>
-                  </tr>
-                ))}
+                {scheduleRows.map((row) => {
+                  const manageScheduleHref = manageScheduleLinksByClassId?.[row.class_id];
+
+                  return (
+                    <tr key={row.row_id} className="border-b">
+                      <td className="px-1.5 py-1.5">
+                        {row.session
+                          ? `${toDisplayTime(row.session.start_time)} - ${toDisplayTime(row.session.end_time)}`
+                          : "-"}
+                      </td>
+                      <td className="px-1.5 py-1.5">
+                        {row.session_days.length > 0
+                          ? row.session_days.map((day) => dayLabel(day)).join(" / ")
+                          : "-"}
+                      </td>
+                      <td className="px-1.5 py-1.5">
+                        <span className="font-medium">{row.course_code}</span>
+                        {` : ${row.course_title}`}
+                      </td>
+                      <td className="px-1.5 py-1.5  tabular-nums">
+                        {row.lecture_hours !== null
+                          ? numberToHourDuration(row.lecture_hours)
+                          : "-"}
+                      </td>
+                      <td className="px-1.5 py-1.5 text-xs">
+                        {row.lecture_room ?? "-"}
+                      </td>
+                      <td className="px-1.5 py-1.5  tabular-nums">
+                        {row.laboratory_hours !== null
+                          ? numberToHourDuration(row.laboratory_hours)
+                          : "-"}
+                      </td>
+                      <td className="px-1.5 py-1.5 text-xs">
+                        {row.laboratory_room ?? "-"}
+                      </td>
+                      <td className="px-1.5 py-1.5 text-xs text-foreground/80">
+                        {row.block_codes_label}
+                      </td>
+                      <td className="px-1.5 py-1.5  tabular-nums">
+                        {row.student_count ?? "-"}
+                      </td>
+                      {hasManageActions ? (
+                        <td className="px-1.5 py-1.5 align-top">
+                          <Popover.Root>
+                            <Popover.Trigger asChild>
+                              <button
+                                type="button"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-sm border text-foreground/70 hover:bg-foreground/10"
+                                title="Open row actions"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </button>
+                            </Popover.Trigger>
+                            <Popover.Anchor />
+                            <Popover.Portal>
+                              <Popover.Content sideOffset={6}>
+                                <div className="flex flex-col bg-background rounded-md overflow-hidden shadow-md border">
+                                  {manageScheduleHref ? (
+                                    <Link
+                                      href={manageScheduleHref}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-foreground/10"
+                                    >
+                                      <ClipboardClock className="h-4 w-4" />
+                                      Manage Schedule
+                                    </Link>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="flex items-center gap-2 px-3 py-2 text-sm disabled:cursor-not-allowed text-foreground/50"
+                                      disabled
+                                      title="No schedule context available."
+                                    >
+                                      <ClipboardClock className="h-4 w-4" />
+                                      Manage Schedule
+                                    </button>
+                                  )}
+                                </div>
+                              </Popover.Content>
+                            </Popover.Portal>
+                          </Popover.Root>
+                        </td>
+                      ) : null}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

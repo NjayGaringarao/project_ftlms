@@ -50,6 +50,7 @@ type ClassRow = {
   id: string;
   code: string;
   course_utilization?: Array<{
+    id?: string | null;
     course?: {
       code?: string | null;
       title?: string | null;
@@ -165,6 +166,7 @@ const getClassRowsByFacultyAndTerm = async (
         id,
         code,
         course_utilization(
+          id,
           course:course_id(code, title, lecture_unit, laboratory_unit),
           block:block_id(
             id,
@@ -288,6 +290,9 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
 
   classRows.forEach((item) => {
     const firstUtil = (item.course_utilization ?? [])[0];
+    const primaryBlock = first(firstUtil?.block);
+    const primaryBlockId = primaryBlock?.id ?? null;
+    const primaryCourseUtilizationId = firstUtil?.id ?? null;
     const course = first(firstUtil?.course);
     const blockRows = (item.course_utilization ?? [])
       .map((entry) => first(entry.block))
@@ -324,6 +329,8 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
       rows.push({
         row_id: `${item.id}:no-session`,
         class_id: item.id,
+        primary_block_id: primaryBlockId,
+        primary_course_utilization_id: primaryCourseUtilizationId,
         course_code: course?.code ?? "Unknown",
         course_title: course?.title ?? "Untitled Course",
         block_codes_label: mergedBlockCodeLabel,
@@ -385,6 +392,8 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
       return {
         row_id: `${item.id}:${representativeSession.type}:${representativeSession.start_time}:${representativeSession.end_time}:${roomLabel ?? ""}:${sessionDays.join(",")}`,
         class_id: item.id,
+        primary_block_id: primaryBlockId,
+        primary_course_utilization_id: primaryCourseUtilizationId,
         course_code: course?.code ?? "Unknown",
         course_title: course?.title ?? "Untitled Course",
         block_codes_label: mergedBlockCodeLabel,

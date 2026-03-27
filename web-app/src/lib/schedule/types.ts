@@ -31,6 +31,8 @@ export type FacultyScheduleSessionInfo = {
 export type FacultyScheduleRow = {
   row_id: string;
   class_id: string;
+  primary_block_id: string | null;
+  primary_course_utilization_id: string | null;
   course_code: string;
   course_title: string;
   block_codes_label: string;
