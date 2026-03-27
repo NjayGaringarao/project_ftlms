@@ -28,8 +28,11 @@ const toProposalFilterStatus = (
 
 export const getFacultyProposalListByTerm = async (
   academicTermId: string,
+  options?: { includeEmpty?: boolean },
 ): Promise<FacultyProposalListItem[]> => {
-  const facultyList = await getFacultyListByTerm(academicTermId);
+  const facultyList = await getFacultyListByTerm(academicTermId, {
+    includeEmpty: options?.includeEmpty ?? false,
+  });
   if (facultyList.length === 0) return [];
 
   const facultyIds = facultyList.map((item) => item.id);
@@ -278,7 +281,64 @@ export type CurrentCampusIndividualProposal = Pick<
 export type LatestCampusIndividualProposal = Pick<
   Proposal,
   "id" | "user_id" | "lifecycle_status"
->;
+> & {
+  faculty_name: string | null;
+};
+
+export const getLatestIndividualProposalsByCampusTerm = async (
+  campusId: string,
+  academicTermId: string,
+): Promise<LatestCampusIndividualProposal[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("proposal")
+    .select(
+      `
+      id,
+      user_id,
+      lifecycle_status,
+      created_at,
+      proposal_user:user_id (
+        identity:identity (name)
+      )
+    `,
+    )
+    .eq("campus_id", campusId)
+    .eq("academic_term_id", academicTermId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("proposal.getLatestIndividualProposalsByCampusTerm ::", error);
+    return [];
+  }
+
+  const latestByFacultyId = new Map<string, LatestCampusIndividualProposal>();
+  for (const row of data ?? []) {
+    if (!row.user_id || latestByFacultyId.has(row.user_id)) continue;
+
+    const proposalUser = Array.isArray(row.proposal_user)
+      ? row.proposal_user[0]
+      : row.proposal_user;
+    const rawIdentity = proposalUser
+      ? Array.isArray(proposalUser.identity)
+        ? proposalUser.identity[0]
+        : proposalUser.identity
+      : null;
+
+    latestByFacultyId.set(row.user_id, {
+      id: row.id,
+      user_id: row.user_id,
+      lifecycle_status: row.lifecycle_status as ProposalLifecycleStatus,
+      faculty_name:
+        rawIdentity && typeof rawIdentity.name === "string"
+          ? rawIdentity.name
+          : null,
+    });
+  }
+
+  return Array.from(latestByFacultyId.values());
+};
 
 export const getCurrentIndividualProposalsByCampusTerm = async (
   campusId: string,
@@ -308,37 +368,6 @@ export const getCurrentIndividualProposalsByCampusTerm = async (
       lifecycle_status: row.lifecycle_status,
     }),
   );
-};
-
-export const getLatestIndividualProposalsByCampusTerm = async (
-  campusId: string,
-  academicTermId: string,
-): Promise<LatestCampusIndividualProposal[]> => {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("proposal")
-    .select("id, user_id, lifecycle_status, created_at")
-    .eq("campus_id", campusId)
-    .eq("academic_term_id", academicTermId)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("proposal.getLatestIndividualProposalsByCampusTerm ::", error);
-    return [];
-  }
-
-  const latestByFacultyId = new Map<string, LatestCampusIndividualProposal>();
-  for (const row of data ?? []) {
-    if (!row.user_id || latestByFacultyId.has(row.user_id)) continue;
-    latestByFacultyId.set(row.user_id, {
-      id: row.id,
-      user_id: row.user_id,
-      lifecycle_status: row.lifecycle_status as ProposalLifecycleStatus,
-    });
-  }
-
-  return Array.from(latestByFacultyId.values());
 };
 
 export type CampusProposalReviewBundle = {
@@ -415,30 +444,30 @@ export const getCampusProposalInsightsBundle = async (
   campusId: string,
   academicTermId: string,
 ): Promise<CampusProposalInsightsBundle> => {
-  const [reviewBundle, userDataRows, facultyList, latestIndividualProposals] =
+  const [reviewBundle, userDataRows, latestIndividualProposals] =
     await Promise.all([
     getCampusProposalReviewBundle(campusId, academicTermId),
     getUserDataList({
       academicTermId,
       includeLoads: true,
     }),
-    getFacultyListByTerm(academicTermId),
     getLatestIndividualProposalsByCampusTerm(campusId, academicTermId),
   ]);
 
-  const facultyIdSet = new Set(facultyList.map((faculty) => faculty.id));
+  const userDataById = new Map(userDataRows.map((row) => [row.id, row]));
 
-  const etlAtlPerFaculty = userDataRows
-    .filter((row) => row.accountType !== "Admin")
-    .filter((row) => facultyIdSet.has(row.id))
-    .filter((row) => row.campus_id === campusId)
-    .map((row) => {
-      const etl = Number(row.designationLoad ?? 0);
-      const atl = Number(row.actualTeachingLoad ?? 0);
-      const twl = Number(row.totalWorkingLoad ?? etl + atl);
+  const etlAtlPerFaculty = latestIndividualProposals
+    .map((proposalRow) => {
+      const userData = userDataById.get(proposalRow.user_id);
+      const etl = Number(userData?.designationLoad ?? 0);
+      const atl = Number(userData?.actualTeachingLoad ?? 0);
+      const twl = Number(userData?.totalWorkingLoad ?? etl + atl);
       return {
-        faculty_id: row.id,
-        faculty_name: row.identity?.name ?? "Unknown Faculty",
+        faculty_id: proposalRow.user_id,
+        faculty_name:
+          userData?.identity?.name ??
+          proposalRow.faculty_name ??
+          "Unknown Faculty",
         etl,
         atl,
         twl,
