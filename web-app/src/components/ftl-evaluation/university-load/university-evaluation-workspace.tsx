@@ -24,8 +24,17 @@ const UniversityEvaluationWorkspace = async ({
     getTermById(academicTermId),
   ]);
 
-  const { campusProposal, members, evaluations, liveLoadDistribution, etlAtlPerFaculty } =
-    bundle;
+  const {
+    campusProposal,
+    members,
+    evaluations,
+    etlAtlPerFaculty,
+    latestIndividualProposals,
+  } = bundle;
+  const proposalFacultyIds = latestIndividualProposals.map((item) => item.user_id);
+  const approvedFacultyIds = latestIndividualProposals
+    .filter((item) => item.lifecycle_status === "APPROVED")
+    .map((item) => item.user_id);
 
   const hasDfiDesignation = (currentUserData?.designations ?? []).some(
     (designation) => designation.job_title === "Director for Instruction",
@@ -42,8 +51,9 @@ const UniversityEvaluationWorkspace = async ({
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-5">
         <div className="min-h-0 lg:col-span-2">
           <CampusLoadInsights
-            distribution={liveLoadDistribution}
             etlAtlPerFaculty={etlAtlPerFaculty}
+            proposalFacultyIds={proposalFacultyIds}
+            approvedFacultyIds={approvedFacultyIds}
           />
         </div>
 

@@ -28,12 +28,16 @@ const CampusProposalControlWorkspace = async ({
     campusProposal,
     members,
     evaluations,
-    liveLoadDistribution,
     etlAtlPerFaculty,
     approvedIndividualCount,
     activeIndividualCount,
+    latestIndividualProposals,
   } = bundle;
   const academicTermCode = selectedTerm?.code ?? "Unknown term";
+  const proposalFacultyIds = latestIndividualProposals.map((item) => item.user_id);
+  const approvedFacultyIds = latestIndividualProposals
+    .filter((item) => item.lifecycle_status === "APPROVED")
+    .map((item) => item.user_id);
 
   const campusDirectorDesignation = (currentUserData?.designations ?? []).find(
     (designation) =>
@@ -44,8 +48,9 @@ const CampusProposalControlWorkspace = async ({
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4">
       <CampusLoadInsights
-        distribution={liveLoadDistribution}
         etlAtlPerFaculty={etlAtlPerFaculty}
+        proposalFacultyIds={proposalFacultyIds}
+        approvedFacultyIds={approvedFacultyIds}
       />
 
       <div className="grid grid-cols-5 gap-4">

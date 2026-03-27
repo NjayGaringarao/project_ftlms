@@ -275,6 +275,11 @@ export type CurrentCampusIndividualProposal = Pick<
   "id" | "user_id" | "lifecycle_status"
 >;
 
+export type LatestCampusIndividualProposal = Pick<
+  Proposal,
+  "id" | "user_id" | "lifecycle_status"
+>;
+
 export const getCurrentIndividualProposalsByCampusTerm = async (
   campusId: string,
   academicTermId: string,
@@ -303,6 +308,37 @@ export const getCurrentIndividualProposalsByCampusTerm = async (
       lifecycle_status: row.lifecycle_status,
     }),
   );
+};
+
+export const getLatestIndividualProposalsByCampusTerm = async (
+  campusId: string,
+  academicTermId: string,
+): Promise<LatestCampusIndividualProposal[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("proposal")
+    .select("id, user_id, lifecycle_status, created_at")
+    .eq("campus_id", campusId)
+    .eq("academic_term_id", academicTermId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("proposal.getLatestIndividualProposalsByCampusTerm ::", error);
+    return [];
+  }
+
+  const latestByFacultyId = new Map<string, LatestCampusIndividualProposal>();
+  for (const row of data ?? []) {
+    if (!row.user_id || latestByFacultyId.has(row.user_id)) continue;
+    latestByFacultyId.set(row.user_id, {
+      id: row.id,
+      user_id: row.user_id,
+      lifecycle_status: row.lifecycle_status as ProposalLifecycleStatus,
+    });
+  }
+
+  return Array.from(latestByFacultyId.values());
 };
 
 export type CampusProposalReviewBundle = {
@@ -335,6 +371,7 @@ export type CampusProposalInsightsBundle = CampusProposalReviewBundle & {
   activeIndividualCount: number;
   liveLoadDistribution: CampusLoadDistribution;
   etlAtlPerFaculty: CampusEtlAtlFacultyMetric[];
+  latestIndividualProposals: LatestCampusIndividualProposal[];
 };
 
 const classifyLoadBand = (twl: number): CampusLoadBand => {
@@ -378,13 +415,15 @@ export const getCampusProposalInsightsBundle = async (
   campusId: string,
   academicTermId: string,
 ): Promise<CampusProposalInsightsBundle> => {
-  const [reviewBundle, userDataRows, facultyList] = await Promise.all([
+  const [reviewBundle, userDataRows, facultyList, latestIndividualProposals] =
+    await Promise.all([
     getCampusProposalReviewBundle(campusId, academicTermId),
     getUserDataList({
       academicTermId,
       includeLoads: true,
     }),
     getFacultyListByTerm(academicTermId),
+    getLatestIndividualProposalsByCampusTerm(campusId, academicTermId),
   ]);
 
   const facultyIdSet = new Set(facultyList.map((faculty) => faculty.id));
@@ -439,5 +478,6 @@ export const getCampusProposalInsightsBundle = async (
     activeIndividualCount,
     liveLoadDistribution,
     etlAtlPerFaculty,
+    latestIndividualProposals,
   };
 };

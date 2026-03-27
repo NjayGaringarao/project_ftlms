@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -30,8 +31,9 @@ const PIE_COLORS = {
 const toFixed = (value: number) => value.toFixed(2);
 
 type CampusLoadInsightsProps = {
-  distribution: CampusLoadDistribution;
   etlAtlPerFaculty: CampusEtlAtlFacultyMetric[];
+  proposalFacultyIds: string[];
+  approvedFacultyIds: string[];
 };
 
 type LoadInsightCardProps = {
@@ -54,38 +56,114 @@ const LoadInsightCard = ({ title, value, icon, containerClassName }: LoadInsight
   );
 };
 
+type InsightsFilterMode = "APPROVED" | "ALL";
+
+const computeDistribution = (
+  rows: Pick<CampusEtlAtlFacultyMetric, "load_band">[],
+): CampusLoadDistribution => {
+  return rows.reduce(
+    (acc, row) => {
+      if (row.load_band === "OVERLOAD") acc.overload += 1;
+      if (row.load_band === "UNDERLOAD") acc.underload += 1;
+      if (row.load_band === "NORMAL") acc.normal += 1;
+      acc.total += 1;
+      return acc;
+    },
+    {
+      overload: 0,
+      underload: 0,
+      normal: 0,
+      total: 0,
+    } as CampusLoadDistribution,
+  );
+};
+
 const CampusLoadInsights = ({
-  distribution,
   etlAtlPerFaculty,
+  proposalFacultyIds,
+  approvedFacultyIds,
 }: CampusLoadInsightsProps) => {
+  const [filterMode, setFilterMode] = useState<InsightsFilterMode>("APPROVED");
+
+  const proposalFacultyIdSet = useMemo(
+    () => new Set(proposalFacultyIds),
+    [proposalFacultyIds],
+  );
+  const approvedFacultyIdSet = useMemo(
+    () => new Set(approvedFacultyIds),
+    [approvedFacultyIds],
+  );
+
+  const proposalRows = useMemo(
+    () =>
+      etlAtlPerFaculty.filter((row) => proposalFacultyIdSet.has(row.faculty_id)),
+    [proposalFacultyIdSet, etlAtlPerFaculty],
+  );
+
+  const approvedRows = useMemo(
+    () => proposalRows.filter((row) => approvedFacultyIdSet.has(row.faculty_id)),
+    [approvedFacultyIdSet, proposalRows],
+  );
+
+  const proposalDistribution = useMemo(
+    () => computeDistribution(proposalRows),
+    [proposalRows],
+  );
+  const approvedDistribution = useMemo(
+    () => computeDistribution(approvedRows),
+    [approvedRows],
+  );
+
+  const filteredRows = filterMode === "APPROVED" ? approvedRows : proposalRows;
+  const filteredDistribution =
+    filterMode === "APPROVED" ? approvedDistribution : proposalDistribution;
+
   const pieData = [
     {
       label: "Overload",
-      value: distribution.overload,
+      value: filteredDistribution.overload,
       color: PIE_COLORS.OVERLOAD,
     },
     {
       label: "Underload",
-      value: distribution.underload,
+      value: filteredDistribution.underload,
       color: PIE_COLORS.UNDERLOAD,
     },
     {
       label: "Normal",
-      value: distribution.normal,
+      value: filteredDistribution.normal,
       color: PIE_COLORS.NORMAL,
     },
   ];
 
-  const hasLiveFacultyData = distribution.total > 0;
-  const barChartWidth = Math.max(760, etlAtlPerFaculty.length * 88);
+  const hasLiveFacultyData = filteredDistribution.total > 0;
+  const barChartWidth = Math.max(760, filteredRows.length * 88);
+  const emptyStateMessage =
+    filterMode === "APPROVED"
+      ? "No approved individual proposals found for this campus and term."
+      : "No current individual proposals found for this campus and term.";
 
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CardHeader className="flex flex-row gap-4 items-center justify-between">
         <CardTitle className="text-base">Campus Load Insights</CardTitle>
         <div className="flex gap-2 text-sm">
-          <button className="py-2 px-4">Approved</button>
-          <button className="py-2 px-4">All</button>
+          <Button
+            type="button"
+            size="sm"
+            variant={filterMode === "APPROVED" ? "default" : "outline"}
+            onClick={() => setFilterMode("APPROVED")}
+          >
+            Approved ({approvedDistribution.total})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={filterMode === "ALL" ? "default" : "outline"}
+            onClick={() => setFilterMode("ALL")}
+          >
+            All ({proposalDistribution.total})
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto">
@@ -93,26 +171,26 @@ const CampusLoadInsights = ({
           <div className="grid grid-cols-2 gap-2 text-sm col-span-2">
             <LoadInsightCard
               title="Faculty Count"
-              value={distribution.total}
+              value={filteredDistribution.total}
               icon={<User className="text-gray-400" />}
               containerClassName="bg-gray-50 border-gray-200"
             />
             <LoadInsightCard
               title="Normal Load"
-              value={distribution.normal}
+              value={filteredDistribution.normal}
               icon={<Check className="text-green-400" />}
               containerClassName="bg-green-50 border-green-200"
 
             />
             <LoadInsightCard
               title="OverLoad"
-              value={distribution.overload}
+              value={filteredDistribution.overload}
               icon={<ArrowUpFromLine className="text-red-400" />}
               containerClassName="bg-red-50 border-red-200"
             />
             <LoadInsightCard
               title="UnderLoad"
-              value={distribution.underload}
+              value={filteredDistribution.underload}
               icon={<ArrowDownFromLine className="text-amber-400" />}
               containerClassName="bg-amber-50 border-amber-200"
             />
@@ -121,7 +199,7 @@ const CampusLoadInsights = ({
           <div className="rounded-md border col-span-3 p-4">
             {!hasLiveFacultyData ? (
               <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-                No live faculty load data found for this campus and term.
+                {emptyStateMessage}
               </p>
             ) : (
               <>
@@ -152,7 +230,7 @@ const CampusLoadInsights = ({
 
         {!hasLiveFacultyData ? (
           <p className="rounded-md border border-dashed px-3 py-4 text-sm text-foreground/70">
-            No live faculty load data found for this campus and term.
+            {emptyStateMessage}
           </p>
         ) : (
           <div className="rounded-md border p-3">
@@ -161,7 +239,7 @@ const CampusLoadInsights = ({
               <BarChart
                 width={barChartWidth}
                 height={280}
-                data={etlAtlPerFaculty}
+                data={filteredRows}
                 margin={{ top: 8, right: 16, left: 0, bottom: 40 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
