@@ -2,7 +2,7 @@ import { getTermById } from "@/lib/admin/terms";
 import { getCampusProposalInsightsBundle } from "@/lib/proposal/queries";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import CampusLoadInsights from "@/components/ftl-evaluation/shared/campus-load-insights";
-import CampusProposalDetailsPanel from "@/components/ftl-evaluation/shared/campus-proposal-details-panel";
+import CampusLoadStatus from "@/components/ftl-evaluation/shared/campus-load-status";
 
 type CampusProposalControlWorkspaceProps = {
   academicTermId: string;
@@ -25,7 +25,6 @@ const CampusProposalControlWorkspace = async ({
 
   const {
     campusProposal,
-    members,
     evaluations,
     etlAtlPerFaculty,
     approvedIndividualCount,
@@ -55,9 +54,8 @@ const CampusProposalControlWorkspace = async ({
         academicTermCode={academicTermCode}
       />
 
-      <CampusProposalDetailsPanel
+      <CampusLoadStatus
         campusProposal={campusProposal}
-        members={members}
         evaluations={evaluations}
         control={{
           academicTermId,

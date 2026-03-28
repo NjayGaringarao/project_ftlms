@@ -56,7 +56,7 @@ const UniversityEvaluationList = ({
           <ListItemSmall
             key={campus.id}
             title={campus.name}
-            subtitle={[campus.code, campus.address ?? ""]}
+            subtitle={[campus.address ?? ""]}
             isSelected={selectedId === campus.id}
             onClick={() =>
               router.push(

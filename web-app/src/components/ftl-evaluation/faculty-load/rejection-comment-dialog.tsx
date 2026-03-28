@@ -16,6 +16,7 @@ type RejectionCommentDialogProps = {
   action: (formData: FormData) => void | Promise<void>;
   hiddenFields: RejectionDialogHiddenField[];
   commentPlaceholder?: string;
+  isCommentRequired?: boolean;
   confirmLabel?: string;
   cancelLabel?: string;
 };
@@ -28,6 +29,7 @@ const RejectionCommentDialog = ({
   action,
   hiddenFields,
   commentPlaceholder = "Enter rejection comment",
+  isCommentRequired = true,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
 }: RejectionCommentDialogProps) => {
@@ -50,7 +52,7 @@ const RejectionCommentDialog = ({
         ))}
         <textarea
           name="comment"
-          required
+          required={isCommentRequired}
           placeholder={commentPlaceholder}
           className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         />
