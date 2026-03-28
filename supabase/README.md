@@ -96,14 +96,13 @@ migrations/
 - 512_trigger_program_offering_code.sql
 - 513_trigger_academic_term_code.sql
 - 514_trigger_academic_year_code.sql
-- 515_fix_individual_proposal_evaluation_lifecycle_cast.sql
-- 516_invalidate_rejected_individual_proposals_on_load_change.sql
+- 515_trigger_proposal_invalidation.sql
+- 516_trigger_proposal_workflow.sql
 - 600_rpc_is_admin_exists.sql
 - 602_rpc_get_user_roles.sql
 - 605_rpc_get_scheduler_matrices.sql
 - 607_rpc_get_user_data.sql
 - 608_rpc_proposal_transactions.sql
-- 617_harden_campus_proposal_invalidation_trigger.sql
 ```
 
 ### Constraint Ownership (3xx)
@@ -139,9 +138,35 @@ migrations/
 
 ### Trigger Ownership (5xx/6xx)
 
-- `617_harden_campus_proposal_invalidation_trigger.sql`
-  - Canonical owner of: `trg_invalidate_campus_proposal_on_proposal_change`, `invalidate_campus_proposal_on_proposal_change` trigger.
-  - Consolidates campus-proposal invalidation behavior for individual proposal lifecycle/scope changes.
+- `509_trigger_course_utilization_prevent_delete_with_sessions.sql`
+  - Canonical owner of:
+    - `prevent_course_utilization_delete_with_sessions`
+    - `trg_prevent_delete_course_utilization_with_sessions` trigger
+  - Scope: prevents deleting `course_utilization` rows when linked classes still have sessions.
+
+- `515_trigger_proposal_invalidation.sql`
+  - Canonical owner of:
+    - `invalidate_current_campus_proposals`
+    - `invalidate_current_proposals_for_user`
+    - `invalidate_current_proposals_for_user_term`
+    - `invalidate_current_proposals_for_user_class`
+    - `trg_invalidate_proposals_on_designation`
+    - `trg_invalidate_proposals_on_user_class`
+    - `trg_invalidate_proposals_on_course_units`
+    - `trg_invalidate_proposals_on_course_utilization`
+    - `trg_invalidate_campus_proposal_on_proposal_change`
+  - Scope: proposal invalidation propagation from load/scope/lifecycle changes.
+
+- `516_trigger_proposal_workflow.sql`
+  - Canonical owner of:
+    - `trg_validate_campus_proposal_creation`
+    - `trg_validate_campus_proposal_member`
+    - `trg_validate_individual_proposal_evaluation`
+    - `trg_apply_individual_proposal_evaluation`
+    - `trg_validate_campus_proposal_evaluation`
+    - `trg_apply_campus_proposal_evaluation`
+  - Scope: proposal workflow validation and evaluation transitions.
+
 
 ## Regression Harness (Development)
 
