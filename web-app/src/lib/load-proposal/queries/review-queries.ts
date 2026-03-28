@@ -2,28 +2,28 @@
 
 import { createClient } from "@/utils/supabase/server";
 import type {
-  CampusProposal,
-  CampusProposalEvaluation,
-  IndividualProposalEvaluation,
+  CampusLoad,
+  CampusLoadEvaluation,
+  FacultyLoadEvaluation,
   ProposalLifecycleStatus,
 } from "@/models";
 import type {
-  CampusProposalMemberWithFaculty,
-  CampusProposalReviewBundle,
+  CampusLoadMemberWithFaculty,
+  CampusLoadReviewBundle,
   CurrentCampusIndividualProposal,
-} from "@/lib/proposal/read-models";
+} from "@/lib/load-proposal/read-models";
 
 export const getEvaluationsByProposal = async (
   proposalId: string,
-): Promise<IndividualProposalEvaluation[]> => {
+): Promise<FacultyLoadEvaluation[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("individual_proposal_evaluation")
+    .from("faculty_load_evaluation")
     .select(
       `
       id,
-      proposal_id,
+      faculty_load_proposal_id,
       step,
       designation_id,
       evaluator_user_id,
@@ -32,32 +32,32 @@ export const getEvaluationsByProposal = async (
       created_at
     `,
     )
-    .eq("proposal_id", proposalId)
+    .eq("faculty_load_proposal_id", proposalId)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("proposal.getEvaluationsByProposal ::", error);
+    console.error("loadProposal.getEvaluationsByProposal ::", error);
     return [];
   }
 
-  return (data ?? []) as IndividualProposalEvaluation[];
+  return (data ?? []) as FacultyLoadEvaluation[];
 };
 
 export const getLatestEvaluationByProposal = async (
   proposalId: string,
-): Promise<IndividualProposalEvaluation | null> => {
+): Promise<FacultyLoadEvaluation | null> => {
   const rows = await getEvaluationsByProposal(proposalId);
   return rows[0] ?? null;
 };
 
-export const getLatestCampusProposalByCampusTerm = async (
+export const getLatestCampusLoadByCampusTerm = async (
   campusId: string,
   academicTermId: string,
-): Promise<CampusProposal | null> => {
+): Promise<CampusLoad | null> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("campus_proposal")
+    .from("campus_load")
     .select("*")
     .eq("campus_id", campusId)
     .eq("academic_term_id", academicTermId)
@@ -66,26 +66,26 @@ export const getLatestCampusProposalByCampusTerm = async (
     .maybeSingle();
 
   if (error) {
-    console.error("proposal.getLatestCampusProposalByCampusTerm ::", error);
+    console.error("loadProposal.getLatestCampusLoadByCampusTerm ::", error);
     return null;
   }
 
   return data ?? null;
 };
 
-export const getCampusProposalMembers = async (
-  campusProposalId: string,
-): Promise<CampusProposalMemberWithFaculty[]> => {
+export const getCampusLoadMembers = async (
+  campusLoadId: string,
+): Promise<CampusLoadMemberWithFaculty[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("campus_proposal_member")
+    .from("campus_load_member")
     .select(
       `
       id,
-      campus_proposal_id,
-      source_proposal_id,
-      proposal_user_id,
+      campus_load_id,
+      source_faculty_load_proposal_id,
+      faculty_user_id,
       employment_status,
       academic_rank,
       bachelors_degree,
@@ -98,38 +98,38 @@ export const getCampusProposalMembers = async (
       preparation_count,
       actual_teaching_load,
       advisory_class,
-      source_proposal_lifecycle_status,
-      source_proposal_created_at,
+      source_faculty_load_proposal_lifecycle_status,
+      source_faculty_load_proposal_created_at,
       created_at,
-      proposal_user:proposal_user_id (
+      faculty_user:faculty_user_id (
         id,
         identity:identity (name)
       )
     `,
     )
-    .eq("campus_proposal_id", campusProposalId)
-    .order("source_proposal_created_at", { ascending: false });
+    .eq("campus_load_id", campusLoadId)
+    .order("source_faculty_load_proposal_created_at", { ascending: false });
 
   if (error) {
-    console.error("proposal.getCampusProposalMembers ::", error);
+    console.error("loadProposal.getCampusLoadMembers ::", error);
     return [];
   }
 
   return (data ?? []).map((row) => {
-    const rawProposalUser = Array.isArray(row.proposal_user)
-      ? row.proposal_user[0]
-      : row.proposal_user;
-    const rawIdentity = rawProposalUser
-      ? Array.isArray(rawProposalUser.identity)
-        ? rawProposalUser.identity[0]
-        : rawProposalUser.identity
+    const rawFacultyUser = Array.isArray(row.faculty_user)
+      ? row.faculty_user[0]
+      : row.faculty_user;
+    const rawIdentity = rawFacultyUser
+      ? Array.isArray(rawFacultyUser.identity)
+        ? rawFacultyUser.identity[0]
+        : rawFacultyUser.identity
       : null;
 
     return {
       ...row,
-      proposal_user: rawProposalUser
+      faculty_user: rawFacultyUser
         ? {
-            id: String(rawProposalUser.id),
+            id: String(rawFacultyUser.id),
             identity: rawIdentity
               ? {
                   name:
@@ -138,21 +138,21 @@ export const getCampusProposalMembers = async (
               : null,
           }
         : null,
-    } as CampusProposalMemberWithFaculty;
+    } as CampusLoadMemberWithFaculty;
   });
 };
 
-export const getCampusProposalEvaluations = async (
-  campusProposalId: string,
-): Promise<CampusProposalEvaluation[]> => {
+export const getCampusLoadEvaluations = async (
+  campusLoadId: string,
+): Promise<CampusLoadEvaluation[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("campus_proposal_evaluation")
+    .from("campus_load_evaluation")
     .select(
       `
       id,
-      campus_proposal_id,
+      campus_load_id,
       step,
       designation_id,
       evaluator_user_id,
@@ -161,15 +161,15 @@ export const getCampusProposalEvaluations = async (
       created_at
     `,
     )
-    .eq("campus_proposal_id", campusProposalId)
+    .eq("campus_load_id", campusLoadId)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("proposal.getCampusProposalEvaluations ::", error);
+    console.error("loadProposal.getCampusLoadEvaluations ::", error);
     return [];
   }
 
-  return (data ?? []) as CampusProposalEvaluation[];
+  return (data ?? []) as CampusLoadEvaluation[];
 };
 
 export const getCurrentIndividualProposalsByCampusTerm = async (
@@ -179,7 +179,7 @@ export const getCurrentIndividualProposalsByCampusTerm = async (
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .select("id, user_id, lifecycle_status")
     .eq("campus_id", campusId)
     .eq("academic_term_id", academicTermId)
@@ -187,7 +187,7 @@ export const getCurrentIndividualProposalsByCampusTerm = async (
 
   if (error) {
     console.error(
-      "proposal.getCurrentIndividualProposalsByCampusTerm ::",
+      "loadProposal.getCurrentIndividualProposalsByCampusTerm ::",
       error,
     );
     return [];
@@ -206,18 +206,18 @@ export const getCurrentIndividualProposalsByCampusTerm = async (
   }));
 };
 
-export const getCampusProposalReviewBundle = async (
+export const getCampusLoadReviewBundle = async (
   campusId: string,
   academicTermId: string,
-): Promise<CampusProposalReviewBundle> => {
-  const [campusProposal, currentIndividualProposals] = await Promise.all([
-    getLatestCampusProposalByCampusTerm(campusId, academicTermId),
+): Promise<CampusLoadReviewBundle> => {
+  const [campusLoad, currentIndividualProposals] = await Promise.all([
+    getLatestCampusLoadByCampusTerm(campusId, academicTermId),
     getCurrentIndividualProposalsByCampusTerm(campusId, academicTermId),
   ]);
 
-  if (!campusProposal) {
+  if (!campusLoad) {
     return {
-      campusProposal: null,
+      campusLoad: null,
       members: [],
       evaluations: [],
       currentIndividualProposals,
@@ -225,12 +225,12 @@ export const getCampusProposalReviewBundle = async (
   }
 
   const [members, evaluations] = await Promise.all([
-    getCampusProposalMembers(campusProposal.id),
-    getCampusProposalEvaluations(campusProposal.id),
+    getCampusLoadMembers(campusLoad.id),
+    getCampusLoadEvaluations(campusLoad.id),
   ]);
 
   return {
-    campusProposal,
+    campusLoad,
     members,
     evaluations,
     currentIndividualProposals,

@@ -1,27 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ProposalStatusFilter } from "@/lib/proposal/types";
+import type { ProposalStatusFilter } from "@/lib/load-proposal/types";
 
-type ProposalListBaseItem = {
+type LoadProposalListBaseItem = {
   id: string;
   name: string;
   proposal_filter_status: ProposalStatusFilter;
 };
 
-type UseProposalListControllerParams<TItem extends ProposalListBaseItem> = {
+type UseLoadProposalListControllerParams<TItem extends LoadProposalListBaseItem> = {
   items: TItem[];
   defaultStatus: ProposalStatusFilter;
   isSelectable: (item: TItem) => boolean;
   longPressDelayMs?: number;
 };
 
-export const useProposalListController = <TItem extends ProposalListBaseItem>({
+export const useLoadProposalListController = <TItem extends LoadProposalListBaseItem>({
   items,
   defaultStatus,
   isSelectable,
   longPressDelayMs = 450,
-}: UseProposalListControllerParams<TItem>) => {
+}: UseLoadProposalListControllerParams<TItem>) => {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProposalStatusFilter>(defaultStatus);
   const [isSelectionMode, setIsSelectionMode] = useState(false);

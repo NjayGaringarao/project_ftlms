@@ -6,7 +6,7 @@
 --
 -- How to run (local dev):
 --   npx supabase db reset
---   npx supabase db query --file supabase/tests/campus_proposal_invalidation_regression.sql
+--   npx supabase db query --file supabase/tests/campus_load_invalidation_regression.sql
 --
 -- Notes:
 --   - This script is self-contained and uses a transaction with ROLLBACK.
@@ -27,19 +27,19 @@ declare
   v_term_4_id uuid := gen_random_uuid();
   v_term_5_id uuid := gen_random_uuid();
 
-  v_guard_campus_proposal_id uuid;
-  v_case_1_campus_proposal_id uuid;
-  v_case_2_campus_proposal_id uuid;
-  v_case_3_campus_proposal_id uuid;
-  v_case_4_campus_proposal_id uuid;
-  v_case_5_old_scope_campus_proposal_id uuid;
-  v_case_5_new_scope_campus_proposal_id uuid;
+  v_guard_campus_load_id uuid;
+  v_case_1_campus_load_id uuid;
+  v_case_2_campus_load_id uuid;
+  v_case_3_campus_load_id uuid;
+  v_case_4_campus_load_id uuid;
+  v_case_5_old_scope_campus_load_id uuid;
+  v_case_5_new_scope_campus_load_id uuid;
 
-  v_case_1_proposal_id uuid;
-  v_case_2_proposal_id uuid;
-  v_case_3_proposal_id uuid;
-  v_case_4_proposal_id uuid;
-  v_case_5_proposal_id uuid;
+  v_case_1_faculty_load_proposal_id uuid;
+  v_case_2_faculty_load_proposal_id uuid;
+  v_case_3_faculty_load_proposal_id uuid;
+  v_case_4_faculty_load_proposal_id uuid;
+  v_case_5_faculty_load_proposal_id uuid;
 
   v_status public.proposal_lifecycle_enum;
   v_reason text;
@@ -76,7 +76,7 @@ begin
     (v_term_5_id, v_year_b_id, 'SECOND SEMESTER', '2092-01-10', '2092-05-31');
 
   -- Guard campus proposal for "only matching scope invalidates" checks.
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     id,
     campus_id,
     academic_term_id,
@@ -90,12 +90,12 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_guard_campus_proposal_id;
+  returning id into v_guard_campus_load_id;
 
   -- --------------------------------------------------------------
   -- CASE 1: insert ACTIVE individual proposal invalidates campus scope
   -- --------------------------------------------------------------
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     id,
     campus_id,
     academic_term_id,
@@ -109,9 +109,9 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_case_1_campus_proposal_id;
+  returning id into v_case_1_campus_load_id;
 
-  insert into public.proposal (
+  insert into public.faculty_load_proposal (
     id,
     user_id,
     campus_id,
@@ -129,12 +129,12 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_case_1_proposal_id;
+  returning id into v_case_1_faculty_load_proposal_id;
 
   select cp.lifecycle_status, cp.invalidated_reason
   into v_status, v_reason
-  from public.campus_proposal cp
-  where cp.id = v_case_1_campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = v_case_1_campus_load_id;
 
   if v_status <> 'INVALIDATED' then
     raise exception 'CASE 1 failed: expected campus proposal INVALIDATED, got %', v_status;
@@ -145,8 +145,8 @@ begin
 
   select cp.lifecycle_status
   into v_status
-  from public.campus_proposal cp
-  where cp.id = v_guard_campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = v_guard_campus_load_id;
 
   if v_status <> 'ACTIVE' then
     raise exception 'CASE 1 scope guard failed: unrelated campus proposal changed to %', v_status;
@@ -155,7 +155,7 @@ begin
   -- --------------------------------------------------------------
   -- CASE 2: transition individual proposal -> INVALIDATED
   -- --------------------------------------------------------------
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     id,
     campus_id,
     academic_term_id,
@@ -169,9 +169,9 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_case_2_campus_proposal_id;
+  returning id into v_case_2_campus_load_id;
 
-  insert into public.proposal (
+  insert into public.faculty_load_proposal (
     id,
     user_id,
     campus_id,
@@ -189,18 +189,18 @@ begin
     'APPROVED',
     v_user_id
   )
-  returning id into v_case_2_proposal_id;
+  returning id into v_case_2_faculty_load_proposal_id;
 
-  update public.proposal
+  update public.faculty_load_proposal
   set lifecycle_status = 'INVALIDATED',
       invalidated_reason = 'HARNESS_CASE_2',
       updated_at = now()
-  where id = v_case_2_proposal_id;
+  where id = v_case_2_faculty_load_proposal_id;
 
   select cp.lifecycle_status, cp.invalidated_reason
   into v_status, v_reason
-  from public.campus_proposal cp
-  where cp.id = v_case_2_campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = v_case_2_campus_load_id;
 
   if v_status <> 'INVALIDATED' then
     raise exception 'CASE 2 failed: expected campus proposal INVALIDATED, got %', v_status;
@@ -212,7 +212,7 @@ begin
   -- --------------------------------------------------------------
   -- CASE 3: transition individual proposal -> REJECTED
   -- --------------------------------------------------------------
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     id,
     campus_id,
     academic_term_id,
@@ -226,9 +226,9 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_case_3_campus_proposal_id;
+  returning id into v_case_3_campus_load_id;
 
-  insert into public.proposal (
+  insert into public.faculty_load_proposal (
     id,
     user_id,
     campus_id,
@@ -246,17 +246,17 @@ begin
     'APPROVED',
     v_user_id
   )
-  returning id into v_case_3_proposal_id;
+  returning id into v_case_3_faculty_load_proposal_id;
 
-  update public.proposal
+  update public.faculty_load_proposal
   set lifecycle_status = 'REJECTED',
       updated_at = now()
-  where id = v_case_3_proposal_id;
+  where id = v_case_3_faculty_load_proposal_id;
 
   select cp.lifecycle_status, cp.invalidated_reason
   into v_status, v_reason
-  from public.campus_proposal cp
-  where cp.id = v_case_3_campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = v_case_3_campus_load_id;
 
   if v_status <> 'INVALIDATED' then
     raise exception 'CASE 3 failed: expected campus proposal INVALIDATED, got %', v_status;
@@ -268,7 +268,7 @@ begin
   -- --------------------------------------------------------------
   -- CASE 4: delete individual proposal
   -- --------------------------------------------------------------
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     id,
     campus_id,
     academic_term_id,
@@ -282,9 +282,9 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_case_4_campus_proposal_id;
+  returning id into v_case_4_campus_load_id;
 
-  insert into public.proposal (
+  insert into public.faculty_load_proposal (
     id,
     user_id,
     campus_id,
@@ -302,15 +302,15 @@ begin
     'APPROVED',
     v_user_id
   )
-  returning id into v_case_4_proposal_id;
+  returning id into v_case_4_faculty_load_proposal_id;
 
-  delete from public.proposal
-  where id = v_case_4_proposal_id;
+  delete from public.faculty_load_proposal
+  where id = v_case_4_faculty_load_proposal_id;
 
   select cp.lifecycle_status, cp.invalidated_reason
   into v_status, v_reason
-  from public.campus_proposal cp
-  where cp.id = v_case_4_campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = v_case_4_campus_load_id;
 
   if v_status <> 'INVALIDATED' then
     raise exception 'CASE 4 failed: expected campus proposal INVALIDATED, got %', v_status;
@@ -322,7 +322,7 @@ begin
   -- --------------------------------------------------------------
   -- CASE 5: individual proposal scope change invalidates old + new scopes
   -- --------------------------------------------------------------
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     id,
     campus_id,
     academic_term_id,
@@ -336,9 +336,9 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_case_5_old_scope_campus_proposal_id;
+  returning id into v_case_5_old_scope_campus_load_id;
 
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     id,
     campus_id,
     academic_term_id,
@@ -352,9 +352,9 @@ begin
     'ACTIVE',
     v_user_id
   )
-  returning id into v_case_5_new_scope_campus_proposal_id;
+  returning id into v_case_5_new_scope_campus_load_id;
 
-  insert into public.proposal (
+  insert into public.faculty_load_proposal (
     id,
     user_id,
     campus_id,
@@ -372,18 +372,18 @@ begin
     'APPROVED',
     v_user_id
   )
-  returning id into v_case_5_proposal_id;
+  returning id into v_case_5_faculty_load_proposal_id;
 
-  update public.proposal
+  update public.faculty_load_proposal
   set campus_id = v_campus_b_id,
       academic_term_id = v_term_2_id,
       updated_at = now()
-  where id = v_case_5_proposal_id;
+  where id = v_case_5_faculty_load_proposal_id;
 
   select cp.lifecycle_status, cp.invalidated_reason
   into v_status, v_reason
-  from public.campus_proposal cp
-  where cp.id = v_case_5_old_scope_campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = v_case_5_old_scope_campus_load_id;
 
   if v_status <> 'INVALIDATED' then
     raise exception 'CASE 5 old scope failed: expected INVALIDATED, got %', v_status;
@@ -394,8 +394,8 @@ begin
 
   select cp.lifecycle_status, cp.invalidated_reason
   into v_status, v_reason
-  from public.campus_proposal cp
-  where cp.id = v_case_5_new_scope_campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = v_case_5_new_scope_campus_load_id;
 
   if v_status <> 'INVALIDATED' then
     raise exception 'CASE 5 new scope failed: expected INVALIDATED, got %', v_status;

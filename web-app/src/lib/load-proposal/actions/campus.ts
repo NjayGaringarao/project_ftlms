@@ -3,19 +3,19 @@
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUser } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
-import type { CampusProposalStep } from "@/models";
+import type { CampusLoadStep } from "@/models";
 import {
-  createCampusProposalViaRpc,
+  createCampusLoadViaRpc,
   isFinalDecisionStatus,
   parseProposalIds,
-} from "@/lib/proposal/actions/helpers";
+} from "@/lib/load-proposal/actions/helpers";
 import {
   revalidateFacultyProposalWorkspace,
   revalidateProposalCollectionsByTerm,
   revalidateUniversityCampusWorkspace,
-} from "@/lib/proposal/actions/revalidation";
+} from "@/lib/load-proposal/actions/revalidation";
 
-export const createCampusProposalAction = async (formData: FormData) => {
+export const createCampusLoadAction = async (formData: FormData) => {
   const academicTermId = String(formData.get("academicTermId") ?? "");
   const campusId = String(formData.get("campusId") ?? "");
 
@@ -36,7 +36,7 @@ export const createCampusProposalAction = async (formData: FormData) => {
 
   if (!campusDirectorDesignation) return;
 
-  const result = await createCampusProposalViaRpc({
+  const result = await createCampusLoadViaRpc({
     academicTermId,
     campusId,
     createdByUserId: currentUser.id,
@@ -49,15 +49,15 @@ export const createCampusProposalAction = async (formData: FormData) => {
   revalidateUniversityCampusWorkspace(academicTermId, result.campusId);
 };
 
-export const submitCampusProposalEvaluationAction = async (
+export const submitCampusLoadEvaluationAction = async (
   formData: FormData,
 ) => {
-  const campusProposalId = String(formData.get("campusProposalId") ?? "");
-  const step = String(formData.get("step") ?? "") as CampusProposalStep;
+  const campusLoadId = String(formData.get("campusLoadId") ?? "");
+  const step = String(formData.get("step") ?? "") as CampusLoadStep;
   const status = String(formData.get("status") ?? "");
   const comment = String(formData.get("comment") ?? "").trim();
 
-  if (!campusProposalId || !isFinalDecisionStatus(status)) return;
+  if (!campusLoadId || !isFinalDecisionStatus(status)) return;
   if (
     step !== "DIRECTOR_FOR_INSTRUCTION" &&
     step !== "VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS"
@@ -84,18 +84,18 @@ export const submitCampusProposalEvaluationAction = async (
   if (!matchingDesignation) return;
 
   const supabase = await createClient();
-  const { data: campusProposal } = await supabase
-    .from("campus_proposal")
+  const { data: campusLoad } = await supabase
+    .from("campus_load")
     .select("id, campus_id, academic_term_id, lifecycle_status")
-    .eq("id", campusProposalId)
+    .eq("id", campusLoadId)
     .maybeSingle();
 
-  if (!campusProposal || campusProposal.lifecycle_status !== "ACTIVE") return;
+  if (!campusLoad || campusLoad.lifecycle_status !== "ACTIVE") return;
 
   const { data: existingStep } = await supabase
-    .from("campus_proposal_evaluation")
+    .from("campus_load_evaluation")
     .select("id")
-    .eq("campus_proposal_id", campusProposalId)
+    .eq("campus_load_id", campusLoadId)
     .eq("step", step)
     .maybeSingle();
 
@@ -103,9 +103,9 @@ export const submitCampusProposalEvaluationAction = async (
 
   if (step === "VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS") {
     const { data: dfiRow } = await supabase
-      .from("campus_proposal_evaluation")
+      .from("campus_load_evaluation")
       .select("id, status")
-      .eq("campus_proposal_id", campusProposalId)
+      .eq("campus_load_id", campusLoadId)
       .eq("step", "DIRECTOR_FOR_INSTRUCTION")
       .maybeSingle();
 
@@ -113,9 +113,9 @@ export const submitCampusProposalEvaluationAction = async (
   }
 
   const { error: insertError } = await supabase
-    .from("campus_proposal_evaluation")
+    .from("campus_load_evaluation")
     .insert({
-      campus_proposal_id: campusProposalId,
+      campus_load_id: campusLoadId,
       step,
       evaluator_user_id: currentUser.id,
       designation_id: matchingDesignation.id,
@@ -124,14 +124,14 @@ export const submitCampusProposalEvaluationAction = async (
     });
 
   if (insertError) {
-    console.error("proposal.submitCampusProposalEvaluation.insert ::", insertError);
+    console.error("loadProposal.submitCampusLoadEvaluation.insert ::", insertError);
     return;
   }
 
-  revalidateProposalCollectionsByTerm(campusProposal.academic_term_id);
+  revalidateProposalCollectionsByTerm(campusLoad.academic_term_id);
   revalidateUniversityCampusWorkspace(
-    campusProposal.academic_term_id,
-    campusProposal.campus_id,
+    campusLoad.academic_term_id,
+    campusLoad.campus_id,
   );
 };
 
@@ -148,7 +148,7 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
 
   const supabase = await createClient();
   const { data: proposals, error: proposalFetchError } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .select("id, user_id, campus_id, academic_term_id, lifecycle_status")
     .in("id", proposalIds)
     .eq("academic_term_id", academicTermId);
@@ -174,7 +174,7 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
   if (!campusDirectorDesignation) return;
 
   const { error: invalidateProposalsError } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .update({
       lifecycle_status: "INVALIDATED",
       invalidated_reason: "MANUAL_CAMPUS_DIRECTOR_INVALIDATION",
@@ -184,14 +184,14 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
 
   if (invalidateProposalsError) {
     console.error(
-      "proposal.invalidateIndividualProposals.proposals ::",
+      "loadProposal.invalidateIndividualProposals.proposals ::",
       invalidateProposalsError,
     );
     return;
   }
 
   const { error: invalidateCampusError } = await supabase
-    .from("campus_proposal")
+    .from("campus_load")
     .update({
       lifecycle_status: "INVALIDATED",
       invalidated_reason: "INDIVIDUAL_PROPOSAL_INVALIDATED",
@@ -202,7 +202,7 @@ export const invalidateIndividualProposalsAction = async (formData: FormData) =>
 
   if (invalidateCampusError) {
     console.error(
-      "proposal.invalidateIndividualProposals.campusProposal ::",
+      "loadProposal.invalidateIndividualProposals.campusLoad ::",
       invalidateCampusError,
     );
   }

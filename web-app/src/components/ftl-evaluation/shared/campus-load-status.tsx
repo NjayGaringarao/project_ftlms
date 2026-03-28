@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CampusProposal, CampusProposalEvaluation } from "@/models";
-import { deriveCampusProposalLadderState } from "@/lib/proposal/ladder";
+import type { CampusLoad, CampusLoadEvaluation } from "@/models";
+import { deriveCampusLoadLadderState } from "@/lib/load-proposal/ladder";
 import type {
   CampusLoadEvaluationControl,
   CampusLoadStatusControl,
@@ -9,14 +9,14 @@ import CampusLoadStatusSummary from "@/components/ftl-evaluation/shared/campus-l
 import CampusLoadLadderGrid from "@/components/ftl-evaluation/shared/campus-load-ladder-grid";
 
 type CampusLoadStatusProps = {
-  campusProposal: CampusProposal | null;
-  evaluations: CampusProposalEvaluation[];
+  campusLoad: CampusLoad | null;
+  evaluations: CampusLoadEvaluation[];
   control?: CampusLoadStatusControl;
   evaluationControl?: CampusLoadEvaluationControl;
 };
 
 const CampusLoadStatus = ({
-  campusProposal,
+  campusLoad,
   evaluations,
   control,
   evaluationControl,
@@ -24,13 +24,13 @@ const CampusLoadStatus = ({
   const {
     diEvaluation,
     vpaaEvaluation,
-    hasRenderableCampusProposal,
+    hasRenderableCampusLoad,
     showDiCard,
     showVpaaCard,
     canEvaluateAsDi,
     canEvaluateAsVpaa,
-  } = deriveCampusProposalLadderState({
-    campusProposal,
+  } = deriveCampusLoadLadderState({
+    campusLoad,
     evaluations,
     hasDiDesignation: evaluationControl?.hasDiDesignation,
     hasVpaaDesignation: evaluationControl?.hasVpaaDesignation,
@@ -42,10 +42,10 @@ const CampusLoadStatus = ({
         <CardTitle className="text-base">Campus Load Proposal Status</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <CampusLoadStatusSummary campusProposal={campusProposal} control={control} />
-        {hasRenderableCampusProposal && campusProposal ? (
+        <CampusLoadStatusSummary campusLoad={campusLoad} control={control} />
+        {hasRenderableCampusLoad && campusLoad ? (
           <CampusLoadLadderGrid
-            campusProposal={campusProposal}
+            campusLoad={campusLoad}
             diEvaluation={diEvaluation}
             vpaaEvaluation={vpaaEvaluation}
             showDiCard={showDiCard}

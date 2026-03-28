@@ -1,5 +1,5 @@
 -- =========================================================
--- CORE SCHEMA (PART 2/5): PROGRAMS
+-- CORE SCHEMA (PART 2/6): PROGRAMS
 -- Description:
 --   Defines academic structures built on foundational entities.
 --   Depends on: public.college.

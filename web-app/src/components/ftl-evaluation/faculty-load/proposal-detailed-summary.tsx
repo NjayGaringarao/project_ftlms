@@ -1,27 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FieldView from "@/components/ui/field-view";
 import type { UserOverviewReadModel } from "@/lib/user-overview/types";
-import type { Proposal, ProposalLifecycleStatus } from "@/models";
+import type { FacultyLoadProposal } from "@/models";
 import { formatDateTime } from "@/utils/time";
 
 type ProposalDetailedSummaryProps = {
   overview: UserOverviewReadModel;
   academicTermCode: string;
-  proposal: Proposal | null;
-};
-
-const lifecycleLabel: Record<ProposalLifecycleStatus, string> = {
-  ACTIVE: "Active",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-  INVALIDATED: "Invalidated",
-};
-
-const lifecycleStyle: Record<ProposalLifecycleStatus, string> = {
-  ACTIVE: "bg-amber-100 text-amber-800 border-amber-200",
-  APPROVED: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  REJECTED: "bg-rose-100 text-rose-800 border-rose-200",
-  INVALIDATED: "bg-slate-100 text-slate-800 border-slate-200",
+  proposal: FacultyLoadProposal | null;
 };
 
 const toFixed = (value: number | string | null) => {

@@ -526,7 +526,7 @@ export const getSchedulerMapperMatrices = async (
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("rpc_get_scheduler_matrices", {
+  const { data, error } = await supabase.rpc("get_scheduler_matrices", {
     academic_term_id: academicTermId,
     block_id: context.blockId ?? null,
     faculty_id: context.facultyId ?? null,

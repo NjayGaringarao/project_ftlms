@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { CampusEtlAtlFacultyMetric } from "@/lib/proposal/read-models";
-import { computeCampusLoadDistribution } from "@/lib/proposal/derivations";
+import type { CampusEtlAtlFacultyMetric } from "@/lib/load-proposal/read-models";
+import { computeCampusLoadDistribution } from "@/lib/load-proposal/derivations";
 import { Card, CardContent } from "@/components/ui/card";
 import CampusLoadInsightsHeader, {
   type CampusLoadInsightsFilterMode,

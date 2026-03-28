@@ -2,7 +2,7 @@ import ConcurrentLoadSummary from "@/components/faculty-teaching-load/concurrent
 import FacultyLoadStatus from "@/components/faculty-teaching-load/faculty-load-status";
 import { FacultyScheduleCard } from "@/components/schedule/faculty/faculty-load-schedule-cards";
 import { getTermById } from "@/lib/admin/terms";
-import { buildFacultyLoadSnapshot } from "@/lib/proposal/snapshot";
+import { buildFacultyLoadSnapshot } from "@/lib/load-proposal/snapshot";
 import { getFacultyScheduleTermSnapshot } from "@/lib/schedule/faculty-schedule";
 import { getUserDataById } from "@/lib/user-data/queries";
 import { redirect } from "next/navigation";

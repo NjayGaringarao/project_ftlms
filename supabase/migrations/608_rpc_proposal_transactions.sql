@@ -1,4 +1,4 @@
-create or replace function public.create_individual_proposal(
+create or replace function public.create_faculty_load_proposal(
   p_user_id uuid,
   p_campus_id uuid,
   p_academic_term_id uuid,
@@ -26,11 +26,11 @@ set search_path = public, auth
 as $$
 declare
   v_latest_status public.proposal_lifecycle_enum;
-  v_inserted_proposal_id uuid;
+  v_inserted_faculty_load_proposal_id uuid;
 begin
   select p.lifecycle_status
   into v_latest_status
-  from public.proposal p
+  from public.faculty_load_proposal p
   where p.user_id = p_user_id
     and p.academic_term_id = p_academic_term_id
   order by p.created_at desc
@@ -41,7 +41,7 @@ begin
      and v_latest_status <> 'INVALIDATED' then
     return jsonb_build_object(
       'success', false,
-      'proposal_id', null,
+      'faculty_load_proposal_id', null,
       'campus_id', p_campus_id,
       'reason', 'INELIGIBLE_LATEST_STATUS'
     );
@@ -49,21 +49,21 @@ begin
 
   if p_require_latest_no_or_invalidated and exists (
     select 1
-    from public.proposal p
+    from public.faculty_load_proposal p
     where p.user_id = p_user_id
       and p.academic_term_id = p_academic_term_id
       and p.lifecycle_status in ('ACTIVE', 'APPROVED')
   ) then
     return jsonb_build_object(
       'success', false,
-      'proposal_id', null,
+      'faculty_load_proposal_id', null,
       'campus_id', p_campus_id,
       'reason', 'CURRENT_PROPOSAL_EXISTS'
     );
   end if;
 
   if p_invalidate_current_active_approved then
-    update public.proposal p
+    update public.faculty_load_proposal p
     set lifecycle_status = 'INVALIDATED',
         invalidated_reason = 'RECREATED_BY_NEW_PROPOSAL',
         updated_at = now()
@@ -74,20 +74,20 @@ begin
 
   if exists (
     select 1
-    from public.proposal p
+    from public.faculty_load_proposal p
     where p.user_id = p_user_id
       and p.academic_term_id = p_academic_term_id
       and p.lifecycle_status in ('ACTIVE', 'APPROVED')
   ) then
     return jsonb_build_object(
       'success', false,
-      'proposal_id', null,
+      'faculty_load_proposal_id', null,
       'campus_id', p_campus_id,
       'reason', 'CURRENT_PROPOSAL_EXISTS'
     );
   end if;
 
-  insert into public.proposal (
+  insert into public.faculty_load_proposal (
     user_id,
     campus_id,
     academic_term_id,
@@ -128,9 +128,9 @@ begin
     p_created_by_user_id,
     p_created_by_designation_id
   )
-  returning id into v_inserted_proposal_id;
+  returning id into v_inserted_faculty_load_proposal_id;
 
-  update public.campus_proposal cp
+  update public.campus_load cp
   set lifecycle_status = 'INVALIDATED',
       invalidated_reason = 'INDIVIDUAL_PROPOSAL_CREATED',
       updated_at = now()
@@ -140,14 +140,14 @@ begin
 
   return jsonb_build_object(
     'success', true,
-    'proposal_id', v_inserted_proposal_id,
+    'faculty_load_proposal_id', v_inserted_faculty_load_proposal_id,
     'campus_id', p_campus_id,
     'reason', null
   );
 end;
 $$;
 
-create or replace function public.create_campus_proposal(
+create or replace function public.create_campus_load_proposal(
   p_campus_id uuid,
   p_academic_term_id uuid,
   p_created_by_user_id uuid,
@@ -161,11 +161,11 @@ as $$
 declare
   v_has_active boolean;
   v_approved_count integer;
-  v_campus_proposal_id uuid;
+  v_campus_load_id uuid;
 begin
   select exists (
     select 1
-    from public.proposal p
+    from public.faculty_load_proposal p
     where p.campus_id = p_campus_id
       and p.academic_term_id = p_academic_term_id
       and p.lifecycle_status = 'ACTIVE'
@@ -174,7 +174,7 @@ begin
   if v_has_active then
     return jsonb_build_object(
       'success', false,
-      'campus_proposal_id', null,
+      'campus_load_id', null,
       'campus_id', p_campus_id,
       'reason', 'HAS_ACTIVE_INDIVIDUALS'
     );
@@ -182,7 +182,7 @@ begin
 
   select count(*)
   into v_approved_count
-  from public.proposal p
+  from public.faculty_load_proposal p
   where p.campus_id = p_campus_id
     and p.academic_term_id = p_academic_term_id
     and p.lifecycle_status = 'APPROVED';
@@ -190,13 +190,13 @@ begin
   if coalesce(v_approved_count, 0) = 0 then
     return jsonb_build_object(
       'success', false,
-      'campus_proposal_id', null,
+      'campus_load_id', null,
       'campus_id', p_campus_id,
       'reason', 'NO_APPROVED_INDIVIDUALS'
     );
   end if;
 
-  update public.campus_proposal cp
+  update public.campus_load cp
   set lifecycle_status = 'INVALIDATED',
       invalidated_reason = 'RECREATED_BY_CAMPUS_DIRECTOR',
       updated_at = now()
@@ -204,7 +204,7 @@ begin
     and cp.academic_term_id = p_academic_term_id
     and cp.lifecycle_status in ('ACTIVE', 'APPROVED');
 
-  insert into public.campus_proposal (
+  insert into public.campus_load (
     campus_id,
     academic_term_id,
     lifecycle_status,
@@ -219,12 +219,12 @@ begin
     p_created_by_user_id,
     p_created_by_designation_id
   )
-  returning id into v_campus_proposal_id;
+  returning id into v_campus_load_id;
 
-  insert into public.campus_proposal_member (
-    campus_proposal_id,
-    source_proposal_id,
-    proposal_user_id,
+  insert into public.campus_load_member (
+    campus_load_id,
+    source_faculty_load_proposal_id,
+    faculty_user_id,
     employment_status,
     academic_rank,
     bachelors_degree,
@@ -237,11 +237,11 @@ begin
     preparation_count,
     actual_teaching_load,
     advisory_class,
-    source_proposal_lifecycle_status,
-    source_proposal_created_at
+    source_faculty_load_proposal_lifecycle_status,
+    source_faculty_load_proposal_created_at
   )
   select
-    v_campus_proposal_id,
+    v_campus_load_id,
     p.id,
     p.user_id,
     p.employment_status,
@@ -258,14 +258,14 @@ begin
     p.advisory_class,
     p.lifecycle_status,
     p.created_at
-  from public.proposal p
+  from public.faculty_load_proposal p
   where p.campus_id = p_campus_id
     and p.academic_term_id = p_academic_term_id
     and p.lifecycle_status = 'APPROVED';
 
   return jsonb_build_object(
     'success', true,
-    'campus_proposal_id', v_campus_proposal_id,
+    'campus_load_id', v_campus_load_id,
     'campus_id', p_campus_id,
     'reason', null
   );

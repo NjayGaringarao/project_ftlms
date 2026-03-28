@@ -4,26 +4,26 @@ import { useState } from "react";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RejectionCommentDialog from "@/components/ftl-evaluation/faculty-load/rejection-comment-dialog";
-import { submitCampusProposalEvaluationAction } from "@/lib/proposal/actions";
-import type { CampusProposalStep } from "@/models";
+import { submitCampusLoadEvaluationAction } from "@/lib/load-proposal/actions";
+import type { CampusLoadStep } from "@/models";
 
-type CampusProposalStepActionProps = {
-  campusProposalId: string;
-  step: CampusProposalStep;
+type CampusLoadStepActionProps = {
+  campusLoadId: string;
+  step: CampusLoadStep;
   rejectTitle: string;
   rejectDescription: string;
 };
 
-const CampusProposalStepAction = ({
-  campusProposalId,
+const CampusLoadStepAction = ({
+  campusLoadId,
   step,
   rejectTitle,
   rejectDescription,
-}: CampusProposalStepActionProps) => {
+}: CampusLoadStepActionProps) => {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
 
   const handleRejectSubmit = async (formData: FormData) => {
-    await submitCampusProposalEvaluationAction(formData);
+    await submitCampusLoadEvaluationAction(formData);
     setIsRejectDialogOpen(false);
   };
 
@@ -39,8 +39,8 @@ const CampusProposalStepAction = ({
           <X className="h-4 w-4" />
           Reject
         </Button>
-        <form action={submitCampusProposalEvaluationAction}>
-          <input type="hidden" name="campusProposalId" value={campusProposalId} />
+        <form action={submitCampusLoadEvaluationAction}>
+          <input type="hidden" name="campusLoadId" value={campusLoadId} />
           <input type="hidden" name="step" value={step} />
           <input type="hidden" name="status" value="APPROVED" />
           <Button type="submit" size="sm">
@@ -57,7 +57,7 @@ const CampusProposalStepAction = ({
         description={rejectDescription}
         action={handleRejectSubmit}
         hiddenFields={[
-          { name: "campusProposalId", value: campusProposalId },
+          { name: "campusLoadId", value: campusLoadId },
           { name: "step", value: step },
           { name: "status", value: "REJECTED" },
         ]}
@@ -69,4 +69,4 @@ const CampusProposalStepAction = ({
   );
 };
 
-export default CampusProposalStepAction;
+export default CampusLoadStepAction;

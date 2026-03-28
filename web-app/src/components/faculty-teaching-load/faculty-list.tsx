@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
 import ProposalStatusFilterChips from "@/components/ui/proposal-status-filter-chips";
-import { useProposalListController } from "@/components/proposal/list/use-proposal-list-controller";
-import { submitBulkCreateProposalAction } from "@/lib/proposal/actions";
-import type { FacultyProposalListItem } from "@/lib/proposal/types";
+import { useLoadProposalListController } from "@/components/load-proposal/list/use-load-proposal-list-controller";
+import { submitBulkCreateProposalAction } from "@/lib/load-proposal/actions";
+import type { FacultyProposalListItem } from "@/lib/load-proposal/types";
 
 type FacultyListProps = {
   facultyList: FacultyProposalListItem[];
@@ -49,7 +49,7 @@ export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) =
     onItemClick,
     onItemPointerDown,
     selectAllFiltered,
-  } = useProposalListController({
+  } = useLoadProposalListController({
     items: facultyList,
     defaultStatus: "NO_PROPOSAL",
     isSelectable: isBulkCreateEligible,

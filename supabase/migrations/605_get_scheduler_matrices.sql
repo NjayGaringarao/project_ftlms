@@ -1,4 +1,4 @@
-create or replace function public.rpc_get_scheduler_matrices(
+create or replace function public.get_scheduler_matrices(
   academic_term_id uuid,
   block_id uuid default null,
   faculty_id uuid default null,

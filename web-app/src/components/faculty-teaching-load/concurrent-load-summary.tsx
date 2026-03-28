@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FieldView from "@/components/ui/field-view";
 import type { UserDataReadModel } from "@/lib/user-data/types";
-import type { FacultyLoadSnapshot } from "@/lib/proposal/snapshot";
+import type { FacultyLoadSnapshot } from "@/lib/load-proposal/snapshot";
 
 type ConcurrentLoadSummaryProps = {
   userData: UserDataReadModel;

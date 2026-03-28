@@ -49,7 +49,7 @@ Migrations are executed in alphabetical order. Files are organized by prefix:
 | ------ | ----------- | --------------------------------------------------- |
 | `000_` | Extensions  | PostgreSQL extensions (pgcrypto, btree_gist)        |
 | `1xx_` | Enums       | Custom enum types                                   |
-| `2xx_` | Core Schema | Dependency-ordered table definitions (5-part split) |
+| `2xx_` | Core Schema | Dependency-ordered table definitions (6-part split) |
 | `3xx_` | Constraints | Unique, check, and exclusion constraints            |
 | `400_` | RLS         | Row Level Security policies                         |
 | `5xx_` | Triggers    | Database triggers and functions                     |
@@ -74,6 +74,7 @@ migrations/
 - 202_schema_offerings_availability.sql
 - 203_schema_user_domain.sql
 - 204_schema_faculty_operations.sql
+- 205_schema_load_evaluations.sql
 - 300_constraints_unique.sql
 - 301_constraints_check.sql
 - 302_constraints_academic_term.sql
@@ -100,10 +101,30 @@ migrations/
 - 516_trigger_proposal_workflow.sql
 - 600_rpc_is_admin_exists.sql
 - 602_rpc_get_user_roles.sql
-- 605_rpc_get_scheduler_matrices.sql
+- 605_get_scheduler_matrices.sql
 - 607_rpc_get_user_data.sql
 - 608_rpc_proposal_transactions.sql
 ```
+
+### Core Schema Ownership (2xx)
+
+- `200_schema_core.sql`
+  - Foundational entities used by all later schema parts.
+
+- `201_schema_programs_curriculum.sql`
+  - Program and major structures.
+
+- `202_schema_offerings_availability.sql`
+  - Program/major offerings and term-scoped blocks.
+
+- `203_schema_user_domain.sql`
+  - User profile, identity, degree, and designation entities.
+
+- `204_schema_faculty_operations.sql`
+  - Class/session operations (`class`, `course_utilization`, `user_class`, `session`, `session_class`).
+
+- `205_schema_load_evaluations.sql`
+  - Load proposal/evaluation entities (`faculty_load_proposal`, `campus_load`, `campus_load_member`, `faculty_load_evaluation`, `campus_load_evaluation`).
 
 ### Constraint Ownership (3xx)
 
@@ -131,7 +152,7 @@ migrations/
 
 - `306_constraints_evaluation.sql`
   - Proposal lifecycle and evaluation workflow constraints.
-  - Canonical owner of: `proposal_current_user_term_unique`, `campus_proposal_current_campus_term_unique`, `individual_proposal_evaluation_step_unique`, `campus_proposal_evaluation_step_unique`.
+  - Canonical owner of: `faculty_load_proposal_current_user_term_unique`, `campus_load_current_campus_term_unique`, `faculty_load_evaluation_step_unique`, `campus_load_evaluation_step_unique`.
 
 - `503_triggers_designation_uniqueness.sql`
   - Designation uniqueness enforcement logic (trigger/function), complementary to `305` checks.
@@ -146,7 +167,7 @@ migrations/
 
 - `515_trigger_proposal_invalidation.sql`
   - Canonical owner of:
-    - `invalidate_current_campus_proposals`
+    - `invalidate_current_campus_loads`
     - `invalidate_current_proposals_for_user`
     - `invalidate_current_proposals_for_user_term`
     - `invalidate_current_proposals_for_user_class`
@@ -154,23 +175,23 @@ migrations/
     - `trg_invalidate_proposals_on_user_class`
     - `trg_invalidate_proposals_on_course_units`
     - `trg_invalidate_proposals_on_course_utilization`
-    - `trg_invalidate_campus_proposal_on_proposal_change`
+    - `trg_invalidate_campus_load_on_faculty_load_proposal_change`
   - Scope: proposal invalidation propagation from load/scope/lifecycle changes.
 
 - `516_trigger_proposal_workflow.sql`
   - Canonical owner of:
-    - `trg_validate_campus_proposal_creation`
-    - `trg_validate_campus_proposal_member`
-    - `trg_validate_individual_proposal_evaluation`
-    - `trg_apply_individual_proposal_evaluation`
-    - `trg_validate_campus_proposal_evaluation`
-    - `trg_apply_campus_proposal_evaluation`
+    - `trg_validate_campus_load_creation`
+    - `trg_validate_campus_load_member`
+    - `trg_validate_faculty_load_evaluation`
+    - `trg_apply_faculty_load_evaluation`
+    - `trg_validate_campus_load_evaluation`
+    - `trg_apply_campus_load_evaluation`
   - Scope: proposal workflow validation and evaluation transitions.
 
 
 ## Regression Harness (Development)
 
-- `tests/campus_proposal_invalidation_regression.sql`
+- `tests/campus_load_invalidation_regression.sql`
   - Verifies trigger-driven campus proposal invalidation for:
     - individual proposal insert as `ACTIVE`
     - lifecycle transitions to `INVALIDATED` or `REJECTED`

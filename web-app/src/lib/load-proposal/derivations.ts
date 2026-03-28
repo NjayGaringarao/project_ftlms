@@ -1,10 +1,10 @@
-import type { ProposalStatusFilter } from "@/lib/proposal/types";
+import type { ProposalStatusFilter } from "@/lib/load-proposal/types";
 import type {
   CampusEtlAtlFacultyMetric,
   CampusLoadBand,
   CampusLoadDistribution,
   ProposalLifecycleLike,
-} from "@/lib/proposal/read-models";
+} from "@/lib/load-proposal/read-models";
 
 export const toProposalFilterStatus = (
   lifecycleStatus: ProposalLifecycleLike,

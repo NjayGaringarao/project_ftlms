@@ -1,5 +1,5 @@
 -- =========================================================
--- CORE SCHEMA (PART 4/5): USER DOMAIN
+-- CORE SCHEMA (PART 4/6): USER DOMAIN
 -- Description:
 --   Defines user profile, identity, degree, and designation entities.
 --   Depends on: key entities and offerings/availability entities.

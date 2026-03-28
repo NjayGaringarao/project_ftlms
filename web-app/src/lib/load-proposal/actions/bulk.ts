@@ -11,12 +11,12 @@ import {
   parseProposalIds,
   resolveCreatorDesignationId,
   toCampusDirectorDesignationByCampus,
-} from "@/lib/proposal/actions/helpers";
+} from "@/lib/load-proposal/actions/helpers";
 import {
   revalidateFacultyProposalWorkspace,
   revalidateProposalCollectionsByTerm,
   revalidateUniversityCampusWorkspace,
-} from "@/lib/proposal/actions/revalidation";
+} from "@/lib/load-proposal/actions/revalidation";
 
 export const submitBulkEvaluationAction = async (
   formData: FormData,
@@ -55,7 +55,7 @@ export const submitBulkEvaluationAction = async (
 
   const supabase = await createClient();
   const { data: proposals, error: proposalsError } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .select("id, user_id, campus_id, academic_term_id, lifecycle_status")
     .in("id", proposalIds)
     .eq("academic_term_id", academicTermId);
@@ -77,17 +77,17 @@ export const submitBulkEvaluationAction = async (
 
   const { data: existingEvaluations, error: existingEvaluationError } =
     await supabase
-      .from("individual_proposal_evaluation")
-      .select("proposal_id")
+      .from("faculty_load_evaluation")
+      .select("faculty_load_proposal_id")
       .in(
-        "proposal_id",
+        "faculty_load_proposal_id",
         candidateProposals.map((proposal) => proposal.id),
       )
       .eq("step", "CAMPUS_DIRECTOR");
 
   if (existingEvaluationError) {
     console.error(
-      "proposal.submitBulkEvaluation.existingEvaluations ::",
+      "loadProposal.submitBulkEvaluation.existingEvaluations ::",
       existingEvaluationError,
     );
     return { success: false, processed: 0 };
@@ -95,7 +95,7 @@ export const submitBulkEvaluationAction = async (
 
   const evaluatedProposalIds = new Set(
     (existingEvaluations ?? [])
-      .map((row) => row.proposal_id)
+      .map((row) => row.faculty_load_proposal_id)
       .filter((value): value is string => typeof value === "string"),
   );
 
@@ -118,9 +118,9 @@ export const submitBulkEvaluationAction = async (
     if (!designationId) continue;
 
     const { error: insertError } = await supabase
-      .from("individual_proposal_evaluation")
+      .from("faculty_load_evaluation")
       .insert({
-        proposal_id: proposal.id,
+        faculty_load_proposal_id: proposal.id,
         step: "CAMPUS_DIRECTOR",
         evaluator_user_id: currentUser.id,
         designation_id: designationId,
@@ -129,7 +129,7 @@ export const submitBulkEvaluationAction = async (
       });
 
     if (insertError) {
-      console.error("proposal.submitBulkEvaluation.insert ::", {
+      console.error("loadProposal.submitBulkEvaluation.insert ::", {
         proposalId: proposal.id,
         error: insertError,
       });

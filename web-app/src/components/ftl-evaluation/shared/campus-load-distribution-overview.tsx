@@ -7,7 +7,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import type { CampusLoadDistribution } from "@/lib/proposal/read-models";
+import type { CampusLoadDistribution } from "@/lib/load-proposal/read-models";
 
 const PIE_COLORS = {
   OVERLOAD: "var(--color-red-400)",

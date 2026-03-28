@@ -1,11 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { getUserDataById } from "@/lib/user-data/queries";
-import { buildFacultyLoadSnapshot } from "@/lib/proposal/snapshot";
+import { buildFacultyLoadSnapshot } from "@/lib/load-proposal/snapshot";
 
 type RawRpcResult = {
   success?: boolean;
-  proposal_id?: string | null;
-  campus_proposal_id?: string | null;
+  faculty_load_proposal_id?: string | null;
+  campus_load_id?: string | null;
   campus_id?: string | null;
   reason?: string | null;
 };
@@ -16,14 +16,14 @@ export type CreateIndividualProposalMode =
 
 export type CreateIndividualProposalResult = {
   success: boolean;
-  proposalId: string | null;
+  facultyLoadProposalId: string | null;
   campusId: string | null;
   reason: string | null;
 };
 
-export type CreateCampusProposalResult = {
+export type CreateCampusLoadResult = {
   success: boolean;
-  campusProposalId: string | null;
+  campusLoadId: string | null;
   campusId: string | null;
   reason: string | null;
 };
@@ -119,7 +119,7 @@ export const createIndividualProposalViaRpc = async ({
   if (!userData) {
     return {
       success: false,
-      proposalId: null,
+      facultyLoadProposalId: null,
       campusId: null,
       reason: "FACULTY_NOT_FOUND",
     };
@@ -128,7 +128,7 @@ export const createIndividualProposalViaRpc = async ({
   if (!userData.campus_id) {
     return {
       success: false,
-      proposalId: null,
+      facultyLoadProposalId: null,
       campusId: null,
       reason: "FACULTY_CAMPUS_MISSING",
     };
@@ -136,7 +136,7 @@ export const createIndividualProposalViaRpc = async ({
 
   const snapshot = buildFacultyLoadSnapshot(userData);
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_individual_proposal", {
+  const { data, error } = await supabase.rpc("create_faculty_load_proposal", {
     p_user_id: facultyId,
     p_campus_id: userData.campus_id,
     p_academic_term_id: academicTermId,
@@ -160,10 +160,10 @@ export const createIndividualProposalViaRpc = async ({
   });
 
   if (error) {
-    console.error("proposal.createIndividualProposalViaRpc ::", error);
+    console.error("loadProposal.createIndividualProposalViaRpc ::", error);
     return {
       success: false,
-      proposalId: null,
+      facultyLoadProposalId: null,
       campusId: userData.campus_id,
       reason: "RPC_ERROR",
     };
@@ -172,13 +172,13 @@ export const createIndividualProposalViaRpc = async ({
   const parsed = parseRpcResult(data);
   return {
     success: parsed.success === true,
-    proposalId: parsed.proposal_id ?? null,
+    facultyLoadProposalId: parsed.faculty_load_proposal_id ?? null,
     campusId: parsed.campus_id ?? userData.campus_id,
     reason: parsed.reason ?? null,
   };
 };
 
-export const createCampusProposalViaRpc = async ({
+export const createCampusLoadViaRpc = async ({
   academicTermId,
   campusId,
   createdByUserId,
@@ -188,9 +188,9 @@ export const createCampusProposalViaRpc = async ({
   campusId: string;
   createdByUserId: string;
   createdByDesignationId: string | null;
-}): Promise<CreateCampusProposalResult> => {
+}): Promise<CreateCampusLoadResult> => {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_campus_proposal", {
+  const { data, error } = await supabase.rpc("create_campus_load_proposal", {
     p_campus_id: campusId,
     p_academic_term_id: academicTermId,
     p_created_by_user_id: createdByUserId,
@@ -198,10 +198,10 @@ export const createCampusProposalViaRpc = async ({
   });
 
   if (error) {
-    console.error("proposal.createCampusProposalViaRpc ::", error);
+    console.error("loadProposal.createCampusLoadViaRpc ::", error);
     return {
       success: false,
-      campusProposalId: null,
+      campusLoadId: null,
       campusId,
       reason: "RPC_ERROR",
     };
@@ -210,7 +210,7 @@ export const createCampusProposalViaRpc = async ({
   const parsed = parseRpcResult(data);
   return {
     success: parsed.success === true,
-    campusProposalId: parsed.campus_proposal_id ?? null,
+    campusLoadId: parsed.campus_load_id ?? null,
     campusId: parsed.campus_id ?? campusId,
     reason: parsed.reason ?? null,
   };

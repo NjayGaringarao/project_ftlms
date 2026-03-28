@@ -1,28 +1,28 @@
-import type { CampusProposal, CampusProposalEvaluation } from "@/models";
+import type { CampusLoad, CampusLoadEvaluation } from "@/models";
 
 type DeriveCampusLadderStateArgs = {
-  campusProposal: CampusProposal | null;
-  evaluations: CampusProposalEvaluation[];
+  campusLoad: CampusLoad | null;
+  evaluations: CampusLoadEvaluation[];
   hasDiDesignation?: boolean;
   hasVpaaDesignation?: boolean;
 };
 
-export type CampusProposalLadderState = {
-  diEvaluation: CampusProposalEvaluation | null;
-  vpaaEvaluation: CampusProposalEvaluation | null;
-  hasRenderableCampusProposal: boolean;
+export type CampusLoadLadderState = {
+  diEvaluation: CampusLoadEvaluation | null;
+  vpaaEvaluation: CampusLoadEvaluation | null;
+  hasRenderableCampusLoad: boolean;
   showDiCard: boolean;
   showVpaaCard: boolean;
   canEvaluateAsDi: boolean;
   canEvaluateAsVpaa: boolean;
 };
 
-export const deriveCampusProposalLadderState = ({
-  campusProposal,
+export const deriveCampusLoadLadderState = ({
+  campusLoad,
   evaluations,
   hasDiDesignation = false,
   hasVpaaDesignation = false,
-}: DeriveCampusLadderStateArgs): CampusProposalLadderState => {
+}: DeriveCampusLadderStateArgs): CampusLoadLadderState => {
   const diEvaluation =
     evaluations.find(
       (evaluation) => evaluation.step === "DIRECTOR_FOR_INSTRUCTION",
@@ -32,22 +32,22 @@ export const deriveCampusProposalLadderState = ({
       (evaluation) => evaluation.step === "VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS",
     ) ?? null;
 
-  const hasRenderableCampusProposal =
-    !!campusProposal && campusProposal.lifecycle_status !== "INVALIDATED";
-  const showDiCard = hasRenderableCampusProposal;
+  const hasRenderableCampusLoad =
+    !!campusLoad && campusLoad.lifecycle_status !== "INVALIDATED";
+  const showDiCard = hasRenderableCampusLoad;
   const showVpaaCard =
-    hasRenderableCampusProposal &&
+    hasRenderableCampusLoad &&
     (diEvaluation?.status === "APPROVED" || !!vpaaEvaluation);
 
   const canEvaluateAsDi =
-    !!campusProposal &&
-    campusProposal.lifecycle_status === "ACTIVE" &&
+    !!campusLoad &&
+    campusLoad.lifecycle_status === "ACTIVE" &&
     !diEvaluation &&
     hasDiDesignation;
 
   const canEvaluateAsVpaa =
-    !!campusProposal &&
-    campusProposal.lifecycle_status === "ACTIVE" &&
+    !!campusLoad &&
+    campusLoad.lifecycle_status === "ACTIVE" &&
     diEvaluation?.status === "APPROVED" &&
     !vpaaEvaluation &&
     hasVpaaDesignation;
@@ -55,7 +55,7 @@ export const deriveCampusProposalLadderState = ({
   return {
     diEvaluation,
     vpaaEvaluation,
-    hasRenderableCampusProposal,
+    hasRenderableCampusLoad,
     showDiCard,
     showVpaaCard,
     canEvaluateAsDi,

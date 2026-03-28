@@ -2,7 +2,7 @@
 -- TRIGGERS: Proposal workflow validation and evaluation
 -- =========================================================
 
-create or replace function public.trg_validate_campus_proposal_creation()
+create or replace function public.trg_validate_campus_load_creation()
 returns trigger
 language plpgsql
 as $$
@@ -37,14 +37,14 @@ begin
 end;
 $$;
 
-drop trigger if exists validate_campus_proposal_creation
-on public.campus_proposal;
+drop trigger if exists validate_campus_load_creation
+on public.campus_load;
 
-create trigger validate_campus_proposal_creation
-before insert on public.campus_proposal
-for each row execute function public.trg_validate_campus_proposal_creation();
+create trigger validate_campus_load_creation
+before insert on public.campus_load
+for each row execute function public.trg_validate_campus_load_creation();
 
-create or replace function public.trg_validate_campus_proposal_member()
+create or replace function public.trg_validate_campus_load_member()
 returns trigger
 language plpgsql
 as $$
@@ -57,8 +57,8 @@ declare
 begin
   select cp.campus_id, cp.academic_term_id
   into v_campus_id, v_term_id
-  from public.campus_proposal cp
-  where cp.id = new.campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = new.campus_load_id;
 
   if v_campus_id is null then
     raise exception 'Campus proposal does not exist.';
@@ -66,8 +66,8 @@ begin
 
   select p.campus_id, p.academic_term_id, p.lifecycle_status
   into v_source_campus_id, v_source_term_id, v_source_status
-  from public.proposal p
-  where p.id = new.source_proposal_id;
+  from public.faculty_load_proposal p
+  where p.id = new.source_faculty_load_proposal_id;
 
   if v_source_campus_id is null then
     raise exception 'Source proposal does not exist.';
@@ -86,14 +86,14 @@ begin
 end;
 $$;
 
-drop trigger if exists validate_campus_proposal_member
-on public.campus_proposal_member;
+drop trigger if exists validate_campus_load_member
+on public.campus_load_member;
 
-create trigger validate_campus_proposal_member
-before insert on public.campus_proposal_member
-for each row execute function public.trg_validate_campus_proposal_member();
+create trigger validate_campus_load_member
+before insert on public.campus_load_member
+for each row execute function public.trg_validate_campus_load_member();
 
-create or replace function public.trg_validate_individual_proposal_evaluation()
+create or replace function public.trg_validate_faculty_load_evaluation()
 returns trigger
 language plpgsql
 as $$
@@ -105,8 +105,8 @@ declare
 begin
   select p.lifecycle_status, p.campus_id
   into v_lifecycle_status, v_proposal_campus_id
-  from public.proposal p
-  where p.id = new.proposal_id;
+  from public.faculty_load_proposal p
+  where p.id = new.faculty_load_proposal_id;
 
   if v_lifecycle_status is null then
     raise exception 'Proposal does not exist.';
@@ -145,19 +145,19 @@ begin
 end;
 $$;
 
-drop trigger if exists validate_individual_proposal_evaluation
-on public.individual_proposal_evaluation;
+drop trigger if exists validate_faculty_load_evaluation
+on public.faculty_load_evaluation;
 
-create trigger validate_individual_proposal_evaluation
-before insert on public.individual_proposal_evaluation
-for each row execute function public.trg_validate_individual_proposal_evaluation();
+create trigger validate_faculty_load_evaluation
+before insert on public.faculty_load_evaluation
+for each row execute function public.trg_validate_faculty_load_evaluation();
 
-create or replace function public.trg_apply_individual_proposal_evaluation()
+create or replace function public.trg_apply_faculty_load_evaluation()
 returns trigger
 language plpgsql
 as $$
 begin
-  update public.proposal
+  update public.faculty_load_proposal
   set lifecycle_status = case
         when new.status = 'APPROVED'
           then 'APPROVED'::public.proposal_lifecycle_enum
@@ -165,20 +165,20 @@ begin
       end,
       invalidated_reason = null,
       updated_at = now()
-  where id = new.proposal_id;
+  where id = new.faculty_load_proposal_id;
 
   return null;
 end;
 $$;
 
-drop trigger if exists apply_individual_proposal_evaluation
-on public.individual_proposal_evaluation;
+drop trigger if exists apply_faculty_load_evaluation
+on public.faculty_load_evaluation;
 
-create trigger apply_individual_proposal_evaluation
-after insert on public.individual_proposal_evaluation
-for each row execute function public.trg_apply_individual_proposal_evaluation();
+create trigger apply_faculty_load_evaluation
+after insert on public.faculty_load_evaluation
+for each row execute function public.trg_apply_faculty_load_evaluation();
 
-create or replace function public.trg_validate_campus_proposal_evaluation()
+create or replace function public.trg_validate_campus_load_evaluation()
 returns trigger
 language plpgsql
 as $$
@@ -189,8 +189,8 @@ declare
 begin
   select cp.lifecycle_status
   into v_lifecycle_status
-  from public.campus_proposal cp
-  where cp.id = new.campus_proposal_id;
+  from public.campus_load cp
+  where cp.id = new.campus_load_id;
 
   if v_lifecycle_status is null then
     raise exception 'Campus proposal does not exist.';
@@ -230,8 +230,8 @@ begin
   if new.step = 'VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS' then
     select exists (
       select 1
-      from public.campus_proposal_evaluation cpe
-      where cpe.campus_proposal_id = new.campus_proposal_id
+      from public.campus_load_evaluation cpe
+      where cpe.campus_load_id = new.campus_load_id
         and cpe.step = 'DIRECTOR_FOR_INSTRUCTION'
         and cpe.status = 'APPROVED'
     ) into v_has_dfi_approval;
@@ -245,48 +245,48 @@ begin
 end;
 $$;
 
-drop trigger if exists validate_campus_proposal_evaluation
-on public.campus_proposal_evaluation;
+drop trigger if exists validate_campus_load_evaluation
+on public.campus_load_evaluation;
 
-create trigger validate_campus_proposal_evaluation
-before insert on public.campus_proposal_evaluation
-for each row execute function public.trg_validate_campus_proposal_evaluation();
+create trigger validate_campus_load_evaluation
+before insert on public.campus_load_evaluation
+for each row execute function public.trg_validate_campus_load_evaluation();
 
-create or replace function public.trg_apply_campus_proposal_evaluation()
+create or replace function public.trg_apply_campus_load_evaluation()
 returns trigger
 language plpgsql
 as $$
 begin
   if new.status = 'REJECTED' then
-    update public.campus_proposal
+    update public.campus_load
     set lifecycle_status = 'REJECTED',
         invalidated_reason = null,
         updated_at = now()
-    where id = new.campus_proposal_id;
+    where id = new.campus_load_id;
     return null;
   end if;
 
   if new.step = 'VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS'
      and new.status = 'APPROVED' then
-    update public.campus_proposal
+    update public.campus_load
     set lifecycle_status = 'APPROVED',
         invalidated_reason = null,
         updated_at = now()
-    where id = new.campus_proposal_id;
+    where id = new.campus_load_id;
     return null;
   end if;
 
-  update public.campus_proposal
+  update public.campus_load
   set updated_at = now()
-  where id = new.campus_proposal_id;
+  where id = new.campus_load_id;
 
   return null;
 end;
 $$;
 
-drop trigger if exists apply_campus_proposal_evaluation
-on public.campus_proposal_evaluation;
+drop trigger if exists apply_campus_load_evaluation
+on public.campus_load_evaluation;
 
-create trigger apply_campus_proposal_evaluation
-after insert on public.campus_proposal_evaluation
-for each row execute function public.trg_apply_campus_proposal_evaluation();
+create trigger apply_campus_load_evaluation
+after insert on public.campus_load_evaluation
+for each row execute function public.trg_apply_campus_load_evaluation();

@@ -9,12 +9,12 @@ import {
   isFinalDecisionStatus,
   resolveCreatorDesignationId,
   toCampusDirectorDesignationByCampus,
-} from "@/lib/proposal/actions/helpers";
+} from "@/lib/load-proposal/actions/helpers";
 import {
   revalidateFacultyProposalWorkspace,
   revalidateProposalCollectionsByTerm,
   revalidateUniversityCampusWorkspace,
-} from "@/lib/proposal/actions/revalidation";
+} from "@/lib/load-proposal/actions/revalidation";
 
 export const createProposalAction = async (formData: FormData) => {
   const academicTermId = String(formData.get("academicTermId") ?? "");
@@ -51,11 +51,13 @@ export const createProposalAction = async (formData: FormData) => {
 };
 
 export const submitEvaluationAction = async (formData: FormData) => {
-  const proposalId = String(formData.get("proposalId") ?? "");
+  const facultyLoadProposalId = String(
+    formData.get("facultyLoadProposalId") ?? "",
+  );
   const status = String(formData.get("status") ?? "");
   const comment = String(formData.get("comment") ?? "").trim();
 
-  if (!proposalId || !isFinalDecisionStatus(status)) return;
+  if (!facultyLoadProposalId || !isFinalDecisionStatus(status)) return;
   if (status === "REJECTED" && comment.length === 0) return;
 
   const currentUser = await getCurrentUser();
@@ -70,9 +72,9 @@ export const submitEvaluationAction = async (formData: FormData) => {
 
   const supabase = await createClient();
   const { data: proposal, error: proposalError } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .select("id, user_id, campus_id, academic_term_id, lifecycle_status")
-    .eq("id", proposalId)
+    .eq("id", facultyLoadProposalId)
     .maybeSingle();
 
   if (
@@ -85,9 +87,9 @@ export const submitEvaluationAction = async (formData: FormData) => {
   }
 
   const { data: existingEvaluation } = await supabase
-    .from("individual_proposal_evaluation")
+    .from("faculty_load_evaluation")
     .select("id")
-    .eq("proposal_id", proposalId)
+    .eq("faculty_load_proposal_id", facultyLoadProposalId)
     .eq("step", "CAMPUS_DIRECTOR")
     .maybeSingle();
 
@@ -97,9 +99,9 @@ export const submitEvaluationAction = async (formData: FormData) => {
   if (!designationId) return;
 
   const { error: insertError } = await supabase
-    .from("individual_proposal_evaluation")
+    .from("faculty_load_evaluation")
     .insert({
-      proposal_id: proposalId,
+      faculty_load_proposal_id: facultyLoadProposalId,
       step: "CAMPUS_DIRECTOR",
       evaluator_user_id: currentUser.id,
       designation_id: designationId,
@@ -108,7 +110,7 @@ export const submitEvaluationAction = async (formData: FormData) => {
     });
 
   if (insertError) {
-    console.error("proposal.submitEvaluation.insert ::", insertError);
+    console.error("loadProposal.submitEvaluation.insert ::", insertError);
     return;
   }
 

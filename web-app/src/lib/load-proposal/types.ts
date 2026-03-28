@@ -8,7 +8,7 @@ export type ProposalStatusFilter =
   | "NO_PROPOSAL";
 
 export type FacultyProposalListItem = FacultyListItem & {
-  latest_proposal_id: string | null;
+  latest_faculty_load_proposal_id: string | null;
   latest_proposal_lifecycle_status:
     | "ACTIVE"
     | "APPROVED"

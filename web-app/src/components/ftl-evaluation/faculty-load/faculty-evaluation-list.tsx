@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
 import ProposalStatusFilterChips from "@/components/ui/proposal-status-filter-chips";
 import RejectionCommentDialog from "@/components/ftl-evaluation/faculty-load/rejection-comment-dialog";
-import { useProposalListController } from "@/components/proposal/list/use-proposal-list-controller";
-import { submitBulkEvaluationAction } from "@/lib/proposal/actions";
-import type { FacultyProposalListItem } from "@/lib/proposal/types";
+import { useLoadProposalListController } from "@/components/load-proposal/list/use-load-proposal-list-controller";
+import { submitBulkEvaluationAction } from "@/lib/load-proposal/actions";
+import type { FacultyProposalListItem } from "@/lib/load-proposal/types";
 
 type FacultyEvaluationListProps = {
   facultyList: FacultyProposalListItem[];
@@ -21,7 +21,7 @@ type FacultyEvaluationListProps = {
 const toFixed = (v: number) => v.toFixed(2);
 
 const isPendingProposal = (faculty: FacultyProposalListItem): boolean =>
-  faculty.proposal_filter_status === "PENDING" && !!faculty.latest_proposal_id;
+  faculty.proposal_filter_status === "PENDING" && !!faculty.latest_faculty_load_proposal_id;
 
 const FacultyEvaluationList = ({
   facultyList,
@@ -54,7 +54,7 @@ const FacultyEvaluationList = ({
     onItemClick,
     onItemPointerDown,
     selectAllFiltered,
-  } = useProposalListController({
+  } = useLoadProposalListController({
     items: facultyList,
     defaultStatus: "PENDING",
     isSelectable: isPendingProposal,
@@ -64,8 +64,8 @@ const FacultyEvaluationList = ({
     const proposalIdSet = new Set<string>();
     for (const faculty of facultyList) {
       if (!selectedIdSet.has(faculty.id)) continue;
-      if (!isPendingProposal(faculty) || !faculty.latest_proposal_id) continue;
-      proposalIdSet.add(faculty.latest_proposal_id);
+      if (!isPendingProposal(faculty) || !faculty.latest_faculty_load_proposal_id) continue;
+      proposalIdSet.add(faculty.latest_faculty_load_proposal_id);
     }
     return Array.from(proposalIdSet);
   }, [facultyList, selectedIdSet]);

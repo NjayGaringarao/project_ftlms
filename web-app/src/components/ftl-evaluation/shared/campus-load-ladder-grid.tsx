@@ -1,9 +1,9 @@
 import type {
-  CampusProposal,
-  CampusProposalEvaluation,
+  CampusLoad,
+  CampusLoadEvaluation,
   EvaluationStatus,
 } from "@/models";
-import CampusProposalStepAction from "@/components/ftl-evaluation/shared/campus-proposal-step-action";
+import CampusLoadStepAction from "@/components/ftl-evaluation/shared/campus-load-step-action";
 
 const evaluationStyle: Record<EvaluationStatus, string> = {
   PENDING: "bg-slate-100 text-slate-700 border-slate-200",
@@ -12,9 +12,9 @@ const evaluationStyle: Record<EvaluationStatus, string> = {
 };
 
 type CampusLoadLadderGridProps = {
-  campusProposal: CampusProposal;
-  diEvaluation: CampusProposalEvaluation | null;
-  vpaaEvaluation: CampusProposalEvaluation | null;
+  campusLoad: CampusLoad;
+  diEvaluation: CampusLoadEvaluation | null;
+  vpaaEvaluation: CampusLoadEvaluation | null;
   showDiCard: boolean;
   showVpaaCard: boolean;
   canEvaluateAsDi: boolean;
@@ -22,7 +22,7 @@ type CampusLoadLadderGridProps = {
 };
 
 const CampusLoadLadderGrid = ({
-  campusProposal,
+  campusLoad,
   diEvaluation,
   vpaaEvaluation,
   showDiCard,
@@ -50,8 +50,8 @@ const CampusLoadLadderGrid = ({
             {diEvaluation?.comment ?? "No comment yet."}
           </p>
           {canEvaluateAsDi ? (
-            <CampusProposalStepAction
-              campusProposalId={campusProposal.id}
+            <CampusLoadStepAction
+              campusLoadId={campusLoad.id}
               step="DIRECTOR_FOR_INSTRUCTION"
               rejectTitle="Reject Campus Proposal (DI)"
               rejectDescription="Provide an optional reason for rejecting this campus proposal."
@@ -74,8 +74,8 @@ const CampusLoadLadderGrid = ({
             {vpaaEvaluation?.comment ?? "No comment yet."}
           </p>
           {canEvaluateAsVpaa ? (
-            <CampusProposalStepAction
-              campusProposalId={campusProposal.id}
+            <CampusLoadStepAction
+              campusLoadId={campusLoad.id}
               step="VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS"
               rejectTitle="Reject Campus Proposal (VPAA)"
               rejectDescription="Provide an optional reason for rejecting this campus proposal."

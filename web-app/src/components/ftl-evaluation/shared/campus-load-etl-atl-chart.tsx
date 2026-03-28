@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { CampusEtlAtlFacultyMetric } from "@/lib/proposal/read-models";
+import type { CampusEtlAtlFacultyMetric } from "@/lib/load-proposal/read-models";
 
 const toFixed = (value: number) => value.toFixed(2);
 

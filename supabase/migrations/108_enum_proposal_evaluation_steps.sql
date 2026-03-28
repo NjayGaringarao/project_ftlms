@@ -1,6 +1,6 @@
 do $$
 begin
-  create type public.individual_proposal_step_enum as enum (
+  create type public.faculty_load_step_enum as enum (
     'CAMPUS_DIRECTOR'
   );
 exception
@@ -11,7 +11,7 @@ $$;
 
 do $$
 begin
-  create type public.campus_proposal_step_enum as enum (
+  create type public.campus_load_step_enum as enum (
     'DIRECTOR_FOR_INSTRUCTION',
     'VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS'
   );

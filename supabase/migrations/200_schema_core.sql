@@ -1,10 +1,10 @@
 
 -- =========================================================
--- CORE SCHEMA (PART 1/5): KEY ENTITIES
+-- CORE SCHEMA (PART 1/6): KEY ENTITIES
 -- Description:
 --   Defines foundational entities required by later schema files.
 --   This file must run before programs, offerings,
---   user-domain, and faculty-operation schema migrations.
+--   user-domain, faculty-operations, and load-evaluation schema migrations.
 -- =========================================================
 
 create table if not exists public.campus (

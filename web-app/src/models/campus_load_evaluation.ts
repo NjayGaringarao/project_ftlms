@@ -1,16 +1,16 @@
-import { CampusProposal } from "./campus_proposal";
+import { CampusLoad } from "./campus_load";
 import { Designation } from "./designation";
-import { EvaluationStatus } from "./evaluation";
+import { EvaluationStatus } from "./faculty_load_evaluation";
 import { User } from "./user";
 
-export type CampusProposalStep =
+export type CampusLoadStep =
   | "DIRECTOR_FOR_INSTRUCTION"
   | "VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS";
 
-export type CampusProposalEvaluation = {
+export type CampusLoadEvaluation = {
   id: string;
-  campus_proposal_id: string;
-  step: CampusProposalStep;
+  campus_load_id: string;
+  step: CampusLoadStep;
   designation_id: string | null;
   evaluator_user_id: string | null;
   status: EvaluationStatus;
@@ -18,8 +18,8 @@ export type CampusProposalEvaluation = {
   created_at: string | null;
 };
 
-export type ExtendedCampusProposalEvaluation = CampusProposalEvaluation & {
-  campus_proposal: CampusProposal;
+export type ExtendedCampusLoadEvaluation = CampusLoadEvaluation & {
+  campus_load: CampusLoad;
   designation: Designation | null;
   evaluator: User | null;
 };

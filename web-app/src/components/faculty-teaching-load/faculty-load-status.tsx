@@ -2,7 +2,7 @@ import FacultyLoadApproval from "@/components/ftl-evaluation/faculty-load/facult
 import {
   getEvaluationsByProposal,
   getLatestProposalByUserTerm,
-} from "@/lib/proposal/queries";
+} from "@/lib/load-proposal/queries";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import type { ProposalLifecycleStatus, EvaluationStatus } from "@/models";
@@ -55,7 +55,10 @@ const FacultyLoadStatus = async ({
 
   const matchingDesignation = proposal
     ? currentUserData?.designations.find(
-        (designation) =>
+        (designation: {
+          job_title: string;
+          campus: { code: string | null } | null;
+        }) =>
           designation.job_title === "Campus Director" &&
           designation.campus?.code === facultyCampusCode,
       )

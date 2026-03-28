@@ -1,5 +1,5 @@
 -- =========================================================
--- CORE SCHEMA (PART 3/5): OFFERINGS AND AVAILABILITY
+-- CORE SCHEMA (PART 3/6): OFFERINGS AND AVAILABILITY
 -- Description:
 --   Defines campus offerings and term-aware blocks.
 --   Depends on: programs and key entities.

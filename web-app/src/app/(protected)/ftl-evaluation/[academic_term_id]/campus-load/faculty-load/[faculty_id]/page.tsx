@@ -4,7 +4,7 @@ import { getTermById } from "@/lib/admin/terms";
 import {
   getEvaluationsByProposal,
   getLatestProposalByUserTerm,
-} from "@/lib/proposal/queries";
+} from "@/lib/load-proposal/queries";
 import { getFacultyScheduleTermSnapshot } from "@/lib/schedule/faculty-schedule";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
@@ -55,14 +55,19 @@ const CampusFacultyEvaluationPage = async ({
 
   const canManageAll = roles.includes("Admin");
   if (!canManageAll) {
+    type CampusScopedDesignation = {
+      job_title: string;
+      campus_id: string | null;
+    };
+
     const allowedCampusIds = new Set(
       (currentUserData?.designations ?? [])
         .filter(
-          (designation) =>
+          (designation: CampusScopedDesignation) =>
             designation.job_title === "Campus Director" &&
             designation.campus_id,
         )
-        .map((designation) => designation.campus_id as string),
+        .map((designation: CampusScopedDesignation) => designation.campus_id as string),
     );
 
     if (!overview.campus_id || !allowedCampusIds.has(overview.campus_id)) {
@@ -76,7 +81,7 @@ const CampusFacultyEvaluationPage = async ({
   const latestEvaluation = evaluations[0] ?? null;
   const campusDirectorDesignation = overview.campus_id
     ? (currentUserData?.designations ?? []).find(
-        (designation) =>
+        (designation: { job_title: string; campus_id: string | null }) =>
           designation.job_title === "Campus Director" &&
           designation.campus_id === overview.campus_id,
       )

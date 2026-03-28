@@ -8,7 +8,7 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
-import type { ProposalStatusFilter } from "@/lib/proposal/types";
+import type { ProposalStatusFilter } from "@/lib/load-proposal/types";
 import { cn } from "@/utils/style";
 
 type ProposalStatusFilterChipsProps = {

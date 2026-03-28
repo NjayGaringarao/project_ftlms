@@ -6,19 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   createProposalAction,
   submitEvaluationAction,
-} from "@/lib/proposal/actions";
+} from "@/lib/load-proposal/actions";
 import type {
   EvaluationStatus,
-  IndividualProposalEvaluation,
-  Proposal,
+  FacultyLoadEvaluation,
+  FacultyLoadProposal,
 } from "@/models";
 import { formatDateTime } from "@/utils/time";
 import { Check, X } from "lucide-react";
 import RejectionCommentDialog from "@/components/ftl-evaluation/faculty-load/rejection-comment-dialog";
 
 type FacultyLoadApprovalProps = {
-  proposal: Proposal | null;
-  latestEvaluation: IndividualProposalEvaluation | null;
+  proposal: FacultyLoadProposal | null;
+  latestEvaluation: FacultyLoadEvaluation | null;
   campusDirectorStatus: EvaluationStatus | "INVALIDATED";
   canEvaluateProposal: boolean;
   academicTermId?: string;
@@ -88,7 +88,11 @@ const FacultyLoadApproval = ({
                 Reject
               </Button>
               <form action={submitEvaluationAction}>
-                <input type="hidden" name="proposalId" value={proposal.id} />
+                <input
+                  type="hidden"
+                  name="facultyLoadProposalId"
+                  value={proposal.id}
+                />
                 <input type="hidden" name="status" value="APPROVED" />
                 <Button type="submit" size="sm">
                   <Check className="h-4 w-4" />
@@ -156,7 +160,7 @@ const FacultyLoadApproval = ({
           description="Please provide a comment describing why this proposal is rejected."
           action={handleRejectSubmit}
           hiddenFields={[
-            { name: "proposalId", value: proposal.id },
+            { name: "facultyLoadProposalId", value: proposal.id },
             { name: "status", value: "REJECTED" },
           ]}
         />

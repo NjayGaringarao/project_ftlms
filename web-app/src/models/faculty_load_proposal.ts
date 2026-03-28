@@ -9,7 +9,7 @@ export type ProposalLifecycleStatus =
   | "REJECTED"
   | "INVALIDATED";
 
-export type Proposal = {
+export type FacultyLoadProposal = {
   id: string;
   user_id: string;
   campus_id: string;
@@ -34,7 +34,7 @@ export type Proposal = {
   updated_at: string | null;
 };
 
-export type ExtendedProposal = Proposal & {
+export type ExtendedFacultyLoadProposal = FacultyLoadProposal & {
   user: User;
   campus: Campus;
   academic_term: AcademicTerm;

@@ -1,13 +1,13 @@
 import type {
-  CampusProposal,
-  CampusProposalEvaluation,
-  CampusProposalMember,
-  Proposal,
+  CampusLoad,
+  CampusLoadEvaluation,
+  CampusLoadMember,
+  FacultyLoadProposal,
   ProposalLifecycleStatus,
 } from "@/models";
 
-export type CampusProposalMemberWithFaculty = CampusProposalMember & {
-  proposal_user: {
+export type CampusLoadMemberWithFaculty = CampusLoadMember & {
+  faculty_user: {
     id: string;
     identity: {
       name: string | null;
@@ -16,21 +16,21 @@ export type CampusProposalMemberWithFaculty = CampusProposalMember & {
 };
 
 export type CurrentCampusIndividualProposal = Pick<
-  Proposal,
+  FacultyLoadProposal,
   "id" | "user_id" | "lifecycle_status"
 >;
 
 export type LatestCampusIndividualProposal = Pick<
-  Proposal,
+  FacultyLoadProposal,
   "id" | "user_id" | "lifecycle_status"
 > & {
   faculty_name: string | null;
 };
 
-export type CampusProposalReviewBundle = {
-  campusProposal: CampusProposal | null;
-  members: CampusProposalMemberWithFaculty[];
-  evaluations: CampusProposalEvaluation[];
+export type CampusLoadReviewBundle = {
+  campusLoad: CampusLoad | null;
+  members: CampusLoadMemberWithFaculty[];
+  evaluations: CampusLoadEvaluation[];
   currentIndividualProposals: CurrentCampusIndividualProposal[];
 };
 
@@ -52,7 +52,7 @@ export type CampusEtlAtlFacultyMetric = {
   load_band: CampusLoadBand;
 };
 
-export type CampusProposalInsightsBundle = CampusProposalReviewBundle & {
+export type CampusLoadInsightsBundle = CampusLoadReviewBundle & {
   approvedIndividualCount: number;
   activeIndividualCount: number;
   liveLoadDistribution: CampusLoadDistribution;

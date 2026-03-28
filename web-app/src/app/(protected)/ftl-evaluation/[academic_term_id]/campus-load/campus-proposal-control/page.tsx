@@ -2,15 +2,15 @@ import { redirect } from "next/navigation";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import { getCampusById, getCampusesList } from "@/lib/admin/campuses";
-import CampusProposalControlWorkspace from "@/components/ftl-evaluation/campus-load/campus-proposal-control-workspace";
+import CampusLoadControlWorkspace from "@/components/ftl-evaluation/campus-load/campus-load-control-workspace";
 
-type CampusProposalControlPageProps = {
+type CampusLoadControlPageProps = {
   params: Promise<{ academic_term_id: string }>;
 };
 
-const CampusProposalControlPage = async ({
+const CampusLoadControlPage = async ({
   params,
-}: CampusProposalControlPageProps) => {
+}: CampusLoadControlPageProps) => {
   const { academic_term_id } = await params;
 
   const [roles, currentUserData] = await Promise.all([
@@ -63,7 +63,7 @@ const CampusProposalControlPage = async ({
   }
 
   return (
-    <CampusProposalControlWorkspace
+    <CampusLoadControlWorkspace
       academicTermId={academic_term_id}
       campusId={campus.id}
       campusCode={campus.code}
@@ -72,4 +72,4 @@ const CampusProposalControlPage = async ({
   );
 };
 
-export default CampusProposalControlPage;
+export default CampusLoadControlPage;

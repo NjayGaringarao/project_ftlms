@@ -1,30 +1,30 @@
 import { getTermById } from "@/lib/admin/terms";
-import { getCampusProposalInsightsBundle } from "@/lib/proposal/queries";
+import { getCampusLoadInsightsBundle } from "@/lib/load-proposal/queries";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import CampusLoadInsights from "@/components/ftl-evaluation/shared/campus-load-insights";
 import CampusLoadStatus from "@/components/ftl-evaluation/shared/campus-load-status";
 
-type CampusProposalControlWorkspaceProps = {
+type CampusLoadControlWorkspaceProps = {
   academicTermId: string;
   campusId: string;
   campusCode: string;
   campusName: string;
 };
 
-const CampusProposalControlWorkspace = async ({
+const CampusLoadControlWorkspace = async ({
   academicTermId,
   campusId,
   campusCode,
   campusName,
-}: CampusProposalControlWorkspaceProps) => {
+}: CampusLoadControlWorkspaceProps) => {
   const [bundle, currentUserData, selectedTerm] = await Promise.all([
-    getCampusProposalInsightsBundle(campusId, academicTermId),
+    getCampusLoadInsightsBundle(campusId, academicTermId),
     getCurrentUserData({ includeDesignations: true }),
     getTermById(academicTermId),
   ]);
 
   const {
-    campusProposal,
+    campusLoad,
     evaluations,
     etlAtlPerFaculty,
     approvedIndividualCount,
@@ -55,7 +55,7 @@ const CampusProposalControlWorkspace = async ({
       />
 
       <CampusLoadStatus
-        campusProposal={campusProposal}
+        campusLoad={campusLoad}
         evaluations={evaluations}
         control={{
           academicTermId,
@@ -69,4 +69,4 @@ const CampusProposalControlWorkspace = async ({
   );
 };
 
-export default CampusProposalControlWorkspace;
+export default CampusLoadControlWorkspace;

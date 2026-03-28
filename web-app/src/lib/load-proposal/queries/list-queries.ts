@@ -2,10 +2,10 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getFacultyListByTerm } from "@/lib/course-loading/queries";
-import type { Proposal, ProposalLifecycleStatus } from "@/models";
-import { toProposalFilterStatus } from "@/lib/proposal/derivations";
-import type { FacultyProposalListItem } from "@/lib/proposal/types";
-import type { LatestCampusIndividualProposal } from "@/lib/proposal/read-models";
+import type { FacultyLoadProposal, ProposalLifecycleStatus } from "@/models";
+import { toProposalFilterStatus } from "@/lib/load-proposal/derivations";
+import type { FacultyProposalListItem } from "@/lib/load-proposal/types";
+import type { LatestCampusIndividualProposal } from "@/lib/load-proposal/read-models";
 
 export const getFacultyProposalListByTerm = async (
   academicTermId: string,
@@ -19,17 +19,17 @@ export const getFacultyProposalListByTerm = async (
   const facultyIds = facultyList.map((item) => item.id);
   const supabase = await createClient();
   const { data: proposalRows, error } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .select("id, user_id, lifecycle_status, created_at")
     .eq("academic_term_id", academicTermId)
     .in("user_id", facultyIds)
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("proposal.getFacultyProposalListByTerm.proposals ::", error);
+    console.error("loadProposal.getFacultyProposalListByTerm.proposals ::", error);
     return facultyList.map((item) => ({
       ...item,
-      latest_proposal_id: null,
+      latest_faculty_load_proposal_id: null,
       latest_proposal_lifecycle_status: null,
       proposal_filter_status: "NO_PROPOSAL",
     }));
@@ -56,7 +56,7 @@ export const getFacultyProposalListByTerm = async (
     const lifecycleStatus = latestProposal?.lifecycle_status ?? null;
     return {
       ...item,
-      latest_proposal_id: latestProposal?.id ?? null,
+      latest_faculty_load_proposal_id: latestProposal?.id ?? null,
       latest_proposal_lifecycle_status: lifecycleStatus,
       proposal_filter_status: toProposalFilterStatus(lifecycleStatus),
     };
@@ -66,11 +66,11 @@ export const getFacultyProposalListByTerm = async (
 export const getLatestProposalByUserTerm = async (
   userId: string,
   academicTermId: string,
-): Promise<Proposal | null> => {
+): Promise<FacultyLoadProposal | null> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .select("*")
     .eq("user_id", userId)
     .eq("academic_term_id", academicTermId)
@@ -79,7 +79,7 @@ export const getLatestProposalByUserTerm = async (
     .maybeSingle();
 
   if (error) {
-    console.error("proposal.getLatestProposal ::", error);
+    console.error("loadProposal.getLatestProposal ::", error);
     return null;
   }
 
@@ -93,14 +93,14 @@ export const getLatestIndividualProposalsByCampusTerm = async (
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("proposal")
+    .from("faculty_load_proposal")
     .select(
       `
       id,
       user_id,
       lifecycle_status,
       created_at,
-      proposal_user:user_id (
+      faculty_user:user_id (
         identity:identity (name)
       )
     `,
@@ -110,7 +110,7 @@ export const getLatestIndividualProposalsByCampusTerm = async (
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("proposal.getLatestIndividualProposalsByCampusTerm ::", error);
+    console.error("loadProposal.getLatestIndividualProposalsByCampusTerm ::", error);
     return [];
   }
 
@@ -118,13 +118,13 @@ export const getLatestIndividualProposalsByCampusTerm = async (
   for (const row of data ?? []) {
     if (!row.user_id || latestByFacultyId.has(row.user_id)) continue;
 
-    const proposalUser = Array.isArray(row.proposal_user)
-      ? row.proposal_user[0]
-      : row.proposal_user;
-    const rawIdentity = proposalUser
-      ? Array.isArray(proposalUser.identity)
-        ? proposalUser.identity[0]
-        : proposalUser.identity
+    const facultyUser = Array.isArray(row.faculty_user)
+      ? row.faculty_user[0]
+      : row.faculty_user;
+    const rawIdentity = facultyUser
+      ? Array.isArray(facultyUser.identity)
+        ? facultyUser.identity[0]
+        : facultyUser.identity
       : null;
 
     latestByFacultyId.set(row.user_id, {

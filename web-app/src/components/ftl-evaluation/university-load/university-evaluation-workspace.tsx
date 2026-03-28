@@ -1,5 +1,5 @@
 import { getTermById } from "@/lib/admin/terms";
-import { getCampusProposalInsightsBundle } from "@/lib/proposal/queries";
+import { getCampusLoadInsightsBundle } from "@/lib/load-proposal/queries";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import CampusLoadInsights from "@/components/ftl-evaluation/shared/campus-load-insights";
 import CampusLoadStatus from "@/components/ftl-evaluation/shared/campus-load-status";
@@ -18,13 +18,13 @@ const UniversityEvaluationWorkspace = async ({
   campusName,
 }: UniversityEvaluationWorkspaceProps) => {
   const [bundle, currentUserData, selectedTerm] = await Promise.all([
-    getCampusProposalInsightsBundle(campusId, academicTermId),
+    getCampusLoadInsightsBundle(campusId, academicTermId),
     getCurrentUserData({ includeDesignations: true }),
     getTermById(academicTermId),
   ]);
 
   const {
-    campusProposal,
+    campusLoad,
     evaluations,
     etlAtlPerFaculty,
     latestIndividualProposals,
@@ -58,7 +58,7 @@ const UniversityEvaluationWorkspace = async ({
       />
 
       <CampusLoadStatus
-        campusProposal={campusProposal}
+        campusLoad={campusLoad}
         evaluations={evaluations}
         evaluationControl={{
           hasDiDesignation,

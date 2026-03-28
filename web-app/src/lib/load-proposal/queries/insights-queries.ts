@@ -4,21 +4,21 @@ import { getUserDataList } from "@/lib/user-data/queries";
 import {
   classifyLoadBand,
   computeCampusLoadDistribution,
-} from "@/lib/proposal/derivations";
+} from "@/lib/load-proposal/derivations";
 import type {
   CampusEtlAtlFacultyMetric,
-  CampusProposalInsightsBundle,
-} from "@/lib/proposal/read-models";
+  CampusLoadInsightsBundle,
+} from "@/lib/load-proposal/read-models";
 import { getLatestIndividualProposalsByCampusTerm } from "./list-queries";
-import { getCampusProposalReviewBundle } from "./review-queries";
+import { getCampusLoadReviewBundle } from "./review-queries";
 
-export const getCampusProposalInsightsBundle = async (
+export const getCampusLoadInsightsBundle = async (
   campusId: string,
   academicTermId: string,
-): Promise<CampusProposalInsightsBundle> => {
+): Promise<CampusLoadInsightsBundle> => {
   const [reviewBundle, userDataRows, latestIndividualProposals] =
     await Promise.all([
-      getCampusProposalReviewBundle(campusId, academicTermId),
+      getCampusLoadReviewBundle(campusId, academicTermId),
       getUserDataList({
         academicTermId,
         includeLoads: true,

@@ -2,7 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
-import { getFacultyProposalListByTerm } from "@/lib/proposal/queries";
+import { getFacultyProposalListByTerm } from "@/lib/load-proposal/queries";
 import FacultyEvaluationList from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-list";
 
 type CampusFacultyLoadLayoutProps = {

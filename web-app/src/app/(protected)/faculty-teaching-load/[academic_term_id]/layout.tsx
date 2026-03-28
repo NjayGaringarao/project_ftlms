@@ -3,7 +3,7 @@ import { FacultyList } from "@/components/faculty-teaching-load/faculty-list";
 import TermSwitcher from "@/components/shared/term-switcher";
 import { getTermById, getTermsList } from "@/lib/admin/terms";
 import { getUserRole } from "@/lib/auth/utils";
-import { getFacultyProposalListByTerm } from "@/lib/proposal/queries";
+import { getFacultyProposalListByTerm } from "@/lib/load-proposal/queries";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
