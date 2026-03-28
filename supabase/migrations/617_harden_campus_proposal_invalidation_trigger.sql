@@ -71,6 +71,9 @@ begin
 end;
 $$;
 
+comment on function public.trg_invalidate_campus_proposal_on_proposal_change()
+is 'Canonical owner (v617): invalidates current campus proposals when scoped individual proposal lifecycle/scope changes occur.';
+
 drop trigger if exists invalidate_campus_proposal_on_proposal_change
 on public.proposal;
 

@@ -2,7 +2,7 @@ import { getTermById } from "@/lib/admin/terms";
 import { getCampusProposalInsightsBundle } from "@/lib/proposal/queries";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import CampusLoadInsights from "@/components/ftl-evaluation/shared/campus-load-insights";
-import CampusProposalDetailsPanel from "@/components/ftl-evaluation/shared/campus-load-status";
+import CampusLoadStatus from "@/components/ftl-evaluation/shared/campus-load-status";
 
 type UniversityEvaluationWorkspaceProps = {
   academicTermId: string;
@@ -36,7 +36,7 @@ const UniversityEvaluationWorkspace = async ({
     .filter((item) => item.lifecycle_status === "APPROVED")
     .map((item) => item.user_id);
 
-  const hasDfiDesignation = (currentUserData?.designations ?? []).some(
+  const hasDiDesignation = (currentUserData?.designations ?? []).some(
     (designation) => designation.job_title === "Director for Instruction",
   );
   const hasVpaaDesignation = (currentUserData?.designations ?? []).some(
@@ -57,11 +57,11 @@ const UniversityEvaluationWorkspace = async ({
         academicTermCode={academicTermCode}
       />
 
-      <CampusProposalDetailsPanel
+      <CampusLoadStatus
         campusProposal={campusProposal}
         evaluations={evaluations}
         evaluationControl={{
-          hasDfiDesignation,
+          hasDiDesignation,
           hasVpaaDesignation,
         }}
       />

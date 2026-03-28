@@ -103,6 +103,7 @@ migrations/
 - 605_rpc_get_scheduler_matrices.sql
 - 607_rpc_get_user_data.sql
 - 608_rpc_proposal_transactions.sql
+- 617_harden_campus_proposal_invalidation_trigger.sql
 ```
 
 ### Constraint Ownership (3xx)
@@ -135,6 +136,23 @@ migrations/
 
 - `503_triggers_designation_uniqueness.sql`
   - Designation uniqueness enforcement logic (trigger/function), complementary to `305` checks.
+
+### Trigger Ownership (5xx/6xx)
+
+- `617_harden_campus_proposal_invalidation_trigger.sql`
+  - Canonical owner of: `trg_invalidate_campus_proposal_on_proposal_change`, `invalidate_campus_proposal_on_proposal_change` trigger.
+  - Consolidates campus-proposal invalidation behavior for individual proposal lifecycle/scope changes.
+
+## Regression Harness (Development)
+
+- `tests/campus_proposal_invalidation_regression.sql`
+  - Verifies trigger-driven campus proposal invalidation for:
+    - individual proposal insert as `ACTIVE`
+    - lifecycle transitions to `INVALIDATED` or `REJECTED`
+    - delete
+    - campus/term scope change (old and new scope)
+  - Runs inside a transaction and rolls back automatically.
+  - Execute via Supabase SQL Editor (local/linked) or any SQL client against your dev database.
 
 ## Migration Consistency Check
 
