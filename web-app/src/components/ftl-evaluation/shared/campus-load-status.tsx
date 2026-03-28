@@ -41,7 +41,7 @@ const CampusLoadStatus = ({
       <CardHeader>
         <CardTitle className="text-base">Campus Load Proposal Status</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="grid grid-cols-3 gap-4">
         <CampusLoadStatusSummary campusLoad={campusLoad} control={control} />
         {hasRenderableCampusLoad && campusLoad ? (
           <CampusLoadLadderGrid

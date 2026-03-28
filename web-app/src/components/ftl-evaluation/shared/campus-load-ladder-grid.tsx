@@ -33,9 +33,7 @@ const CampusLoadLadderGrid = ({
   if (!showDiCard && !showVpaaCard) return null;
 
   return (
-    <div
-      className={`grid gap-2 text-sm ${showDiCard && showVpaaCard ? "grid-cols-2" : "grid-cols-1"}`}
-    >
+    <>
       {showDiCard ? (
         <div className="rounded-md border p-3">
           <div className="mb-1 flex items-center justify-between">
@@ -83,7 +81,7 @@ const CampusLoadLadderGrid = ({
           ) : null}
         </div>
       ) : null}
-    </div>
+    </>
   );
 };
 
