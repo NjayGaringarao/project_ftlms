@@ -125,6 +125,7 @@ migrations/
 
 - `205_schema_load_evaluations.sql`
   - Load proposal/evaluation entities (`faculty_load_proposal`, `campus_load`, `campus_load_member`, `faculty_load_evaluation`, `campus_load_evaluation`).
+  - Includes `document_export_job` schema (async export job persistence).
 
 ### Constraint Ownership (3xx)
 
@@ -187,6 +188,13 @@ migrations/
     - `trg_validate_campus_load_evaluation`
     - `trg_apply_campus_load_evaluation`
   - Scope: proposal workflow validation and evaluation transitions.
+
+- `608_rpc_proposal_transactions.sql`
+  - Canonical owner of:
+    - `create_faculty_load_proposal`
+    - `create_campus_load_proposal`
+    - `claim_document_export_job`
+  - Scope: proposal transaction RPCs and async export job claim locking.
 
 
 ## Regression Harness (Development)

@@ -4,10 +4,11 @@ create or replace function public.create_faculty_load_proposal(
   p_academic_term_id uuid,
   p_employment_status public.employment_status_enum,
   p_academic_rank text default null,
-  p_bachelors_degree text default null,
-  p_masters_degree text default null,
-  p_doctorate_degree text default null,
-  p_designations text default null,
+  p_bachelors_degree jsonb default '[]'::jsonb,
+  p_masters_degree jsonb default '[]'::jsonb,
+  p_doctorate_degree jsonb default '[]'::jsonb,
+  p_designations jsonb default '[]'::jsonb,
+  p_schedule_sessions jsonb default '[]'::jsonb,
   p_equivalent_teaching_load numeric default null,
   p_total_lecture_hours numeric default null,
   p_total_lab_hours numeric default null,
@@ -97,6 +98,7 @@ begin
     masters_degree,
     doctorate_degree,
     designations,
+    schedule_sessions,
     equivalent_teaching_load,
     total_lecture_hours,
     total_lab_hours,
@@ -113,10 +115,11 @@ begin
     p_academic_term_id,
     p_employment_status,
     p_academic_rank,
-    p_bachelors_degree,
-    p_masters_degree,
-    p_doctorate_degree,
-    p_designations,
+    coalesce(p_bachelors_degree, '[]'::jsonb),
+    coalesce(p_masters_degree, '[]'::jsonb),
+    coalesce(p_doctorate_degree, '[]'::jsonb),
+    coalesce(p_designations, '[]'::jsonb),
+    coalesce(p_schedule_sessions, '[]'::jsonb),
     p_equivalent_teaching_load,
     p_total_lecture_hours,
     p_total_lab_hours,
@@ -223,41 +226,11 @@ begin
 
   insert into public.campus_load_member (
     campus_load_id,
-    source_faculty_load_proposal_id,
-    faculty_user_id,
-    employment_status,
-    academic_rank,
-    bachelors_degree,
-    masters_degree,
-    doctorate_degree,
-    designations,
-    equivalent_teaching_load,
-    total_lecture_hours,
-    total_lab_hours,
-    preparation_count,
-    actual_teaching_load,
-    advisory_class,
-    source_faculty_load_proposal_lifecycle_status,
-    source_faculty_load_proposal_created_at
+    source_faculty_load_proposal_id
   )
   select
     v_campus_load_id,
-    p.id,
-    p.user_id,
-    p.employment_status,
-    p.academic_rank,
-    p.bachelors_degree,
-    p.masters_degree,
-    p.doctorate_degree,
-    p.designations,
-    p.equivalent_teaching_load,
-    p.total_lecture_hours,
-    p.total_lab_hours,
-    p.preparation_count,
-    p.actual_teaching_load,
-    p.advisory_class,
-    p.lifecycle_status,
-    p.created_at
+    p.id
   from public.faculty_load_proposal p
   where p.campus_id = p_campus_id
     and p.academic_term_id = p_academic_term_id
@@ -271,3 +244,34 @@ begin
   );
 end;
 $$;
+
+create or replace function public.claim_document_export_job(
+  p_job_id uuid,
+  p_requester_user_id uuid,
+  p_lock_seconds integer default 120
+)
+returns public.document_export_job
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_claimed public.document_export_job;
+begin
+  update public.document_export_job job
+  set
+    status = 'PROCESSING',
+    started_at = coalesce(job.started_at, now()),
+    lock_token = gen_random_uuid(),
+    lock_expires_at = now() + make_interval(secs => greatest(coalesce(p_lock_seconds, 120), 30))
+  where job.id = p_job_id
+    and job.requester_user_id = p_requester_user_id
+    and job.status in ('QUEUED', 'PROCESSING')
+    and (job.lock_expires_at is null or job.lock_expires_at < now())
+  returning job.* into v_claimed;
+
+  return v_claimed;
+end;
+$$;
+
+grant execute on function public.claim_document_export_job(uuid, uuid, integer) to authenticated;

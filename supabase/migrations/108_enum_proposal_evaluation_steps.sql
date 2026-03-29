@@ -20,3 +20,17 @@ exception
     null;
 end
 $$;
+
+do $$
+begin
+  create type public.document_export_job_status_enum as enum (
+    'QUEUED',
+    'PROCESSING',
+    'COMPLETED',
+    'FAILED'
+  );
+exception
+  when duplicate_object then
+    null;
+end
+$$;

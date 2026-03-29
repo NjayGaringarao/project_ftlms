@@ -31,3 +31,9 @@ create trigger trg_campus_load_set_updated_at
 before update on public.campus_load
 for each row
 execute function public.set_updated_at();
+
+drop trigger if exists trg_document_export_job_set_updated_at on public.document_export_job;
+create trigger trg_document_export_job_set_updated_at
+before update on public.document_export_job
+for each row
+execute function public.set_updated_at();

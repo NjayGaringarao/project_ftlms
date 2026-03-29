@@ -69,5 +69,77 @@ begin
       add constraint campus_load_evaluation_status_final
       check (status in ('APPROVED', 'REJECTED'));
   end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'faculty_load_proposal_snapshot_arrays_check'
+      and conrelid = 'public.faculty_load_proposal'::regclass
+  ) then
+    alter table public.faculty_load_proposal
+      add constraint faculty_load_proposal_snapshot_arrays_check
+      check (
+        jsonb_typeof(bachelors_degree) = 'array'
+        and jsonb_typeof(masters_degree) = 'array'
+        and jsonb_typeof(doctorate_degree) = 'array'
+        and jsonb_typeof(designations) = 'array'
+        and jsonb_typeof(schedule_sessions) = 'array'
+      );
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'document_export_job_scope_kind_check'
+      and conrelid = 'public.document_export_job'::regclass
+  ) then
+    alter table public.document_export_job
+      add constraint document_export_job_scope_kind_check
+      check (scope_kind in ('faculty_list', 'campus_insights'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'document_export_job_document_type_check'
+      and conrelid = 'public.document_export_job'::regclass
+  ) then
+    alter table public.document_export_job
+      add constraint document_export_job_document_type_check
+      check (document_type in ('faculty_load'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'document_export_job_json_shape_check'
+      and conrelid = 'public.document_export_job'::regclass
+  ) then
+    alter table public.document_export_job
+      add constraint document_export_job_json_shape_check
+      check (
+        jsonb_typeof(scope_payload) = 'object'
+        and jsonb_typeof(resolved_entity_ids) = 'array'
+      );
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'document_export_job_count_check'
+      and conrelid = 'public.document_export_job'::regclass
+  ) then
+    alter table public.document_export_job
+      add constraint document_export_job_count_check
+      check (
+        total_count >= 0
+        and processed_count >= 0
+        and processed_count <= total_count
+      );
+  end if;
 end;
 $$;
+
+create index if not exists idx_document_export_job_requester_created_at
+  on public.document_export_job (requester_user_id, created_at desc);
+
+create index if not exists idx_document_export_job_status
+  on public.document_export_job (status);
+
+create index if not exists idx_document_export_job_academic_term
+  on public.document_export_job (academic_term_id);
