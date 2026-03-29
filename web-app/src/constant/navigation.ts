@@ -1,7 +1,7 @@
 import { NavigationItem } from "@/lib/navigation/types";
 import { UserRole } from "@/models";
 
-const ALL_ROLES : UserRole[] = [
+const ALL_ROLES: UserRole[] = [
   "Admin",
   "Program Chairperson",
   "Faculty",
@@ -9,7 +9,7 @@ const ALL_ROLES : UserRole[] = [
   "College Dean",
   "Vice President for Academic Affairs",
   "Director for Instruction",
-]
+];
 
 export const NAV_ITEMS: NavigationItem[] = [
   {
@@ -58,7 +58,7 @@ export const NAV_ITEMS: NavigationItem[] = [
     label: "Blocks",
     href: "/blocks",
     icon: "blocks",
-    allowedRoles: ["Admin"],
+    allowedRoles: ["Program Chairperson", "College Dean"],
   },
   {
     label: "Scheduler",
@@ -70,10 +70,7 @@ export const NAV_ITEMS: NavigationItem[] = [
     label: "Faculty Teaching Load",
     href: "/faculty-teaching-load",
     icon: "weight-tilde",
-    allowedRoles: [
-      "Program Chairperson",
-      "College Dean",
-    ],
+    allowedRoles: ["Program Chairperson", "College Dean"],
   },
   {
     label: "FTL Evaluation",

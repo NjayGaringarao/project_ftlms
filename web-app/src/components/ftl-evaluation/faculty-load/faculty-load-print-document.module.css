@@ -8,7 +8,7 @@
 }
 
 .scheduleTable col:nth-child(1) {
-  width: 15%;
+  width: 12%;
 }
 
 .scheduleTable col:nth-child(2) {
@@ -20,7 +20,7 @@
 }
 
 .scheduleTable col:nth-child(4) {
-  width: 8%;
+  width: 7%;
 }
 
 .scheduleTable col:nth-child(5) {
@@ -28,7 +28,7 @@
 }
 
 .scheduleTable col:nth-child(6) {
-  width: 8%;
+  width: 7%;
 }
 
 .scheduleTable col:nth-child(7) {
@@ -40,13 +40,13 @@
 }
 
 .scheduleTable col:nth-child(9) {
-  width: 8%;
+  width: 9%;
 }
 
 @media print {
   @page {
     size: A4 landscape;
-    margin: 7mm;
+    margin: 7mm, 12.7mm;
   }
 
   .sheet {

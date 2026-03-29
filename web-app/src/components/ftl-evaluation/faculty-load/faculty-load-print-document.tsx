@@ -58,6 +58,7 @@ const FacultyLoadPrintDocument = ({
     ],
     ["Total Lecture Hours", document.totalLectureHours.toFixed(2)],
     ["Total Lab. Hours", document.totalLabHours.toFixed(2)],
+    ["Total Lab. Hours x 0.75", (document.totalLabHours * 0.75).toFixed(2)],
     ["Equiv. Unit's for No. of Prep.", document.equivalentPrepUnits.toFixed(2)],
     ["No. of Preparation", String(document.preparationCount)],
     ["Actual Teaching Loads (ATL)", document.actualTeachingLoad.toFixed(2)],
@@ -70,7 +71,7 @@ const FacultyLoadPrintDocument = ({
     <article
       className={cn(
         styles.sheet,
-        "mx-auto w-full max-w-310 border-[1.5px] border-[#111] bg-white text-[10px] text-[#111] font-[Arial,'Helvetica_Neue',sans-serif]",
+        "mx-auto w-full max-w-310 border-[1.5px] border-[#111] bg-white text-[8px] text-[#111] font-['Arial Narrow','Helvetica_Neue',sans-serif]",
       )}
     >
       
@@ -79,23 +80,23 @@ const FacultyLoadPrintDocument = ({
         <Image
           src="/prmsu.png"
           alt="PRMSU seal"
-          width={72}
-          height={72}
+          width={128}
+          height={128}
           priority
           className="size-15 justify-self-center object-contain"
         />
         <div className="text-center leading-[1.15]">
-          <p className="m-0 text-[10px]">Republic of the Philippines</p>
-          <p className="m-0 text-[10px] font-bold">
+          <p className="m-0 text-[8px]">Republic of the Philippines</p>
+          <p className="m-0 text-[8px] font-bold">
             PRESIDENT RAMON MAGSAYSAY STATE UNIVERSITY
           </p>
-          <p className="m-0 text-[9px]">
+          <p className="mb-0.5 text-[8px]">
             (Formerly Ramon Magsaysay Technological University)
           </p>
-          <p className="m-0 mt-1 text-[14px] font-bold tracking-[0.01em]">
+          <p className="m-0 text-[10px] font-bold">
             FACULTY TEACHING LOAD
           </p>
-          <p className="m-0 text-[10px] font-medium">
+          <p className="m-0 text-[8px] font-medium">
             {document.termDisplayName}, S.Y. {document.academicYearDisplay}
           </p>
         </div>
@@ -104,40 +105,40 @@ const FacultyLoadPrintDocument = ({
 
       {/** Content */}
       <div className="border border-[#666]">
-        <section className="grid min-h-135 grid-cols-[25%_75%]">
+        <section className="grid min-h-128 grid-cols-[25%_75%]">
           <aside className="flex flex-col border-r-4 border-[#666]">
-            <table className="w-full border-collapse text-[10px]">
+            <table className="w-full text-[8px]">
               <tbody>
                 <tr>
-                  <td className="w-24 border-b border-[#111] px-1 py-1 align-top font-bold">
+                  <td className="w-32 px-1 py-0.5 align-top font-bold">
                     Campus
                   </td>
-                  <td className="w-3 border-b border-[#111] px-1 py-1 text-center align-top">
+                  <td className="w-3 px-1 py-0.5 text-center align-top">
                     :
                   </td>
-                  <td className="border-b border-[#111] px-1 py-1 align-top">
+                  <td className=" px-1 py-0.5 align-top">
                     {document.campusName}
                   </td>
                 </tr>
                 <tr>
-                  <td className="w-24 border-b border-[#111] px-1 py-1 align-top font-bold">
+                  <td className="w-32 px-1 py-0.5 align-top font-bold">
                     Address
                   </td>
-                  <td className="w-3 border-b border-[#111] px-1 py-1 text-center align-top">
+                  <td className="w-3 px-1 py-0.5 text-center align-top">
                     :
                   </td>
-                  <td className="border-b border-[#111] px-1 py-1 align-top">
+                  <td className="px-1 py-0.5 align-top">
                     {document.campusAddress}
                   </td>
                 </tr>
                 <tr>
-                  <td className="w-24 border-b border-[#111] px-1 py-1 align-top font-bold">
+                  <td className="w-32 px-1 py-0.5 align-top font-bold">
                     College
                   </td>
-                  <td className="w-3 border-b border-[#111] px-1 py-1 text-center align-top">
+                  <td className="w-3 px-1 py-0.5 text-center align-top">
                     :
                   </td>
-                  <td className="border-b border-[#111] px-1 py-1 align-top">
+                  <td className=" px-1 py-0.5 align-top">
                     {document.collegeName}
                   </td>
                 </tr>
@@ -147,21 +148,21 @@ const FacultyLoadPrintDocument = ({
             <div className="flex min-h-5 flex-1 items-center justify-center border-y border-[#111] px-3 py-2 text-center text-[20px] leading-[1.15] font-medium uppercase">
               {document.facultyName}
             </div>
-            <div className="border-b border-[#111] bg-[#b4b4b4] px-1 py-1 text-center text-[10px] font-bold text-white">
+            <div className="border-b border-[#111] bg-[#b4b4b4] px-1 py-1 text-center text-[8px] font-bold text-white">
               Name of Faculty
             </div>
 
-            <table className="w-full border-collapse text-[10px]">
+            <table className="w-full border-collapse text-[8px]">
               <tbody>
                 {detailsRows.map(([label, value]) => (
                   <tr key={label}>
-                    <td className="w-40 px-1 py-0.5 align-center font-bold">
+                    <td className="w-32 px-1 align-top font-bold">
                       {label}
                     </td>
-                    <td className="w-2 px-1 py-0.5 text-center align-center">
+                    <td className="w-2 px-1 text-center align-top">
                       :
                     </td>
-                    <td className="px-1 py-0.5 align-center wrap whitespace-pre-line leading-[1.15]">
+                    <td className="px-1 align-top wrap whitespace-pre-line leading-[1.15]">
                       {value}
                     </td>
                   </tr>
@@ -174,7 +175,7 @@ const FacultyLoadPrintDocument = ({
             <table
               className={cn(
                 styles.scheduleTable,
-                "w-full border-collapse text-[10px]",
+                "w-full border-collapse text-[8px]",
               )}
             >
               <colgroup>
@@ -232,7 +233,7 @@ const FacultyLoadPrintDocument = ({
                 ) : (
                   scheduleRows.map((row) => (
                     <tr key={row.row_id}>
-                      <td className="border-r border-b border-[#111] px-1 py-1 text-center align-center leading-[1.3]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.3]">
                         {row.session
                           ? toRowTime(
                               row.session.start_time,
@@ -240,32 +241,32 @@ const FacultyLoadPrintDocument = ({
                             )
                           : "-"}
                       </td>
-                      <td className="border-r border-b border-[#111] px-1 py-1 text-center align-center leading-[1.2]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {row.session_days.length > 0
                           ? row.session_days
                               .map((day) => dayLabel(day))
                               .join(" / ")
                           : "-"}
                       </td>
-                      <td className="border-r border-b border-[#111] px-1 py-1 align-center leading-[1.2]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 align-top leading-[1.2]">
                         {row.course_code}: {row.course_title}
                       </td>
-                      <td className="border-r border-b border-[#111] px-1 py-1 text-center align-center leading-[1.2]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {formatHours(row.lecture_hours)}
                       </td>
-                      <td className="border-r border-b border-[#111] px-1 py-1 text-center align-center leading-[1.2]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {row.lecture_room ?? (row.lecture_hours ? "ONLINE" : "-")}
                       </td>
-                      <td className="border-r border-b border-[#111] px-1 py-1 text-center align-center leading-[1.2]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {formatHours(row.laboratory_hours)}
                       </td>
-                      <td className="border-r border-b border-[#111] px-1 py-1 text-center align-center leading-[1.2]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {row.laboratory_room ?? (row.laboratory_hours ? "ONLINE" : "-")}
                       </td>
-                      <td className="border-r border-b border-[#111] px-1 py-1 text-center align-center leading-[1.2]">
+                      <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {row.block_codes_label || "-"}
                       </td>
-                      <td className="border-b border-[#111] px-1 py-1 text-center align-center leading-[1.2]">
+                      <td className="border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {row.student_count ?? "-"}
                       </td>
                     </tr>
@@ -278,38 +279,38 @@ const FacultyLoadPrintDocument = ({
 
         {/** Signatories */}
         <div className="pb-2">
-          <section className="flex items-center gap-2 border-y border-[#111] px-1 py-1 text-[10px] font-bold">
+          <section className="flex items-center gap-2 border-y border-[#111] px-1 py-1 text-[8px] font-bold">
             Conforme (Affix Faculty Signature):
           </section>
-          <div className="mb-2 grid grid-cols-3 gap-3 text-[10px] italic px-1">
+          <div className="mb-2 grid grid-cols-3 gap-3 text-[8px] italic px-1">
             <p>Prepared by:</p>
             <p>Recommending Approval:</p>
             <p>Approved:</p>
           </div>
           <div className="grid grid-cols-3 gap-3 px-1">
             <div className="text-center">
-              <p className="min-h-4 border-[#111] text-[10px] font-bold tracking-[0.01em] uppercase">
+              <p className="min-h-4 border-[#111] text-[8px] font-bold tracking-[0.01em] uppercase">
                 {formatSignedName(document.signatories.preparedBy.name)}
               </p>
-              <p className="-mt-1 text-[10px]">
+              <p className="-mt-1 text-[8px]">
                 {document.signatories.preparedBy.title}
               </p>
             </div>
             <div className="text-center">
-              <p className="min-h-4 text-[10px] font-bold tracking-[0.01em] uppercase">
+              <p className="min-h-4 text-[8px] font-bold tracking-[0.01em] uppercase">
                 {formatSignedName(
                   document.signatories.recommendingApproval.name,
                 )}
               </p>
-              <p className="-mt-1 text-[10px]">
+              <p className="-mt-1 text-[8px]">
                 {document.signatories.recommendingApproval.title}
               </p>
             </div>
             <div className="text-center">
-              <p className="min-h-4 border-[#111] text-[10px] font-bold tracking-[0.01em] uppercase">
+              <p className="min-h-4 border-[#111] text-[8px] font-bold tracking-[0.01em] uppercase">
                 {formatSignedName(document.signatories.approvedBy.name)}
               </p>
-              <p className="-mt-1 text-[10px]">
+              <p className="-mt-1 text-[8px]">
                 {document.signatories.approvedBy.title}
               </p>
             </div>
