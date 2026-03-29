@@ -1,13 +1,14 @@
-import FacultyLoadApproval from "@/components/ftl-evaluation/faculty-load/faculty-load-approval";
+import FacultyLoadStatus from "@/components/ftl-evaluation/faculty-load/faculty-load-status";
 import {
   getEvaluationsByProposal,
+  getLatestCampusLoadContextByFacultyProposal,
   getLatestProposalByUserTerm,
 } from "@/lib/load-proposal/queries";
 import { getUserRole } from "@/lib/auth/utils";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import type { ProposalLifecycleStatus, EvaluationStatus } from "@/models";
 
-type FacultyLoadStatusProps = {
+type FacultyLoadStatusPanelProps = {
   academicTermId: string;
   facultyId: string;
   facultyCampusCode: string | null;
@@ -25,11 +26,11 @@ const resolveCampusDirectorStatus = (
   return "PENDING";
 };
 
-const FacultyLoadStatus = async ({
+const FacultyLoadStatusPanel = async ({
   academicTermId,
   facultyId,
   facultyCampusCode,
-}: FacultyLoadStatusProps) => {
+}: FacultyLoadStatusPanelProps) => {
   const [proposal, roles, currentUserData] = await Promise.all([
     getLatestProposalByUserTerm(facultyId, academicTermId),
     getUserRole(),
@@ -45,6 +46,10 @@ const FacultyLoadStatus = async ({
     ? await getEvaluationsByProposal(proposal.id)
     : [];
   const latestEvaluation = evaluations[0] ?? null;
+
+  const linkedCampusContext = proposal
+    ? await getLatestCampusLoadContextByFacultyProposal(proposal.id)
+    : { campusLoad: null, evaluations: [] };
 
   const campusDirectorStatus = proposal
     ? resolveCampusDirectorStatus(
@@ -77,11 +82,13 @@ const FacultyLoadStatus = async ({
       proposal.lifecycle_status === "REJECTED");
 
   return (
-    <FacultyLoadApproval
+    <FacultyLoadStatus
       proposal={proposal}
       latestEvaluation={latestEvaluation}
       campusDirectorStatus={campusDirectorStatus}
       canEvaluateProposal={canApprove}
+      linkedCampusLoad={linkedCampusContext.campusLoad}
+      linkedCampusLoadEvaluations={linkedCampusContext.evaluations}
       academicTermId={academicTermId}
       facultyId={facultyId}
       canCreateProposal={canCreateProposal}
@@ -90,5 +97,4 @@ const FacultyLoadStatus = async ({
   );
 };
 
-export default FacultyLoadStatus;
-
+export default FacultyLoadStatusPanel;

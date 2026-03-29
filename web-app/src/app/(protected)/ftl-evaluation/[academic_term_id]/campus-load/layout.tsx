@@ -39,7 +39,7 @@ const CampusLoadLayout = async ({ children, params }: CampusLoadLayoutProps) => 
             activeMatch: "prefix",
           },
           {
-            label: "Campus Proposal Control",
+            label: "Campus Load Control",
             href: `/ftl-evaluation/${academic_term_id}/campus-load/campus-proposal-control`,
             activeMatch: "prefix",
           },

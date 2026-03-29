@@ -37,7 +37,7 @@ const CampusLoadLadderGrid = ({
       {showDiCard ? (
         <div className="rounded-md border p-3">
           <div className="mb-1 flex items-center justify-between">
-            <p className="font-medium">Director for Instruction</p>
+            <p className="text-base text-foreground">Director for Instruction</p>
             <span
               className={`rounded border px-1.5 py-0.5 text-xs ${evaluationStyle[diEvaluation?.status ?? "PENDING"]}`}
             >
@@ -51,8 +51,8 @@ const CampusLoadLadderGrid = ({
             <CampusLoadStepAction
               campusLoadId={campusLoad.id}
               step="DIRECTOR_FOR_INSTRUCTION"
-              rejectTitle="Reject Campus Proposal (DI)"
-              rejectDescription="Provide an optional reason for rejecting this campus proposal."
+              rejectTitle="Reject Campus Load (DI)"
+              rejectDescription="Provide an optional reason for rejecting this campus load."
             />
           ) : null}
         </div>
@@ -61,7 +61,7 @@ const CampusLoadLadderGrid = ({
       {showVpaaCard ? (
         <div className="rounded-md border p-3">
           <div className="mb-1 flex items-center justify-between">
-            <p className="font-medium">VP for Academic Affairs</p>
+            <p className="text-base text-foreground">VP for Academic Affairs</p>
             <span
               className={`rounded border px-1.5 py-0.5 text-xs ${evaluationStyle[vpaaEvaluation?.status ?? "PENDING"]}`}
             >
@@ -75,8 +75,8 @@ const CampusLoadLadderGrid = ({
             <CampusLoadStepAction
               campusLoadId={campusLoad.id}
               step="VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS"
-              rejectTitle="Reject Campus Proposal (VPAA)"
-              rejectDescription="Provide an optional reason for rejecting this campus proposal."
+              rejectTitle="Reject Campus Load (VPAA)"
+              rejectDescription="Provide an optional reason for rejecting this campus load."
             />
           ) : null}
         </div>

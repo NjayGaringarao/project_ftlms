@@ -3,6 +3,7 @@ import { getUserRole } from "@/lib/auth/utils";
 import { getTermById } from "@/lib/admin/terms";
 import {
   getEvaluationsByProposal,
+  getLatestCampusLoadContextByFacultyProposal,
   getLatestProposalByUserTerm,
 } from "@/lib/load-proposal/queries";
 import { getFacultyScheduleTermSnapshot } from "@/lib/schedule/faculty-schedule";
@@ -10,7 +11,7 @@ import { getCurrentUserData } from "@/lib/user-data/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
 import ProposalDetailedSummary from "@/components/ftl-evaluation/faculty-load/proposal-detailed-summary";
 import FacultyEvaluationSchedule from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-schedule";
-import FacultyLoadApproval from "@/components/ftl-evaluation/faculty-load/faculty-load-approval";
+import FacultyLoadStatus from "@/components/ftl-evaluation/faculty-load/faculty-load-status";
 import type { EvaluationStatus, ProposalLifecycleStatus } from "@/models";
 
 type CampusFacultyEvaluationPageProps = {
@@ -67,7 +68,10 @@ const CampusFacultyEvaluationPage = async ({
             designation.job_title === "Campus Director" &&
             designation.campus_id,
         )
-        .map((designation: CampusScopedDesignation) => designation.campus_id as string),
+        .map(
+          (designation: CampusScopedDesignation) =>
+            designation.campus_id as string,
+        ),
     );
 
     if (!overview.campus_id || !allowedCampusIds.has(overview.campus_id)) {
@@ -79,6 +83,9 @@ const CampusFacultyEvaluationPage = async ({
     ? await getEvaluationsByProposal(proposal.id)
     : [];
   const latestEvaluation = evaluations[0] ?? null;
+  const linkedCampusContext = proposal
+    ? await getLatestCampusLoadContextByFacultyProposal(proposal.id)
+    : { campusLoad: null, evaluations: [] };
   const campusDirectorDesignation = overview.campus_id
     ? (currentUserData?.designations ?? []).find(
         (designation: { job_title: string; campus_id: string | null }) =>
@@ -102,25 +109,25 @@ const CampusFacultyEvaluationPage = async ({
   const academicTermCode = selectedTerm?.code ?? "Unknown term";
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <div className="flex-1 flex flex-row gap-4 overflow-hidden">
-          <FacultyEvaluationSchedule scheduleSnapshot={scheduleSnapshot} />
-
-        <div className="flex flex-col w-94 overflow-hidden">
-          <ProposalDetailedSummary
-            overview={overview}
-            academicTermCode={academicTermCode}
-            proposal={proposal}
-          />
-        </div>
+    <div className="flex flex-row gap-4 h-full">
+      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+        <FacultyEvaluationSchedule scheduleSnapshot={scheduleSnapshot} />
+        <FacultyLoadStatus
+          proposal={proposal}
+          latestEvaluation={latestEvaluation}
+          campusDirectorStatus={campusDirectorStatus}
+          canEvaluateProposal={canEvaluateProposal}
+          linkedCampusLoad={linkedCampusContext.campusLoad}
+          linkedCampusLoadEvaluations={linkedCampusContext.evaluations}
+        />
       </div>
-
-      <FacultyLoadApproval
-        proposal={proposal}
-        latestEvaluation={latestEvaluation}
-        campusDirectorStatus={campusDirectorStatus}
-        canEvaluateProposal={canEvaluateProposal}
-      />
+      <div className="flex flex-col w-94 overflow-hidden">
+        <ProposalDetailedSummary
+          overview={overview}
+          academicTermCode={academicTermCode}
+          proposal={proposal}
+        />
+      </div>
     </div>
   );
 };

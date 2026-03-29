@@ -1,8 +1,20 @@
-export const formatDateTime = (input?: string | Date) => {
+export const formatDateTime = (input?: string | Date, options?: "short" | "long") => {
   if (!input) return "Not available";
 
   const date = input instanceof Date ? input : new Date(input);
 
+  if (options === "short") {
+    return date.toLocaleDateString("en-US", {
+      year: "2-digit",
+      month: "2-digit",
+      day: "numeric",
+    }) + " " + date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+  }
   return (
     date.toLocaleDateString("en-US", {
       year: "numeric",

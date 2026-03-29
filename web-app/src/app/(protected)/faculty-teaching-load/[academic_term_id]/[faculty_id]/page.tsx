@@ -1,5 +1,5 @@
 import ConcurrentLoadSummary from "@/components/faculty-teaching-load/concurrent-load-summary";
-import FacultyLoadStatus from "@/components/faculty-teaching-load/faculty-load-status";
+import FacultyLoadStatusPanel from "@/components/faculty-teaching-load/faculty-load-status-panel";
 import { FacultyScheduleCard } from "@/components/schedule/faculty/faculty-load-schedule-cards";
 import { getTermById } from "@/lib/admin/terms";
 import { buildFacultyLoadSnapshot } from "@/lib/load-proposal/snapshot";
@@ -46,15 +46,21 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
   }, {});
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <div className="flex-1 flex flex-row gap-4 overflow-hidden">
+    <div className="flex flex-row gap-4 h-full">
+      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
         <FacultyScheduleCard
           className="h-full"
           hasSchedule={scheduleSnapshot.has_schedule}
           scheduleRows={scheduleSnapshot.schedule_rows}
           manageScheduleLinksByClassId={manageScheduleLinksByClassId}
         />
+          <FacultyLoadStatusPanel
+            academicTermId={academic_term_id}
+            facultyId={faculty_id}
+            facultyCampusCode={currentData.campus?.code ?? null}
+          />
 
+      </div>
         <div className="flex flex-col w-94 overflow-hidden">
           <ConcurrentLoadSummary
             userData={currentData}
@@ -62,13 +68,7 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
             snapshot={snapshot}
           />
         </div>
-      </div>
 
-      <FacultyLoadStatus
-        academicTermId={academic_term_id}
-        facultyId={faculty_id}
-        facultyCampusCode={currentData.campus?.code ?? null}
-      />
     </div>
   );
 };

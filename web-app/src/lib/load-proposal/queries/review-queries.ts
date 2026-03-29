@@ -172,6 +172,60 @@ export const getCampusLoadEvaluations = async (
   return (data ?? []) as CampusLoadEvaluation[];
 };
 
+export const getLatestCampusLoadContextByFacultyProposal = async (
+  facultyLoadProposalId: string,
+): Promise<{
+  campusLoad: CampusLoad | null;
+  evaluations: CampusLoadEvaluation[];
+}> => {
+  const supabase = await createClient();
+  const { data: memberRows, error: memberError } = await supabase
+    .from("campus_load_member")
+    .select("campus_load_id")
+    .eq("source_faculty_load_proposal_id", facultyLoadProposalId);
+
+  if (memberError) {
+    console.error(
+      "loadProposal.getLatestCampusLoadContextByFacultyProposal.members ::",
+      memberError,
+    );
+    return { campusLoad: null, evaluations: [] };
+  }
+
+  const campusLoadIds = Array.from(
+    new Set(
+      (memberRows ?? [])
+        .map((row) => row.campus_load_id)
+        .filter((value): value is string => typeof value === "string"),
+    ),
+  );
+
+  if (campusLoadIds.length === 0) {
+    return { campusLoad: null, evaluations: [] };
+  }
+
+  const { data: campusLoad, error: campusLoadError } = await supabase
+    .from("campus_load")
+    .select("*")
+    .in("id", campusLoadIds)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (campusLoadError || !campusLoad) {
+    if (campusLoadError) {
+      console.error(
+        "loadProposal.getLatestCampusLoadContextByFacultyProposal.campusLoad ::",
+        campusLoadError,
+      );
+    }
+    return { campusLoad: null, evaluations: [] };
+  }
+
+  const evaluations = await getCampusLoadEvaluations(campusLoad.id);
+  return { campusLoad, evaluations };
+};
+
 export const getCurrentIndividualProposalsByCampusTerm = async (
   campusId: string,
   academicTermId: string,

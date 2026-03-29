@@ -44,7 +44,7 @@ const CampusLoadControlPage = async ({
     return (
       <div className="flex h-full items-center justify-center p-4">
         <div className="max-w-lg rounded-lg border border-dashed p-6 text-sm text-foreground/70">
-          No campus is available for campus proposal control. Assign a Campus
+          No campus is available for campus load control. Assign a Campus
           Director designation first or create campus records.
         </div>
       </div>
@@ -56,7 +56,7 @@ const CampusLoadControlPage = async ({
     return (
       <div className="flex h-full items-center justify-center p-4">
         <div className="max-w-lg rounded-lg border border-dashed p-6 text-sm text-foreground/70">
-          Unable to resolve campus information for campus proposal control.
+          Unable to resolve campus information for campus load control.
         </div>
       </div>
     );
