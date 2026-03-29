@@ -4,6 +4,7 @@ import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
 const CHROMIUM_PACK_FILE = "chromium-pack.tar";
+const CHROMIUM_PACK_DIR = "chromium-pack";
 
 let cachedExecutablePath: Promise<string> | null = null;
 
@@ -60,24 +61,31 @@ function getVercelPackUrl(): string | null {
 }
 
 function getChromiumPackSource(): string {
-  const localPublicPackPath = path.join(
+  const localPublicPackDir = path.join(
     process.cwd(),
     "public",
-    CHROMIUM_PACK_FILE,
+    CHROMIUM_PACK_DIR,
   );
-  if (existsSync(localPublicPackPath)) {
-    return localPublicPackPath;
+  if (existsSync(localPublicPackDir)) {
+    return localPublicPackDir;
   }
 
-  const localNodeModulesPackDir = path.join(
-    process.cwd(),
-    "node_modules",
-    "@sparticuz",
-    "chromium",
-    "bin",
-  );
-  if (existsSync(localNodeModulesPackDir)) {
-    return localNodeModulesPackDir;
+  const localNodeModulesCandidates = [
+    path.join(process.cwd(), "node_modules", "@sparticuz", "chromium", "bin"),
+    path.join(
+      process.cwd(),
+      "..",
+      "node_modules",
+      "@sparticuz",
+      "chromium",
+      "bin",
+    ),
+  ];
+
+  for (const candidate of localNodeModulesCandidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
   }
 
   const remotePackUrl = getVercelPackUrl();
