@@ -61,27 +61,25 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
+    label: "Scheduler",
+    href: "/scheduler",
+    icon: "clock",
+    allowedRoles: ["Program Chairperson", "College Dean"],
+  },
+  {
     label: "Faculty Teaching Load",
     href: "/faculty-teaching-load",
     icon: "weight-tilde",
     allowedRoles: [
-      "Admin",
       "Program Chairperson",
       "College Dean",
     ],
-  },
-  {
-    label: "Scheduler",
-    href: "/scheduler",
-    icon: "clock",
-    allowedRoles: ["Admin", "Program Chairperson", "College Dean"],
   },
   {
     label: "FTL Evaluation",
     href: "/ftl-evaluation",
     icon: "book-copy",
     allowedRoles: [
-      "Admin",
       "Campus Director",
       "Director for Instruction",
       "Vice President for Academic Affairs",
