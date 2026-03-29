@@ -161,7 +161,7 @@ const FacultyLoadPrintDocument = ({
                     <td className="w-2 px-1 py-0.5 text-center align-center">
                       :
                     </td>
-                    <td className="px-1 py-0.5 align-center wrap leading-[1.15]">
+                    <td className="px-1 py-0.5 align-center wrap whitespace-pre-line leading-[1.15]">
                       {value}
                     </td>
                   </tr>

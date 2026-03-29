@@ -1,7 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FieldView from "@/components/ui/field-view";
 import type { UserDataReadModel } from "@/lib/user-data/types";
-import type { FacultyLoadSnapshot } from "@/lib/load-proposal/snapshot";
+import {
+  formatProposalDegreeItems,
+  formatProposalDesignationItems,
+  type FacultyLoadSnapshot,
+} from "@/lib/load-proposal/snapshot";
 
 type ConcurrentLoadSummaryProps = {
   userData: UserDataReadModel;
@@ -37,10 +41,22 @@ const ConcurrentLoadSummary = ({
 
           <FieldView label="Employment" value={snapshot.employment_status ?? "-"} />
           <FieldView label="Rank" value={snapshot.academic_rank ?? "-"} />
-          <FieldView label="Bachelor's" value={snapshot.bachelors_degree ?? "-"} />
-          <FieldView label="Master's" value={snapshot.masters_degree ?? "-"} />
-          <FieldView label="Doctorate" value={snapshot.doctorate_degree ?? "-"} />
-          <FieldView label="Designations" value={snapshot.designations ?? "-"} />
+          <FieldView
+            label="Bachelor's"
+            value={formatProposalDegreeItems(snapshot.bachelors_degree, ", ")}
+          />
+          <FieldView
+            label="Master's"
+            value={formatProposalDegreeItems(snapshot.masters_degree, ", ")}
+          />
+          <FieldView
+            label="Doctorate"
+            value={formatProposalDegreeItems(snapshot.doctorate_degree, ", ")}
+          />
+          <FieldView
+            label="Designations"
+            value={formatProposalDesignationItems(snapshot.designations, "; ")}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <FieldView label="ETL" value={toFixed(snapshot.equivalent_teaching_load)} />

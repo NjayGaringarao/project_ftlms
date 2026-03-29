@@ -134,7 +134,11 @@ export const createIndividualProposalViaRpc = async ({
     };
   }
 
-  const snapshot = buildFacultyLoadSnapshot(userData);
+  const snapshot = await buildFacultyLoadSnapshot({
+    userData,
+    userId: facultyId,
+    academicTermId,
+  });
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_faculty_load_proposal", {
     p_user_id: facultyId,
@@ -146,6 +150,7 @@ export const createIndividualProposalViaRpc = async ({
     p_masters_degree: snapshot.masters_degree,
     p_doctorate_degree: snapshot.doctorate_degree,
     p_designations: snapshot.designations,
+    p_schedule_sessions: snapshot.schedule_sessions,
     p_equivalent_teaching_load: snapshot.equivalent_teaching_load,
     p_total_lecture_hours: snapshot.total_lecture_hours,
     p_total_lab_hours: snapshot.total_lab_hours,

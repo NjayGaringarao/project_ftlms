@@ -1,8 +1,13 @@
 import { getUserRole } from "@/lib/auth/utils";
 import { getTermById } from "@/lib/admin/terms";
 import { getLatestProposalByUserTerm } from "@/lib/load-proposal/queries";
-import { getFacultyScheduleTermSnapshot } from "@/lib/schedule/faculty-schedule";
+import {
+  formatProposalDegreeItems,
+  formatProposalDesignationItems,
+} from "@/lib/load-proposal/snapshot";
 import type { FacultyScheduleRow } from "@/lib/schedule/types";
+import { sortScheduleRows, toMinutes } from "@/lib/schedule/utils";
+import type { ProposalScheduleSessionItem } from "@/models";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
 import { createClient } from "@/utils/supabase/server";
@@ -95,12 +100,122 @@ const toNonEmptyText = (
   return normalized ? normalized : fallback;
 };
 
+const toNullableText = (value: string | null | undefined): string | null => {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+};
+
 const toTermDisplayName = (rawTermName: string): string => {
   const normalized = rawTermName.toUpperCase();
   if (normalized === "FIRST SEMESTER") return "1st Semester";
   if (normalized === "SECOND SEMESTER") return "2nd Semester";
   if (normalized === "MIDYEAR") return "Midyear";
   return rawTermName;
+};
+
+const toScheduleSessions = (
+  value: unknown,
+): ProposalScheduleSessionItem[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Partial<ProposalScheduleSessionItem>;
+      const sessionId = toNonEmptyText(row.session_id ?? null, "");
+      const classId = toNonEmptyText(row.class_id ?? null, "");
+      const courseUtilizationId = toNonEmptyText(row.course_utilization_id ?? null, "");
+      const courseCode = toNonEmptyText(row.course_code ?? null, "Unknown");
+      const courseTitle = toNonEmptyText(row.course_title ?? null, "Untitled Course");
+      const day = toNonEmptyText(row.day ?? null, "");
+      const startTime = toNonEmptyText(row.start_time ?? null, "");
+      const endTime = toNonEmptyText(row.end_time ?? null, "");
+      const type = toNonEmptyText(row.type ?? null, "");
+      const blockId = toNonEmptyText(row.block_id ?? null, "");
+      const blockCode = toNonEmptyText(row.block_code ?? null, "");
+      const section = toNonEmptyText(row.section ?? null, "");
+
+      if (
+        !sessionId ||
+        !classId ||
+        !courseUtilizationId ||
+        !day ||
+        !startTime ||
+        !endTime ||
+        !type ||
+        !blockId ||
+        !blockCode ||
+        !section
+      ) {
+        return null;
+      }
+
+      return {
+        session_id: sessionId,
+        class_id: classId,
+        course_utilization_id: courseUtilizationId,
+        course_code: courseCode,
+        course_title: courseTitle,
+        day: row.day as ProposalScheduleSessionItem["day"],
+        start_time: startTime,
+        end_time: endTime,
+        type: row.type as ProposalScheduleSessionItem["type"],
+        room_id: toNullableText(row.room_id ?? null),
+        room_code: toNullableText(row.room_code ?? null),
+        room_name: toNullableText(row.room_name ?? null),
+        block_id: blockId,
+        block_code: blockCode,
+        year_level: Math.max(0, Math.round(toNumber(row.year_level))),
+        section,
+        student_count:
+          row.student_count === null || row.student_count === undefined
+            ? null
+            : Math.max(0, Math.round(toNumber(row.student_count))),
+      } satisfies ProposalScheduleSessionItem;
+    })
+    .filter((item): item is ProposalScheduleSessionItem => Boolean(item));
+};
+
+const toScheduleHours = (startTime: string, endTime: string): number => {
+  const minutes = Math.max(toMinutes(endTime) - toMinutes(startTime), 0);
+  return Number((minutes / 60).toFixed(2));
+};
+
+const toDisplayScheduleRows = (
+  sessions: ProposalScheduleSessionItem[],
+): FacultyScheduleRow[] => {
+  const rows = sessions.map((session) => {
+    const isLecture = session.type === "Lecture";
+    const sessionHours = toScheduleHours(session.start_time, session.end_time);
+
+    return {
+      row_id: `${session.session_id}:${session.course_utilization_id}:${session.block_id}`,
+      class_id: session.class_id,
+      primary_block_id: session.block_id,
+      primary_course_utilization_id: session.course_utilization_id,
+      course_code: session.course_code,
+      course_title: session.course_title,
+      block_codes_label: session.block_code,
+      student_count: session.student_count,
+      lecture_hours: isLecture ? sessionHours : null,
+      lecture_room: isLecture ? (session.room_code ?? session.room_name) : null,
+      laboratory_hours: !isLecture ? sessionHours : null,
+      laboratory_room: !isLecture ? (session.room_code ?? session.room_name) : null,
+      session_days: [session.day],
+      session: {
+        id: session.session_id,
+        day: session.day,
+        start_time: session.start_time,
+        end_time: session.end_time,
+        type: session.type,
+        room_id: session.room_id,
+        room_code: session.room_code,
+        room_name: session.room_name,
+      },
+    } satisfies FacultyScheduleRow;
+  });
+
+  return sortScheduleRows(rows);
 };
 
 const resolveDesignationName = (row: RawDesignationRow | null): string | null => {
@@ -197,11 +312,10 @@ export const getFacultyLoadExportDocument = async ({
   academicTermId,
   facultyId,
 }: FacultyLoadExportInput): Promise<FacultyLoadExportDocument> => {
-  const [overview, proposal, term, scheduleSnapshot] = await Promise.all([
+  const [overview, proposal, term] = await Promise.all([
     getUserOverviewById(facultyId),
     getLatestProposalByUserTerm(facultyId, academicTermId),
     getTermById(academicTermId),
-    getFacultyScheduleTermSnapshot(facultyId, academicTermId),
   ]);
 
   if (!overview) {
@@ -233,6 +347,9 @@ export const getFacultyLoadExportDocument = async ({
   const actualTeachingLoad = toFixed(toNumber(proposal.actual_teaching_load));
   const totalWorkingLoad = toFixed(equivalentTeachingLoad + actualTeachingLoad);
   const excess24 = toFixed(Math.max(totalWorkingLoad - 24, 0));
+  const scheduleRows = toDisplayScheduleRows(
+    toScheduleSessions(proposal.schedule_sessions),
+  );
 
   return {
     facultyId,
@@ -246,10 +363,10 @@ export const getFacultyLoadExportDocument = async ({
     collegeName: toNonEmptyText(overview.college?.name),
     employmentStatus: toNonEmptyText(proposal.employment_status),
     academicRank: toNonEmptyText(proposal.academic_rank),
-    bachelorsDegree: toNonEmptyText(proposal.bachelors_degree),
-    mastersDegree: toNonEmptyText(proposal.masters_degree),
-    doctorateDegree: toNonEmptyText(proposal.doctorate_degree),
-    designations: toNonEmptyText(proposal.designations),
+    bachelorsDegree: formatProposalDegreeItems(proposal.bachelors_degree),
+    mastersDegree: formatProposalDegreeItems(proposal.masters_degree),
+    doctorateDegree: formatProposalDegreeItems(proposal.doctorate_degree),
+    designations: formatProposalDesignationItems(proposal.designations),
     advisoryClass: toNonEmptyText(proposal.advisory_class),
     equivalentTeachingLoad,
     totalLectureHours,
@@ -259,7 +376,7 @@ export const getFacultyLoadExportDocument = async ({
     actualTeachingLoad,
     totalWorkingLoad,
     excess24,
-    scheduleRows: scheduleSnapshot.schedule_rows,
+    scheduleRows,
     signatories: {
       preparedBy: {
         name: preparedByName,

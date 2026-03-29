@@ -1,5 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FieldView from "@/components/ui/field-view";
+import {
+  formatProposalDegreeItems,
+  formatProposalDesignationItems,
+} from "@/lib/load-proposal/snapshot";
 import type { UserOverviewReadModel } from "@/lib/user-overview/types";
 import type { FacultyLoadProposal } from "@/models";
 import { formatDateTime } from "@/utils/time";
@@ -45,19 +49,19 @@ const ProposalDetailedSummary = ({
               <FieldView label="Rank" value={proposal.academic_rank ?? "-"} />
               <FieldView
                 label="Bachelor's"
-                value={proposal.bachelors_degree ?? "-"}
+                value={formatProposalDegreeItems(proposal.bachelors_degree, ", ")}
               />
               <FieldView
                 label="Master's"
-                value={proposal.masters_degree ?? "-"}
+                value={formatProposalDegreeItems(proposal.masters_degree, ", ")}
               />
               <FieldView
                 label="Doctorate"
-                value={proposal.doctorate_degree ?? "-"}
+                value={formatProposalDegreeItems(proposal.doctorate_degree, ", ")}
               />
               <FieldView
                 label="Designations"
-                value={proposal.designations ?? "-"}
+                value={formatProposalDesignationItems(proposal.designations, "; ")}
               />
 
               <div className="grid grid-cols-2 gap-4">

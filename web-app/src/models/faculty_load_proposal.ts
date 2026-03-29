@@ -1,6 +1,7 @@
 import { AcademicTerm } from "./academic_term";
 import { Campus } from "./campus";
 import { Designation } from "./designation";
+import { SessionDay, SessionType } from "./session";
 import { User, EmploymentStatus } from "./user";
 
 export type ProposalLifecycleStatus =
@@ -9,6 +10,38 @@ export type ProposalLifecycleStatus =
   | "REJECTED"
   | "INVALIDATED";
 
+export type ProposalDegreeItem = {
+  title: string;
+  year_graduated: number | null;
+};
+
+export type ProposalDesignationItem = {
+  job_title: string;
+  campus_code: string | null;
+  college_code: string | null;
+  program_offering_code: string | null;
+};
+
+export type ProposalScheduleSessionItem = {
+  session_id: string;
+  class_id: string;
+  course_utilization_id: string;
+  course_code: string;
+  course_title: string;
+  day: SessionDay;
+  start_time: string;
+  end_time: string;
+  type: SessionType;
+  room_id: string | null;
+  room_code: string | null;
+  room_name: string | null;
+  block_id: string;
+  block_code: string;
+  year_level: number;
+  section: string;
+  student_count: number | null;
+};
+
 export type FacultyLoadProposal = {
   id: string;
   user_id: string;
@@ -16,10 +49,11 @@ export type FacultyLoadProposal = {
   academic_term_id: string;
   employment_status: EmploymentStatus;
   academic_rank: string | null;
-  bachelors_degree: string | null;
-  masters_degree: string | null;
-  doctorate_degree: string | null;
-  designations: string | null;
+  bachelors_degree: ProposalDegreeItem[];
+  masters_degree: ProposalDegreeItem[];
+  doctorate_degree: ProposalDegreeItem[];
+  designations: ProposalDesignationItem[];
+  schedule_sessions: ProposalScheduleSessionItem[];
   equivalent_teaching_load: number | null;
   total_lecture_hours: number | null;
   total_lab_hours: number | null;

@@ -85,61 +85,101 @@ export const getCampusLoadMembers = async (
       id,
       campus_load_id,
       source_faculty_load_proposal_id,
-      faculty_user_id,
-      employment_status,
-      academic_rank,
-      bachelors_degree,
-      masters_degree,
-      doctorate_degree,
-      designations,
-      equivalent_teaching_load,
-      total_lecture_hours,
-      total_lab_hours,
-      preparation_count,
-      actual_teaching_load,
-      advisory_class,
-      source_faculty_load_proposal_lifecycle_status,
-      source_faculty_load_proposal_created_at,
       created_at,
-      faculty_user:faculty_user_id (
+      source_faculty_load_proposal:source_faculty_load_proposal_id (
         id,
-        identity:identity (name)
+        user_id,
+        campus_id,
+        academic_term_id,
+        employment_status,
+        academic_rank,
+        bachelors_degree,
+        masters_degree,
+        doctorate_degree,
+        designations,
+        schedule_sessions,
+        equivalent_teaching_load,
+        total_lecture_hours,
+        total_lab_hours,
+        preparation_count,
+        actual_teaching_load,
+        advisory_class,
+        lifecycle_status,
+        invalidated_reason,
+        created_by_user_id,
+        created_by_designation_id,
+        created_at,
+        updated_at,
+        faculty_user:user_id (
+          id,
+          identity:identity (name)
+        )
       )
     `,
     )
     .eq("campus_load_id", campusLoadId)
-    .order("source_faculty_load_proposal_created_at", { ascending: false });
+    .order("created_at", {
+      ascending: false,
+      foreignTable: "source_faculty_load_proposal",
+    });
 
   if (error) {
     console.error("loadProposal.getCampusLoadMembers ::", error);
     return [];
   }
 
-  return (data ?? []).map((row) => {
-    const rawFacultyUser = Array.isArray(row.faculty_user)
-      ? row.faculty_user[0]
-      : row.faculty_user;
+  return (data ?? [])
+    .map((row) => {
+      const rawSourceProposal = Array.isArray(row.source_faculty_load_proposal)
+        ? row.source_faculty_load_proposal[0]
+        : row.source_faculty_load_proposal;
+    const rawFacultyUser = rawSourceProposal
+      ? Array.isArray(rawSourceProposal.faculty_user)
+        ? rawSourceProposal.faculty_user[0]
+        : rawSourceProposal.faculty_user
+      : null;
     const rawIdentity = rawFacultyUser
       ? Array.isArray(rawFacultyUser.identity)
         ? rawFacultyUser.identity[0]
         : rawFacultyUser.identity
       : null;
+      const normalizedSourceProposal = rawSourceProposal
+        ? (() => {
+            const proposal = {
+              ...(rawSourceProposal as Record<string, unknown>),
+            };
+            delete proposal.faculty_user;
+            return proposal;
+          })()
+        : null;
 
-    return {
-      ...row,
-      faculty_user: rawFacultyUser
-        ? {
-            id: String(rawFacultyUser.id),
-            identity: rawIdentity
-              ? {
-                  name:
-                    typeof rawIdentity.name === "string" ? rawIdentity.name : null,
-                }
-              : null,
-          }
-        : null,
-    } as CampusLoadMemberWithFaculty;
-  });
+      if (!normalizedSourceProposal) return null;
+
+      return {
+        ...row,
+        source_faculty_load_proposal:
+          normalizedSourceProposal as CampusLoadMemberWithFaculty["source_faculty_load_proposal"],
+        source_faculty_load_proposal_lifecycle_status:
+          (normalizedSourceProposal.lifecycle_status as ProposalLifecycleStatus) ??
+          "INVALIDATED",
+        source_faculty_load_proposal_created_at:
+          typeof normalizedSourceProposal.created_at === "string"
+            ? normalizedSourceProposal.created_at
+            : null,
+        faculty_user: rawFacultyUser
+          ? {
+              id: String(rawFacultyUser.id),
+              identity: rawIdentity
+                ? {
+                    name:
+                      typeof rawIdentity.name === "string" ? rawIdentity.name : null,
+                  }
+                : null,
+            }
+          : null,
+      } as CampusLoadMemberWithFaculty;
+    })
+    .filter((row): row is CampusLoadMemberWithFaculty => Boolean(row));
 };
 
 export const getCampusLoadEvaluations = async (

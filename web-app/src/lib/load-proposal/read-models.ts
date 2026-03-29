@@ -7,6 +7,9 @@ import type {
 } from "@/models";
 
 export type CampusLoadMemberWithFaculty = CampusLoadMember & {
+  source_faculty_load_proposal: FacultyLoadProposal;
+  source_faculty_load_proposal_lifecycle_status: ProposalLifecycleStatus;
+  source_faculty_load_proposal_created_at: string | null;
   faculty_user: {
     id: string;
     identity: {

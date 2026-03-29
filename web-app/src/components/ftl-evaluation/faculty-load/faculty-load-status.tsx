@@ -76,7 +76,8 @@ const FacultyLoadStatus = ({
   const canSubmitRecreate =
     !!proposal && canRecreateProposal && !!academicTermId && !!facultyId;
   const canExportDocument = !!proposal && !!academicTermId && !!facultyId;
-  const exportDisabledMessage = "Export is available once a faculty load proposal exists.";
+  const exportDisabledMessage =
+    "Export is available once a faculty load proposal exists.";
 
   const pdfExportPath =
     canExportDocument && academicTermId && facultyId
@@ -107,58 +108,70 @@ const FacultyLoadStatus = ({
               </span>
             )}
           </div>
-          <div>
 
-          <Popover.Root>
-            <Popover.Trigger asChild>
-             <Button
-              disabled={!canExportDocument}
-              title={!canExportDocument ? exportDisabledMessage : "Export faculty teaching load"}
-             >
-                <Download className="h-4 w-4" /> Export FTL
-             </Button>
-            </Popover.Trigger>
-            <Popover.Anchor />
-            <Popover.Portal>
-              <Popover.Content sideOffset={6} align="end">
-                <div className="flex flex-col bg-background rounded-md overflow-hidden shadow-md border">
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 px-3 py-2 text-sm  text-foreground/80 hover:bg-foreground/5"
-                    disabled={!canExportDocument}
-                    onClick={() => openExportWindow(pdfExportPath)}
-                    title={!canExportDocument ? exportDisabledMessage : "Download as PDF"}
-                  >
-                    <Download className="h-4 w-4" />
-                    Download PDF
-                  </button>
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-foreground/80 hover:bg-foreground/5"
-                    disabled={!canExportDocument}
-                    onClick={() => openExportWindow(printExportPath)}
-                    title={!canExportDocument ? exportDisabledMessage : "Open print view"}
-                  >
-                    <Printer className="h-4 w-4" />
-                    Print
-                  </button>
-                </div>
-              </Popover.Content>
-            </Popover.Portal>
-          </Popover.Root>
+          <div className="flex flex-row gap-1">
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={!canExportDocument}
+                  title={
+                    !canExportDocument
+                      ? exportDisabledMessage
+                      : "Export faculty teaching load"
+                  }
+                >
+                  <Download className="h-4 w-4" /> Export FTL
+                </Button>
+              </Popover.Trigger>
+              <Popover.Anchor />
+              <Popover.Portal>
+                <Popover.Content sideOffset={6} align="end">
+                  <div className="flex flex-col bg-background rounded-md overflow-hidden shadow-md border">
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 px-3 py-2 text-sm  text-foreground/80 hover:bg-foreground/5"
+                      disabled={!canExportDocument}
+                      onClick={() => openExportWindow(pdfExportPath)}
+                      title={
+                        !canExportDocument
+                          ? exportDisabledMessage
+                          : "Download as PDF"
+                      }
+                    >
+                      <Download className="h-4 w-4" />
+                      Download PDF
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-foreground/80 hover:bg-foreground/5"
+                      disabled={!canExportDocument}
+                      onClick={() => openExportWindow(printExportPath)}
+                      title={
+                        !canExportDocument
+                          ? exportDisabledMessage
+                          : "Open print view"
+                      }
+                    >
+                      <Printer className="h-4 w-4" />
+                      Print
+                    </button>
+                  </div>
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+            {canSubmitRecreate && (
+              <form action={createProposalAction}>
+                <input
+                  type="hidden"
+                  name="academicTermId"
+                  value={academicTermId}
+                />
+                <input type="hidden" name="facultyId" value={facultyId} />
+                <Button>Recreate Proposal</Button>
+              </form>
+            ) }
           </div>
-
-          {canSubmitRecreate && (
-            <form action={createProposalAction}>
-              <input
-                type="hidden"
-                name="academicTermId"
-                value={academicTermId}
-              />
-              <input type="hidden" name="facultyId" value={facultyId} />
-              <Button size="sm">Recreate Proposal</Button>
-            </form>
-          )}
         </CardHeader>
         <CardContent className="grid grid-cols-3 gap-4">
           <div className="rounded-md border p-3">

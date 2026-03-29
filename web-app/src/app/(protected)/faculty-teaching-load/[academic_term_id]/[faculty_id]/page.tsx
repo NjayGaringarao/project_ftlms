@@ -29,7 +29,11 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
   if (!currentData) redirect(`/faculty-teaching-load/${academic_term_id}`);
 
   const academicTermCode = selectedTerm?.code ?? "Unknown term";
-  const snapshot = buildFacultyLoadSnapshot(currentData);
+  const snapshot = await buildFacultyLoadSnapshot({
+    userData: currentData,
+    userId: faculty_id,
+    academicTermId: academic_term_id,
+  });
   const manageScheduleLinksByClassId = scheduleSnapshot.schedule_rows.reduce<
     Record<string, string>
   >((acc, row) => {
