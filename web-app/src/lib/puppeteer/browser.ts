@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import path from "node:path";
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
@@ -59,6 +60,26 @@ function getVercelPackUrl(): string | null {
 }
 
 function getChromiumPackSource(): string {
+  const localPublicPackPath = path.join(
+    process.cwd(),
+    "public",
+    CHROMIUM_PACK_FILE,
+  );
+  if (existsSync(localPublicPackPath)) {
+    return localPublicPackPath;
+  }
+
+  const localNodeModulesPackDir = path.join(
+    process.cwd(),
+    "node_modules",
+    "@sparticuz",
+    "chromium",
+    "bin",
+  );
+  if (existsSync(localNodeModulesPackDir)) {
+    return localNodeModulesPackDir;
+  }
+
   const remotePackUrl = getVercelPackUrl();
   if (remotePackUrl) return remotePackUrl;
 
