@@ -113,6 +113,13 @@ export const formatProposalDegreeItems = (
   return values.length > 0 ? values.join(joiner) : "-";
 };
 
+export const formatLatestProposalDegreeItem = (
+  items: ProposalDegreeItem[] | null | undefined,
+): string => {
+  const latest = (items ?? []).find((item) => Boolean(toNonEmptyText(item.title)));
+  return latest ? toDegreeDisplayLabel(latest) : "-";
+};
+
 const toDesignationDisplayLabel = (item: ProposalDesignationItem): string => {
   const codes = [
     item.campus_code,

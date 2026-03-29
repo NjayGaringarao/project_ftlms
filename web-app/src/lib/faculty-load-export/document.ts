@@ -2,11 +2,11 @@ import { getUserRole } from "@/lib/auth/utils";
 import { getTermById } from "@/lib/admin/terms";
 import { getLatestProposalByUserTerm } from "@/lib/load-proposal/queries";
 import {
-  formatProposalDegreeItems,
+  formatLatestProposalDegreeItem,
   formatProposalDesignationItems,
 } from "@/lib/load-proposal/snapshot";
 import type { FacultyScheduleRow } from "@/lib/schedule/types";
-import { sortScheduleRows, toMinutes } from "@/lib/schedule/utils";
+import { mergeBlockLabels, sortScheduleRows, toMinutes } from "@/lib/schedule/utils";
 import type { ProposalScheduleSessionItem } from "@/models";
 import { getCurrentUserData } from "@/lib/user-data/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
@@ -91,6 +91,16 @@ const toNumber = (value: number | string | null | undefined): number => {
 };
 
 const toFixed = (value: number): number => Number(value.toFixed(2));
+
+const SESSION_DAY_ORDER: Record<ProposalScheduleSessionItem["day"], number> = {
+  Sunday: 1,
+  Monday: 2,
+  Tuesday: 3,
+  Wednesday: 4,
+  Thursday: 5,
+  Friday: 6,
+  Saturday: 7,
+};
 
 const toNonEmptyText = (
   value: string | null | undefined,
@@ -181,38 +191,136 @@ const toScheduleHours = (startTime: string, endTime: string): number => {
   return Number((minutes / 60).toFixed(2));
 };
 
+const toRoomLabel = (session: ProposalScheduleSessionItem): string | null => {
+  if (!session.room_code && !session.room_name) return null;
+  if (!session.room_code) return session.room_name ?? null;
+  if (!session.room_name) return session.room_code;
+  return session.room_code;
+};
+
 const toDisplayScheduleRows = (
   sessions: ProposalScheduleSessionItem[],
 ): FacultyScheduleRow[] => {
-  const rows = sessions.map((session) => {
-    const isLecture = session.type === "Lecture";
-    const sessionHours = toScheduleHours(session.start_time, session.end_time);
+  const groupedByClass = new Map<string, ProposalScheduleSessionItem[]>();
+  sessions.forEach((session) => {
+    const rows = groupedByClass.get(session.class_id);
+    if (rows) {
+      rows.push(session);
+      return;
+    }
+    groupedByClass.set(session.class_id, [session]);
+  });
 
-    return {
-      row_id: `${session.session_id}:${session.course_utilization_id}:${session.block_id}`,
-      class_id: session.class_id,
-      primary_block_id: session.block_id,
-      primary_course_utilization_id: session.course_utilization_id,
-      course_code: session.course_code,
-      course_title: session.course_title,
-      block_codes_label: session.block_code,
-      student_count: session.student_count,
-      lecture_hours: isLecture ? sessionHours : null,
-      lecture_room: isLecture ? (session.room_code ?? session.room_name) : null,
-      laboratory_hours: !isLecture ? sessionHours : null,
-      laboratory_room: !isLecture ? (session.room_code ?? session.room_name) : null,
-      session_days: [session.day],
-      session: {
-        id: session.session_id,
-        day: session.day,
-        start_time: session.start_time,
-        end_time: session.end_time,
-        type: session.type,
-        room_id: session.room_id,
-        room_code: session.room_code,
-        room_name: session.room_name,
-      },
-    } satisfies FacultyScheduleRow;
+  const rows: FacultyScheduleRow[] = [];
+
+  groupedByClass.forEach((classSessions, classId) => {
+    if (classSessions.length === 0) {
+      return;
+    }
+
+    const firstSession = classSessions[0]!;
+    const seenBlocks = new Set<string>();
+    const uniqueBlockRows = classSessions.filter((session) => {
+      const dedupeKey = session.block_id.trim() || session.block_code.trim();
+      if (!dedupeKey) return true;
+      if (seenBlocks.has(dedupeKey)) return false;
+      seenBlocks.add(dedupeKey);
+      return true;
+    });
+
+    const blockCodes = Array.from(
+      new Set(
+        uniqueBlockRows
+          .map((session) => session.block_code.trim())
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    const studentCount = uniqueBlockRows.reduce(
+      (sum, session) => sum + Number(session.student_count ?? 0),
+      0,
+    );
+    const mergedBlockCodeLabel = mergeBlockLabels(blockCodes);
+
+    const groupedSessions = new Map<
+      string,
+      { representative: ProposalScheduleSessionItem; days: Set<ProposalScheduleSessionItem["day"]> }
+    >();
+
+    classSessions.forEach((session) => {
+      const roomMergeKey = session.room_id
+        ? `id:${session.room_id}`
+        : `label:${session.room_code ?? ""}:${session.room_name ?? ""}`;
+      const sessionGroupKey = [
+        session.type,
+        session.start_time,
+        session.end_time,
+        roomMergeKey,
+      ].join("|");
+
+      const existingGroup = groupedSessions.get(sessionGroupKey);
+      if (!existingGroup) {
+        groupedSessions.set(sessionGroupKey, {
+          representative: session,
+          days: new Set([session.day]),
+        });
+        return;
+      }
+
+      existingGroup.days.add(session.day);
+
+      const existingDayOrder = SESSION_DAY_ORDER[existingGroup.representative.day];
+      const currentDayOrder = SESSION_DAY_ORDER[session.day];
+      if (currentDayOrder < existingDayOrder) {
+        existingGroup.representative = session;
+      }
+    });
+
+    const compressedRows = Array.from(groupedSessions.values()).map((group) => {
+      const sessionDays = Array.from(group.days).sort(
+        (left, right) => SESSION_DAY_ORDER[left] - SESSION_DAY_ORDER[right],
+      );
+      const representativeSession = {
+        ...group.representative,
+        day: sessionDays[0] ?? group.representative.day,
+      };
+      const sessionHours = Number(
+        (toScheduleHours(
+          representativeSession.start_time,
+          representativeSession.end_time,
+        ) * sessionDays.length).toFixed(2),
+      );
+      const roomLabel = toRoomLabel(representativeSession);
+      const isLecture = representativeSession.type === "Lecture";
+
+      return {
+        row_id: `${classId}:${representativeSession.type}:${representativeSession.start_time}:${representativeSession.end_time}:${roomLabel ?? ""}:${sessionDays.join(",")}`,
+        class_id: classId,
+        primary_block_id: firstSession.block_id,
+        primary_course_utilization_id: firstSession.course_utilization_id,
+        course_code: firstSession.course_code,
+        course_title: firstSession.course_title,
+        block_codes_label: mergedBlockCodeLabel,
+        student_count: studentCount > 0 ? studentCount : null,
+        lecture_hours: isLecture ? sessionHours : null,
+        lecture_room: isLecture ? roomLabel : null,
+        laboratory_hours: !isLecture ? sessionHours : null,
+        laboratory_room: !isLecture ? roomLabel : null,
+        session_days: sessionDays,
+        session: {
+          id: representativeSession.session_id,
+          day: representativeSession.day,
+          start_time: representativeSession.start_time,
+          end_time: representativeSession.end_time,
+          type: representativeSession.type,
+          room_id: representativeSession.room_id,
+          room_code: representativeSession.room_code,
+          room_name: representativeSession.room_name,
+        },
+      } satisfies FacultyScheduleRow;
+    });
+
+    rows.push(...compressedRows);
   });
 
   return sortScheduleRows(rows);
@@ -363,9 +471,9 @@ export const getFacultyLoadExportDocument = async ({
     collegeName: toNonEmptyText(overview.college?.name),
     employmentStatus: toNonEmptyText(proposal.employment_status),
     academicRank: toNonEmptyText(proposal.academic_rank),
-    bachelorsDegree: formatProposalDegreeItems(proposal.bachelors_degree),
-    mastersDegree: formatProposalDegreeItems(proposal.masters_degree),
-    doctorateDegree: formatProposalDegreeItems(proposal.doctorate_degree),
+    bachelorsDegree: formatLatestProposalDegreeItem(proposal.bachelors_degree),
+    mastersDegree: formatLatestProposalDegreeItem(proposal.masters_degree),
+    doctorateDegree: formatLatestProposalDegreeItem(proposal.doctorate_degree),
     designations: formatProposalDesignationItems(proposal.designations),
     advisoryClass: toNonEmptyText(proposal.advisory_class),
     equivalentTeachingLoad,
