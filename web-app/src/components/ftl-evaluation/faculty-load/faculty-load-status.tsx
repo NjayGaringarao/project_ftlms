@@ -81,11 +81,11 @@ const FacultyLoadStatus = ({
 
   const pdfExportPath =
     canExportDocument && academicTermId && facultyId
-      ? `/api/puppeteer/pdf/faculty-load/${academicTermId}/${facultyId}`
+      ? `/api/puppeteer/pdf/documents/faculty_load/single/${academicTermId}/${facultyId}`
       : null;
   const printExportPath =
     canExportDocument && academicTermId && facultyId
-      ? `/print/faculty-load/${academicTermId}/${facultyId}?autoPrint=1`
+      ? `/print/documents/faculty_load/single/${academicTermId}/${facultyId}?autoPrint=1`
       : null;
 
   const openExportWindow = (path: string | null) => {
