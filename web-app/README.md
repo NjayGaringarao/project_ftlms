@@ -20,6 +20,28 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Puppeteer Setup (Vercel + Next.js 16)
+
+This app is configured to run Puppeteer in a Next.js App Router route handler with a Vercel-safe setup:
+
+- `puppeteer-core` for browser automation
+- `@sparticuz/chromium-min` for serverless Chromium runtime
+- `public/chromium-pack.tar` generated at install time by `scripts/pack-chromium.mjs`
+
+### API Route
+
+Use the screenshot route:
+
+```bash
+GET /api/puppeteer/screenshot?url=https://example.com
+```
+
+Optional:
+
+```bash
+GET /api/puppeteer/screenshot?url=https://example.com&fullPage=1
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
