@@ -75,6 +75,22 @@ const FacultyLoadStatus = ({
     !proposal && canCreateProposal && !!academicTermId && !!facultyId;
   const canSubmitRecreate =
     !!proposal && canRecreateProposal && !!academicTermId && !!facultyId;
+  const canExportDocument = !!proposal && !!academicTermId && !!facultyId;
+  const exportDisabledMessage = "Export is available once a faculty load proposal exists.";
+
+  const pdfExportPath =
+    canExportDocument && academicTermId && facultyId
+      ? `/api/puppeteer/pdf/faculty-load/${academicTermId}/${facultyId}`
+      : null;
+  const printExportPath =
+    canExportDocument && academicTermId && facultyId
+      ? `/print/faculty-load/${academicTermId}/${facultyId}?autoPrint=1`
+      : null;
+
+  const openExportWindow = (path: string | null) => {
+    if (!path) return;
+    window.open(path, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <>
@@ -95,7 +111,10 @@ const FacultyLoadStatus = ({
 
           <Popover.Root>
             <Popover.Trigger asChild>
-             <Button>
+             <Button
+              disabled={!canExportDocument}
+              title={!canExportDocument ? exportDisabledMessage : "Export faculty teaching load"}
+             >
                 <Download className="h-4 w-4" /> Export FTL
              </Button>
             </Popover.Trigger>
@@ -106,7 +125,9 @@ const FacultyLoadStatus = ({
                   <button
                     type="button"
                     className="flex items-center gap-2 px-3 py-2 text-sm  text-foreground/80 hover:bg-foreground/5"
-             
+                    disabled={!canExportDocument}
+                    onClick={() => openExportWindow(pdfExportPath)}
+                    title={!canExportDocument ? exportDisabledMessage : "Download as PDF"}
                   >
                     <Download className="h-4 w-4" />
                     Download PDF
@@ -114,7 +135,9 @@ const FacultyLoadStatus = ({
                   <button
                     type="button"
                     className="flex items-center gap-2 px-3 py-2 text-sm text-foreground/80 hover:bg-foreground/5"
-              
+                    disabled={!canExportDocument}
+                    onClick={() => openExportWindow(printExportPath)}
+                    title={!canExportDocument ? exportDisabledMessage : "Open print view"}
                   >
                     <Printer className="h-4 w-4" />
                     Print

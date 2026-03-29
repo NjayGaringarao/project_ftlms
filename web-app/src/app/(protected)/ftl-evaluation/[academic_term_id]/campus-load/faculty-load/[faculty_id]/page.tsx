@@ -119,6 +119,8 @@ const CampusFacultyEvaluationPage = async ({
           canEvaluateProposal={canEvaluateProposal}
           linkedCampusLoad={linkedCampusContext.campusLoad}
           linkedCampusLoadEvaluations={linkedCampusContext.evaluations}
+          academicTermId={academic_term_id}
+          facultyId={faculty_id}
         />
       </div>
       <div className="flex flex-col w-94 overflow-hidden">
