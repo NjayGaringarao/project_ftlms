@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { CampusEtlAtlFacultyMetric } from "@/lib/load-proposal/read-models";
 import { computeCampusLoadDistribution } from "@/lib/load-proposal/derivations";
 import { Card, CardContent } from "@/components/ui/card";
+import FacultyLoadScopeExportActions from "@/components/ftl-evaluation/shared/faculty-load-scope-export-actions";
 import CampusLoadInsightsHeader, {
   type CampusLoadInsightsFilterMode,
 } from "@/components/ftl-evaluation/shared/campus-load-insights-header";
@@ -18,6 +19,8 @@ type CampusLoadInsightsProps = {
   campusName: string;
   campusCode: string;
   academicTermCode: string;
+  academicTermId: string;
+  campusId: string;
 };
 
 const CampusLoadInsights = ({
@@ -27,6 +30,8 @@ const CampusLoadInsights = ({
   campusName,
   campusCode,
   academicTermCode,
+  academicTermId,
+  campusId,
 }: CampusLoadInsightsProps) => {
   const [filterMode, setFilterMode] =
     useState<CampusLoadInsightsFilterMode>("APPROVED");
@@ -68,6 +73,11 @@ const CampusLoadInsights = ({
       ? "No approved individual proposals found for this campus and term."
       : "No current individual proposals found for this campus and term.";
 
+  const exportableCount =
+    filterMode === "APPROVED"
+      ? approvedDistribution.total
+      : proposalDistribution.total;
+
   return (
     <Card className="flex h-full min-h-0 flex-col overflow-hidden">
       <CampusLoadInsightsHeader
@@ -78,6 +88,24 @@ const CampusLoadInsights = ({
         approvedCount={approvedDistribution.total}
         allCount={proposalDistribution.total}
         onFilterModeChange={setFilterMode}
+        exportActions={
+          <FacultyLoadScopeExportActions
+            academicTermId={academicTermId}
+            scope={{
+              kind: "campus_insights",
+              campusId,
+              mode: filterMode,
+            }}
+            exportableCount={exportableCount}
+            disabledReason={
+              exportableCount > 0
+                ? undefined
+                : "No exportable faculty found for the selected insights mode."
+            }
+            triggerLabel="Export FTL"
+            triggerClassName="h-9 px-3"
+          />
+        }
       />
 
       <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto">

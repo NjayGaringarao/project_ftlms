@@ -52,6 +52,8 @@ const CampusLoadControlWorkspace = async ({
         campusCode={campusCode}
         campusName={campusName}
         academicTermCode={academicTermCode}
+        academicTermId={academicTermId}
+        campusId={campusId}
       />
 
       <CampusLoadStatus

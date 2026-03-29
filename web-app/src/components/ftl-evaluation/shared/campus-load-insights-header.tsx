@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -11,6 +12,7 @@ type CampusLoadInsightsHeaderProps = {
   approvedCount: number;
   allCount: number;
   onFilterModeChange: (mode: CampusLoadInsightsFilterMode) => void;
+  exportActions?: ReactNode;
 };
 
 const CampusLoadInsightsHeader = ({
@@ -21,6 +23,7 @@ const CampusLoadInsightsHeader = ({
   approvedCount,
   allCount,
   onFilterModeChange,
+  exportActions,
 }: CampusLoadInsightsHeaderProps) => {
   return (
     <CardHeader className="flex flex-row items-center justify-between gap-4">
@@ -30,7 +33,8 @@ const CampusLoadInsightsHeader = ({
           ({campusName} ({campusCode}) - {academicTermCode})
         </p>
       </div>
-      <div className="flex gap-2 text-sm">
+      <div className="flex items-center gap-2 text-sm">
+        {exportActions}
         <Button
           type="button"
           size="sm"

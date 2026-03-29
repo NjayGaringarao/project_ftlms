@@ -6,11 +6,18 @@ import { CheckSquare, Square, User } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import ListItemSmall from "@/components/ui/list-item-small";
 import ProposalStatusFilterChips from "@/components/ui/proposal-status-filter-chips";
+import FacultyLoadScopeExportActions from "@/components/ftl-evaluation/shared/faculty-load-scope-export-actions";
 import { useLoadProposalListController } from "@/components/load-proposal/list/use-load-proposal-list-controller";
 import { submitBulkCreateProposalAction } from "@/lib/load-proposal/actions";
 import type { FacultyProposalListItem } from "@/lib/load-proposal/types";
+import {
+  CAMPUS_FILTER_UNASSIGNED,
+  COLLEGE_FILTER_UNASSIGNED,
+  type FacultyListExportScope,
+} from "@/lib/faculty-load-export/scope";
 
 type FacultyListProps = {
   facultyList: FacultyProposalListItem[];
@@ -23,15 +30,108 @@ const isBulkCreateEligible = (faculty: FacultyProposalListItem): boolean =>
   faculty.proposal_filter_status === "NO_PROPOSAL" ||
   faculty.proposal_filter_status === "INVALIDATED";
 
+const isBulkExportEligible = (faculty: FacultyProposalListItem): boolean =>
+  faculty.proposal_filter_status !== "NO_PROPOSAL" &&
+  !!faculty.latest_faculty_load_proposal_id;
+
+const ALL_FILTER_VALUE = "__ALL__";
+type FilterOption = {
+  value: string;
+  label: string;
+};
+
 export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
+  const [campusFilter, setCampusFilter] = useState(ALL_FILTER_VALUE);
+  const [collegeFilter, setCollegeFilter] = useState(ALL_FILTER_VALUE);
 
   const selectedRouteFacultyId = useMemo(() => {
     const match = pathname.match(/\/faculty-teaching-load\/[^/]+\/([^/]+)/);
     return match ? match[1] : null;
   }, [pathname]);
+
+  const campusOptions = useMemo<FilterOption[]>(() => {
+    const optionsByValue = new Map<string, FilterOption>();
+
+    for (const faculty of facultyList) {
+      if (faculty.campus_id) {
+        optionsByValue.set(faculty.campus_id, {
+          value: faculty.campus_id,
+          label: faculty.campus_name
+            ? `${faculty.campus_name} Campus`
+            : faculty.campus_code
+              ? `${faculty.campus_code} Campus`
+              : "Unnamed campus",
+        });
+        continue;
+      }
+
+      optionsByValue.set(CAMPUS_FILTER_UNASSIGNED, {
+        value: CAMPUS_FILTER_UNASSIGNED,
+        label: "Campus not assigned",
+      });
+    }
+
+    return Array.from(optionsByValue.values()).sort((left, right) =>
+      left.label.localeCompare(right.label),
+    );
+  }, [facultyList]);
+
+  const campusScopedFacultyList = useMemo(() => {
+    if (campusFilter === ALL_FILTER_VALUE) return facultyList;
+    if (campusFilter === CAMPUS_FILTER_UNASSIGNED) {
+      return facultyList.filter((faculty) => !faculty.campus_id);
+    }
+
+    return facultyList.filter((faculty) => faculty.campus_id === campusFilter);
+  }, [campusFilter, facultyList]);
+
+  const collegeOptions = useMemo<FilterOption[]>(() => {
+    const optionsByValue = new Map<string, FilterOption>();
+
+    for (const faculty of campusScopedFacultyList) {
+      if (faculty.college_id) {
+        optionsByValue.set(faculty.college_id, {
+          value: faculty.college_id,
+          label:
+            faculty.college_code ??
+            faculty.college_name ??
+            "Unnamed college",
+        });
+        continue;
+      }
+
+      optionsByValue.set(COLLEGE_FILTER_UNASSIGNED, {
+        value: COLLEGE_FILTER_UNASSIGNED,
+        label: "College not assigned",
+      });
+    }
+
+    return Array.from(optionsByValue.values()).sort((left, right) =>
+      left.label.localeCompare(right.label),
+    );
+  }, [campusScopedFacultyList]);
+
+  const effectiveCollegeFilter = useMemo(() => {
+    if (collegeFilter === ALL_FILTER_VALUE) return ALL_FILTER_VALUE;
+    const hasSelectedCollegeFilter = collegeOptions.some(
+      (option) => option.value === collegeFilter,
+    );
+    return hasSelectedCollegeFilter ? collegeFilter : ALL_FILTER_VALUE;
+  }, [collegeFilter, collegeOptions]);
+
+  const campusCollegeScopedFacultyList = useMemo(() => {
+    if (effectiveCollegeFilter === ALL_FILTER_VALUE) return campusScopedFacultyList;
+    if (effectiveCollegeFilter === COLLEGE_FILTER_UNASSIGNED) {
+      return campusScopedFacultyList.filter((faculty) => !faculty.college_id);
+    }
+
+    return campusScopedFacultyList.filter(
+      (faculty) => faculty.college_id === effectiveCollegeFilter,
+    );
+  }, [campusScopedFacultyList, effectiveCollegeFilter]);
 
   const {
     query,
@@ -50,12 +150,36 @@ export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) =
     onItemPointerDown,
     selectAllFiltered,
   } = useLoadProposalListController({
-    items: facultyList,
+    items: campusCollegeScopedFacultyList,
     defaultStatus: "NO_PROPOSAL",
     isSelectable: isBulkCreateEligible,
   });
 
   const selectedFacultyIdsValue = selectedIds.join(",");
+  const exportableFilteredFacultyIds = useMemo(
+    () => filteredItems.filter(isBulkExportEligible).map((faculty) => faculty.id),
+    [filteredItems],
+  );
+  const bulkExportCount = exportableFilteredFacultyIds.length;
+  const canBulkExport = bulkExportCount > 0;
+  const bulkExportDisabledMessage =
+    statusFilter === "NO_PROPOSAL"
+      ? "Bulk export is unavailable for the No proposal filter."
+      : "No exportable faculty found for the current filter.";
+
+  const exportScope = useMemo<FacultyListExportScope>(
+    () => ({
+      kind: "faculty_list",
+      statusFilter,
+      searchQuery: query,
+      campusId: campusFilter === ALL_FILTER_VALUE ? null : campusFilter,
+      collegeId:
+        effectiveCollegeFilter === ALL_FILTER_VALUE
+          ? null
+          : effectiveCollegeFilter,
+    }),
+    [campusFilter, effectiveCollegeFilter, query, statusFilter],
+  );
 
   const exitSelectionModeAndDialogs = () => {
     setIsBulkCreateDialogOpen(false);
@@ -85,6 +209,45 @@ export const FacultyList = ({ facultyList, academicTermId }: FacultyListProps) =
         onChange={(event) => setQuery(event.target.value)}
         className="shrink-0"
       />
+
+      <div className="grid shrink-0 grid-cols-2 gap-2">
+        <Select
+          value={campusFilter}
+          onChange={(event) => setCampusFilter(event.target.value)}
+          className="h-8 text-xs"
+          aria-label="Filter faculty by campus"
+        >
+          <option value={ALL_FILTER_VALUE}>All campuses</option>
+          {campusOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+
+        <Select
+          value={effectiveCollegeFilter}
+          onChange={(event) => setCollegeFilter(event.target.value)}
+          className="h-8 text-xs"
+          aria-label="Filter faculty by college"
+        >
+          <option value={ALL_FILTER_VALUE}>All colleges</option>
+          {collegeOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <FacultyLoadScopeExportActions
+          academicTermId={academicTermId}
+          scope={exportScope}
+          exportableCount={bulkExportCount}
+          disabledReason={canBulkExport ? undefined : bulkExportDisabledMessage}
+        />
+      </div>
 
       {isSelectionMode && (
         <div className="flex shrink-0 items-center gap-2">

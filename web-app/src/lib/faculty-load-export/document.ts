@@ -1,4 +1,3 @@
-import { getUserRole } from "@/lib/auth/utils";
 import { getTermById } from "@/lib/admin/terms";
 import { getLatestProposalByUserTerm } from "@/lib/load-proposal/queries";
 import {
@@ -8,7 +7,6 @@ import {
 import type { FacultyScheduleRow } from "@/lib/schedule/types";
 import { mergeBlockLabels, sortScheduleRows, toMinutes } from "@/lib/schedule/utils";
 import type { ProposalScheduleSessionItem } from "@/models";
-import { getCurrentUserData } from "@/lib/user-data/queries";
 import { getUserOverviewById } from "@/lib/user-overview";
 import { createClient } from "@/utils/supabase/server";
 
@@ -73,12 +71,6 @@ type RawDesignationRow = {
   designated_at: string | null;
   holder?: RawDesignationHolder | RawDesignationHolder[] | null;
 };
-
-const PRIVILEGED_EXPORT_ROLES = new Set([
-  "Admin",
-  "Program Chairperson",
-  "College Dean",
-]);
 
 const first = <T>(value: T | T[] | null | undefined): T | null => {
   if (!value) return null;
@@ -377,31 +369,6 @@ const getLatestSignatoryByTitle = async (
   return resolveDesignationName((data as RawDesignationRow | null) ?? null);
 };
 
-const assertCanAccessFacultyLoadExport = async (
-  facultyCampusId: string | null,
-): Promise<void> => {
-  const roles = await getUserRole();
-
-  if (roles.some((role) => PRIVILEGED_EXPORT_ROLES.has(role))) {
-    return;
-  }
-
-  if (!roles.includes("Campus Director") || !facultyCampusId) {
-    throw new FacultyLoadExportError(403, "You are not allowed to export this document.");
-  }
-
-  const currentUserData = await getCurrentUserData({ includeDesignations: true });
-  const hasMatchingCampusDesignation = (currentUserData?.designations ?? []).some(
-    (designation) =>
-      designation.job_title === "Campus Director" &&
-      designation.campus_id === facultyCampusId,
-  );
-
-  if (!hasMatchingCampusDesignation) {
-    throw new FacultyLoadExportError(403, "You are not allowed to export this document.");
-  }
-};
-
 export class FacultyLoadExportError extends Error {
   status: number;
 
@@ -429,8 +396,6 @@ export const getFacultyLoadExportDocument = async ({
   if (!overview) {
     throw new FacultyLoadExportError(404, "Faculty not found.");
   }
-
-  await assertCanAccessFacultyLoadExport(overview.campus_id);
 
   if (!term) {
     throw new FacultyLoadExportError(404, "Academic term not found.");

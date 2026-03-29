@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
 import ProposalStatusFilterChips from "@/components/ui/proposal-status-filter-chips";
 import RejectionCommentDialog from "@/components/ftl-evaluation/faculty-load/rejection-comment-dialog";
+import FacultyLoadScopeExportActions from "@/components/ftl-evaluation/shared/faculty-load-scope-export-actions";
 import { useLoadProposalListController } from "@/components/load-proposal/list/use-load-proposal-list-controller";
 import { submitBulkEvaluationAction } from "@/lib/load-proposal/actions";
 import type { FacultyProposalListItem } from "@/lib/load-proposal/types";
+import type { FacultyListExportScope } from "@/lib/faculty-load-export/scope";
 
 type FacultyEvaluationListProps = {
   facultyList: FacultyProposalListItem[];
@@ -22,6 +24,10 @@ const toFixed = (v: number) => v.toFixed(2);
 
 const isPendingProposal = (faculty: FacultyProposalListItem): boolean =>
   faculty.proposal_filter_status === "PENDING" && !!faculty.latest_faculty_load_proposal_id;
+
+const isBulkExportEligible = (faculty: FacultyProposalListItem): boolean =>
+  faculty.proposal_filter_status !== "NO_PROPOSAL" &&
+  !!faculty.latest_faculty_load_proposal_id;
 
 const FacultyEvaluationList = ({
   facultyList,
@@ -71,6 +77,27 @@ const FacultyEvaluationList = ({
   }, [facultyList, selectedIdSet]);
 
   const selectedProposalIdsValue = selectedProposalIds.join(",");
+  const exportableFilteredFacultyIds = useMemo(
+    () => filteredItems.filter(isBulkExportEligible).map((faculty) => faculty.id),
+    [filteredItems],
+  );
+  const bulkExportCount = exportableFilteredFacultyIds.length;
+  const canBulkExport = bulkExportCount > 0;
+  const bulkExportDisabledMessage =
+    statusFilter === "NO_PROPOSAL"
+      ? "Bulk export is unavailable for the No proposal filter."
+      : "No exportable faculty found for the current filter.";
+
+  const exportScope = useMemo<FacultyListExportScope>(
+    () => ({
+      kind: "faculty_list",
+      statusFilter,
+      searchQuery: query,
+      campusId: null,
+      collegeId: null,
+    }),
+    [query, statusFilter],
+  );
 
   const exitSelectionModeAndDialogs = () => {
     setIsBulkDialogOpen(false);
@@ -108,6 +135,15 @@ const FacultyEvaluationList = ({
         onChange={(event) => setQuery(event.target.value)}
         className="shrink-0"
       />
+
+      <div className="flex shrink-0 items-center gap-2">
+        <FacultyLoadScopeExportActions
+          academicTermId={academicTermId}
+          scope={exportScope}
+          exportableCount={bulkExportCount}
+          disabledReason={canBulkExport ? undefined : bulkExportDisabledMessage}
+        />
+      </div>
 
       {isSelectionMode && (
         <div className="flex shrink-0 items-center gap-2">
