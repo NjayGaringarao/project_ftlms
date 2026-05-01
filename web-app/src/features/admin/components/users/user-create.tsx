@@ -50,9 +50,16 @@ const initialFormState: UserInitialFormState = {
 type UserCreateProps = {
   campuses: CampusListItem[];
   colleges: CollegeListItem[];
+  onCreated?: (id: string) => void;
+  onCancel?: () => void;
 };
 
-export const UserCreate = ({ campuses, colleges }: UserCreateProps) => {
+export const UserCreate = ({
+  campuses,
+  colleges,
+  onCreated,
+  onCancel,
+}: UserCreateProps) => {
   const router = useRouter();
   const [formData, setFormData] =
     useState<UserInitialFormState>(initialFormState);
@@ -146,9 +153,17 @@ export const UserCreate = ({ campuses, colleges }: UserCreateProps) => {
 
     setTimeout(() => {
       if (data?.id) {
-        router.push(`/users/${data.id}`);
+        if (onCreated) {
+          onCreated(data.id);
+        } else {
+          router.push(`/users/${data.id}`);
+        }
       } else {
-        router.push("/users");
+        if (onCancel) {
+          onCancel();
+        } else {
+          router.push("/users");
+        }
       }
     }, 1500);
   };
@@ -162,9 +177,15 @@ export const UserCreate = ({ campuses, colleges }: UserCreateProps) => {
             Create New User
           </CardTitle>
           <div className="flex flex-row items-center gap-4">
-            <Link href="/users/" className="text-foreground">
-              <X />
-            </Link>
+            {onCancel ? (
+              <button type="button" className="text-foreground" onClick={onCancel}>
+                <X />
+              </button>
+            ) : (
+              <Link href="/users/" className="text-foreground">
+                <X />
+              </Link>
+            )}
           </div>
         </CardHeader>
 

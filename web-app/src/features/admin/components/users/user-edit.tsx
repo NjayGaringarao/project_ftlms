@@ -37,6 +37,7 @@ type UserEditProps = {
   ranks?: Array<{ id: string; title: string }>;
   campuses: CampusListItem[];
   colleges: CollegeListItem[];
+  onClose?: () => void;
 };
 
 type ProfessionalFormState = {
@@ -76,6 +77,7 @@ export const UserEdit = ({
   ranks = [],
   campuses,
   colleges,
+  onClose,
 }: UserEditProps) => {
   const router = useRouter();
 
@@ -234,7 +236,7 @@ export const UserEdit = ({
     <AdminPanel
       title="User Information"
       icon={Edit}
-      onClose={() => router.back()}
+      onClose={onClose ?? (() => router.back())}
     >
       <div className="space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b">

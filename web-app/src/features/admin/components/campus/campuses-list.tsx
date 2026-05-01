@@ -65,11 +65,7 @@ export const CampusesList = ({ campuses }: CampusesListProps) => {
             subtitle={[campus.address || "No address provided"]}
             isSelected={isSelected}
             icon={<Landmark className="h-14 w-14 text-background" />}
-            annotations={
-              <span className="inline-flex rounded-full bg-foreground/10 px-3 py-1 text-xs text-foreground">
-                {campus.code}
-              </span>
-            }
+           
           />
         );
       })}

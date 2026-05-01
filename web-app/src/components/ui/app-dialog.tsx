@@ -8,7 +8,7 @@ import { cn } from "@/utils/style";
 type AppDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
+  title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
   contentClassName?: string;
