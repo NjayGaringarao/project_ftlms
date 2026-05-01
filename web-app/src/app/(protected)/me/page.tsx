@@ -1,8 +1,8 @@
-import AssignedClassesCard from "@/components/me/overview/assigned-classes-card";
-import DesignationListCard from "@/components/me/overview/designation-list-card";
-import UserSummaryCard from "@/components/me/overview/user-summary-card";
-import WorkingLoadMetrics from "@/components/user/working-load-metrics";
-import { getCurrentUserOverview } from "@/lib/user-overview";
+import AssignedClassesCard from "@/features/profile/components/me/overview/assigned-classes-card";
+import DesignationListCard from "@/features/profile/components/me/overview/designation-list-card";
+import UserSummaryCard from "@/features/profile/components/me/overview/user-summary-card";
+import WorkingLoadMetrics from "@/features/shared/components/user/working-load-metrics";
+import { getCurrentUserOverview } from "@/features/profile/lib/user-overview";
 import { cn } from "@/utils/style";
 
 import { redirect } from "next/navigation";

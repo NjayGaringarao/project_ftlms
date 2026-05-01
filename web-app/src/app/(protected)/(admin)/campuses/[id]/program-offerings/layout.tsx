@@ -1,8 +1,8 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { ProgramOfferingsList } from "@/components/admin/campus/program-offerings-list";
-import { getProgramOfferingsByCampus } from "@/lib/admin/program-offerings";
-import { getCampusById } from "@/lib/admin/campuses";
+import { ProgramOfferingsList } from "@/features/admin/components/campus/program-offerings-list";
+import { getProgramOfferingsByCampus } from "@/features/admin/lib/program-offerings";
+import { getCampusById } from "@/features/admin/lib/campuses";
 
 type CampusProgramOfferingsLayoutProps = {
   children: React.ReactNode;

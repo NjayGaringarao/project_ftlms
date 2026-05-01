@@ -2,14 +2,14 @@ import { type NextRequest } from "next/server";
 import {
   DOCUMENT_EXPORT_FILE_TTL_SECONDS,
   DOCUMENT_EXPORT_STORAGE_BUCKET,
-} from "@/lib/document-export/constants";
-import { requireAuthenticatedForApi } from "@/lib/document-export/auth";
+} from "@/features/document-export/lib/document-export/constants";
+import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";
 import {
   isJobExpired,
   mapDocumentExportJob,
   resolveStorageBucket,
   toRawDocumentExportJobRow,
-} from "@/lib/document-export/jobs";
+} from "@/features/document-export/lib/document-export/jobs";
 import { createClient } from "@/utils/supabase/server";
 
 type DocumentExportJobRouteContext = {

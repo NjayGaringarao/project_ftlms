@@ -1,4 +1,4 @@
-import ScheduleMapper from "@/components/scheduler/schedule-mapper";
+import ScheduleMapper from "@/features/scheduler/components/schedule-mapper";
 
 type AcademicTermIdPageProps = {
   params: Promise<{

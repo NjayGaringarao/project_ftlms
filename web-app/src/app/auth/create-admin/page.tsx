@@ -1,5 +1,5 @@
-import { CreateAdminForm } from "@/components/auth/create-admin-form";
-import { isAdminExists } from "@/lib/auth/utils";
+import { CreateAdminForm } from "@/features/auth/components/create-admin-form";
+import { isAdminExists } from "@/features/auth/lib/utils";
 import { redirect } from "next/navigation";
 
 export default async function Page() {

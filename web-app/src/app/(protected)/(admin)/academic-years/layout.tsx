@@ -1,6 +1,6 @@
 import React from "react";
-import { YearsList } from "@/components/admin/academic-year/years-list";
-import { getAcademicYearsList } from "@/lib/admin/academic-years";
+import { YearsList } from "@/features/admin/components/academic-year/years-list";
+import { getAcademicYearsList } from "@/features/admin/lib/academic-years";
 
 const AcademicYearsLayout = async ({
   children,

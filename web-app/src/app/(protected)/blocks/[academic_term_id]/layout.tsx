@@ -1,12 +1,12 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { BlocksList } from "@/components/blocks/blocks-list";
-import { getBlocksList } from "@/lib/admin/blocks";
-import { getTermsList } from "@/lib/admin/terms";
-import { getCampusesList } from "@/lib/admin/campuses";
-import { getProgramOfferingsList } from "@/lib/admin/program-offerings";
-import { TopBarNav } from "@/components/ui/topbar-nav";
-import TermSwitcher from "@/components/shared/term-switcher";
+import { BlocksList } from "@/features/blocks/components/blocks-list";
+import { getBlocksList } from "@/features/admin/lib/blocks";
+import { getTermsList } from "@/features/admin/lib/terms";
+import { getCampusesList } from "@/features/admin/lib/campuses";
+import { getProgramOfferingsList } from "@/features/admin/lib/program-offerings";
+import { TopBarNav } from "@/features/app-shell/components/topbar-nav";
+import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
 
 type BlocksLayoutProps = {
   children: React.ReactNode;

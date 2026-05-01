@@ -1,5 +1,5 @@
 import React from "react";
-import { BlockCreate } from "@/components/blocks/block-create";
+import { BlockCreate } from "@/features/blocks/components/block-create";
 
 type CreateBlockPageProps = {
   params: Promise<{ academic_term_id: string }>;

@@ -1,6 +1,6 @@
 import React from "react";
-import { UsersList } from "@/components/admin/users/users-list";
-import { getUsersList } from "@/lib/users/users";
+import { UsersList } from "@/features/admin/components/users/users-list";
+import { getUsersList } from "@/features/admin/lib/users/users";
 
 const UsersLayout = async ({ children }: { children: React.ReactNode }) => {
   const users = await getUsersList();

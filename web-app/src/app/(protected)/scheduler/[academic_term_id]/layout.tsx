@@ -1,9 +1,9 @@
-import { TopBarNav } from "@/components/ui/topbar-nav";
-import { getTermById, getTermsList } from "@/lib/admin/terms";
+import { TopBarNav } from "@/features/app-shell/components/topbar-nav";
+import { getTermById, getTermsList } from "@/features/admin/lib/terms";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
-import TermSwitcher from "@/components/shared/term-switcher";
+import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
 
 type AcademicTermIdLayoutProps = {
   children: React.ReactNode;

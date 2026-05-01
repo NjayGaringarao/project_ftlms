@@ -1,4 +1,4 @@
-import { ProgramOfferingCreate } from "@/components/admin/campus/program-offering-create";
+import { ProgramOfferingCreate } from "@/features/admin/components/campus/program-offering-create";
 
 type CreateCampusProgramOfferingPageProps = {
   params: Promise<{ id: string }>;

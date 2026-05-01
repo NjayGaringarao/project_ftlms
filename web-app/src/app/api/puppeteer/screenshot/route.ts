@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { createPuppeteerBrowser } from "@/lib/puppeteer/browser";
+import { createPuppeteerBrowser } from "@/features/document-export/lib/puppeteer/browser";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

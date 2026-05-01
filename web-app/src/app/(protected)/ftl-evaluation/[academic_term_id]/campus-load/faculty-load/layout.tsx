@@ -1,9 +1,9 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/lib/auth/utils";
-import { getCurrentUserData } from "@/lib/user-data/queries";
-import { getFacultyProposalListByTerm } from "@/lib/load-proposal/queries";
-import FacultyEvaluationList from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-list";
+import { getUserRole } from "@/features/auth/lib/utils";
+import { getCurrentUserData } from "@/features/profile/lib/user-data/queries";
+import { getFacultyProposalListByTerm } from "@/features/ftl-evaluation/lib/load-proposal/queries";
+import FacultyEvaluationList from "@/features/ftl-evaluation/components/faculty-load/faculty-evaluation-list";
 
 type CampusFacultyLoadLayoutProps = {
   children: React.ReactNode;

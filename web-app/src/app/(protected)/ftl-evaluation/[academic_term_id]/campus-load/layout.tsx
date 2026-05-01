@@ -1,9 +1,9 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { TopBarNav } from "@/components/ui/topbar-nav";
-import TermSwitcher from "@/components/shared/term-switcher";
-import { getUserRole } from "@/lib/auth/utils";
-import { getTermsList } from "@/lib/admin/terms";
+import { TopBarNav } from "@/features/app-shell/components/topbar-nav";
+import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
+import { getUserRole } from "@/features/auth/lib/utils";
+import { getTermsList } from "@/features/admin/lib/terms";
 
 type CampusLoadLayoutProps = {
   children: React.ReactNode;

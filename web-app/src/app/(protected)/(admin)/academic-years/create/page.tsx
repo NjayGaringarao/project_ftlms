@@ -1,4 +1,4 @@
-import { YearCreate } from "@/components/admin/academic-year/year-create";
+import { YearCreate } from "@/features/admin/components/academic-year/year-create";
 
 const CreateAcademicYearPage = () => {
   return (

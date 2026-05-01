@@ -1,18 +1,18 @@
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/lib/auth/utils";
-import { getTermById } from "@/lib/admin/terms";
+import { getUserRole } from "@/features/auth/lib/utils";
+import { getTermById } from "@/features/admin/lib/terms";
 import {
   getEvaluationsByProposal,
   getLatestCampusLoadContextByFacultyProposal,
   getLatestProposalByUserTerm,
-} from "@/lib/load-proposal/queries";
-import { getFacultyScheduleTermSnapshot } from "@/lib/schedule/faculty-schedule";
-import { getCurrentUserData } from "@/lib/user-data/queries";
-import { getUserOverviewById } from "@/lib/user-overview";
-import ProposalDetailedSummary from "@/components/ftl-evaluation/faculty-load/proposal-detailed-summary";
-import FacultyEvaluationSchedule from "@/components/ftl-evaluation/faculty-load/faculty-evaluation-schedule";
-import FacultyLoadStatus from "@/components/ftl-evaluation/faculty-load/faculty-load-status";
-import type { EvaluationStatus, ProposalLifecycleStatus } from "@/models";
+} from "@/features/ftl-evaluation/lib/load-proposal/queries";
+import { getFacultyScheduleTermSnapshot } from "@/features/scheduler/lib/schedule/faculty-schedule";
+import { getCurrentUserData } from "@/features/profile/lib/user-data/queries";
+import { getUserOverviewById } from "@/features/profile/lib/user-overview";
+import ProposalDetailedSummary from "@/features/ftl-evaluation/components/faculty-load/proposal-detailed-summary";
+import FacultyEvaluationSchedule from "@/features/ftl-evaluation/components/faculty-load/faculty-evaluation-schedule";
+import FacultyLoadStatus from "@/features/ftl-evaluation/components/faculty-load/faculty-load-status";
+import type { EvaluationStatus, ProposalLifecycleStatus } from "@/features/shared/types/models";
 
 type CampusFacultyEvaluationPageProps = {
   params: Promise<{ academic_term_id: string; faculty_id: string }>;

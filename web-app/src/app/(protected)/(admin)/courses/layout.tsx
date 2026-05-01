@@ -1,6 +1,6 @@
 import React from "react";
-import { CoursesList } from "@/components/admin/course/courses-list";
-import { getCoursesList } from "@/lib/admin/courses";
+import { CoursesList } from "@/features/admin/components/course/courses-list";
+import { getCoursesList } from "@/features/admin/lib/courses";
 
 const CoursesLayout = async ({ children }: { children: React.ReactNode }) => {
   const courses = await getCoursesList();

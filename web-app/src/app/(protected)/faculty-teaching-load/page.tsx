@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { getTermsList } from "@/lib/admin/terms";
-import { getUserRole } from "@/lib/auth/utils";
+import { getTermsList } from "@/features/admin/lib/terms";
+import { getUserRole } from "@/features/auth/lib/utils";
 
 const FacultyTeachingLoadPage = async () => {
   const roles = await getUserRole();

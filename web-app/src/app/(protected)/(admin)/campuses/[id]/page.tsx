@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { CampusView } from "@/components/admin/campus/campus-view";
-import { getCampusById } from "@/lib/admin/campuses";
-import { getDefaultAcademicTerm } from "@/lib/admin/terms";
+import { CampusView } from "@/features/admin/components/campus/campus-view";
+import { getCampusById } from "@/features/admin/lib/campuses";
+import { getDefaultAcademicTerm } from "@/features/admin/lib/terms";
 
 export const dynamic = "force-dynamic";
 

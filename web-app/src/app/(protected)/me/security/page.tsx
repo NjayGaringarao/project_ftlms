@@ -1,10 +1,10 @@
-import UpdatePasswordForm from "@/components/me/security/update-password-form";
+import UpdatePasswordForm from "@/features/profile/components/me/security/update-password-form";
 import { redirect } from "next/navigation";
-import { getCurrentUser, getUserRole } from "@/lib/auth/utils";
-import SecurityInformation from "@/components/me/security/security-information";
-import EmailChangeReminder from "@/components/me/security/email-change-reminder";
-import EmailChangeStatusBanner from "@/components/me/security/email-change-status-banner";
-import UpdateEmailForm from "@/components/me/security/update-email-form";
+import { getCurrentUser, getUserRole } from "@/features/auth/lib/utils";
+import SecurityInformation from "@/features/profile/components/me/security/security-information";
+import EmailChangeReminder from "@/features/profile/components/me/security/email-change-reminder";
+import EmailChangeStatusBanner from "@/features/profile/components/me/security/email-change-status-banner";
+import UpdateEmailForm from "@/features/profile/components/me/security/update-email-form";
 
 const SecurityPage = async ({
   searchParams,

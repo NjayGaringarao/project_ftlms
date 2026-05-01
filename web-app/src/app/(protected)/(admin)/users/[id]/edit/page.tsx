@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { getUserById, getRanks } from "@/lib/users/users";
-import { getCampusesList } from "@/lib/admin/campuses";
-import { getCollegesList } from "@/lib/admin/colleges";
-import { UserEdit } from "@/components/admin/users/user-edit";
+import { getUserById, getRanks } from "@/features/admin/lib/users/users";
+import { getCampusesList } from "@/features/admin/lib/campuses";
+import { getCollegesList } from "@/features/admin/lib/colleges";
+import { UserEdit } from "@/features/admin/components/users/user-edit";
 
 export const dynamic = "force-dynamic";
 

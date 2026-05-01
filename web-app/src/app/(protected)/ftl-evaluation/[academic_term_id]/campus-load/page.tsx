@@ -1,4 +1,4 @@
-import { getUserRole } from "@/lib/auth/utils";
+import { getUserRole } from "@/features/auth/lib/utils";
 import { redirect } from "next/navigation";
 
 type CampusLoadPageProps = {

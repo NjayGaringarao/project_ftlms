@@ -1,4 +1,4 @@
-import { CollegeCreate } from "@/components/admin/college/department-create";
+import { CollegeCreate } from "@/features/admin/components/college/department-create";
 
 const CreatePage = () => {
   return (

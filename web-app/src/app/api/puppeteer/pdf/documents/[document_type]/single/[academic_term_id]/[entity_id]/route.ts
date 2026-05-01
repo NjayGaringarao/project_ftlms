@@ -1,8 +1,8 @@
 import { type NextRequest } from "next/server";
-import { requireAuthenticatedForApi } from "@/lib/document-export/auth";
-import { toDocumentExportError } from "@/lib/document-export/errors";
-import { renderPdfFromPrintRoute } from "@/lib/document-export/pdf";
-import { getDocumentExportProvider } from "@/lib/document-export/provider";
+import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";
+import { toDocumentExportError } from "@/features/document-export/lib/document-export/errors";
+import { renderPdfFromPrintRoute } from "@/features/document-export/lib/document-export/pdf";
+import { getDocumentExportProvider } from "@/features/document-export/lib/document-export/provider";
 
 type DocumentSinglePdfRouteContext = {
   params: Promise<{

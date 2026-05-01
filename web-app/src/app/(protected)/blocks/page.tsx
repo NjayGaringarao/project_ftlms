@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getTermsList } from "@/lib/admin/terms";
+import { getTermsList } from "@/features/admin/lib/terms";
 
 const BlocksPage = async () => {
   const terms = await getTermsList();

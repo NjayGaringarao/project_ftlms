@@ -2,16 +2,16 @@ import { type NextRequest } from "next/server";
 import {
   ASYNC_PDF_MAX_COUNT,
   SYNC_PDF_MAX_COUNT,
-} from "@/lib/document-export/constants";
-import { requireAuthenticatedForApi } from "@/lib/document-export/auth";
-import { toDocumentExportError } from "@/lib/document-export/errors";
+} from "@/features/document-export/lib/document-export/constants";
+import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";
+import { toDocumentExportError } from "@/features/document-export/lib/document-export/errors";
 import {
   addDays,
   mapDocumentExportJob,
   toRawDocumentExportJobRow,
-} from "@/lib/document-export/jobs";
-import { getDocumentExportProvider } from "@/lib/document-export/provider";
-import { isDocumentType } from "@/lib/document-export/types";
+} from "@/features/document-export/lib/document-export/jobs";
+import { getDocumentExportProvider } from "@/features/document-export/lib/document-export/provider";
+import { isDocumentType } from "@/features/document-export/lib/document-export/types";
 import { createClient } from "@/utils/supabase/server";
 
 export const runtime = "nodejs";

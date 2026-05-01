@@ -1,8 +1,8 @@
-import DocumentPrintShell from "@/components/document-export/document-print-shell";
+import DocumentPrintShell from "@/features/document-export/components/document-print-shell";
 import type { ReactNode } from "react";
-import { requireAuthenticatedForPrintPage } from "@/lib/document-export/auth";
-import { DocumentExportError } from "@/lib/document-export/errors";
-import { getDocumentExportProvider } from "@/lib/document-export/provider";
+import { requireAuthenticatedForPrintPage } from "@/features/document-export/lib/document-export/auth";
+import { DocumentExportError } from "@/features/document-export/lib/document-export/errors";
+import { getDocumentExportProvider } from "@/features/document-export/lib/document-export/provider";
 import { notFound } from "next/navigation";
 
 type DocumentSinglePrintPageProps = {

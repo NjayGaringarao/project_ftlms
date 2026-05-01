@@ -1,0 +1,77 @@
+"use server";
+
+import { AcademicRank } from "@/features/shared/types/models/academic_rank";
+import { getUserDataById, getUserDataList } from "@/features/profile/lib/user-data";
+import { createClient } from "@/utils/supabase/server";
+import { UserDataReadModel } from "@/features/profile/lib/user-data";
+import { UserDetail, UsersListItem } from "./types";
+
+const mapOverviewToListItem = (
+  overview: Awaited<ReturnType<typeof getUserDataList>>[number],
+): UsersListItem => ({
+  id: overview.id,
+  email: overview.email,
+  employment_status: overview.employmentStatus,
+  identity: overview.identity,
+  campus: overview.campus,
+  college: overview.college,
+});
+
+const mapOverviewToUserDetail = (
+  overview: UserDataReadModel,
+): UserDetail => ({
+  id: overview.id,
+  email: overview.email,
+  employment_status: overview.employmentStatus,
+  identity: overview.identity,
+  campus_id: overview.campus_id,
+  college_id: overview.college_id,
+  campus: overview.campus,
+  college: overview.college,
+  rank: overview.rank,
+  designations: overview.designations,
+  degrees: overview.degrees,
+  account_type: overview.accountType,
+  email_confirmed_at: overview.emailConfirmedAt,
+  account_created_at: overview.accountCreatedAt,
+  last_sign_in_at: overview.lastSignInAt,
+  term: overview.term,
+  classes: overview.classes,
+  actual_teaching_load: overview.actualTeachingLoad,
+  designation_load: overview.designationLoad,
+  total_working_load: overview.totalWorkingLoad,
+});
+
+export const getUsersList = async (): Promise<UsersListItem[]> => {
+  const list = await getUserDataList();
+  return list.map(mapOverviewToListItem);
+};
+
+export const getUserById = async (
+  userId: string,
+): Promise<UserDetail | null> => {
+  const overview = await getUserDataById(userId, {
+    includeDegrees: true,
+    includeDesignations: true,
+    includeClasses: true,
+    includeLoads: true,
+  });
+  if (!overview) return null;
+  return mapOverviewToUserDetail(overview);
+};
+
+export const getRanks = async (): Promise<AcademicRank[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("academic_rank")
+    .select("*")
+    .order("code", { ascending: true });
+
+  if (error) {
+    console.error("lib.users.getRanks ::", error);
+    return [];
+  }
+
+  return (data ?? []) as AcademicRank[];
+};

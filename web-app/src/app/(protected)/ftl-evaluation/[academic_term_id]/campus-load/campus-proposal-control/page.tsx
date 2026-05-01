@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/lib/auth/utils";
-import { getCurrentUserData } from "@/lib/user-data/queries";
-import { getCampusById, getCampusesList } from "@/lib/admin/campuses";
-import CampusLoadControlWorkspace from "@/components/ftl-evaluation/campus-load/campus-load-control-workspace";
+import { getUserRole } from "@/features/auth/lib/utils";
+import { getCurrentUserData } from "@/features/profile/lib/user-data/queries";
+import { getCampusById, getCampusesList } from "@/features/admin/lib/campuses";
+import CampusLoadControlWorkspace from "@/features/ftl-evaluation/components/campus-load/campus-load-control-workspace";
 
 type CampusLoadControlPageProps = {
   params: Promise<{ academic_term_id: string }>;

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { CourseView } from "@/components/admin/course/course-view";
-import { getCourseById } from "@/lib/admin/courses";
+import { CourseView } from "@/features/admin/components/course/course-view";
+import { getCourseById } from "@/features/admin/lib/courses";
 
 export const dynamic = "force-dynamic";
 

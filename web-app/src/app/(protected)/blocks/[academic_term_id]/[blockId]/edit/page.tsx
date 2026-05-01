@@ -1,7 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { BlockEdit } from "@/components/blocks/block-edit";
-import { getBlockById } from "@/lib/admin/blocks";
+import { BlockEdit } from "@/features/blocks/components/block-edit";
+import { getBlockById } from "@/features/admin/lib/blocks";
 
 type EditBlockPageProps = {
   params: Promise<{ academic_term_id: string; blockId: string }>;

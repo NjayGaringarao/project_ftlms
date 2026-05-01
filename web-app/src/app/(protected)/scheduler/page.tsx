@@ -1,4 +1,4 @@
-import { getTermsList } from "@/lib/admin/terms";
+import { getTermsList } from "@/features/admin/lib/terms";
 import { redirect } from "next/navigation";
 
 const SchedulerPage = async () => {

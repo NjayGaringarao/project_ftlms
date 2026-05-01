@@ -1,6 +1,6 @@
 import React from "react";
-import { CollegesList } from "@/components/admin/college/colleges-list";
-import { getCollegesList } from "@/lib/admin/colleges";
+import { CollegesList } from "@/features/admin/components/college/colleges-list";
+import { getCollegesList } from "@/features/admin/lib/colleges";
 
 const DepartmentsLayout = async ({
   children,

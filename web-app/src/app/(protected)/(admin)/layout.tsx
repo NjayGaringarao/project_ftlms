@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader } from "@/features/app-shell/components/page-header";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import Image from "next/image";
 import React from "react";

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { getCampusById } from "@/lib/admin/campuses";
-import UniversityEvaluationWorkspace from "@/components/ftl-evaluation/university-load/university-evaluation-workspace";
+import { getCampusById } from "@/features/admin/lib/campuses";
+import UniversityEvaluationWorkspace from "@/features/ftl-evaluation/components/university-load/university-evaluation-workspace";
 
 type UniversityEvaluationPageProps = {
   params: Promise<{ academic_term_id: string; campus_id: string }>;

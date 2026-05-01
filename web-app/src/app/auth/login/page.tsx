@@ -1,5 +1,5 @@
-import { LoginForm } from "@/components/auth/login-form";
-import { getCurrentUser, isAdminExists } from "@/lib/auth/utils";
+import { LoginForm } from "@/features/auth/components/login-form";
+import { getCurrentUser, isAdminExists } from "@/features/auth/lib/utils";
 import { redirect } from "next/navigation";
 
 export default async function Page() {
