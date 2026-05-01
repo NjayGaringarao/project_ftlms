@@ -1,7 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { BlockView } from "@/components/blocks/block-view";
-import { getBlockById } from "@/lib/admin/blocks";
+import { BlockView } from "@/features/blocks/components/block-view";
+import { getBlockById } from "@/features/admin/lib/blocks";
 
 type BlockPageProps = {
   params: Promise<{ academic_term_id: string; blockId: string }>;

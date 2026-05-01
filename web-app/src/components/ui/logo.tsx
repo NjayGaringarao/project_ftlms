@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import useDarkMode from "@/hooks/useDarkMode";
+import useDarkMode from "@/features/shared/hooks/useDarkMode";
 import { cn } from "@/utils/style";
 
 interface ILogo {

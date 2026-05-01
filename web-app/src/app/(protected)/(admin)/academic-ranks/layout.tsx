@@ -1,6 +1,6 @@
 import React from "react";
-import { RanksList } from "@/components/admin/academic-rank/ranks-list";
-import { getUniversityRanksList } from "@/lib/admin/ranks";
+import { RanksList } from "@/features/admin/components/academic-rank/ranks-list";
+import { getUniversityRanksList } from "@/features/admin/lib/ranks";
 
 const RanksLayout = async ({ children }: { children: React.ReactNode }) => {
   const ranks = await getUniversityRanksList();

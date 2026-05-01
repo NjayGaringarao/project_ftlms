@@ -1,5 +1,5 @@
-import { UpdatePasswordForm } from "@/components/auth/update-password-form";
-import { getCurrentUser } from "@/lib/auth/utils";
+import { UpdatePasswordForm } from "@/features/auth/components/update-password-form";
+import { getCurrentUser } from "@/features/auth/lib/utils";
 import { redirect } from "next/navigation";
 
 export default async function Page() {

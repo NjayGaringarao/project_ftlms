@@ -1,4 +1,4 @@
-import { ExtendedAcademicTerm } from "@/models";
+import { ExtendedAcademicTerm } from "@/features/shared/types/models";
 
 export const formatAcademicTermLabel = (
   academicTerm: ExtendedAcademicTerm,

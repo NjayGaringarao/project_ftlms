@@ -1,6 +1,6 @@
-import { SidebarNav } from "@/components/ui/sidebar-nav";
+import { SidebarNav } from "@/features/app-shell/components/sidebar-nav";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/utils";
+import { getCurrentUser } from "@/features/auth/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function ProtectedLayout({

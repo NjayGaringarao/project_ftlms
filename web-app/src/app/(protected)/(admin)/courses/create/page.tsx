@@ -1,4 +1,4 @@
-import { CourseCreate } from "@/components/admin/course/course-create";
+import { CourseCreate } from "@/features/admin/components/course/course-create";
 
 const CreateCoursePage = () => {
   return (

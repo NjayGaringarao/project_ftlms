@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { PageHeader } from "@/components/ui/page-header";
-import { FacultyScheduleView } from "@/components/schedule/faculty/faculty-schedule-view";
-import { getCurrentUser, getUserRole } from "@/lib/auth/utils";
-import { getFacultySchedulePageData } from "@/lib/schedule/faculty-schedule";
-import { ACADEMIC_TERM_QUERY_PARAM } from "@/lib/schedule/types";
-import { UserRole } from "@/models";
+import { PageHeader } from "@/features/app-shell/components/page-header";
+import { FacultyScheduleView } from "@/features/profile/components/schedule/faculty/faculty-schedule-view";
+import { getCurrentUser, getUserRole } from "@/features/auth/lib/utils";
+import { getFacultySchedulePageData } from "@/features/scheduler/lib/schedule/faculty-schedule";
+import { ACADEMIC_TERM_QUERY_PARAM } from "@/features/scheduler/lib/schedule/types";
+import { UserRole } from "@/features/shared/types/models";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

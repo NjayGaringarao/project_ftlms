@@ -1,4 +1,4 @@
-import { ProgramCreate } from "@/components/admin/college/program-create";
+import { ProgramCreate } from "@/features/admin/components/college/program-create";
 
 type CreateDepartmentProgramPageProps = {
   params: Promise<{ id: string }>;

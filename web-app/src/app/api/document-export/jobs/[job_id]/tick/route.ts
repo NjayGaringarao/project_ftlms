@@ -2,17 +2,17 @@ import { type NextRequest } from "next/server";
 import {
   ASYNC_CHUNK_SIZE,
   DOCUMENT_EXPORT_STORAGE_BUCKET,
-} from "@/lib/document-export/constants";
-import { requireAuthenticatedForApi } from "@/lib/document-export/auth";
+} from "@/features/document-export/lib/document-export/constants";
+import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";
 import {
   buildChunkStoragePath,
   buildFinalStoragePath,
   mapDocumentExportJob,
   resolveStorageBucket,
   toRawDocumentExportJobRow,
-} from "@/lib/document-export/jobs";
-import { mergePdfBuffers, renderPdfFromPrintRoute } from "@/lib/document-export/pdf";
-import { getDocumentExportProvider } from "@/lib/document-export/provider";
+} from "@/features/document-export/lib/document-export/jobs";
+import { mergePdfBuffers, renderPdfFromPrintRoute } from "@/features/document-export/lib/document-export/pdf";
+import { getDocumentExportProvider } from "@/features/document-export/lib/document-export/provider";
 import { createClient } from "@/utils/supabase/server";
 
 type DocumentExportJobTickRouteContext = {

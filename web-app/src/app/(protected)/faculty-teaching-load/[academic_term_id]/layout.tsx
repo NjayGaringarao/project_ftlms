@@ -1,9 +1,9 @@
-import { TopBarNav } from "@/components/ui/topbar-nav";
-import { FacultyList } from "@/components/faculty-teaching-load/faculty-list";
-import TermSwitcher from "@/components/shared/term-switcher";
-import { getTermById, getTermsList } from "@/lib/admin/terms";
-import { getUserRole } from "@/lib/auth/utils";
-import { getFacultyProposalListByTerm } from "@/lib/load-proposal/queries";
+import { TopBarNav } from "@/features/app-shell/components/topbar-nav";
+import { FacultyList } from "@/features/faculty-teaching-load/components/faculty-list";
+import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
+import { getTermById, getTermsList } from "@/features/admin/lib/terms";
+import { getUserRole } from "@/features/auth/lib/utils";
+import { getFacultyProposalListByTerm } from "@/features/ftl-evaluation/lib/load-proposal/queries";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";

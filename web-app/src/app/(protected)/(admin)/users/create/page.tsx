@@ -1,6 +1,6 @@
-import { UserCreate } from "@/components/admin/users/user-create";
-import { getCampusesList } from "@/lib/admin/campuses";
-import { getCollegesList } from "@/lib/admin/colleges";
+import { UserCreate } from "@/features/admin/components/users/user-create";
+import { getCampusesList } from "@/features/admin/lib/campuses";
+import { getCollegesList } from "@/features/admin/lib/colleges";
 
 const CreatePage = async () => {
   const [campuses, colleges] = await Promise.all([

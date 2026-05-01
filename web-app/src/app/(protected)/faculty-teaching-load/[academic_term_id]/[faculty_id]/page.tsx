@@ -1,10 +1,10 @@
-import ConcurrentLoadSummary from "@/components/faculty-teaching-load/concurrent-load-summary";
-import FacultyLoadStatusPanel from "@/components/faculty-teaching-load/faculty-load-status-panel";
-import { FacultyScheduleCard } from "@/components/schedule/faculty/faculty-load-schedule-cards";
-import { getTermById } from "@/lib/admin/terms";
-import { buildFacultyLoadSnapshot } from "@/lib/load-proposal/snapshot";
-import { getFacultyScheduleTermSnapshot } from "@/lib/schedule/faculty-schedule";
-import { getUserDataById } from "@/lib/user-data/queries";
+import ConcurrentLoadSummary from "@/features/faculty-teaching-load/components/concurrent-load-summary";
+import FacultyLoadStatusPanel from "@/features/faculty-teaching-load/components/faculty-load-status-panel";
+import { FacultyScheduleCard } from "@/features/profile/components/schedule/faculty/faculty-load-schedule-cards";
+import { getTermById } from "@/features/admin/lib/terms";
+import { buildFacultyLoadSnapshot } from "@/features/ftl-evaluation/lib/load-proposal/snapshot";
+import { getFacultyScheduleTermSnapshot } from "@/features/scheduler/lib/schedule/faculty-schedule";
+import { getUserDataById } from "@/features/profile/lib/user-data/queries";
 import { redirect } from "next/navigation";
 
 type FacultyIdPageProps = {

@@ -1,8 +1,8 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
-import { getTermById, getTermsList } from "@/lib/admin/terms";
-import { getUserRole } from "@/lib/auth/utils";
+import { getTermById, getTermsList } from "@/features/admin/lib/terms";
+import { getUserRole } from "@/features/auth/lib/utils";
 
 type AcademicTermIdLayoutProps = {
   children: React.ReactNode;

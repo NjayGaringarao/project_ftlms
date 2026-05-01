@@ -1,11 +1,11 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { getUserRole } from "@/lib/auth/utils";
-import { getCampusesList } from "@/lib/admin/campuses";
-import { getTermsList } from "@/lib/admin/terms";
-import { TopBarNav } from "@/components/ui/topbar-nav";
-import TermSwitcher from "@/components/shared/term-switcher";
-import UniversityEvaluationList from "@/components/ftl-evaluation/university-load/university-evaluation-list";
+import { getUserRole } from "@/features/auth/lib/utils";
+import { getCampusesList } from "@/features/admin/lib/campuses";
+import { getTermsList } from "@/features/admin/lib/terms";
+import { TopBarNav } from "@/features/app-shell/components/topbar-nav";
+import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
+import UniversityEvaluationList from "@/features/ftl-evaluation/components/university-load/university-evaluation-list";
 
 type UniversityLoadLayoutProps = {
   children: React.ReactNode;

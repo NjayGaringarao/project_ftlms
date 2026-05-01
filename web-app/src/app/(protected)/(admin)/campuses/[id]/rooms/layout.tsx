@@ -1,8 +1,8 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { RoomsList } from "@/components/admin/campus/rooms-list";
-import { getRoomsByCampus } from "@/lib/admin/rooms";
-import { getCampusById } from "@/lib/admin/campuses";
+import { RoomsList } from "@/features/admin/components/campus/rooms-list";
+import { getRoomsByCampus } from "@/features/admin/lib/rooms";
+import { getCampusById } from "@/features/admin/lib/campuses";
 
 type CampusRoomsLayoutProps = {
   children: React.ReactNode;

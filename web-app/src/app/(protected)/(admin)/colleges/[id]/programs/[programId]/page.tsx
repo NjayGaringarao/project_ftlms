@@ -1,7 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { ProgramView } from "@/components/admin/college/program-view";
-import { getProgramById } from "@/lib/admin/programs";
+import { ProgramView } from "@/features/admin/components/college/program-view";
+import { getProgramById } from "@/features/admin/lib/programs";
 
 type DepartmentProgramsLayoutProps = {
   params: Promise<{ id: string; programId: string }>;

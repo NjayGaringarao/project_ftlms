@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { YearEdit } from "@/components/admin/academic-year/year-edit";
-import { getAcademicYearById } from "@/lib/admin/academic-years";
-import { getTermsByAcademicYearId } from "@/lib/admin/terms";
+import { YearEdit } from "@/features/admin/components/academic-year/year-edit";
+import { getAcademicYearById } from "@/features/admin/lib/academic-years";
+import { getTermsByAcademicYearId } from "@/features/admin/lib/terms";
 
 export const dynamic = "force-dynamic";
 

@@ -1,12 +1,12 @@
-import PersonalInformation from "@/components/me/profile/personal-information";
-import ProfessionalInformation from "@/components/me/profile/professional-information";
-import EducationInformation from "@/components/me/profile/education-information";
-import { getCurrentUser } from "@/lib/auth/utils";
+import PersonalInformation from "@/features/profile/components/me/profile/personal-information";
+import ProfessionalInformation from "@/features/profile/components/me/profile/professional-information";
+import EducationInformation from "@/features/profile/components/me/profile/education-information";
+import { getCurrentUser } from "@/features/auth/lib/utils";
 import {
   getDegreesByUserId,
   getIdentityByUserId,
   getProfessionalInfoByUserId,
-} from "@/lib/me/profile";
+} from "@/features/profile/lib/me/profile";
 import { redirect } from "next/navigation";
 
 const ProfilePage = async () => {
