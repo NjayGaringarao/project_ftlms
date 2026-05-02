@@ -1,5 +1,4 @@
 import { PageHeader } from "@/features/app-shell/components/page-header";
-import SmallDisplayOverlay from "@/components/ui/small-display-overlay";
 import React from "react";
 
 const UniversityLayout = ({ children }: { children: React.ReactNode }) => {
@@ -7,7 +6,6 @@ const UniversityLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="relative flex h-full flex-col">
       <PageHeader accessLabel="Administrator Access" />
       <div className="flex-1 overflow-hidden">{children}</div>
-      
     </div>
   );
 };

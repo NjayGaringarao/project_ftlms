@@ -1,6 +1,5 @@
 "use client";
 
-import { Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ type CampusInitialFormProps = {
   submitLoadingLabel: string;
   statusSlot?: ReactNode;
   extraFields?: ReactNode;
+  showActions?: boolean;
 };
 
 export const CampusInitialForm = ({
@@ -34,12 +34,11 @@ export const CampusInitialForm = ({
   submitLoadingLabel,
   statusSlot,
   extraFields,
+  showActions = true,
 }: CampusInitialFormProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-
-
         {statusSlot}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -94,14 +93,16 @@ export const CampusInitialForm = ({
 
       {extraFields}
 
-      <div className="flex gap-2 justify-end pt-4 border-t">
-        <Button variant="outline" onClick={onReset} disabled={isSaving}>
-          Reset
-        </Button>
-        <Button onClick={onSubmit} disabled={isSaving}>
-          {isSaving ? submitLoadingLabel : submitLabel}
-        </Button>
-      </div>
+      {showActions ? (
+        <div className="flex gap-2 justify-end pt-4 border-t">
+          <Button variant="outline" onClick={onReset} disabled={isSaving}>
+            Reset
+          </Button>
+          <Button onClick={onSubmit} disabled={isSaving}>
+            {isSaving ? submitLoadingLabel : submitLabel}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 };
