@@ -1,4 +1,4 @@
-import { AcademicTermName, ExtendedAcademicTerm } from "@/features/shared/types/models";
+import { AcademicTermName } from "@/features/shared/types/models";
 
 export const ACADEMIC_TERM_NAMES: AcademicTermName[] = [
   "FIRST SEMESTER",

@@ -53,7 +53,7 @@ export function ManagementContainer({
     <>
       <div
         className={cn(
-          "min-h-0 overflow-hidden flex-1 p-4 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(360px,360px)_minmax(0,1fr)]",
+          "min-h-0 overflow-hidden flex-1 p-4 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(360px,560px)_minmax(0,1fr)]",
           className,
         )}
       >

@@ -169,6 +169,7 @@ export const TermsListEdit = ({
     }
 
     setIsSaving(false);
+    setSavedRows(rows);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 5000);
     onTermsChange();

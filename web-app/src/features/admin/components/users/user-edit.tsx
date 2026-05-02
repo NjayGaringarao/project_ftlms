@@ -91,7 +91,6 @@ export const UserEdit = ({
   const [professionalError, setProfessionalError] = useState("");
   const [professionalSuccess, setProfessionalSuccess] = useState(false);
 
-  const [isSecuritySaving, setIsSecuritySaving] = useState(false);
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
   const [collegeDialogOpen, setCollegeDialogOpen] = useState(false);
   const [campusQuery, setCampusQuery] = useState("");
@@ -207,27 +206,19 @@ export const UserEdit = ({
   };
 
   const handleChangeEmail = async (newEmail: string) => {
-    setIsSecuritySaving(true);
-
     const { error: emailError } = await changeUserEmail({
       user_id: user.id,
       new_email: newEmail,
     });
 
-    setIsSecuritySaving(false);
-
     return { error: emailError };
   };
 
   const handleChangePassword = async (newPassword: string) => {
-    setIsSecuritySaving(true);
-
     const { error: passwordError } = await changeUserPassword({
       user_id: user.id,
       new_password: newPassword,
     });
-
-    setIsSecuritySaving(false);
 
     return { error: passwordError };
   };
