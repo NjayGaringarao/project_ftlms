@@ -38,10 +38,7 @@ export const CampusInitialForm = ({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Building2 className="w-5 h-5" />
-          <h3 className="font-semibold">Campus Profile</h3>
-        </div>
+
 
         {statusSlot}
 

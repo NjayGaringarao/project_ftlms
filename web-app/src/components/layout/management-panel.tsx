@@ -47,7 +47,7 @@ export function ManagementPanel({
       </header>
       <div
         className={cn(
-          "max-h-[calc(100vh-14rem)] overflow-y-auto px-4 py-4",
+          "max-h-[calc(100vh-10rem)] overflow-y-auto px-4 py-4",
           bodyClassName,
         )}
       >
