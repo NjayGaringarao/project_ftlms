@@ -11,7 +11,7 @@ type CampusFormState = {
   address: string;
 };
 
-type CampusInitialFormProps = {
+type InitialFormProps = {
   formData: CampusFormState;
   onChange: (field: keyof CampusFormState, value: string) => void;
   onReset: () => void;
@@ -24,7 +24,7 @@ type CampusInitialFormProps = {
   showActions?: boolean;
 };
 
-export const CampusInitialForm = ({
+export const InitialForm = ({
   formData,
   onChange,
   onReset,
@@ -35,7 +35,7 @@ export const CampusInitialForm = ({
   statusSlot,
   extraFields,
   showActions = true,
-}: CampusInitialFormProps) => {
+}: InitialFormProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">

@@ -194,6 +194,11 @@ export function CampusPanel({
             isOpen={areRoomsOpen}
             onToggle={() => setAreRoomsOpen((current) => !current)}
           >
+             <AddTile
+              title="Add Room"
+              description="Create a room for this campus"
+              onClick={() => setRoomDialogId("new")}
+            />
            
             {rooms.length && (
               rooms.map((room) => (
@@ -228,11 +233,7 @@ export function CampusPanel({
               ))
             ) }
 
-             <AddTile
-              title="Add Room"
-              description="Create a room for this campus"
-              onClick={() => setRoomDialogId("new")}
-            />
+            
           </ResourceSection>
 
           <ResourceSection
@@ -241,6 +242,11 @@ export function CampusPanel({
             isOpen={areOfferingsOpen}
             onToggle={() => setAreOfferingsOpen((current) => !current)}
           >
+             <AddTile
+              title="Add Program Offering"
+              description="Assign a program to this campus"
+              onClick={() => setIsOfferingDialogOpen(true)}
+            />
             
             {offerings.length && (
               offerings.map((offering) => (
@@ -276,11 +282,7 @@ export function CampusPanel({
               ))
             )}
 
-            <AddTile
-              title="Add Program Offering"
-              description="Assign a program to this campus"
-              onClick={() => setIsOfferingDialogOpen(true)}
-            />
+           
           </ResourceSection>
 
           <DangerZone
