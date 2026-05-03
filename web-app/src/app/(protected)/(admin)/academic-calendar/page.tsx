@@ -32,7 +32,7 @@ const AcademicCalendarPage = async ({
       years={years}
       selectedYear={selectedYear}
       selectedTerms={selectedTerms}
-      defaultTermId={defaultTerm?.id ?? null}
+      defaultTerm={defaultTerm}
       selectedId={queryState.selectedId}
       isCreating={queryState.isCreating}
     />

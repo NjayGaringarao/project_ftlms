@@ -17,17 +17,14 @@ import { getCreatedRecordId } from "@/features/admin/lib/action-result-helpers";
 import DeleteConfirmModal from "../delete-confirm-modal";
 import DangerZone from "../danger-zone";
 import FormStatusBanner from "../form-status-banner";
-import {
-  AcademicCalendarFormState,
-  InitialForm,
-} from "./initial-form";
+import { AcademicCalendarFormState, InitialForm } from "./initial-form";
 import { TermsGrid } from "./terms-grid";
 
 type AcademicCalendarManagementProps = {
   years: AcademicYearListItem[];
   selectedYear: AcademicYearListItem | null;
   selectedTerms: TermListItem[];
-  defaultTermId: string | null;
+  defaultTerm: TermListItem | null;
   selectedId: string | null;
   isCreating: boolean;
 };
@@ -48,7 +45,7 @@ export function AcademicCalendarManagement({
   years,
   selectedYear,
   selectedTerms,
-  defaultTermId,
+  defaultTerm,
   selectedId,
   isCreating,
 }: AcademicCalendarManagementProps) {
@@ -83,6 +80,16 @@ export function AcademicCalendarManagement({
             title: `A.Y. ${year.code}`,
             subtitle: [],
             icon: <CalendarRange className="h-5 w-5" />,
+            annotations:
+              defaultTerm?.academic_year_id === year.id
+                ? [
+                    <div className="h-full flex flex-col justify-center">
+                      <span className="text-xs py-1 px-3 bg-foreground/60 text-background rounded-xl">
+                        Default
+                      </span>
+                    </div>,
+                  ]
+                : [],
           }))}
         />
       }
@@ -90,16 +97,16 @@ export function AcademicCalendarManagement({
         open: isCreating || Boolean(selectedId),
         title: isCreating
           ? "Create Academic Year"
-          : selectedYear?.code ?? "Academic year not found",
+          : (selectedYear?.code ?? "Academic year not found"),
         description: isCreating
           ? "Add a new academic year."
           : "Edit academic year and manage calendar terms.",
         content: (
           <AcademicCalendarPanel
-            key={isCreating ? "new" : selectedYear?.id ?? "missing"}
+            key={isCreating ? "new" : (selectedYear?.id ?? "missing")}
             year={selectedYear}
             terms={selectedTerms}
-            defaultTermId={defaultTermId}
+            defaultTermId={defaultTerm?.id ?? null}
             isCreating={isCreating}
             onClose={nav.closePanel}
             onCreated={nav.replaceWithItem}
@@ -138,8 +145,7 @@ function AcademicCalendarPanel({
   onRefresh: () => void;
 }) {
   const initial = toForm(year);
-  const [formData, setFormData] =
-    useState<AcademicCalendarFormState>(initial);
+  const [formData, setFormData] = useState<AcademicCalendarFormState>(initial);
   const [savedFormData, setSavedFormData] =
     useState<AcademicCalendarFormState>(initial);
   const [isSaving, setIsSaving] = useState(false);

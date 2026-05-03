@@ -12,6 +12,7 @@ import type { AcademicYear } from "@/features/shared/types/models/academic_year"
 import DeleteConfirmModal from "../delete-confirm-modal";
 import FormStatusBanner from "../form-status-banner";
 import { TermDialog } from "./term-dialog";
+import { formatDate } from "@/utils/time";
 
 type TermsGridProps = {
   year: AcademicYear;
@@ -25,6 +26,7 @@ const termOrder: Record<AcademicTermName, number> = {
   "SECOND SEMESTER": 2,
   MIDYEAR: 3,
 };
+
 
 export function TermsGrid({
   year,
@@ -110,9 +112,17 @@ export function TermsGrid({
               className="rounded-md border bg-background p-4"
             >
               <div className="flex flex-col gap-3">
-                <p className="min-w-0 truncate text-base font-semibold">
-                  {term.code}
-                </p>
+                <div className="min-w-0 space-y-1">
+                  <p className="truncate text-base font-semibold">
+                    {term.code}
+                  </p>
+                  <p className="text-xs text-foreground/70">
+                   Start: {formatDate(term.start)}
+                  </p>
+                   <p className="text-xs text-foreground/70">
+                   End: {formatDate(term.end)}
+                  </p>
+                </div>
                 <div className="flex items-center self-end gap-2">
                   
                   
