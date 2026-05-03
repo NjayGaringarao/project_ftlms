@@ -20,7 +20,9 @@ import {
 } from "@/features/admin/lib/programs";
 import { CampusListItem, getCampusesList } from "@/features/admin/lib/campuses";
 import { CollegeListItem } from "@/features/admin/lib/colleges";
-import DesignationProgramOfferingPicker from "./designation-program-offering-picker";
+import ProgramOfferingPickerDialog, {
+  ProgramOfferingPickerItem,
+} from "@/features/shared/components/pickers/program-offering-picker-dialog";
 import FormStatusBanner from "../form-status-banner";
 
 type NewDesignation = {
@@ -58,6 +60,8 @@ export const DesignationAddForm = ({
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isProgramOfferingPickerOpen, setIsProgramOfferingPickerOpen] =
+    useState(false);
 
   const [selectedPrimaryDesignation, setSelectedPrimaryDesignation] =
     useState<string>("");
@@ -66,6 +70,7 @@ export const DesignationAddForm = ({
   const [campusId, setCampusId] = useState<string>("");
   const [departmentId, setDepartmentId] = useState<string>("");
   const [programOfferingId, setProgramOfferingId] = useState<string>("");
+  const [programOfferingQuery, setProgramOfferingQuery] = useState("");
   const [load, setLoad] = useState<string>("");
   const [formError, setFormError] = useState<string>("");
 
@@ -105,12 +110,26 @@ export const DesignationAddForm = ({
     [programOfferings, programOfferingId],
   );
 
+  const programOfferingPickerItems = useMemo<ProgramOfferingPickerItem[]>(
+    () =>
+      programOfferings.map((offering) => ({
+        id: offering.id,
+        campus_id: offering.campus_id,
+        campus_code: offering.campus?.code,
+        campus_name: offering.campus?.name,
+        program_code: offering.program?.code,
+        program_name: offering.program?.name,
+      })),
+    [programOfferings],
+  );
+
   const resetForm = () => {
     setSelectedPrimaryDesignation("");
     setSelectedOtherDesignation("");
     setCampusId("");
     setDepartmentId("");
     setProgramOfferingId("");
+    setProgramOfferingQuery("");
     setLoad("");
     setFormError("");
   };
@@ -133,6 +152,39 @@ export const DesignationAddForm = ({
     setProgramOfferingId(offeringId);
     setFormError("");
   };
+
+  const programOfferingLabel = selectedProgramOffering
+    ? `${selectedProgramOffering.campus.name} - ${selectedProgramOffering.program.name}`
+    : "Select program offering";
+
+  const renderProgramOfferingPicker = (label: string) => (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium">{label}</p>
+        {selectedProgramOffering && !isMutating && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-auto px-2 py-1 text-xs"
+            onClick={() => handleProgramOfferingChange("")}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="h-10 w-full justify-start px-3 text-sm font-normal"
+        disabled={isMutating}
+        onClick={() => setIsProgramOfferingPickerOpen(true)}
+      >
+        {programOfferingLabel}
+      </Button>
+    </div>
+  );
 
   const handleAddDesignation = async () => {
     setFormError("");
@@ -330,13 +382,7 @@ export const DesignationAddForm = ({
                 )}
 
                 {selectionSet === "D" && (
-                  <DesignationProgramOfferingPicker
-                    offerings={programOfferings}
-                    value={programOfferingId}
-                    onChange={handleProgramOfferingChange}
-                    disabled={isMutating}
-                    label="Program Offering *"
-                  />
+                  renderProgramOfferingPicker("Program Offering *")
                 )}
 
                 {selectionSet === "E" && (
@@ -421,13 +467,9 @@ export const DesignationAddForm = ({
                       </div>
                     </div>
 
-                    <DesignationProgramOfferingPicker
-                      offerings={programOfferings}
-                      value={programOfferingId}
-                      onChange={handleProgramOfferingChange}
-                      disabled={isMutating}
-                      label="Program Offering (Optional)"
-                    />
+                    {renderProgramOfferingPicker(
+                      "Program Offering (Optional)",
+                    )}
                   </div>
                 )}
               </>
@@ -454,13 +496,6 @@ export const DesignationAddForm = ({
                   />
                 </div>
 
-                {selectedProgramOffering && selectionSet === "D" && (
-                  <p className="text-xs text-foreground/70">
-                    Selected: {selectedProgramOffering.campus.name} -{" "}
-                    {selectedProgramOffering.program.name}
-                  </p>
-                )}
-
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -486,6 +521,20 @@ export const DesignationAddForm = ({
           </div>
         )}
       </AppDialog>
+
+      <ProgramOfferingPickerDialog
+        open={isProgramOfferingPickerOpen}
+        onOpenChange={setIsProgramOfferingPickerOpen}
+        programOfferings={programOfferingPickerItems}
+        selectedProgramOfferingId={programOfferingId}
+        query={programOfferingQuery}
+        onQueryChange={setProgramOfferingQuery}
+        onSelect={(offeringId) => {
+          handleProgramOfferingChange(offeringId);
+          setIsProgramOfferingPickerOpen(false);
+        }}
+        emptyState="No program offerings available for selection."
+      />
     </>
   );
 };

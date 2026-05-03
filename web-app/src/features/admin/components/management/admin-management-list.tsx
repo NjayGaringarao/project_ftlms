@@ -17,6 +17,7 @@ export type AdminManagementListItem = {
 type AdminManagementListProps = {
   query: string;
   onQueryChange: (value: string) => void;
+  filters?: ReactNode;
   selectedId: string | null;
   createLabel: string;
   searchPlaceholder: string;
@@ -29,6 +30,7 @@ type AdminManagementListProps = {
 export function AdminManagementList({
   query,
   onQueryChange,
+  filters,
   selectedId,
   createLabel,
   searchPlaceholder,
@@ -52,6 +54,7 @@ export function AdminManagementList({
           {createLabel}
         </Button>
       </div>
+      {filters ? <div>{filters}</div> : null}
 
       <div className="flex-1 min-h-0 overflow-y-auto pb-4">
         <div className="space-y-1">
@@ -92,7 +95,7 @@ export function AdminManagementList({
                 </div>
               </div>
               {item.annotations ? (
-                <div className="flex h-full shrink-0 flex-col items-end gap-1 p-2">
+                <div className="flex h-full max-w-44 shrink-0 flex-row flex-wrap items-center justify-end gap-1 p-2">
                   {item.annotations}
                 </div>
               ) : null}

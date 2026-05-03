@@ -11,6 +11,7 @@ import CollegePickerDialog from "@/features/shared/components/pickers/college-pi
 import { createUser } from "@/features/admin/lib/users/actions";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
 import type { CollegeListItem } from "@/features/admin/lib/colleges";
+import type { ProgramCampusOffering } from "@/features/admin/lib/programs";
 import FormStatusBanner from "../form-status-banner";
 
 type UserInitialFormState = {
@@ -40,6 +41,7 @@ const initialFormState: UserInitialFormState = {
 type UserCreateProps = {
   campuses: CampusListItem[];
   colleges: CollegeListItem[];
+  programOfferings: ProgramCampusOffering[];
   onCreated?: (id: string) => void;
   onCancel?: () => void;
 };
@@ -47,6 +49,7 @@ type UserCreateProps = {
 export const UserCreate = ({
   campuses,
   colleges,
+  programOfferings,
   onCreated,
   onCancel,
 }: UserCreateProps) => {
@@ -64,8 +67,25 @@ export const UserCreate = ({
 
   const selectedCampus =
     campuses.find((campus) => campus.id === formData.campusId) ?? null;
+  const availableCollegeIds = useMemo(
+    () =>
+      new Set(
+        programOfferings
+          .filter((offering) => offering.campus_id === formData.campusId)
+          .map((offering) => offering.program.college_id),
+      ),
+    [formData.campusId, programOfferings],
+  );
+  const availableColleges = useMemo(
+    () =>
+      formData.campusId
+        ? colleges.filter((college) => availableCollegeIds.has(college.id))
+        : [],
+    [availableCollegeIds, colleges, formData.campusId],
+  );
   const selectedCollege =
-    colleges.find((college) => college.id === formData.collegeId) ?? null;
+    availableColleges.find((college) => college.id === formData.collegeId) ??
+    null;
 
   const hasChanges = useMemo(
     () =>
@@ -349,7 +369,7 @@ export const UserCreate = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="mt-1 w-full justify-between"
+                className="mt-1 h-10 w-full justify-between px-3 text-sm font-normal"
                 onClick={() => setCampusDialogOpen(true)}
                 disabled={isSaving}
               >
@@ -366,12 +386,16 @@ export const UserCreate = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="mt-1 w-full justify-between"
+                className="mt-1 h-10 w-full justify-between px-3 text-sm font-normal"
                 onClick={() => setCollegeDialogOpen(true)}
-                disabled={isSaving}
+                disabled={isSaving || !formData.campusId}
               >
                 <span className="truncate">
-                  {selectedCollege ? selectedCollege.name : "Select college..."}
+                  {!formData.campusId
+                    ? "Select campus first"
+                    : selectedCollege
+                      ? selectedCollege.name
+                      : "Select college..."}
                 </span>
                 <ChevronDown className="h-4 w-4 text-foreground/60" />
               </Button>
@@ -399,7 +423,19 @@ export const UserCreate = ({
         query={campusQuery}
         onQueryChange={setCampusQuery}
         onSelect={(nextCampusId) => {
-          handleChange("campusId", nextCampusId);
+          const nextAvailableCollegeIds = new Set(
+            programOfferings
+              .filter((offering) => offering.campus_id === nextCampusId)
+              .map((offering) => offering.program.college_id),
+          );
+          setFormData((prev) => ({
+            ...prev,
+            campusId: nextCampusId,
+            collegeId: nextAvailableCollegeIds.has(prev.collegeId)
+              ? prev.collegeId
+              : "",
+          }));
+          setError("");
           setCampusDialogOpen(false);
         }}
         emptyState="No campuses found."
@@ -408,7 +444,7 @@ export const UserCreate = ({
       <CollegePickerDialog
         open={collegeDialogOpen}
         onOpenChange={setCollegeDialogOpen}
-        colleges={colleges}
+        colleges={availableColleges}
         selectedCollegeId={formData.collegeId}
         query={collegeQuery}
         onQueryChange={setCollegeQuery}
@@ -416,7 +452,7 @@ export const UserCreate = ({
           handleChange("collegeId", nextCollegeId);
           setCollegeDialogOpen(false);
         }}
-        emptyState="No colleges found."
+        emptyState="No colleges are available for this campus."
       />
     </>
   );

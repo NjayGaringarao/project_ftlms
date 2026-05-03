@@ -1,21 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Calendar, Star, Trash2 } from "lucide-react";
-import { AddTile } from "@/components/ui/add-tile";
+import { Calendar, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { deleteTerm, setDefaultAcademicTerm } from "@/features/admin/lib/actions";
 import { ACADEMIC_TERM_NAMES } from "@/features/admin/lib/academic-terms";
+import { setDefaultAcademicTerm } from "@/features/admin/lib/actions";
 import type { TermListItem } from "@/features/admin/lib/terms";
 import type { AcademicTermName } from "@/features/shared/types/models";
-import type { AcademicYear } from "@/features/shared/types/models/academic_year";
-import DeleteConfirmModal from "../delete-confirm-modal";
-import FormStatusBanner from "../form-status-banner";
-import { TermDialog } from "./term-dialog";
 import { formatDate } from "@/utils/time";
+import FormStatusBanner from "../form-status-banner";
 
 type TermsGridProps = {
-  year: AcademicYear;
   terms: TermListItem[];
   defaultTermId: string | null;
   onTermsChange: () => void;
@@ -27,15 +22,11 @@ const termOrder: Record<AcademicTermName, number> = {
   MIDYEAR: 3,
 };
 
-
 export function TermsGrid({
-  year,
   terms,
   defaultTermId,
   onTermsChange,
 }: TermsGridProps) {
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [termToDelete, setTermToDelete] = useState<TermListItem | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -47,28 +38,6 @@ export function TermsGrid({
       ),
     [terms],
   );
-  const usedNames = useMemo(
-    () => new Set(terms.map((term) => term.name)),
-    [terms],
-  );
-  const availableNames = ACADEMIC_TERM_NAMES.filter(
-    (name) => !usedNames.has(name),
-  );
-
-  const handleDelete = async () => {
-    if (!termToDelete) return;
-    setIsMutating(true);
-    setError("");
-    setSuccess("");
-    const result = await deleteTerm(termToDelete.id);
-    setIsMutating(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    setTermToDelete(null);
-    onTermsChange();
-  };
 
   const handleSetDefault = async (term: TermListItem) => {
     setIsMutating(true);
@@ -117,20 +86,18 @@ export function TermsGrid({
                     {term.code}
                   </p>
                   <p className="text-xs text-foreground/70">
-                   Start: {formatDate(term.start)}
+                    Start: {formatDate(term.start)}
                   </p>
-                   <p className="text-xs text-foreground/70">
-                   End: {formatDate(term.end)}
+                  <p className="text-xs text-foreground/70">
+                    End: {formatDate(term.end)}
                   </p>
                 </div>
+
                 <div className="flex items-center self-end gap-2">
-                  
-                  
                   {isDefault ? (
                     <Button
                       type="button"
                       size="sm"
-                      
                       className="pointer-events-none gap-1"
                       disabled={isMutating}
                     >
@@ -148,68 +115,12 @@ export function TermsGrid({
                       Set Default
                     </Button>
                   )}
-                  
-                  <Button
-                    type="button"
-            
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => {
-                      setError("");
-                      setSuccess("");
-                      setTermToDelete(term);
-                    }}
-                    disabled={isMutating}
-                    title="Delete term"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-
                 </div>
               </div>
             </article>
           );
         })}
-
-        <AddTile
-          title="Add Term"
-          onClick={() => {
-            setError("");
-            setSuccess("");
-            setIsCreateOpen(true);
-          }}
-          disabled={availableNames.length === 0 || isMutating}
-          containerClassName="flex-col items-center justify-center"
-        />
       </div>
-
-      <TermDialog
-        key={isCreateOpen ? "open-term" : "closed-term"}
-        open={isCreateOpen}
-        year={year}
-        availableNames={availableNames}
-        onClose={() => setIsCreateOpen(false)}
-        onRefresh={onTermsChange}
-      />
-
-      <DeleteConfirmModal
-        isOpen={termToDelete !== null}
-        title="Delete Term"
-        description={
-          <p>
-            Are you sure you want to delete{" "}
-            <strong>{termToDelete?.name}</strong>?
-          </p>
-        }
-        confirmLabel="Delete Term"
-        isDeleting={isMutating}
-        error={error}
-        onCancel={() => {
-          setError("");
-          setTermToDelete(null);
-        }}
-        onConfirm={handleDelete}
-      />
     </section>
   );
 }

@@ -621,6 +621,10 @@ export async function deleteUser(
   } = await supabase.auth.getUser();
   const isDeletingCurrentUser = currentUser?.id === userId;
 
+  if (isDeletingCurrentUser) {
+    return { error: "You cannot delete your own administrator account." };
+  }
+
   // Delete auth user (cascade delete in database handles identity, designations, degrees)
   const { error } = await adminClient.auth.admin.deleteUser(userId);
 
@@ -628,11 +632,6 @@ export async function deleteUser(
     return { error: error.message };
   }
 
-  if (isDeletingCurrentUser) {
-    // Prevent stale JWT cookies after self-deletion.
-    await supabase.auth.signOut();
-  }
-
   revalidatePath("/users");
-  return { data: true, deletedCurrentUser: isDeletingCurrentUser };
+  return { data: true, deletedCurrentUser: false };
 }

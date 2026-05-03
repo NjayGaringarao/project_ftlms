@@ -6,6 +6,9 @@ import { AppDialog } from "@/components/ui/app-dialog";
 import { AddTile } from "@/components/ui/add-tile";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import ProgramPickerDialog, {
+  ProgramPickerItem,
+} from "@/features/shared/components/pickers/program-picker-dialog";
 import type { MajorOfferingListItem } from "@/features/admin/lib/major-offerings";
 import type { MajorListItem } from "@/features/admin/lib/majors";
 import type { ProgramOfferingListItem } from "@/features/admin/lib/program-offerings";
@@ -46,12 +49,18 @@ export function OfferingDialog({
     () => new Set(offeredProgramIds),
     [offeredProgramIds],
   );
-  const availablePrograms = isCreating
-    ? programs.filter((program) => !offeredProgramIdSet.has(program.id))
-    : programs;
-  const [programId, setProgramId] = useState(
+  const availablePrograms = useMemo(
+    () =>
+      isCreating
+        ? programs.filter((program) => !offeredProgramIdSet.has(program.id))
+        : programs,
+    [isCreating, offeredProgramIdSet, programs],
+  );
+  const [programId] = useState(
     offering?.program_id ?? availablePrograms[0]?.id ?? "",
   );
+  const [programQuery, setProgramQuery] = useState("");
+  const [selectedProgramIds, setSelectedProgramIds] = useState<string[]>([]);
   const [majorId, setMajorId] = useState("");
   const [isMajorOfferingDialogOpen, setIsMajorOfferingDialogOpen] =
     useState(false);
@@ -72,19 +81,40 @@ export function OfferingDialog({
   const selectedMajorId = availableMajors.some((major) => major.id === majorId)
     ? majorId
     : availableMajors[0]?.id || "";
+  const programPickerItems = useMemo<ProgramPickerItem[]>(
+    () =>
+      availablePrograms.map((program) => ({
+        id: program.id,
+        code: program.code,
+        name: program.name,
+        description: program.description,
+        college_code: program.college?.code,
+        college_name: program.college?.name,
+      })),
+    [availablePrograms],
+  );
 
-  const save = async () => {
+  const saveProgramOfferings = async () => {
+    if (!selectedProgramIds.length) return;
+
     setIsSaving(true);
     setError("");
-    const result = await createProgramOffering({
-      campus_id: campusId,
-      program_id: programId,
-    });
-    setIsSaving(false);
-    if (result.error) {
-      setError(result.error);
-      return;
+
+    for (const selectedProgramId of selectedProgramIds) {
+      const result = await createProgramOffering({
+        campus_id: campusId,
+        program_id: selectedProgramId,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        setIsSaving(false);
+        return;
+      }
     }
+
+    setIsSaving(false);
+    setSelectedProgramIds([]);
     onRefresh();
     onClose();
   };
@@ -121,37 +151,46 @@ export function OfferingDialog({
     onRefresh();
   };
 
+  if (isCreating) {
+    return (
+      <ProgramPickerDialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) onClose();
+        }}
+        programs={programPickerItems}
+        selectionMode="multiple"
+        selectedProgramIds={selectedProgramIds}
+        query={programQuery}
+        onQueryChange={setProgramQuery}
+        onSelectionChange={(nextProgramIds) => {
+          setSelectedProgramIds(nextProgramIds);
+          setError("");
+        }}
+        onConfirm={saveProgramOfferings}
+        title="Add Program Offerings"
+        description="Choose one or more programs to offer on this campus."
+        confirmLabel="Add Programs"
+        clearLabel="Clear"
+        isConfirming={isSaving}
+        error={error}
+        emptyState="No programs are available for this campus."
+      />
+    );
+  }
+
   return (
     <AppDialog
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
-      title={isCreating ? "Add Program Offering" : "Program Offering"}
+      title="Program Offering"
       variant="floating-medium"
     >
       <div className="space-y-4 p-4">
         <FormStatusBanner variant="compact" error={error} />
-        <div>
-          <Label className="text-xs" htmlFor="program-offering-program">
-            Program *
-          </Label>
-          <select
-            id="program-offering-program"
-            className="mt-1 h-9 w-full rounded-md border bg-background px-3 text-sm"
-            value={programId}
-            onChange={(event) => setProgramId(event.target.value)}
-            disabled={isSaving || !isCreating}
-          >
-            {availablePrograms.map((program) => (
-              <option key={program.id} value={program.id}>
-                {program.code} - {program.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {!isCreating ? (
-          <div className="space-y-3 border-t pt-4">
+        <div className="space-y-3">
             <FormStatusBanner variant="compact" error={majorOfferingError} />
             <div>
               <p className="text-sm font-semibold">Major Offerings</p>
@@ -199,8 +238,7 @@ export function OfferingDialog({
                 </div>
               ))}
             </div>
-          </div>
-        ) : null}
+        </div>
         <div className="flex justify-end gap-2 border-t pt-4">
           <Button
             type="button"
@@ -210,15 +248,6 @@ export function OfferingDialog({
           >
             Cancel
           </Button>
-          {isCreating ? (
-            <Button
-              type="button"
-              onClick={save}
-              disabled={isSaving || !programId}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          ) : null}
         </div>
         <DeleteConfirmModal
           isOpen={majorOfferingToDelete !== null}

@@ -19,6 +19,7 @@ import DangerZone from "../danger-zone";
 import FormStatusBanner from "../form-status-banner";
 import { AcademicCalendarFormState, InitialForm } from "./initial-form";
 import { TermsGrid } from "./terms-grid";
+import { ACADEMIC_TERM_NAMES } from "@/features/admin/lib/academic-terms";
 
 type AcademicCalendarManagementProps = {
   years: AcademicYearListItem[];
@@ -32,14 +33,62 @@ type AcademicCalendarManagementProps = {
 const emptyForm: AcademicCalendarFormState = {
   start_year: "",
   end_year: "",
+  terms: {
+    "FIRST SEMESTER": { start: "", end: "" },
+    "SECOND SEMESTER": { start: "", end: "" },
+    MIDYEAR: { start: "", end: "" },
+  },
 };
 
 const toForm = (
   year: AcademicYearListItem | null,
 ): AcademicCalendarFormState =>
   year
-    ? { start_year: String(year.start_year), end_year: String(year.end_year) }
+    ? {
+        ...emptyForm,
+        start_year: String(year.start_year),
+        end_year: String(year.end_year),
+      }
     : emptyForm;
+
+const termsOverlap = (
+  first: { start: string; end: string },
+  second: { start: string; end: string },
+) =>
+  new Date(first.start) <= new Date(second.end) &&
+  new Date(first.end) >= new Date(second.start);
+
+const hasCompleteCreateCalendar = (formData: AcademicCalendarFormState) => {
+  const startYear = Number(formData.start_year);
+  const endYear = Number(formData.end_year);
+
+  if (!Number.isInteger(startYear) || !Number.isInteger(endYear)) return false;
+  if (endYear < startYear) return false;
+
+  const hasCompleteTerms = ACADEMIC_TERM_NAMES.every((termName) => {
+    const term = formData.terms[termName];
+    if (!term.start || !term.end) return false;
+
+    return new Date(term.start) < new Date(term.end);
+  });
+
+  if (!hasCompleteTerms) return false;
+
+  for (let index = 0; index < ACADEMIC_TERM_NAMES.length; index += 1) {
+    const term = formData.terms[ACADEMIC_TERM_NAMES[index]];
+
+    for (
+      let nextIndex = index + 1;
+      nextIndex < ACADEMIC_TERM_NAMES.length;
+      nextIndex += 1
+    ) {
+      const nextTerm = formData.terms[ACADEMIC_TERM_NAMES[nextIndex]];
+      if (termsOverlap(term, nextTerm)) return false;
+    }
+  }
+
+  return true;
+};
 
 export function AcademicCalendarManagement({
   years,
@@ -167,7 +216,15 @@ function AcademicCalendarPanel({
     setError("");
     setSuccess("");
     const result = isCreating
-      ? await createAcademicYear({ start_year: startYear, end_year: endYear })
+      ? await createAcademicYear({
+          start_year: startYear,
+          end_year: endYear,
+          terms: ACADEMIC_TERM_NAMES.map((name) => ({
+            name,
+            start: formData.terms[name].start,
+            end: formData.terms[name].end,
+          })),
+        })
       : year
         ? await updateAcademicYear({
             id: year.id,
@@ -183,8 +240,10 @@ function AcademicCalendarPanel({
     }
 
     const nextSaved = {
+      ...emptyForm,
       start_year: String(startYear),
       end_year: String(endYear),
+      terms: formData.terms,
     };
     setSavedFormData(nextSaved);
     setFormData(nextSaved);
@@ -229,6 +288,19 @@ function AcademicCalendarPanel({
           setFormData((current) => ({ ...current, [field]: value }));
           setError("");
         }}
+        onTermChange={(name, field, value) => {
+          setFormData((current) => ({
+            ...current,
+            terms: {
+              ...current.terms,
+              [name]: {
+                ...current.terms[name],
+                [field]: value,
+              },
+            },
+          }));
+          setError("");
+        }}
         onReset={() => {
           setFormData(isCreating ? emptyForm : savedFormData);
           setError("");
@@ -236,9 +308,13 @@ function AcademicCalendarPanel({
         }}
         onSubmit={handleSubmit}
         isSaving={isSaving}
+        isCreating={isCreating}
+        submitDisabled={
+          isCreating ? !hasCompleteCreateCalendar(formData) : false
+        }
         submitLabel={isCreating ? "Create Academic Year" : "Save Changes"}
         submitLoadingLabel={isCreating ? "Creating..." : "Saving..."}
-        showActions={hasFormChanges}
+        showActions={isCreating || hasFormChanges}
         statusSlot={
           <FormStatusBanner
             variant="compact"
@@ -250,7 +326,6 @@ function AcademicCalendarPanel({
       {!isCreating && year ? (
         <>
           <TermsGrid
-            year={year}
             terms={terms}
             defaultTermId={defaultTermId}
             onTermsChange={onRefresh}

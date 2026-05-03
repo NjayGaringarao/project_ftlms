@@ -28,6 +28,7 @@ import CampusPickerDialog from "@/features/shared/components/pickers/campus-pick
 import CollegePickerDialog from "@/features/shared/components/pickers/college-picker-dialog";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
 import type { CollegeListItem } from "@/features/admin/lib/colleges";
+import type { ProgramCampusOffering } from "@/features/admin/lib/programs";
 import FormStatusBanner from "../form-status-banner";
 
 type UserInformationProps = {
@@ -35,6 +36,8 @@ type UserInformationProps = {
   ranks?: Array<{ id: string; title: string }>;
   campuses: CampusListItem[];
   colleges: CollegeListItem[];
+  programOfferings: ProgramCampusOffering[];
+  currentUserId: string | null;
 };
 
 type ProfessionalFormState = {
@@ -72,6 +75,8 @@ export const UserInformation = ({
   ranks = [],
   campuses,
   colleges,
+  programOfferings,
+  currentUserId,
 }: UserInformationProps) => {
   const router = useRouter();
   const [professionalData, setProfessionalData] =
@@ -109,12 +114,46 @@ export const UserInformation = ({
   const actualTeachingLoad = user.actual_teaching_load ?? 0;
   const totalWorkingLoad =
     user.total_working_load ?? actualTeachingLoad + designationLoad;
+  const isCurrentUser = currentUserId === user.id;
+  const availableCollegeIds = useMemo(
+    () =>
+      new Set(
+        programOfferings
+          .filter((offering) => offering.campus_id === professionalData.campusId)
+          .map((offering) => offering.program.college_id),
+      ),
+    [professionalData.campusId, programOfferings],
+  );
+  const availableColleges = useMemo(
+    () =>
+      professionalData.campusId
+        ? colleges.filter((college) => availableCollegeIds.has(college.id))
+        : [],
+    [availableCollegeIds, colleges, professionalData.campusId],
+  );
 
   const handleProfessionalChange = (
     field: keyof ProfessionalFormState,
     value: string | null,
   ) => {
     setProfessionalData((prev) => ({ ...prev, [field]: value }));
+    setProfessionalError("");
+  };
+
+  const handleCampusChange = (nextCampusId: string) => {
+    const nextAvailableCollegeIds = new Set(
+      programOfferings
+        .filter((offering) => offering.campus_id === nextCampusId)
+        .map((offering) => offering.program.college_id),
+    );
+
+    setProfessionalData((prev) => ({
+      ...prev,
+      campusId: nextCampusId,
+      collegeId: prev.collegeId && nextAvailableCollegeIds.has(prev.collegeId)
+        ? prev.collegeId
+        : null,
+    }));
     setProfessionalError("");
   };
 
@@ -255,6 +294,11 @@ export const UserInformation = ({
   };
 
   const handleDelete = async () => {
+    if (isCurrentUser) {
+      setDeleteError("You cannot delete your own administrator account.");
+      return;
+    }
+
     setIsDeleting(true);
     setDeleteError("");
 
@@ -371,7 +415,7 @@ export const UserInformation = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="mt-1 w-full justify-between"
+                className="mt-1 h-10 w-full justify-between px-3 text-sm font-normal"
                 onClick={() => setCampusDialogOpen(true)}
                 disabled={isProfessionalSaving}
               >
@@ -391,14 +435,17 @@ export const UserInformation = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="mt-1 w-full justify-between"
+                className="mt-1 h-10 w-full justify-between px-3 text-sm font-normal"
                 onClick={() => setCollegeDialogOpen(true)}
-                disabled={isProfessionalSaving}
+                disabled={isProfessionalSaving || !professionalData.campusId}
               >
                 <span className="truncate">
-                  {professionalData.collegeId
-                    ? colleges.find((college) => college.id === professionalData.collegeId)
-                        ?.name ?? "Select college..."
+                  {!professionalData.campusId
+                    ? "Select campus first"
+                    : professionalData.collegeId
+                      ? availableColleges.find(
+                          (college) => college.id === professionalData.collegeId,
+                        )?.name ?? "Select college..."
                     : "Select college..."}
                 </span>
                 <ChevronDown className="h-4 w-4 text-foreground/60" />
@@ -496,14 +543,16 @@ export const UserInformation = ({
           <h3 className="font-semibold text-destructive">Danger Zone</h3>
         </div>
         <p className="text-xs text-foreground/60">
-          Permanently delete this user and all associated profile data.
+          {isCurrentUser
+            ? "You cannot delete the administrator account currently signed in."
+            : "Permanently delete this user and all associated profile data."}
         </p>
         <div className="flex justify-end">
           <Button
             type="button"
             variant="destructive"
             onClick={() => setDeleteDialogOpen(true)}
-            disabled={isDeleting}
+            disabled={isDeleting || isCurrentUser}
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete User
@@ -519,7 +568,7 @@ export const UserInformation = ({
         query={campusQuery}
         onQueryChange={setCampusQuery}
         onSelect={(nextCampusId) => {
-          handleProfessionalChange("campusId", nextCampusId);
+          handleCampusChange(nextCampusId);
           setCampusDialogOpen(false);
         }}
         emptyState="No campuses found."
@@ -528,7 +577,7 @@ export const UserInformation = ({
       <CollegePickerDialog
         open={collegeDialogOpen}
         onOpenChange={setCollegeDialogOpen}
-        colleges={colleges}
+        colleges={availableColleges}
         selectedCollegeId={professionalData.collegeId ?? ""}
         query={collegeQuery}
         onQueryChange={setCollegeQuery}
@@ -536,11 +585,11 @@ export const UserInformation = ({
           handleProfessionalChange("collegeId", nextCollegeId);
           setCollegeDialogOpen(false);
         }}
-        emptyState="No colleges found."
+        emptyState="No colleges are available for this campus."
       />
 
       <AppDialog
-        open={deleteDialogOpen}
+        open={deleteDialogOpen && !isCurrentUser}
         onOpenChange={setDeleteDialogOpen}
         title="Delete User"
         description="This action cannot be undone."
@@ -564,7 +613,7 @@ export const UserInformation = ({
               type="button"
               variant="destructive"
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={isDeleting || isCurrentUser}
             >
               {isDeleting ? "Deleting..." : "Delete User"}
             </Button>
