@@ -7,6 +7,8 @@ import { AdminManagementList } from "@/features/admin/components/management/admi
 import { ManagementPlaceholder } from "@/features/admin/components/management/management-placeholder";
 import { useAdminManagementNavigation } from "@/features/admin/hooks/use-admin-management-navigation";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
+import type { MajorOfferingListItem } from "@/features/admin/lib/major-offerings";
+import type { MajorListItem } from "@/features/admin/lib/majors";
 import type { ProgramOfferingListItem } from "@/features/admin/lib/program-offerings";
 import type { ExtendedRoom } from "@/features/shared/types/models/room";
 import type { ExtendedProgram } from "@/features/shared/types/models";
@@ -18,6 +20,8 @@ type CampusesManagementProps = {
   rooms: ExtendedRoom[];
   offerings: ProgramOfferingListItem[];
   programs: ExtendedProgram[];
+  majors: MajorListItem[];
+  majorOfferings: MajorOfferingListItem[];
   selectedId: string | null;
   isCreating: boolean;
 };
@@ -28,6 +32,8 @@ export function CampusesManagement({
   rooms,
   offerings,
   programs,
+  majors,
+  majorOfferings,
   selectedId,
   isCreating,
 }: CampusesManagementProps) {
@@ -81,6 +87,8 @@ export function CampusesManagement({
             rooms={rooms}
             offerings={offerings}
             programs={programs}
+            majors={majors}
+            majorOfferings={majorOfferings}
             isCreating={isCreating}
             onClose={nav.closePanel}
             onCreated={nav.replaceWithItem}

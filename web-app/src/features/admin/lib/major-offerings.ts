@@ -182,3 +182,12 @@ export const getMajorOfferingsByProgramOffering = async (
     (offering) => offering.program_offering_id === programOfferingId,
   );
 };
+
+export const getMajorOfferingsByCampus = async (
+  campusId: string,
+): Promise<MajorOfferingListItem[]> => {
+  const offerings = await getMajorOfferingsList();
+  return offerings.filter(
+    (offering) => offering.program_offering?.campus_id === campusId,
+  );
+};

@@ -17,6 +17,7 @@ type InitialFormProps = {
   onReset: () => void;
   onSubmit: () => void;
   isSaving: boolean;
+  isEditing?: boolean;
   submitLabel: string;
   submitLoadingLabel: string;
   statusSlot?: ReactNode;
@@ -30,6 +31,7 @@ export const InitialForm = ({
   onReset,
   onSubmit,
   isSaving,
+  isEditing = false,
   submitLabel,
   submitLoadingLabel,
   statusSlot,
@@ -55,7 +57,7 @@ export const InitialForm = ({
                 onChange("code", event.target.value.trim().toUpperCase())
               }
               className="mt-1"
-              disabled={isSaving}
+              disabled={isSaving || isEditing}
             />
           </div>
 

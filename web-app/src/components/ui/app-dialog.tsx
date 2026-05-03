@@ -8,6 +8,7 @@ import { ArrowLeft, X } from "lucide-react";
 export type AppDialogVariant =
   | "full-screen"
   | "floating-large"
+  | "floating-medium"
   | "floating-small";
 
 type AppDialogProps = {
@@ -34,7 +35,9 @@ export function AppDialog({
       ? "fixed inset-0 z-50 w-screen h-screen rounded-none border-0 bg-background shadow-none"
       : variant === "floating-large"
         ? "fixed left-1/2 top-1/2 z-50 h-auto max-h-[95vh] w-[95vw] max-w-6xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border bg-background shadow-lg"
-        : "fixed left-1/2 top-1/2 z-50 h-auto max-h-[95vh] w-[95vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border bg-background shadow-lg";
+        : variant === "floating-medium"
+          ? "fixed left-1/2 top-1/2 z-50 h-auto max-h-[95vh] w-[95vw] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border bg-background shadow-lg"
+          : "fixed left-1/2 top-1/2 z-50 h-auto max-h-[95vh] w-[95vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border bg-background shadow-lg";
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>

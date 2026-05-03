@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { AddTile } from "@/components/ui/add-tile";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
+import type { MajorOfferingListItem } from "@/features/admin/lib/major-offerings";
+import type { MajorListItem } from "@/features/admin/lib/majors";
 import type { ProgramOfferingListItem } from "@/features/admin/lib/program-offerings";
 import type { ExtendedRoom } from "@/features/shared/types/models/room";
 import type { ExtendedProgram } from "@/features/shared/types/models";
@@ -15,7 +17,7 @@ import {
   updateCampus,
 } from "@/features/admin/lib/actions";
 import { getCreatedRecordId } from "@/features/admin/lib/action-result-helpers";
-import { CampusInitialForm, type CampusFormState } from "./campus-initial-form";
+import { InitialForm, type CampusFormState } from "./initial-form";
 import { ResourceSection } from "./resource-section";
 import { RoomDialog } from "./room-dialog";
 import { OfferingDialog } from "./offering-dialog";
@@ -28,6 +30,8 @@ type CampusPanelProps = {
   rooms: ExtendedRoom[];
   offerings: ProgramOfferingListItem[];
   programs: ExtendedProgram[];
+  majors: MajorListItem[];
+  majorOfferings: MajorOfferingListItem[];
   isCreating: boolean;
   onClose: () => void;
   onCreated: (id: string) => void;
@@ -49,6 +53,8 @@ export function CampusPanel({
   rooms,
   offerings,
   programs,
+  majors,
+  majorOfferings,
   isCreating,
   onClose,
   onCreated,
@@ -62,7 +68,9 @@ export function CampusPanel({
   const [success, setSuccess] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [roomDialogId, setRoomDialogId] = useState<string | "new" | null>(null);
-  const [isOfferingDialogOpen, setIsOfferingDialogOpen] = useState(false);
+  const [offeringDialogId, setOfferingDialogId] = useState<
+    string | "new" | null
+  >(null);
   const [areRoomsOpen, setAreRoomsOpen] = useState(true);
   const [areOfferingsOpen, setAreOfferingsOpen] = useState(true);
   const [roomToDelete, setRoomToDelete] = useState<ExtendedRoom | null>(null);
@@ -161,7 +169,7 @@ export function CampusPanel({
 
   return (
     <div className="space-y-4">
-      <CampusInitialForm
+      <InitialForm
         formData={formData}
         onChange={(field, value) => {
           setFormData((current) => ({ ...current, [field]: value }));
@@ -174,6 +182,7 @@ export function CampusPanel({
         }}
         onSubmit={handleSubmit}
         isSaving={isSaving}
+        isEditing={!isCreating}
         submitLabel={isCreating ? "Create Campus" : "Save Changes"}
         submitLoadingLabel={isCreating ? "Creating..." : "Saving..."}
         showActions={hasFormChanges}
@@ -200,7 +209,7 @@ export function CampusPanel({
               onClick={() => setRoomDialogId("new")}
             />
            
-            {rooms.length && (
+            {!!rooms.length && (
               rooms.map((room) => (
                 <div
                   key={room.id}
@@ -245,24 +254,31 @@ export function CampusPanel({
              <AddTile
               title="Add Program Offering"
               description="Assign a program to this campus"
-              onClick={() => setIsOfferingDialogOpen(true)}
+              onClick={() => setOfferingDialogId("new")}
+              disabled={programs.every((program) =>
+                offerings.some((offering) => offering.program_id === program.id),
+              )}
             />
             
-            {offerings.length && (
+            {!!offerings.length && (
               offerings.map((offering) => (
                 <div
                   key={offering.id}
-                  className="flex items-center justify-between gap-3 rounded-md border bg-background px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded-md border bg-background transition-colors hover:bg-foreground/5"
                 >
-                  <div className="min-w-0">
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 px-4 py-3 text-left"
+                    onClick={() => setOfferingDialogId(offering.id)}
+                  >
                     <p className="truncate text-sm font-semibold">
                       [{offering.program.code}] {offering.program?.name ?? "Unknown program"}
                     </p>
                     <p className="truncate text-xs text-foreground/70">
                       {offering.program?.college?.name ?? "No college assigned"}
                     </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  </button>
+                  <div className="mr-3 flex shrink-0 items-center gap-2">
                    
                     <button
                       type="button"
@@ -314,11 +330,21 @@ export function CampusPanel({
             onRefresh={onRefresh}
           />
           <OfferingDialog
-            key={isOfferingDialogOpen ? "open-offering" : "closed-offering"}
-            open={isOfferingDialogOpen}
+            key={offeringDialogId ?? "closed-offering"}
+            open={offeringDialogId !== null}
+            offering={
+              offerings.find((offering) => offering.id === offeringDialogId) ??
+              null
+            }
+            majorOfferings={majorOfferings.filter(
+              (majorOffering) =>
+                majorOffering.program_offering_id === offeringDialogId,
+            )}
             campusId={campus.id}
             programs={programs}
-            onClose={() => setIsOfferingDialogOpen(false)}
+            offeredProgramIds={offerings.map((offering) => offering.program_id)}
+            majors={majors}
+            onClose={() => setOfferingDialogId(null)}
             onRefresh={onRefresh}
           />
           <DeleteConfirmModal
