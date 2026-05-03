@@ -27,8 +27,10 @@ type ViewModeProps = BaseDesignationSectionProps & {
 
 type EditModeProps = BaseDesignationSectionProps & {
   mode: "edit";
-  onAddDesignation: (designation: NewDesignationInput) => void;
-  onRemoveDesignation: (index: number) => void;
+  onAddDesignation: (
+    designation: NewDesignationInput,
+  ) => Promise<{ error?: string }> | void;
+  onRemoveDesignation: (index: number) => Promise<void> | void;
   isMutating: boolean;
   error?: string;
 };

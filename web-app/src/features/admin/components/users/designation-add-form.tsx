@@ -37,7 +37,7 @@ type NewDesignation = {
 };
 
 type DesignationFormProps = {
-  onAdd: (designation: NewDesignation) => void;
+  onAdd: (designation: NewDesignation) => Promise<{ error?: string }> | void;
   isLoading: boolean;
   error?: string;
 };
@@ -56,6 +56,7 @@ export const DesignationAddForm = ({
   >([]);
   const [campuses, setCampuses] = useState<CampusListItem[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const [selectedPrimaryDesignation, setSelectedPrimaryDesignation] =
@@ -133,7 +134,7 @@ export const DesignationAddForm = ({
     setFormError("");
   };
 
-  const handleAddDesignation = () => {
+  const handleAddDesignation = async () => {
     setFormError("");
 
     const validation = validateDesignationSelection({
@@ -200,10 +201,29 @@ export const DesignationAddForm = ({
         )?.program ?? null,
     };
 
-    onAdd(designation);
-    resetForm();
-    setIsOpen(false);
+    setIsSubmitting(true);
+    try {
+      const result = await Promise.resolve(onAdd(designation));
+
+      if (result?.error) {
+        setFormError(result.error);
+        return;
+      }
+
+      resetForm();
+      setIsOpen(false);
+    } catch (submitError) {
+      setFormError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to add designation",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const isMutating = isLoading || isSubmitting;
 
   return (
     <>
@@ -211,7 +231,7 @@ export const DesignationAddForm = ({
         title="Add Designation"
         description="Assign a role, department, campus, or program to this user"
         onClick={() => setIsOpen(true)}
-        disabled={isLoading}
+        disabled={isMutating}
       />
 
       <AppDialog
@@ -240,7 +260,7 @@ export const DesignationAddForm = ({
               onChange={(event) =>
                 handlePrimaryDesignationChange(event.target.value)
               }
-              disabled={isLoading}
+              disabled={isMutating}
               className={selectClass}
             >
               <option value="">Select designation...</option>
@@ -271,7 +291,7 @@ export const DesignationAddForm = ({
                         setDepartmentId(event.target.value);
                         setFormError("");
                       }}
-                      disabled={isLoading}
+                      disabled={isMutating}
                       className={selectClass}
                     >
                       <option value="">Select college...</option>
@@ -296,7 +316,7 @@ export const DesignationAddForm = ({
                         setCampusId(event.target.value);
                         setFormError("");
                       }}
-                      disabled={isLoading}
+                      disabled={isMutating}
                       className={selectClass}
                     >
                       <option value="">Select campus...</option>
@@ -314,7 +334,7 @@ export const DesignationAddForm = ({
                     offerings={programOfferings}
                     value={programOfferingId}
                     onChange={handleProgramOfferingChange}
-                    disabled={isLoading}
+                    disabled={isMutating}
                     label="Program Offering *"
                   />
                 )}
@@ -335,7 +355,7 @@ export const DesignationAddForm = ({
                           setSelectedOtherDesignation(event.target.value);
                           setFormError("");
                         }}
-                        disabled={isLoading}
+                        disabled={isMutating}
                         className={selectClass}
                       >
                         <option value="">Select designation title...</option>
@@ -362,7 +382,7 @@ export const DesignationAddForm = ({
                             setCampusId(event.target.value);
                             setFormError("");
                           }}
-                          disabled={isLoading}
+                          disabled={isMutating}
                           className={selectClass}
                         >
                           <option value="">Select campus...</option>
@@ -388,7 +408,7 @@ export const DesignationAddForm = ({
                             setDepartmentId(event.target.value);
                             setFormError("");
                           }}
-                          disabled={isLoading}
+                          disabled={isMutating}
                           className={selectClass}
                         >
                           <option value="">Select college...</option>
@@ -405,7 +425,7 @@ export const DesignationAddForm = ({
                       offerings={programOfferings}
                       value={programOfferingId}
                       onChange={handleProgramOfferingChange}
-                      disabled={isLoading}
+                      disabled={isMutating}
                       label="Program Offering (Optional)"
                     />
                   </div>
@@ -429,7 +449,7 @@ export const DesignationAddForm = ({
                       setLoad(event.target.value);
                       setFormError("");
                     }}
-                    disabled={isLoading}
+                    disabled={isMutating}
                     className="mt-1"
                   />
                 </div>
@@ -446,7 +466,7 @@ export const DesignationAddForm = ({
                     type="button"
                     variant="outline"
                     onClick={handleCancel}
-                    disabled={isLoading}
+                    disabled={isMutating}
                     className="flex-1"
                   >
                     Cancel
@@ -454,10 +474,10 @@ export const DesignationAddForm = ({
                   <Button
                     type="button"
                     onClick={handleAddDesignation}
-                    disabled={isLoading}
+                    disabled={isMutating}
                     className="flex-1"
                   >
-                    Add Designation
+                    {isSubmitting ? "Adding..." : "Add Designation"}
                   </Button>
                 </div>
 

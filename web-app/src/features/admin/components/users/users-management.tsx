@@ -11,7 +11,7 @@ import type { AcademicRank } from "@/features/shared/types/models/academic_rank"
 import type { CampusListItem } from "@/features/admin/lib/campuses";
 import type { CollegeListItem } from "@/features/admin/lib/colleges";
 import { UserCreate } from "./user-create";
-import { UserEdit } from "./user-edit";
+import { UserInformation } from "./user-information";
 
 type UsersManagementProps = {
   users: UsersListItem[];
@@ -21,14 +21,6 @@ type UsersManagementProps = {
   colleges: CollegeListItem[];
   selectedId: string | null;
   isCreating: boolean;
-};
-
-const formatStatus = (status: string | null) => {
-  if (!status) return "Unspecified";
-  return status
-    .split("_")
-    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
-    .join(" ");
 };
 
 export function UsersManagement({
@@ -104,7 +96,7 @@ export function UsersManagement({
             onCancel={nav.closePanel}
           />
         ) : selectedUser ? (
-          <UserEdit
+          <UserInformation
             key={selectedUser.id}
             user={selectedUser}
             ranks={ranks}
