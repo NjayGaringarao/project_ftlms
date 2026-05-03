@@ -1,15 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  AlertCircle,
-  CheckCircle,
-  Lock,
-  Briefcase,
-  Edit,
-  ChevronDown,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { UserDetail } from "@/features/admin/lib/users/types";
@@ -19,7 +11,6 @@ import {
   changeUserEmail,
   changeUserPassword,
 } from "@/features/admin/lib/users/actions";
-import AdminPanel from "../admin-panel";
 import PersonalEditForm from "@/features/shared/components/user/personal-edit-form";
 import SecurityEmailForm from "@/features/shared/components/user/security-email-form";
 import SecurityPasswordForm from "@/features/shared/components/user/security-password-form";
@@ -31,13 +22,13 @@ import CampusPickerDialog from "@/features/shared/components/pickers/campus-pick
 import CollegePickerDialog from "@/features/shared/components/pickers/college-picker-dialog";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
 import type { CollegeListItem } from "@/features/admin/lib/colleges";
+import FormStatusBanner from "../form-status-banner";
 
 type UserEditProps = {
   user: UserDetail;
   ranks?: Array<{ id: string; title: string }>;
   campuses: CampusListItem[];
   colleges: CollegeListItem[];
-  onClose?: () => void;
 };
 
 type ProfessionalFormState = {
@@ -77,10 +68,7 @@ export const UserEdit = ({
   ranks = [],
   campuses,
   colleges,
-  onClose,
 }: UserEditProps) => {
-  const router = useRouter();
-
   const [professionalData, setProfessionalData] =
     useState<ProfessionalFormState>(() => userToProfessionalFormState(user));
   const [savedProfessionalData, setSavedProfessionalData] =
@@ -224,16 +212,9 @@ export const UserEdit = ({
   };
 
   return (
-    <AdminPanel
-      title="User Information"
-      icon={Edit}
-      onClose={onClose ?? (() => router.back())}
-    >
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Edit className="w-5 h-5" />
-          <h3 className="font-semibold">Personal Information</h3>
-        </div>
+    <div className="space-y-8">
+      <section className="space-y-4">
+       
         <PersonalEditForm
           initialValues={userToPersonalFormValues(user)}
           onSave={handleSavePersonal}
@@ -241,29 +222,22 @@ export const UserEdit = ({
           submitText="Save Changes"
           savingText="Saving..."
         />
-      </div>
+      </section>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Briefcase className="w-5 h-5" />
+      <section className="space-y-4">
+        <div className="border-b pb-2">
           <h3 className=" font-semibold">Professional Information</h3>
         </div>
 
-        {professionalSuccess && (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-green-900">
-              Professional information saved successfully
-            </p>
-          </div>
-        )}
-
-        {professionalError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-red-900">{professionalError}</p>
-          </div>
-        )}
+        <FormStatusBanner
+          variant="compact"
+          success={
+            professionalSuccess
+              ? { title: "Professional information saved successfully" }
+              : undefined
+          }
+          error={professionalError}
+        />
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -367,7 +341,6 @@ export const UserEdit = ({
               onAddDesignation={handleAddDesignation}
               onRemoveDesignation={handleRemoveDesignation}
               isMutating={isProfessionalSaving}
-              error={professionalError}
             />
           </div>
         </div>
@@ -388,11 +361,10 @@ export const UserEdit = ({
             </Button>
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Lock className="w-5 h-5" />
+      <section className="space-y-4">
+        <div className="border-b pb-2">
           <h3 className=" font-semibold">Security Settings</h3>
         </div>
         <p className="text-xs text-foreground/60">
@@ -426,7 +398,7 @@ export const UserEdit = ({
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <CampusPickerDialog
         open={campusDialogOpen}
@@ -455,6 +427,6 @@ export const UserEdit = ({
         }}
         emptyState="No colleges found."
       />
-    </AdminPanel>
+    </div>
   );
 };

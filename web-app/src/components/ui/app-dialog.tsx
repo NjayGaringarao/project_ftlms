@@ -55,7 +55,7 @@ export function AppDialog({
             )}
 
             <div className="flex-1">
-              <Dialog.Title className="text-sm font-semibold">
+              <Dialog.Title className="text-base font-semibold">
                 {title}
               </Dialog.Title>
               

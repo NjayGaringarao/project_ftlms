@@ -83,7 +83,10 @@ export function AcademicCalendarManagement({
             annotations:
               defaultTerm?.academic_year_id === year.id
                 ? [
-                    <div className="h-full flex flex-col justify-center">
+                    <div
+                      key="default-academic-term"
+                      className="h-full flex flex-col justify-center"
+                    >
                       <span className="text-xs py-1 px-3 bg-foreground/60 text-background rounded-xl">
                         Default
                       </span>

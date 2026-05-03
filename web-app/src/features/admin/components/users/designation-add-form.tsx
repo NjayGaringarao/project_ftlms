@@ -21,6 +21,7 @@ import {
 import { CampusListItem, getCampusesList } from "@/features/admin/lib/campuses";
 import { CollegeListItem } from "@/features/admin/lib/colleges";
 import DesignationProgramOfferingPicker from "./designation-program-offering-picker";
+import FormStatusBanner from "../form-status-banner";
 
 type NewDesignation = {
   college_id: string | null;
@@ -225,9 +226,14 @@ export const DesignationAddForm = ({
         description="Select a designation and provide required context."
       >
         {isLoadingData ? (
-          <div className="text-xs text-foreground/60">Loading options...</div>
+          <div className="p-4 text-xs text-foreground/60">Loading options...</div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 p-4">
+            <FormStatusBanner
+              variant="compact"
+              error={formError || error}
+            />
+
             <select
               id="designation-step-1"
               value={selectedPrimaryDesignation}
@@ -455,16 +461,7 @@ export const DesignationAddForm = ({
                   </Button>
                 </div>
 
-                {(formError || error) && (
-                  <p className="text-xs text-destructive">
-                    {formError || error}
-                  </p>
-                )}
               </div>
-            )}
-
-            {!selectedPrimaryDesignation && (formError || error) && (
-              <p className="text-xs text-destructive">{formError || error}</p>
             )}
           </div>
         )}

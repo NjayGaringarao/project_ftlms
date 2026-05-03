@@ -76,10 +76,9 @@ export function UsersManagement({
             id: user.id,
             title: user.identity?.name ?? "Unknown User",
             subtitle: [
-       
-              `${user.campus?.name ?? "No Home"} Campus | ${
+              `${user.campus?.name ?? "No Home Campus"} / ${
                 user.college?.code ?? "No Default College"
-              } | ${formatStatus(user.employment_status)}`,
+              }`,
             ],
             icon: <User className="h-5 w-5" />,
           }))}
@@ -95,6 +94,7 @@ export function UsersManagement({
           : selectedUser?.email ?? "Edit user profile and access information.",
         content: isCreating ? (
           <UserCreate
+            key="create-user"
             campuses={campuses}
             colleges={colleges}
             onCreated={(id) => {
@@ -105,11 +105,11 @@ export function UsersManagement({
           />
         ) : selectedUser ? (
           <UserEdit
+            key={selectedUser.id}
             user={selectedUser}
             ranks={ranks}
             campuses={campuses}
             colleges={colleges}
-            onClose={nav.closePanel}
           />
         ) : (
           <p className="text-sm text-foreground/70">Select another user from the list.</p>
