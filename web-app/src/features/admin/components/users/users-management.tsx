@@ -190,7 +190,8 @@ export function UsersManagement({
                 onChange={(event) =>
                   setRoleFilter(event.target.value as UserRoleFilter)
                 }
-                className="h-8 min-w-0 flex-1 text-xs"
+                className="min-w-0 flex-1 text-xs"
+              
               >
                 {roleFilters.map((filter) => (
                   <option key={filter.value} value={filter.value}>
@@ -202,7 +203,7 @@ export function UsersManagement({
                 aria-label="Filter by campus"
                 value={campusFilter}
                 onChange={(event) => setCampusFilter(event.target.value)}
-                className="h-8 min-w-0 flex-1 text-xs"
+                className="min-w-0 flex-1 text-xs"
               >
                 <option value="all">All Campuses</option>
                 {campusOptions.map((campus) => (
@@ -215,7 +216,7 @@ export function UsersManagement({
                 aria-label="Filter by college"
                 value={collegeFilter}
                 onChange={(event) => setCollegeFilter(event.target.value)}
-                className="h-8 min-w-0 flex-1 text-xs"
+                className="min-w-0 flex-1 text-xs"
               >
                 <option value="all">All Colleges</option>
                 {collegeOptions.map((college) => (

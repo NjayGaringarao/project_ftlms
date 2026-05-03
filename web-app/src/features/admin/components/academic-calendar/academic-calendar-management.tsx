@@ -119,9 +119,9 @@ export function AcademicCalendarManagement({
           query={query}
           onQueryChange={setQuery}
           selectedId={selectedId}
-          createLabel="Create Academic Year"
-          searchPlaceholder="Search academic years"
-          emptyMessage="No academic years match your search."
+          createLabel="Create Academic Calendar"
+          searchPlaceholder="Search Academic Calendar..."
+          emptyMessage="No academic calendar match your search."
           onCreate={nav.openCreate}
           onSelect={nav.openItem}
           items={filteredYears.map((year) => ({
@@ -148,11 +148,8 @@ export function AcademicCalendarManagement({
       panel={{
         open: isCreating || Boolean(selectedId),
         title: isCreating
-          ? "Create Academic Year"
+          ? "Create Academic Calendar"
           : (selectedYear?.code ?? "Academic year not found"),
-        description: isCreating
-          ? "Add a new academic year."
-          : "Edit academic year and manage calendar terms.",
         content: (
           <AcademicCalendarPanel
             key={isCreating ? "new" : (selectedYear?.id ?? "missing")}
@@ -171,8 +168,8 @@ export function AcademicCalendarManagement({
       }}
       panelPlaceholder={
         <ManagementPlaceholder
-          title="Select an academic year"
-          description="Academic year fields and terms will appear here."
+          title="Select an academic calendar"
+          description="Academic calendar fields and terms will appear here."
         />
       }
     />
@@ -249,8 +246,8 @@ function AcademicCalendarPanel({
     setFormData(nextSaved);
     setSuccess(
       isCreating
-        ? "Academic year created successfully"
-        : "Academic year updated successfully",
+        ? "Academic calendar created successfully"
+        : "Academic calendar updated successfully",
     );
     onRefresh();
     const createdId = "data" in result ? getCreatedRecordId(result.data) : null;
@@ -275,7 +272,7 @@ function AcademicCalendarPanel({
   if (!isCreating && !year) {
     return (
       <p className="text-sm text-foreground/70">
-        Select another academic year from the list.
+        Select another academic calendar from the list.
       </p>
     );
   }

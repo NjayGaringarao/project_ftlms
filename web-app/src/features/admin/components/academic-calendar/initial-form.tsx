@@ -66,7 +66,7 @@ export const InitialForm = ({
             value={formData.start_year}
             onChange={(event) => onChange("start_year", event.target.value)}
             className="mt-1"
-            disabled={isSaving}
+            disabled={isSaving || !isCreating}
           />
         </div>
 
@@ -80,7 +80,7 @@ export const InitialForm = ({
             value={formData.end_year}
             onChange={(event) => onChange("end_year", event.target.value)}
             className="mt-1"
-            disabled={isSaving}
+            disabled={isSaving || !isCreating}
           />
         </div>
       </div>

@@ -80,7 +80,7 @@ export function CoursesManagement({
           onSelect={nav.openItem}
           items={filteredCourses.map((course) => ({
             id: course.id,
-            title: `(${course.code}) ${course.title}`,
+            title: `[${course.code}] ${course.title}`,
             subtitle: [
               
               `Lec ${course.lecture_unit ?? 0} | Lab ${
