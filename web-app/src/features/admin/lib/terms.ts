@@ -97,6 +97,20 @@ export const getTermsByAcademicYearId = async (
 };
 
 export const getDefaultAcademicTerm = async (): Promise<TermListItem | null> => {
-  const terms = await getTermsList();
-  return terms[0] ?? null;
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("app_setting")
+    .select("academic_term_id")
+    .eq("key", "default_academic_term_id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("lib.admin.terms.getDefaultAcademicTerm ::", error);
+    return null;
+  }
+
+  if (!data?.academic_term_id) return null;
+
+  return getTermById(data.academic_term_id);
 };

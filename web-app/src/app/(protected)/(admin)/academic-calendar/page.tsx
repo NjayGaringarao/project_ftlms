@@ -1,35 +1,42 @@
-import { YearsManagement } from "@/features/admin/components/academic-year/years-management";
+import { AcademicCalendarManagement } from "@/features/admin/components/academic-calendar/academic-calendar-management";
 import {
   getAcademicYearById,
   getAcademicYearsList,
 } from "@/features/admin/lib/academic-years";
 import { getAdminPanelQueryState } from "@/features/admin/lib/management-query";
-import { getTermsByAcademicYearId } from "@/features/admin/lib/terms";
+import {
+  getDefaultAcademicTerm,
+  getTermsByAcademicYearId,
+} from "@/features/admin/lib/terms";
 
-type AcademicYearsPageProps = {
+type AcademicCalendarPageProps = {
   searchParams: Promise<{
     id?: string | string[];
     new?: string | string[];
   }>;
 };
 
-const AcademicYearsPage = async ({ searchParams }: AcademicYearsPageProps) => {
+const AcademicCalendarPage = async ({
+  searchParams,
+}: AcademicCalendarPageProps) => {
   const queryState = getAdminPanelQueryState(await searchParams);
-  const [years, selectedYear, selectedTerms] = await Promise.all([
+  const [years, selectedYear, selectedTerms, defaultTerm] = await Promise.all([
     getAcademicYearsList(),
     queryState.selectedId ? getAcademicYearById(queryState.selectedId) : null,
     queryState.selectedId ? getTermsByAcademicYearId(queryState.selectedId) : [],
+    getDefaultAcademicTerm(),
   ]);
 
   return (
-    <YearsManagement
+    <AcademicCalendarManagement
       years={years}
       selectedYear={selectedYear}
       selectedTerms={selectedTerms}
+      defaultTermId={defaultTerm?.id ?? null}
       selectedId={queryState.selectedId}
       isCreating={queryState.isCreating}
     />
   );
 };
 
-export default AcademicYearsPage;
+export default AcademicCalendarPage;

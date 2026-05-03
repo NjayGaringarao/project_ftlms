@@ -99,6 +99,7 @@ export function CoursesManagement({
         description: isCreating ? "Add a course." : "Edit course details.",
         content: (
           <CoursePanel
+            key={isCreating ? "new" : selectedCourse?.id ?? "missing"}
             course={selectedCourse}
             isCreating={isCreating}
             onClose={nav.closePanel}
@@ -140,6 +141,10 @@ function CoursePanel({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const hasFormChanges = useMemo(
+    () => JSON.stringify(formData) !== JSON.stringify(savedFormData),
+    [formData, savedFormData],
+  );
 
   const handleSave = async () => {
     const lecture = Number(formData.lectureUnit);
@@ -220,7 +225,7 @@ function CoursePanel({
         error={error}
       />
       <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <Label className="text-xs" htmlFor="course-code">
               Course Code *
@@ -237,7 +242,7 @@ function CoursePanel({
                   code: event.target.value.trim().toUpperCase(),
                 }))
               }
-              disabled={isSaving}
+              disabled={isSaving || !isCreating}
             />
           </div>
           <div>
@@ -298,23 +303,29 @@ function CoursePanel({
             />
           </div>
         </div>
-        <div className="flex justify-end gap-2 border-t pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setFormData(isCreating ? emptyForm : savedFormData);
-              setError("");
-              setSuccess("");
-            }}
-            disabled={isSaving}
-          >
-            Reset
-          </Button>
-          <Button type="button" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : isCreating ? "Create Course" : "Save Changes"}
-          </Button>
-        </div>
+        {hasFormChanges ? (
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setFormData(isCreating ? emptyForm : savedFormData);
+                setError("");
+                setSuccess("");
+              }}
+              disabled={isSaving}
+            >
+              Reset
+            </Button>
+            <Button type="button" onClick={handleSave} disabled={isSaving}>
+              {isSaving
+                ? "Saving..."
+                : isCreating
+                  ? "Create Course"
+                  : "Save Changes"}
+            </Button>
+          </div>
+        ) : null}
       </div>
       {!isCreating && course ? (
         <>

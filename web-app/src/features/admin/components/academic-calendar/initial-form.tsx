@@ -1,30 +1,28 @@
 "use client";
 
-import { CalendarRange } from "lucide-react";
 import { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 
-export type YearFormState = {
+export type AcademicCalendarFormState = {
   start_year: string;
   end_year: string;
 };
 
-type YearInitialFormProps = {
-  formData: YearFormState;
-  onChange: (field: keyof YearFormState, value: string) => void;
+type InitialFormProps = {
+  formData: AcademicCalendarFormState;
+  onChange: (field: keyof AcademicCalendarFormState, value: string) => void;
   onReset: () => void;
   onSubmit: () => void;
   isSaving: boolean;
   submitLabel: string;
   submitLoadingLabel: string;
   statusSlot?: ReactNode;
-  isReadOnly?: boolean;
-  hideActions?: boolean;
+  showActions?: boolean;
 };
 
-export const YearInitialForm = ({
+export const InitialForm = ({
   formData,
   onChange,
   onReset,
@@ -33,58 +31,52 @@ export const YearInitialForm = ({
   submitLabel,
   submitLoadingLabel,
   statusSlot,
-  isReadOnly = false,
-  hideActions = false,
-}: YearInitialFormProps) => {
+  showActions = true,
+}: InitialFormProps) => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b">
-        <CalendarRange className="w-5 h-5" />
-        <h3 className="font-semibold">Academic Year Profile</h3>
-      </div>
-
       {statusSlot}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <Label className="text-xs" htmlFor="year-start">
+          <Label className="text-xs" htmlFor="calendar-start-year">
             Start Year *
           </Label>
           <Input
-            id="year-start"
+            id="calendar-start-year"
             type="number"
             value={formData.start_year}
             onChange={(event) => onChange("start_year", event.target.value)}
             className="mt-1"
-            disabled={isSaving || isReadOnly}
+            disabled={isSaving}
           />
         </div>
 
         <div>
-          <Label className="text-xs" htmlFor="year-end">
+          <Label className="text-xs" htmlFor="calendar-end-year">
             End Year *
           </Label>
           <Input
-            id="year-end"
+            id="calendar-end-year"
             type="number"
             value={formData.end_year}
             onChange={(event) => onChange("end_year", event.target.value)}
             className="mt-1"
-            disabled={isSaving || isReadOnly}
+            disabled={isSaving}
           />
         </div>
       </div>
 
-      {!hideActions && (
+      {showActions ? (
         <div className="flex gap-2 justify-end pt-4 border-t">
-          <Button variant="outline" onClick={onReset} disabled={isSaving || isReadOnly}>
+          <Button variant="outline" onClick={onReset} disabled={isSaving}>
             Reset
           </Button>
-          <Button onClick={onSubmit} disabled={isSaving || isReadOnly}>
+          <Button onClick={onSubmit} disabled={isSaving}>
             {isSaving ? submitLoadingLabel : submitLabel}
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

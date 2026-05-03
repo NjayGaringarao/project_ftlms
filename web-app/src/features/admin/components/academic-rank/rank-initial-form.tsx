@@ -1,6 +1,5 @@
 "use client";
 
-import { Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -18,10 +17,12 @@ type RankInitialFormProps = {
   onReset: () => void;
   onSubmit: () => void;
   isSaving: boolean;
+  isEditing?: boolean;
   submitLabel: string;
   submitLoadingLabel: string;
   statusSlot?: ReactNode;
   extraFields?: ReactNode;
+  showActions?: boolean;
 };
 
 export const RankInitialForm = ({
@@ -30,19 +31,16 @@ export const RankInitialForm = ({
   onReset,
   onSubmit,
   isSaving,
+  isEditing = false,
   submitLabel,
   submitLoadingLabel,
   statusSlot,
   extraFields,
+  showActions = true,
 }: RankInitialFormProps) => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 pb-2 border-b">
-          <Trophy className="w-5 h-5" />
-          <h3 className="font-semibold">Rank Profile</h3>
-        </div>
-
         {statusSlot}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -59,7 +57,7 @@ export const RankInitialForm = ({
                 onChange("code", event.target.value.trim().toUpperCase())
               }
               className="mt-1"
-              disabled={isSaving}
+              disabled={isSaving || isEditing}
             />
           </div>
 
@@ -82,7 +80,7 @@ export const RankInitialForm = ({
             <Label className="text-xs" htmlFor="description">
               Description
             </Label>
-            <Input
+            <textarea
               id="description"
               placeholder="Enter rank description"
               value={formData.description}
@@ -90,7 +88,7 @@ export const RankInitialForm = ({
               onBlur={(event) =>
                 onChange("description", event.target.value.trim())
               }
-              className="mt-1"
+              className="mt-1 min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSaving}
             />
           </div>
@@ -99,14 +97,16 @@ export const RankInitialForm = ({
 
       {extraFields}
 
-      <div className="flex gap-2 justify-end pt-4 border-t">
-        <Button variant="outline" onClick={onReset} disabled={isSaving}>
-          Reset
-        </Button>
-        <Button onClick={onSubmit} disabled={isSaving}>
-          {isSaving ? submitLoadingLabel : submitLabel}
-        </Button>
-      </div>
+      {showActions ? (
+        <div className="flex gap-2 justify-end pt-4 border-t">
+          <Button variant="outline" onClick={onReset} disabled={isSaving}>
+            Reset
+          </Button>
+          <Button onClick={onSubmit} disabled={isSaving}>
+            {isSaving ? submitLoadingLabel : submitLabel}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 };

@@ -141,6 +141,63 @@ const normalizeTermInput = (input: TermInput) => ({
   end: input.end,
 });
 
+const validateTermAvailability = async (
+  input: TermInput,
+  excludeTermId?: string,
+) => {
+  const supabase = await createClient();
+
+  let sameNameQuery = supabase
+    .from("academic_term")
+    .select("id", { count: "exact", head: true })
+    .eq("academic_year_id", input.academic_year_id)
+    .eq("name", input.name);
+
+  if (excludeTermId) {
+    sameNameQuery = sameNameQuery.neq("id", excludeTermId);
+  }
+
+  const { count: sameNameCount, error: sameNameError } = await sameNameQuery;
+
+  if (sameNameError) {
+    return sameNameError.message;
+  }
+
+  if ((sameNameCount ?? 0) > 0) {
+    return "Academic term name is already used in this academic year";
+  }
+
+  let overlapQuery = supabase
+    .from("academic_term")
+    .select("id", { count: "exact", head: true })
+    .lte("start", input.end)
+    .gte("end", input.start);
+
+  if (excludeTermId) {
+    overlapQuery = overlapQuery.neq("id", excludeTermId);
+  }
+
+  const { count: overlapCount, error: overlapError } = await overlapQuery;
+
+  if (overlapError) {
+    return overlapError.message;
+  }
+
+  if ((overlapCount ?? 0) > 0) {
+    return "Academic term dates overlap an existing academic term";
+  }
+
+  return null;
+};
+
+const mapTermMutationError = (error: { code?: string; message?: string }) => {
+  if (error.code === "23P01") {
+    return "Academic term dates overlap an existing academic term";
+  }
+
+  return mapDuplicateError("Term", "code within academic year", error);
+};
+
 export async function createTerm(
   input: TermInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
@@ -150,9 +207,12 @@ export async function createTerm(
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
 
-  if (new Date(input.start) > new Date(input.end)) {
+  if (new Date(input.start) >= new Date(input.end)) {
     return { error: "Start date must be before end date" };
   }
+
+  const availabilityError = await validateTermAvailability(input);
+  if (availabilityError) return { error: availabilityError };
 
   const supabase = await createClient();
 
@@ -163,9 +223,7 @@ export async function createTerm(
     .single();
 
   if (error) {
-    return {
-      error: mapDuplicateError("Term", "code within academic year", error),
-    };
+    return { error: mapTermMutationError(error) };
   }
 
   revalidateTermsPaths(input.academic_year_id);
@@ -182,9 +240,12 @@ export async function updateTerm(
   if (!input.start?.trim()) return { error: "Start date is required" };
   if (!input.end?.trim()) return { error: "End date is required" };
 
-  if (new Date(input.start) > new Date(input.end)) {
+  if (new Date(input.start) >= new Date(input.end)) {
     return { error: "Start date must be before end date" };
   }
+
+  const availabilityError = await validateTermAvailability(input, input.id);
+  if (availabilityError) return { error: availabilityError };
 
   const supabase = await createClient();
 
@@ -194,9 +255,7 @@ export async function updateTerm(
     .eq("id", input.id);
 
   if (error) {
-    return {
-      error: mapDuplicateError("Term", "code within academic year", error),
-    };
+    return { error: mapTermMutationError(error) };
   }
 
   revalidateTermsPaths(input.academic_year_id);
@@ -231,6 +290,34 @@ export async function deleteTerm(
   if (error) {
     return { error: error.message };
   }
+
+  revalidateTermsPaths();
+  return { data: true };
+}
+
+export async function setDefaultAcademicTerm(
+  termId: string,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!termId?.trim()) return { error: "Academic term is required" };
+
+  const supabase = await createClient();
+
+  const { data: term, error: termError } = await supabase
+    .from("academic_term")
+    .select("id")
+    .eq("id", termId)
+    .maybeSingle();
+
+  if (termError) return { error: termError.message };
+  if (!term) return { error: "Academic term not found" };
+
+  const { error } = await supabase.from("app_setting").upsert({
+    key: "default_academic_term_id",
+    academic_term_id: termId,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) return { error: error.message };
 
   revalidateTermsPaths();
   return { data: true };

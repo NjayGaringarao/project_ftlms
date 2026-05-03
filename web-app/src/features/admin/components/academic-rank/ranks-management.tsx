@@ -82,6 +82,7 @@ export function RanksManagement({
         description: isCreating ? "Add a university academic rank." : "Edit academic rank details.",
         content: (
           <RankPanel
+            key={isCreating ? "new" : selectedRank?.id ?? "missing"}
             rank={selectedRank}
             isCreating={isCreating}
             onClose={nav.closePanel}
@@ -123,6 +124,10 @@ function RankPanel({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const hasFormChanges = useMemo(
+    () => JSON.stringify(formData) !== JSON.stringify(savedFormData),
+    [formData, savedFormData],
+  );
 
   const handleChange = (field: keyof RankFormState, value: string) => {
     setFormData((current) => ({ ...current, [field]: value }));
@@ -193,8 +198,10 @@ function RankPanel({
         onReset={handleReset}
         onSubmit={handleSubmit}
         isSaving={isSaving}
+        isEditing={!isCreating}
         submitLabel={isCreating ? "Create Rank" : "Save Changes"}
         submitLoadingLabel={isCreating ? "Creating..." : "Saving..."}
+        showActions={hasFormChanges}
         statusSlot={
           <FormStatusBanner
             variant="compact"

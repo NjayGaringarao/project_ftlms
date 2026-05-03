@@ -8,35 +8,50 @@ import { ManagementPlaceholder } from "@/features/admin/components/management/ma
 import { useAdminManagementNavigation } from "@/features/admin/hooks/use-admin-management-navigation";
 import type { AcademicYearListItem } from "@/features/admin/lib/academic-years";
 import type { TermListItem } from "@/features/admin/lib/terms";
-import { createAcademicYear, deleteAcademicYear, updateAcademicYear } from "@/features/admin/lib/actions";
-import { YearFormState, YearInitialForm } from "./year-initial-form";
-import { TermsListEdit } from "./terms-list-edit";
-import FormStatusBanner from "../form-status-banner";
-import DangerZone from "../danger-zone";
-import DeleteConfirmModal from "../delete-confirm-modal";
+import {
+  createAcademicYear,
+  deleteAcademicYear,
+  updateAcademicYear,
+} from "@/features/admin/lib/actions";
 import { getCreatedRecordId } from "@/features/admin/lib/action-result-helpers";
+import DeleteConfirmModal from "../delete-confirm-modal";
+import DangerZone from "../danger-zone";
+import FormStatusBanner from "../form-status-banner";
+import {
+  AcademicCalendarFormState,
+  InitialForm,
+} from "./initial-form";
+import { TermsGrid } from "./terms-grid";
 
-type YearsManagementProps = {
+type AcademicCalendarManagementProps = {
   years: AcademicYearListItem[];
   selectedYear: AcademicYearListItem | null;
   selectedTerms: TermListItem[];
+  defaultTermId: string | null;
   selectedId: string | null;
   isCreating: boolean;
 };
 
-const emptyForm: YearFormState = { start_year: "", end_year: "" };
-const toForm = (year: AcademicYearListItem | null): YearFormState =>
+const emptyForm: AcademicCalendarFormState = {
+  start_year: "",
+  end_year: "",
+};
+
+const toForm = (
+  year: AcademicYearListItem | null,
+): AcademicCalendarFormState =>
   year
     ? { start_year: String(year.start_year), end_year: String(year.end_year) }
     : emptyForm;
 
-export function YearsManagement({
+export function AcademicCalendarManagement({
   years,
   selectedYear,
   selectedTerms,
+  defaultTermId,
   selectedId,
   isCreating,
-}: YearsManagementProps) {
+}: AcademicCalendarManagementProps) {
   const nav = useAdminManagementNavigation();
   const [query, setQuery] = useState("");
 
@@ -66,7 +81,7 @@ export function YearsManagement({
           items={filteredYears.map((year) => ({
             id: year.id,
             title: `A.Y. ${year.code}`,
-            subtitle: [""],
+            subtitle: [],
             icon: <CalendarRange className="h-5 w-5" />,
           }))}
         />
@@ -78,11 +93,13 @@ export function YearsManagement({
           : selectedYear?.code ?? "Academic year not found",
         description: isCreating
           ? "Add a new academic year."
-          : "Edit academic year and term details.",
+          : "Edit academic year and manage calendar terms.",
         content: (
-          <YearPanel
+          <AcademicCalendarPanel
+            key={isCreating ? "new" : selectedYear?.id ?? "missing"}
             year={selectedYear}
             terms={selectedTerms}
+            defaultTermId={defaultTermId}
             isCreating={isCreating}
             onClose={nav.closePanel}
             onCreated={nav.replaceWithItem}
@@ -103,9 +120,10 @@ export function YearsManagement({
   );
 }
 
-function YearPanel({
+function AcademicCalendarPanel({
   year,
   terms,
+  defaultTermId,
   isCreating,
   onClose,
   onCreated,
@@ -113,23 +131,25 @@ function YearPanel({
 }: {
   year: AcademicYearListItem | null;
   terms: TermListItem[];
+  defaultTermId: string | null;
   isCreating: boolean;
   onClose: () => void;
   onCreated: (id: string) => void;
   onRefresh: () => void;
 }) {
   const initial = toForm(year);
-  const [formData, setFormData] = useState<YearFormState>(initial);
-  const [savedFormData, setSavedFormData] = useState<YearFormState>(initial);
+  const [formData, setFormData] =
+    useState<AcademicCalendarFormState>(initial);
+  const [savedFormData, setSavedFormData] =
+    useState<AcademicCalendarFormState>(initial);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const handleChange = (field: keyof YearFormState, value: string) => {
-    setFormData((current) => ({ ...current, [field]: value }));
-    setError("");
-  };
+  const hasFormChanges = useMemo(
+    () => JSON.stringify(formData) !== JSON.stringify(savedFormData),
+    [formData, savedFormData],
+  );
 
   const handleSubmit = async () => {
     const startYear = Number(formData.start_year);
@@ -194,9 +214,12 @@ function YearPanel({
 
   return (
     <div className="space-y-4">
-      <YearInitialForm
+      <InitialForm
         formData={formData}
-        onChange={handleChange}
+        onChange={(field, value) => {
+          setFormData((current) => ({ ...current, [field]: value }));
+          setError("");
+        }}
         onReset={() => {
           setFormData(isCreating ? emptyForm : savedFormData);
           setError("");
@@ -206,6 +229,7 @@ function YearPanel({
         isSaving={isSaving}
         submitLabel={isCreating ? "Create Academic Year" : "Save Changes"}
         submitLoadingLabel={isCreating ? "Creating..." : "Saving..."}
+        showActions={hasFormChanges}
         statusSlot={
           <FormStatusBanner
             variant="compact"
@@ -216,7 +240,12 @@ function YearPanel({
       />
       {!isCreating && year ? (
         <>
-          <TermsListEdit year={year} terms={terms} onTermsChange={onRefresh} />
+          <TermsGrid
+            year={year}
+            terms={terms}
+            defaultTermId={defaultTermId}
+            onTermsChange={onRefresh}
+          />
           <DangerZone
             description="Deleting this academic year is blocked while terms are attached."
             buttonLabel="Delete Academic Year"
