@@ -66,9 +66,6 @@ export function CollegesManagement({
         title: isCreating
           ? "Create College"
           : selectedCollege?.name ?? "College not found",
-        description: isCreating
-          ? "Add a college."
-          : "Edit college details and manage inline programs.",
         content: (
           <CollegePanel
             key={isCreating ? "new" : selectedCollege?.id ?? "missing"}

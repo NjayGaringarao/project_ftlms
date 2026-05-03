@@ -251,9 +251,7 @@ export function UsersManagement({
         title: isCreating
           ? "Create User"
           : selectedUser?.identity?.name ?? "User not found",
-        description: isCreating
-          ? "Create an account and profile."
-          : selectedUser?.email ?? "Edit user profile and access information.",
+
         content: isCreating ? (
           <UserCreate
             key="create-user"

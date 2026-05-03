@@ -79,7 +79,6 @@ export function RanksManagement({
       panel={{
         open: panelOpen,
         title: panelTitle,
-        description: isCreating ? "Add a university academic rank." : "Edit academic rank details.",
         content: (
           <RankPanel
             key={isCreating ? "new" : selectedRank?.id ?? "missing"}

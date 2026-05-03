@@ -96,7 +96,6 @@ export function CoursesManagement({
         title: isCreating
           ? "Create Course"
           : selectedCourse?.title ?? "Course not found",
-        description: isCreating ? "Add a course." : "Edit course details.",
         content: (
           <CoursePanel
             key={isCreating ? "new" : selectedCourse?.id ?? "missing"}

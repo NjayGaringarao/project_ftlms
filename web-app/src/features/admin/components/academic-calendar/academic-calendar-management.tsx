@@ -149,7 +149,7 @@ export function AcademicCalendarManagement({
         open: isCreating || Boolean(selectedId),
         title: isCreating
           ? "Create Academic Calendar"
-          : (selectedYear?.code ?? "Academic year not found"),
+          : (selectedYear?.code ? `Academic Calendar ${selectedYear.code}` : "Academic year not found"),
         content: (
           <AcademicCalendarPanel
             key={isCreating ? "new" : (selectedYear?.id ?? "missing")}

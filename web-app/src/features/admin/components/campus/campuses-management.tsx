@@ -74,10 +74,8 @@ export function CampusesManagement({
         open: isCreating || Boolean(selectedId),
         title: isCreating
           ? "Create Campus"
-          : selectedCampus?.name ?? "Campus not found",
-        description: isCreating
-          ? "Add a campus."
-          : "Edit campus details and manage inline campus resources.",
+          : selectedCampus?.name.concat(" Campus") ?? "Campus not found",
+      
         content: (
           <CampusPanel
             key={

@@ -44,23 +44,28 @@ export function AppDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
         <Dialog.Content className={cn("flex flex-col", contentModeClassName)}>
-          <div className="flex items-center justify-between gap-4 p-4 bg-foreground/5">
+          <div
+            className={cn(
+              "flex items-center justify-between gap-2 p-4",
+              variant === "full-screen" ? "bg-foreground/80 text-background" : "bg-foreground/5 text-foreground",
+            )}
+          >
             {variant === "full-screen" && (
               <Dialog.Close
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                className="rounded-md p-1 transition-colors cursor-pointer"
                 aria-label="Close"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-6 w-6" />
               </Dialog.Close>
             )}
 
             <div className="flex-1">
-              <Dialog.Title className="text-base font-semibold">
+              <Dialog.Title className="text-lg font-semibold">
                 {title}
               </Dialog.Title>
-              
+
               {description ? (
-                <Dialog.Description className="text-xs text-muted-foreground">
+                <Dialog.Description className="text-xs">
                   {description}
                 </Dialog.Description>
               ) : (
@@ -72,16 +77,14 @@ export function AppDialog({
 
             {variant !== "full-screen" && (
               <Dialog.Close
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-foreground/10 hover:text-foreground"
+                className="rounded-md p-1 transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
               </Dialog.Close>
             )}
           </div>
-          <div
-            className={cn("flex-1", "overflow-y-auto", contentClassName)}
-          >
+          <div className={cn("flex-1", "overflow-y-auto", contentClassName)}>
             {children}
           </div>
         </Dialog.Content>
