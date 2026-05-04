@@ -273,9 +273,7 @@ export function BlockInformation({
       />
 
       <section className="space-y-4">
-        <div className="border-b pb-2">
-          <h2 className="font-semibold">Block Information</h2>
-        </div>
+      
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div>
