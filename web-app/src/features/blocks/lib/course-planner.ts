@@ -69,8 +69,7 @@ export const addCourseToBlock = async (
   }
 
   if (academicTermId) {
-    revalidatePath(`/blocks/${academicTermId}`);
-    revalidatePath(`/blocks/${academicTermId}/${blockId}`);
+    revalidatePath("/blocks");
   } else {
     revalidatePath("/blocks");
   }
@@ -129,8 +128,7 @@ export const removeCourseFromBlock = async (
   }
 
   if (academicTermId) {
-    revalidatePath(`/blocks/${academicTermId}`);
-    revalidatePath(`/blocks/${academicTermId}/${blockId}`);
+    revalidatePath("/blocks");
   } else {
     revalidatePath("/blocks");
   }

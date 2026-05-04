@@ -148,15 +148,8 @@ export const revalidateMajorOfferingsPaths = (id?: string) => {
   }
 };
 
-export const revalidateBlocksPaths = (academicTermId?: string, id?: string) => {
-  const basePath = academicTermId ? `/blocks/${academicTermId}` : "/blocks";
-  revalidatePath(basePath);
-  revalidatePath(`${basePath}/create`);
-
-  if (id) {
-    revalidatePath(`${basePath}/${id}`);
-    revalidatePath(`${basePath}/${id}/edit`);
-  }
+export const revalidateBlocksPaths = () => {
+  revalidatePath("/blocks");
 };
 
 export const revalidateDepartmentProgramsPaths = (

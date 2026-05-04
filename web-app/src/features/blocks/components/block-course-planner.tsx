@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUp,
+  BookOpen,
   ClipboardClock,
   MoreHorizontal,
   NotebookTabs,
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppDialog } from "@/components/ui/app-dialog";
-import { PickerList } from "@/features/blocks/components/picker-list";
+import { MultiPickerList } from "@/features/shared/components/pickers/multi-picker-list";
 import type { CourseListItem } from "@/features/admin/lib/courses";
 import type { BlockClassRow } from "@/features/faculty-teaching-load/lib/course-loading/types";
 import {
@@ -273,16 +274,18 @@ const BlockCoursePlanner = ({
         }}
         title="Add Course to Block"
         description="Pick one or more courses to add to this block."
-        contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+        variant="floating-medium"
+        contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
       >
         <div className="flex flex-col gap-3 overflow-hidden">
-          <PickerList
-            title="Course"
+          <MultiPickerList
+
             items={availableCourses}
             getId={(c) => c.id}
-            getLabel={(c) => c.code}
-            getSubLabel={(c) => c.title}
-            selected={selectedCourseIds}
+            getTitle={(c) => c.code}
+            getSubtitle={(c) => [c.title]}
+            getSearchText={(c) => `${c.code} ${c.title}`}
+            selectedIds={selectedCourseIds}
             onToggle={(id) =>
               setSelectedCourseIds((prev) => {
                 const next = new Set(prev);
@@ -295,6 +298,7 @@ const BlockCoursePlanner = ({
               })
             }
             placeholder="Search courses..."
+            icon={<BookOpen className="h-5 w-5 text-background/80" />}
           />
           <div className="flex justify-end gap-2">
             <Button
