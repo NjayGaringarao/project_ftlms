@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { numberToHourDuration } from "@/utils/time";
 import { toDisplayTime } from "@/features/scheduler/lib/schedule/utils";
 import type { SessionType } from "@/features/shared/types/models";
-import type { CourseLoadingBlockListItem, FacultyListItem } from "@/features/faculty-teaching-load/lib/course-loading/types";
+import type {
+  CourseLoadingBlockListItem,
+  FacultyListItem,
+} from "@/features/faculty-teaching-load/lib/course-loading/types";
 import type { ExtendedRoom } from "@/features/shared/types/models";
 import type { SchedulerCourseOfferingItem } from "@/features/scheduler/lib/schedule/course-offerings";
 
@@ -17,6 +20,7 @@ type ConfirmScheduleDialogProps = {
     day: string;
     startIndex: number;
     endIndex: number;
+    mode?: "create" | "move";
   } | null;
   timeSlots: Array<{ start: string; end: string }>;
   sessionType: SessionType;
@@ -54,9 +58,16 @@ const ConfirmScheduleDialog = ({
     <AppDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Confirm Schedule"
-      description="Review the details before creating this session."
-      contentClassName="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden"
+      title={
+        pendingRange?.mode === "move" ? "Confirm Move" : "Confirm Schedule"
+      }
+      description={
+        pendingRange?.mode === "move"
+          ? "Review the new timeslot before moving this session."
+          : "Review the details before creating this session."
+      }
+      contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
+      variant="floating-medium"
     >
       <div className="flex flex-col gap-3">
         <div className="rounded-md border bg-foreground/5 p-3 text-sm">
@@ -67,7 +78,8 @@ const ConfirmScheduleDialog = ({
                 {pendingRange.day} {toDisplayTime(startSlot.start)} -{" "}
                 {toDisplayTime(endSlot.end)} (
                 {numberToHourDuration(
-                  ((Math.abs(pendingRange.endIndex - pendingRange.startIndex) + 1) *
+                  ((Math.abs(pendingRange.endIndex - pendingRange.startIndex) +
+                    1) *
                     30) /
                     60,
                 )}{" "}
@@ -98,7 +110,11 @@ const ConfirmScheduleDialog = ({
             Cancel
           </Button>
           <Button size="sm" onClick={onConfirm} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Confirm"}
+            {isSaving
+              ? "Saving..."
+              : pendingRange?.mode === "move"
+                ? "Move"
+                : "Confirm"}
           </Button>
         </div>
       </div>

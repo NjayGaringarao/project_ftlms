@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Pencil, Trash2, X } from "lucide-react";
+import { Clock, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { SessionType } from "@/features/shared/types/models";
@@ -31,9 +31,11 @@ const SchedulerRightPane = () => {
     classRefreshKey,
     overlappingSessions,
     selectSession,
+    startMoveSession,
     clearSelection,
     facultyOptions,
     refreshSessions,
+    movingSession,
     errorMessage,
   } = useScheduler();
   const [showRoomEditDialog, setShowRoomEditDialog] = useState(false);
@@ -509,18 +511,38 @@ const SchedulerRightPane = () => {
                                     {session.type}
                                   </span>
                                 </div>
-                                <Button
-                                  size="xs"
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => {
-                                    handleDeleteSession(session.session_id);
-                                  }}
-                                  title="Delete session"
-                                  disabled={isMutating}
-                                >
-                                  <Trash2 className="h-3 w-3 text-red-400" />
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="xs"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => startMoveSession(session)}
+                                    title="Edit timeslot"
+                                    disabled={isMutating}
+                                  >
+                                    <Clock
+                                      className={cn(
+                                        "h-3 w-3",
+                                        movingSession?.session_id ===
+                                          session.session_id
+                                          ? "text-orange-500"
+                                          : "text-foreground/70",
+                                      )}
+                                    />
+                                  </Button>
+                                  <Button
+                                    size="xs"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => {
+                                      handleDeleteSession(session.session_id);
+                                    }}
+                                    title="Delete session"
+                                    disabled={isMutating}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-red-400" />
+                                  </Button>
+                                </div>
                               </div>
                               <div className="flex items-center gap-1 justify-between">
                                 <span className="truncate">

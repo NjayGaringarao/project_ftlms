@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Blocks, BookOpen, ChevronDown, DoorOpen, User, X } from "lucide-react";
 import type { SessionDay, SessionType } from "@/features/shared/types/models";
-import { dayLabel, toDisplayTime, toMinutes } from "@/features/scheduler/lib/schedule/utils";
+import { toDisplayTime, toMinutes } from "@/features/scheduler/lib/schedule/utils";
 import {
+  getMergedBlockConflictSessions,
   getSchedulerMapperMatrices,
   getSchedulerMapperMatrixByOnlineBlock,
   type SchedulerMatrixSession,
@@ -18,6 +19,7 @@ import {
   createSessionFromOffering,
   getSessionSummaries,
   type SessionSummary,
+  updateSessionTime,
 } from "@/features/scheduler/lib/schedule/session-actions";
 import MatrixRenderer from "./matrix-renderer";
 import { getSelectedContextsFromSearchParams } from "./utils";
@@ -35,7 +37,6 @@ import type { ExtendedRoom } from "@/features/shared/types/models";
 import { Button } from "@/components/ui/button";
 import ConfirmScheduleDialog from "@/features/scheduler/components/dialogs/confirm-schedule-dialog";
 import { cn } from "@/utils/style";
-import { title } from "process";
 
 type ScheduleMapperProps = {
   academic_term_id: string;
@@ -120,6 +121,9 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const [roomSessions, setRoomSessions] = useState<SchedulerMatrixSession[]>(
     [],
   );
+  const [mergedConflictSessions, setMergedConflictSessions] = useState<
+    SchedulerMatrixSession[]
+  >([]);
   const [blockLoading, setBlockLoading] = useState(false);
   const [facultyLoading, setFacultyLoading] = useState(false);
   const [roomLoading, setRoomLoading] = useState(false);
@@ -144,6 +148,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     source: "Block" | "Faculty" | "Room";
     sessions: SchedulerMatrixSession[];
   } | null>(null);
+  const [selectedCellRequestKey, setSelectedCellRequestKey] = useState(0);
   const [overlappingSessions, setOverlappingSessions] = useState<
     SessionSummary[]
   >([]);
@@ -158,13 +163,20 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     day: SessionDay;
     startIndex: number;
     endIndex: number;
+    mode: "create" | "move";
   } | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sessionType, setSessionType] = useState<SessionType>("Lecture");
   const [isSaving, setIsSaving] = useState(false);
+  const [movingSession, setMovingSession] = useState<SessionSummary | null>(
+    null,
+  );
 
   const draggingRef = useRef<typeof dragging>(null);
   const matrixRequestIdRef = useRef(0);
+  const syncContextFromSessionRef = useRef<
+    (session: SessionSummary | null | undefined) => void
+  >(() => undefined);
 
   useEffect(() => {
     draggingRef.current = dragging;
@@ -210,13 +222,50 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   const clearSelection = useCallback(() => {
     setSelectedCell(null);
+    setSelectedCellRequestKey((prev) => prev + 1);
     setSelectedClassId(null);
     setActiveSessionId(null);
+    setMovingSession(null);
+    setOverlappingSessions([]);
+  }, []);
+
+  const startMoveSession = useCallback((session: SessionSummary) => {
+    setMovingSession(session);
+    setActiveSessionId(session.session_id);
+    setSelectedClassId(session.class_id);
+    setSelectedCell(null);
+    setPendingRange(null);
+    setConfirmOpen(false);
+    setDragError(
+      "Select a new timeslot on the grid to move this session.",
+    );
   }, []);
 
   const refreshSessions = useCallback(() => {
     setRefreshKey((prev) => prev + 1);
   }, []);
+
+  syncContextFromSessionRef.current = (
+    session: SessionSummary | null | undefined,
+  ) => {
+    if (!session) return;
+
+    const next = new URLSearchParams(searchParams.toString());
+
+    if (session.faculty_id) {
+      next.set("facultyId", session.faculty_id);
+    }
+
+    if (session.room_id) {
+      next.set("roomId", session.room_id);
+    } else {
+      next.delete("roomId");
+    }
+
+    const queryString = next.toString();
+    if (queryString === searchParams.toString()) return;
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
+  };
 
   const selectedFaculty =
     faculty.find((item) => item.id === selectedFacultyId) ?? null;
@@ -414,9 +463,44 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     refreshKey,
   ]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMergedConflicts = async () => {
+      if (
+        !selectedOffering?.class_id ||
+        !selectedBlockId ||
+        selectedOffering.merged_blocks.length === 0
+      ) {
+        setMergedConflictSessions([]);
+        return;
+      }
+
+      const rows = await getMergedBlockConflictSessions(
+        academic_term_id,
+        selectedOffering.class_id,
+        selectedBlockId,
+      );
+      if (cancelled) return;
+      setMergedConflictSessions(rows);
+    };
+
+    void loadMergedConflicts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    academic_term_id,
+    selectedBlockId,
+    selectedOffering?.class_id,
+    selectedOffering?.merged_blocks.length,
+    refreshKey,
+  ]);
+
   const blockMatrix = useMemo(
-    () => buildMatrix(blockSessions, slotStarts),
-    [blockSessions, slotStarts],
+    () => buildMatrix([...blockSessions, ...mergedConflictSessions], slotStarts),
+    [blockSessions, mergedConflictSessions, slotStarts],
   );
   const facultyMatrix = useMemo(
     () => buildMatrix(facultySessions, slotStarts),
@@ -435,15 +519,26 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   }, [selectedOffering, sessionType]);
 
   const maxDragSlots = useMemo(() => {
+    if (movingSession) {
+      return Math.max(
+        Math.ceil(
+          (toMinutes(movingSession.end_time) -
+            toMinutes(movingSession.start_time)) /
+            SLOT_MINUTES,
+        ),
+        1,
+      );
+    }
     if (expectedHours <= 0) return 0;
     return Math.ceil(expectedHours / 0.5);
-  }, [expectedHours]);
+  }, [expectedHours, movingSession]);
 
   const canDrag = Boolean(
-    selectedBlockId &&
-    selectedCourseUtilizationId &&
-    selectedFacultyId &&
-    selectedOffering,
+    movingSession ||
+      (selectedBlockId &&
+        selectedCourseUtilizationId &&
+        selectedFacultyId &&
+        selectedOffering),
   );
 
   const hasMatrixConflict = (
@@ -451,16 +546,44 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     day: SessionDay,
     startIndex: number,
     endIndex: number,
+    excludeSessionId?: string | null,
   ): boolean => {
     const min = Math.min(startIndex, endIndex);
     const max = Math.max(startIndex, endIndex);
     for (let index = min; index <= max; index += 1) {
-      if ((matrix[day]?.[index] ?? []).length > 0) {
+      const sessions = (matrix[day]?.[index] ?? []).filter(
+        (session) => session.id !== excludeSessionId,
+      );
+      if (sessions.length > 0) {
         return true;
       }
     }
     return false;
   };
+
+  const selectMatrixSessions = useCallback(
+    async (
+      source: "Block" | "Faculty" | "Room",
+      sessions: SchedulerMatrixSession[],
+    ) => {
+      if (sessions.length === 0) return;
+
+      setSelectedCell({ source, sessions });
+      setSelectedCellRequestKey((prev) => prev + 1);
+
+      const summaries = await getSessionSummaries(
+        sessions.map((session) => session.id),
+      );
+      const nextSelectedSummary = summaries[0] ?? null;
+      setOverlappingSessions(summaries);
+      setActiveSessionId(nextSelectedSummary?.session_id ?? null);
+      if (nextSelectedSummary) {
+        setSelectedClassId(nextSelectedSummary.class_id);
+        syncContextFromSessionRef.current(nextSelectedSummary);
+      }
+    },
+    [],
+  );
 
   const finalizeDrag = (
     day: SessionDay,
@@ -473,13 +596,32 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       return;
     }
 
-    if (hasMatrixConflict(blockMatrix, day, startIndex, endIndex)) {
+    const excludedSessionId = movingSession?.session_id ?? null;
+
+    if (
+      hasMatrixConflict(
+        blockMatrix,
+        day,
+        startIndex,
+        endIndex,
+        excludedSessionId,
+      )
+    ) {
       setDragError("Block already has a schedule in that time range.");
       setDragging(null);
       return;
     }
 
-    if (hasMatrixConflict(facultyMatrix, day, startIndex, endIndex)) {
+    if (
+      selectedFacultyId &&
+      hasMatrixConflict(
+        facultyMatrix,
+        day,
+        startIndex,
+        endIndex,
+        excludedSessionId,
+      )
+    ) {
       setDragError("Faculty already has a schedule in that time range.");
       setDragging(null);
       return;
@@ -487,7 +629,13 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
     if (
       selectedRoomId &&
-      hasMatrixConflict(roomMatrix, day, startIndex, endIndex)
+      hasMatrixConflict(
+        roomMatrix,
+        day,
+        startIndex,
+        endIndex,
+        excludedSessionId,
+      )
     ) {
       setDragError("Room is occupied in that time range.");
       setDragging(null);
@@ -495,7 +643,12 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     }
 
     setDragError("");
-    setPendingRange({ day, startIndex, endIndex });
+    setPendingRange({
+      day,
+      startIndex,
+      endIndex,
+      mode: movingSession ? "move" : "create",
+    });
     setConfirmOpen(true);
     setDragging(null);
   };
@@ -505,16 +658,25 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     rowIndex: number,
     items: SchedulerMatrixSession[],
   ) => {
-    if (items.length > 0) {
-      setSelectedCell({ source: "Block", sessions: items });
+    const selectableItems = items.filter(
+      (item) => item.visual_source !== "merged_conflict",
+    );
+    const isMovingCurrentSession = selectableItems.some(
+      (item) => item.id === movingSession?.session_id,
+    );
+
+    if (selectableItems.length > 0 && !movingSession) {
+      void selectMatrixSessions("Block", selectableItems);
       return;
     }
+    if (selectableItems.length > 0 && !isMovingCurrentSession) return;
+
     if (!canDrag) {
       setDragError("Select a block, course offering, and faculty to schedule.");
       return;
     }
 
-    if (expectedHours <= 0) {
+    if (!movingSession && expectedHours <= 0) {
       setDragError(
         `No remaining ${sessionType.toLowerCase()} hours for this course.`,
       );
@@ -529,6 +691,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     rowIndex: number,
     _items: SchedulerMatrixSession[],
   ) => {
+    void _items;
     setDragging((prev) => {
       if (!prev || prev.day !== day) return prev;
       if (maxDragSlots <= 0) return prev;
@@ -546,8 +709,12 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const handleSessionClick =
     (source: "Block" | "Faculty" | "Room") =>
     (_day: SessionDay, _rowIndex: number, items: SchedulerMatrixSession[]) => {
-      if (items.length === 0) return;
-      setSelectedCell({ source, sessions: items });
+      if (movingSession) return;
+      const selectableItems = items.filter(
+        (item) => item.visual_source !== "merged_conflict",
+      );
+      if (selectableItems.length === 0) return;
+      void selectMatrixSessions(source, selectableItems);
     };
 
   useEffect(() => {
@@ -555,24 +722,21 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
     const loadSummaries = async () => {
       if (!selectedCell || selectedCell.sessions.length === 0) {
-        setOverlappingSessions([]);
-        setActiveSessionId(null);
+        return;
+      }
+      if (overlappingSessions.length > 0) {
         return;
       }
 
       const ids = selectedCell.sessions.map((session) => session.id);
       const summaries = await getSessionSummaries(ids);
       if (cancelled) return;
+      const nextSelectedSummary = summaries[0] ?? null;
       setOverlappingSessions(summaries);
-      setActiveSessionId((prev) => {
-        if (!summaries || summaries.length === 0) return null;
-        if (prev && summaries.some((item) => item.session_id === prev)) {
-          return prev;
-        }
-        return summaries[0].session_id;
-      });
-      if (summaries && summaries.length > 0) {
-        setSelectedClassId(summaries[0]?.class_id ?? null);
+      setActiveSessionId(nextSelectedSummary?.session_id ?? null);
+      if (nextSelectedSummary) {
+        setSelectedClassId(nextSelectedSummary.class_id);
+        syncContextFromSessionRef.current(nextSelectedSummary);
       }
     };
 
@@ -581,7 +745,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     return () => {
       cancelled = true;
     };
-  }, [selectedCell]);
+  }, [overlappingSessions.length, selectedCell, selectedCellRequestKey]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -599,13 +763,18 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     };
   }, [dragging]);
 
+  const removeMatrixSession = (
+    sessions: SchedulerMatrixSession[],
+    sessionId: string,
+  ) => sessions.filter((session) => session.id !== sessionId);
+
+  const replaceMatrixSession = (
+    sessions: SchedulerMatrixSession[],
+    session: SchedulerMatrixSession,
+  ) => [...removeMatrixSession(sessions, session.id), session];
+
   const handleConfirmSchedule = async () => {
-    if (
-      !pendingRange ||
-      !selectedOffering ||
-      !selectedFacultyId ||
-      !selectedBlockId
-    ) {
+    if (!pendingRange || isSaving) {
       return;
     }
 
@@ -621,7 +790,11 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
     const selectedDurationHours =
       (toMinutes(endSlot.end) - toMinutes(startSlot.start)) / 60;
-    if (expectedHours > 0 && selectedDurationHours - expectedHours > 0.001) {
+    if (
+      pendingRange.mode === "create" &&
+      expectedHours > 0 &&
+      selectedDurationHours - expectedHours > 0.001
+    ) {
       setDragError(
         `Selected duration (${selectedDurationHours.toFixed(
           2,
@@ -630,7 +803,118 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       return;
     }
 
+    if (pendingRange.mode === "move") {
+      if (!movingSession) return;
+
+      const previousBlockSessions = blockSessions;
+      const previousFacultySessions = facultySessions;
+      const previousRoomSessions = roomSessions;
+      const movedMatrixSession: SchedulerMatrixSession = {
+        id: movingSession.session_id,
+        class_id: movingSession.class_id,
+        class_code: movingSession.class_code,
+        day: pendingRange.day,
+        start_time: startSlot.start,
+        end_time: endSlot.end,
+      };
+
+      setIsSaving(true);
+      setBlockSessions((prev) => replaceMatrixSession(prev, movedMatrixSession));
+      setFacultySessions((prev) =>
+        selectedFacultyId
+          ? replaceMatrixSession(prev, movedMatrixSession)
+          : removeMatrixSession(prev, movingSession.session_id),
+      );
+      setRoomSessions((prev) => replaceMatrixSession(prev, movedMatrixSession));
+      setOverlappingSessions((prev) =>
+        prev.map((session) =>
+          session.session_id === movingSession.session_id
+            ? {
+                ...session,
+                day: pendingRange.day,
+                start_time: startSlot.start,
+                end_time: endSlot.end,
+              }
+            : session,
+        ),
+      );
+
+      const result = await updateSessionTime(movingSession.session_id, {
+        day: pendingRange.day,
+        startTime: startSlot.start,
+        endTime: endSlot.end,
+      });
+
+      if (result.error) {
+        setBlockSessions(previousBlockSessions);
+        setFacultySessions(previousFacultySessions);
+        setRoomSessions(previousRoomSessions);
+        setDragError(result.error);
+        setIsSaving(false);
+        return;
+      }
+
+      setConfirmOpen(false);
+      setPendingRange(null);
+      setMovingSession(null);
+      setIsSaving(false);
+      setDragError("");
+      setActiveSessionId(result.data?.id ?? movingSession.session_id);
+      setSelectedClassId(result.data?.class_id ?? movingSession.class_id);
+      setRefreshKey((prev) => prev + 1);
+      return;
+    }
+
+    if (!selectedOffering || !selectedFacultyId || !selectedBlockId) {
+      return;
+    }
+
+    const tempId = `optimistic-${Date.now()}`;
+    const tempClassId = selectedOffering.class_id ?? `pending-${selectedOffering.id}`;
+    const optimisticSession: SchedulerMatrixSession = {
+      id: tempId,
+      class_id: tempClassId,
+      class_code: selectedOffering.class_code ?? "TMP",
+      day: pendingRange.day,
+      start_time: startSlot.start,
+      end_time: endSlot.end,
+    };
+    const optimisticSummary: SessionSummary = {
+      session_id: tempId,
+      class_id: tempClassId,
+      class_code: optimisticSession.class_code,
+      course_code: selectedOffering.course_code,
+      course_title: selectedOffering.course_title,
+      faculty_id: selectedFacultyId,
+      faculty_name: selectedFaculty?.name ?? selectedOffering.faculty_name,
+      room_id: selectedRoomId,
+      room_code: selectedRoom?.code ?? null,
+      room_name: selectedRoom?.name ?? null,
+      campus_id: selectedBlock?.campus_id ?? null,
+      college_id: selectedBlock?.college_id ?? null,
+      day: pendingRange.day,
+      start_time: startSlot.start,
+      end_time: endSlot.end,
+      type: sessionType,
+      block_codes: [
+        selectedBlock?.code ?? selectedOffering.block_code,
+        ...selectedOffering.merged_blocks.map((block) => block.code),
+      ],
+    };
+    const previousBlockSessions = blockSessions;
+    const previousFacultySessions = facultySessions;
+    const previousRoomSessions = roomSessions;
+    const previousOverlappingSessions = overlappingSessions;
+
     setIsSaving(true);
+    setBlockSessions((prev) => [...prev, optimisticSession]);
+    setFacultySessions((prev) => [...prev, optimisticSession]);
+    setRoomSessions((prev) => [...prev, optimisticSession]);
+    setSelectedCell(null);
+    setOverlappingSessions([optimisticSummary]);
+    setActiveSessionId(tempId);
+    setSelectedClassId(tempClassId);
+
     const result = await createSessionFromOffering({
       academicTermId: academic_term_id,
       blockId: selectedBlockId,
@@ -644,6 +928,12 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     });
 
     if (result.error) {
+      setBlockSessions(previousBlockSessions);
+      setFacultySessions(previousFacultySessions);
+      setRoomSessions(previousRoomSessions);
+      setOverlappingSessions(previousOverlappingSessions);
+      setActiveSessionId(null);
+      setSelectedClassId(selectedOffering.class_id ?? null);
       setDragError(result.error);
       setIsSaving(false);
       return;
@@ -653,26 +943,41 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     setPendingRange(null);
     setIsSaving(false);
     setDragError("");
-    if (result.data?.id && selectedOffering.class_id) {
-      setSelectedCell({
-        source: "Block",
-        sessions: [
-          {
-            id: result.data.id,
-            class_id: selectedOffering.class_id,
-            class_code: selectedOffering.class_code ?? "TMP",
-            day: pendingRange.day,
-            start_time: startSlot.start,
-            end_time: endSlot.end,
-          },
-        ],
-      });
+    if (result.data) {
+      const realSession: SchedulerMatrixSession = {
+        id: result.data.id,
+        class_id: result.data.class_id,
+        class_code: result.data.class_code,
+        day: result.data.day,
+        start_time: result.data.start_time,
+        end_time: result.data.end_time,
+      };
+      setBlockSessions((prev) => [
+        ...removeMatrixSession(prev, tempId),
+        realSession,
+      ]);
+      setFacultySessions((prev) => [
+        ...removeMatrixSession(prev, tempId),
+        realSession,
+      ]);
+      setRoomSessions((prev) => [
+        ...removeMatrixSession(prev, tempId),
+        realSession,
+      ]);
+      setOverlappingSessions([
+        {
+          ...optimisticSummary,
+          session_id: result.data.id,
+          class_id: result.data.class_id,
+          class_code: result.data.class_code,
+          day: result.data.day,
+          start_time: result.data.start_time,
+          end_time: result.data.end_time,
+          type: result.data.type,
+        },
+      ]);
       setActiveSessionId(result.data.id);
-      setSelectedClassId(selectedOffering.class_id);
-    } else {
-      setSelectedCell(null);
-      setActiveSessionId(result.data?.id ?? null);
-      setSelectedClassId(selectedOffering.class_id ?? null);
+      setSelectedClassId(result.data.class_id);
     }
     setRefreshKey((prev) => prev + 1);
   };
@@ -719,6 +1024,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     setContextParams((next) => {
       next.delete("blockId");
       next.delete("courseUtilizationId");
+      next.delete("facultyId");
     });
     setPendingRange(null);
     setConfirmOpen(false);
@@ -744,9 +1050,11 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       classRefreshKey: refreshKey,
       overlappingSessions,
       selectSession,
+      startMoveSession,
       clearSelection,
       facultyOptions: faculty,
       refreshSessions,
+      movingSession,
       errorMessage: dragError || null,
     }),
     [
@@ -757,6 +1065,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       dragError,
       faculty,
       facultySessions,
+      movingSession,
       overlappingSessions,
       offerings,
       refreshKey,
@@ -769,6 +1078,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       selectedOffering,
       selectedRoomId,
       sessionType,
+      startMoveSession,
       refreshSessions,
     ],
   );
@@ -779,6 +1089,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     });
     setPendingRange(null);
     setConfirmOpen(false);
+    setMovingSession(null);
     setDragError("");
   };
 
@@ -913,7 +1224,10 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
                   <User className="h-3 w-3" />,
                   selectedFaculty?.name ?? null,
                   () => setShowFacultyDialog(true),
-                  () => clearContextParam("facultyId"),
+                  () => {
+                    clearSelection();
+                    clearContextParam("facultyId");
+                  },
                 )}
                 days={DAYS}
                 timeSlots={timeSlots.map((slot) => slot.start)}
@@ -939,7 +1253,10 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
                   <DoorOpen className="h-3 w-3" />,
                   selectedRoom?.code ?? null,
                   () => setShowRoomDialog(true),
-                  () => clearContextParam("roomId"),
+                  () => {
+                    clearSelection();
+                    clearContextParam("roomId");
+                  },
                 )}
                 days={DAYS}
                 timeSlots={timeSlots.map((slot) => slot.start)}
@@ -966,6 +1283,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         items={faculty}
         selectedId={selectedFacultyId}
         onSelect={(facultyId) => {
+          clearSelection();
           setContextParam("facultyId", facultyId);
           setDragError("");
           setShowFacultyDialog(false);
@@ -983,10 +1301,12 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
           setContextParams((next) => {
             next.set("blockId", blockId);
             next.delete("courseUtilizationId");
+            next.delete("facultyId");
           });
           setDragError("");
           setPendingRange(null);
           setConfirmOpen(false);
+          setMovingSession(null);
           setShowBlockDialog(false);
           setRefreshKey((prev) => prev + 1);
         }}
@@ -999,11 +1319,18 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         offerings={offerings}
         selectedOfferingId={selectedCourseUtilizationId}
         onSelectOffering={(id) => {
-          setContextParam("courseUtilizationId", id);
+          const offering = offerings.find((item) => item.id === id);
+          setContextParams((next) => {
+            next.set("courseUtilizationId", id);
+            if (offering?.faculty_id) {
+              next.set("facultyId", offering.faculty_id);
+            }
+          });
           setShowOfferingDialog(false);
           setDragError("");
           setPendingRange(null);
           setConfirmOpen(false);
+          setMovingSession(null);
         }}
         onOfferingsChanged={() => setRefreshKey((prev) => prev + 1)}
       />
@@ -1014,6 +1341,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         items={rooms}
         selectedId={selectedRoomId}
         onSelect={(roomId) => {
+          clearSelection();
           if (roomId) {
             setContextParam("roomId", roomId);
           } else {

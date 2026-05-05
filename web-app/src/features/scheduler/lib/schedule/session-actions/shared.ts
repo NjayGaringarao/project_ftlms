@@ -93,7 +93,7 @@ export const getSessionContext = async (
     .select(
       `
       class_id,
-      session:session_id(day, start_time, end_time),
+      session:session_id(day, start_time, end_time, room_id),
       class:class_id(
         user_class(user_id),
         course_utilization(block_id, block:block_id(academic_term_id))
@@ -114,6 +114,7 @@ export const getSessionContext = async (
     day?: SessionDay | null;
     start_time?: string | null;
     end_time?: string | null;
+    room_id?: string | null;
   } | null;
   const classRow = first((data as { class?: unknown }).class) as {
     user_class?: unknown;
@@ -155,6 +156,7 @@ export const getSessionContext = async (
     day: session.day,
     start_time: session.start_time,
     end_time: session.end_time,
+    room_id: session.room_id ?? null,
   };
 };
 

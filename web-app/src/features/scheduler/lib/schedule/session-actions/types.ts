@@ -18,6 +18,7 @@ export type SessionContext = {
   day: SessionDay;
   start_time: string;
   end_time: string;
+  room_id: string | null;
 };
 
 export type RawSessionRow = {
@@ -244,4 +245,20 @@ export type CreateSessionFromOfferingInput = {
   startTime: string;
   endTime: string;
   type: SessionType;
+};
+
+export type SessionMutationData = {
+  id: string;
+  class_id: string;
+  class_code: string;
+  day: SessionDay;
+  start_time: string;
+  end_time: string;
+  type: SessionType;
+};
+
+export type UpdateSessionTimeInput = {
+  day: SessionDay;
+  startTime: string;
+  endTime: string;
 };

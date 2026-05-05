@@ -9,6 +9,7 @@ import {
   first,
   mapMutationError,
   normalizeDay,
+  normalizeType,
   overlaps,
   toMinutes,
 } from "./utils";
@@ -22,11 +23,13 @@ import type {
   CreateClassSessionInput,
   CreateSessionFromOfferingInput,
   RawBlockRow,
+  SessionMutationData,
+  UpdateSessionTimeInput,
 } from "./types";
 
 export const createClassSession = async (
   input: CreateClassSessionInput,
-): Promise<{ data?: { id: string }; error?: string }> => {
+): Promise<{ data?: SessionMutationData; error?: string }> => {
   if (!input.classId?.trim()) return { error: "Class is required" };
   if (!input.startTime?.trim() || !input.endTime?.trim()) {
     return { error: "Session time range is required" };
@@ -83,13 +86,30 @@ export const createClassSession = async (
     return { error: mapMutationError(linkError) };
   }
 
+  const { data: classRow } = await supabase
+    .from("class")
+    .select("code")
+    .eq("id", input.classId)
+    .maybeSingle();
+
   revalidatePath("/scheduler");
-  return { data: { id: session.id } };
+  return {
+    data: {
+      id: session.id,
+      class_id: input.classId,
+      class_code:
+        ((classRow as { code?: string | null } | null)?.code ?? "Unknown"),
+      day: input.day,
+      start_time: input.startTime,
+      end_time: input.endTime,
+      type: input.type,
+    },
+  };
 };
 
 export const createSessionFromOffering = async (
   input: CreateSessionFromOfferingInput,
-): Promise<{ data?: { id: string }; error?: string }> => {
+): Promise<{ data?: SessionMutationData; error?: string }> => {
   if (!input.academicTermId?.trim()) return { error: "Academic term is required" };
   if (!input.blockId?.trim()) return { error: "Block is required" };
   if (!input.courseUtilizationId?.trim()) return { error: "Course offering is required" };
@@ -248,6 +268,102 @@ export const updateSessionRoom = async (
 
   revalidatePath("/scheduler");
   return { data: true };
+};
+
+export const updateSessionTime = async (
+  sessionId: string,
+  input: UpdateSessionTimeInput,
+): Promise<{ data?: SessionMutationData; error?: string }> => {
+  if (!sessionId?.trim()) return { error: "Session is required" };
+  if (!input.startTime?.trim() || !input.endTime?.trim()) {
+    return { error: "Session time range is required" };
+  }
+  if (toMinutes(input.endTime) <= toMinutes(input.startTime)) {
+    return { error: "End time must be after start time" };
+  }
+
+  const context = await getSessionContext(sessionId);
+  if (!context) return { error: "Session context not found" };
+
+  const [facultyWindows, blockWindows, roomWindows] = await Promise.all([
+    context.facultyId
+      ? getSessionWindowsByPredicate(context.academicTermId, input.day, {
+          facultyId: context.facultyId,
+          excludeSessionId: sessionId,
+        })
+      : Promise.resolve([]),
+    getSessionWindowsByPredicate(context.academicTermId, input.day, {
+      blockIds: context.blockIds,
+      excludeSessionId: sessionId,
+    }),
+    context.room_id
+      ? getSessionWindowsByPredicate(context.academicTermId, input.day, {
+          roomId: context.room_id,
+          excludeSessionId: sessionId,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const conflicts: Array<{
+    start_time: string;
+    end_time: string;
+    reason: string;
+  }> = [];
+  facultyWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Faculty has another schedule" }),
+  );
+  blockWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Block has another schedule" }),
+  );
+  roomWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Room is occupied" }),
+  );
+
+  const conflict = conflicts.find((window) =>
+    overlaps(input.startTime, input.endTime, window.start_time, window.end_time),
+  );
+
+  if (conflict) {
+    return {
+      error: `${conflict.reason} at ${conflict.start_time} - ${conflict.end_time}`,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: session, error } = await supabase
+    .from("session")
+    .update({
+      day: input.day,
+      start_time: input.startTime,
+      end_time: input.endTime,
+    })
+    .eq("id", sessionId)
+    .select("id, day, start_time, end_time, type")
+    .single();
+
+  if (error || !session) {
+    return { error: mapMutationError(error ?? {}) };
+  }
+
+  const { data: classRow } = await supabase
+    .from("class")
+    .select("code")
+    .eq("id", context.classId)
+    .maybeSingle();
+
+  revalidatePath("/scheduler");
+  return {
+    data: {
+      id: session.id,
+      class_id: context.classId,
+      class_code:
+        ((classRow as { code?: string | null } | null)?.code ?? "Unknown"),
+      day: normalizeDay(session.day as SessionDay),
+      start_time: session.start_time,
+      end_time: session.end_time,
+      type: normalizeType(session.type),
+    },
+  };
 };
 
 export const replaceClassFaculty = async (

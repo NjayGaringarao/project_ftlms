@@ -24,6 +24,8 @@ export type SchedulerMatrixSession = {
   day: SessionDay;
   start_time: string;
   end_time: string;
+  visual_source?: "schedule" | "merged_conflict";
+  visual_label?: string | null;
 };
 
 export type SchedulerMatricesResult = {
@@ -478,6 +480,118 @@ export const getSchedulerMapperMatrixByOnlineBlock = async (
       };
     })
     .filter((row): row is SchedulerMatrixSession => Boolean(row));
+};
+
+export const getMergedBlockConflictSessions = async (
+  academicTermId: string,
+  classId: string | null | undefined,
+  currentBlockId: string | null | undefined,
+): Promise<SchedulerMatrixSession[]> => {
+  if (!academicTermId?.trim() || !classId?.trim()) return [];
+
+  const supabase = await createClient();
+  const { data: classBlocks, error: classBlocksError } = await supabase
+    .from("course_utilization")
+    .select("block_id")
+    .eq("class_id", classId);
+
+  if (classBlocksError) {
+    console.error(
+      "lib.schedule.mapper.getMergedBlockConflictSessions.classBlocks ::",
+      classBlocksError,
+    );
+    return [];
+  }
+
+  const mergedBlockIds = Array.from(
+    new Set(
+      (classBlocks ?? [])
+        .map((row) => row.block_id as string)
+        .filter((id) => Boolean(id) && id !== currentBlockId),
+    ),
+  );
+
+  if (mergedBlockIds.length === 0) return [];
+
+  const { data: conflictClasses, error: conflictClassesError } = await supabase
+    .from("course_utilization")
+    .select("class_id, block:block_id(id, code, academic_term_id)")
+    .in("block_id", mergedBlockIds)
+    .eq("block.academic_term_id", academicTermId)
+    .neq("class_id", classId);
+
+  if (conflictClassesError) {
+    console.error(
+      "lib.schedule.mapper.getMergedBlockConflictSessions.conflictClasses ::",
+      conflictClassesError,
+    );
+    return [];
+  }
+
+  const classToBlock = new Map<string, string>();
+  (conflictClasses ?? []).forEach((row) => {
+    const block = first((row as { block?: unknown }).block) as
+      | { code?: string | null }
+      | null;
+    const conflictClassId = row.class_id as string | null;
+    if (conflictClassId && block?.code) {
+      classToBlock.set(conflictClassId, block.code);
+    }
+  });
+
+  const conflictClassIds = Array.from(classToBlock.keys());
+  if (conflictClassIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("session_class")
+    .select(
+      `
+      class_id,
+      class:class_id(code),
+      session:session_id(id, day, start_time, end_time)
+      `,
+    )
+    .in("class_id", conflictClassIds);
+
+  if (error) {
+    console.error(
+      "lib.schedule.mapper.getMergedBlockConflictSessions.sessions ::",
+      error,
+    );
+    return [];
+  }
+
+  const sessions: SchedulerMatrixSession[] = [];
+
+  (data ?? []).forEach((row) => {
+    const session = first((row as { session?: unknown }).session) as
+      | RawMatrixSessionRow
+      | null;
+    const cls = first((row as { class?: unknown }).class) as
+      | { code?: string }
+      | null;
+    const normalizedDay = normalizeSessionDay(session?.day ?? null);
+    if (!session?.id || !normalizedDay || !session.start_time || !session.end_time) {
+      return;
+    }
+    const conflictClassId = row.class_id as string;
+    const blockCode = classToBlock.get(conflictClassId);
+
+    sessions.push({
+      id: `merged-conflict-${session.id}`,
+      class_id: conflictClassId,
+      class_code: cls?.code ?? "Unknown",
+      day: normalizedDay,
+      start_time: session.start_time,
+      end_time: session.end_time,
+      visual_source: "merged_conflict",
+      visual_label: blockCode
+        ? `Merged block occupied: ${blockCode}`
+        : "Merged block occupied",
+    });
+  });
+
+  return sessions;
 };
 
 type RawRpcSession = {

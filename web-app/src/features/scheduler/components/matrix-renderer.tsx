@@ -122,13 +122,15 @@ const MatrixRenderer = ({
                     key={item.id}
                     className={cn(
                       "h-full flex items-center justify-center font-medium text-foreground",
-                      selectedSessionId && item.id === selectedSessionId
-                        ? "bg-yellow-100 ring-1 ring-orange-400"
+                      item.visual_source === "merged_conflict"
+                        ? "bg-gray-300 text-amber-950"
+                        : selectedSessionId && item.id === selectedSessionId
+                        ? `${highlightedClassId && item.class_id === highlightedClassId ? "bg-blue-100" : "bg-yellow-100"} ring-1 ring-orange-400`
                         : highlightedClassId && item.class_id === highlightedClassId
                           ? "bg-blue-100"
                           : "bg-yellow-100 cursor-pointer",
                     )}
-                    title={item.class_code}
+                    title={item.visual_label ?? item.class_code}
                   >
                     {item.class_code}
                   </span>

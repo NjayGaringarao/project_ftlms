@@ -29,9 +29,11 @@ export type SchedulerContextValue = {
   classRefreshKey: number;
   overlappingSessions: SessionSummary[];
   selectSession: (sessionId: string | null, classId?: string | null) => void;
+  startMoveSession: (session: SessionSummary) => void;
   clearSelection: () => void;
   facultyOptions: FacultyListItem[];
   refreshSessions: () => void;
+  movingSession: SessionSummary | null;
   errorMessage?: string | null;
 };
 
