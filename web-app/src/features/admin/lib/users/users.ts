@@ -15,6 +15,8 @@ const mapOverviewToListItem = (
   identity: overview.identity,
   campus: overview.campus,
   college: overview.college,
+  account_type: overview.accountType,
+  designations: overview.designations,
 });
 
 const mapOverviewToUserDetail = (
@@ -43,7 +45,7 @@ const mapOverviewToUserDetail = (
 });
 
 export const getUsersList = async (): Promise<UsersListItem[]> => {
-  const list = await getUserDataList();
+  const list = await getUserDataList({ includeDesignations: true });
   return list.map(mapOverviewToListItem);
 };
 

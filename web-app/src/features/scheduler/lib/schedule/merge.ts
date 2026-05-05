@@ -164,7 +164,7 @@ export const mergeBlocksForScheduler = async (
 ): Promise<{ data?: boolean; error?: string }> => {
   const result = await mergeClasses(targetClassId, sourceClassIds, academicTermId);
   if (result.error) return result;
-  revalidatePath(`/scheduler/${academicTermId}`);
+  revalidatePath("/scheduler");
   return { data: true };
 };
 
@@ -504,7 +504,7 @@ export const mergeCourseUtilizations = async (
   ]);
   if (unlinkResult.error) return { error: unlinkResult.error };
 
-  revalidatePath(`/scheduler/${input.academicTermId}`);
+  revalidatePath("/scheduler");
   return { data: true };
 };
 
@@ -565,7 +565,7 @@ export const unmergeCourseUtilization = async (
   ]);
   if (unlinkResult.error) return { error: unlinkResult.error };
 
-  revalidatePath(`/scheduler/${input.academicTermId}`);
+  revalidatePath("/scheduler");
   return { data: true };
 };
 
@@ -765,6 +765,6 @@ export const detachOtherCourseUtilizations = async (
   ]);
   if (unlinkResult.error) return { error: unlinkResult.error };
 
-  revalidatePath(`/scheduler/${input.academicTermId}`);
+  revalidatePath("/scheduler");
   return { data: true };
 };

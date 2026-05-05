@@ -48,8 +48,9 @@ const CollegePickerDialog = ({
       open={open}
       onOpenChange={onOpenChange}
       title="Select College"
-      description="Choose a college."
-      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+
+      contentClassName="flex max-h-[85vh] flex-col overflow-hidden p-4"
+      variant="floating-medium"
     >
       <div className="flex h-full flex-col gap-3 overflow-hidden">
         <Input

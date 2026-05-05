@@ -41,11 +41,12 @@ const FacultyIdPage = async ({ params }: FacultyIdPageProps) => {
     if (!row.primary_block_id || !row.primary_course_utilization_id) return acc;
 
     const query = new URLSearchParams();
+    query.set("academic_term_id", academic_term_id);
     query.set("blockId", row.primary_block_id);
     query.set("courseUtilizationId", row.primary_course_utilization_id);
     query.set("facultyId", faculty_id);
 
-    acc[row.class_id] = `/scheduler/${academic_term_id}?${query.toString()}`;
+    acc[row.class_id] = `/scheduler?${query.toString()}`;
     return acc;
   }, {});
 

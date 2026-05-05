@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { normalizeName } from "@/features/profile/lib/user-edit/validators";
+import FormStatusBanner from "@/features/admin/components/form-status-banner";
 
 type PersonalEditValues = {
   name: string;
@@ -84,21 +84,15 @@ const PersonalEditForm = ({
 
   return (
     <div className="space-y-4">
-      {showSuccess && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-          <CheckCircle className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-green-900">
-            Personal information saved successfully
-          </p>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-red-900">{error}</p>
-        </div>
-      )}
+      <FormStatusBanner
+        variant="compact"
+        success={
+          showSuccess
+            ? { title: "Personal information saved successfully" }
+            : undefined
+        }
+        error={error}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">

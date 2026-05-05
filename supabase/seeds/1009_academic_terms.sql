@@ -10,7 +10,7 @@ VALUES
     -- ==============================
     -- ACADEMIC YEAR 2023-2024
     -- ==============================
-    ('FIRST SEM - AY 2023-2024', (SELECT id FROM academic_year WHERE code = '2023-2024') , 'FIRST SEMESTER', '2023-08-21', '2023-12-23'),
+    ('FIRST SEM - AY 2023-2024', (SELECT id FROM academic_year WHERE code = '2023-2024') , 'FIRST SEMESTER', '2023-09-11', '2023-12-23'),
     ('SECOND SEM - AY 2023-2024', (SELECT id FROM academic_year WHERE code = '2023-2024'), 'SECOND SEMESTER', '2024-01-22', '2024-05-25'),
     ('MIDYEAR - AY 2023-2024', (SELECT id FROM academic_year WHERE code = '2023-2024'), 'MIDYEAR', '2024-06-10', '2024-07-20'), 
     

@@ -575,7 +575,7 @@ export async function createBlock(
     };
   }
 
-  revalidateBlocksPaths(input.academic_term_id, data.id);
+  revalidateBlocksPaths();
   return { data: { id: data.id } };
 }
 
@@ -646,12 +646,12 @@ export async function updateBlock(
     };
   }
 
-  revalidateBlocksPaths(input.academic_term_id, input.id);
+  revalidateBlocksPaths();
   if (
     existingBlock?.academic_term_id &&
     existingBlock.academic_term_id !== input.academic_term_id
   ) {
-    revalidateBlocksPaths(existingBlock.academic_term_id, input.id);
+    revalidateBlocksPaths();
   }
   return { data: true };
 }
@@ -662,17 +662,12 @@ export async function deleteBlock(
   if (!blockId?.trim()) return { error: "Block ID is required" };
 
   const supabase = await createClient();
-  const { data: existingBlock } = await supabase
-    .from("block")
-    .select("academic_term_id")
-    .eq("id", blockId)
-    .maybeSingle();
   const { error } = await supabase.from("block").delete().eq("id", blockId);
 
   if (error) {
     return { error: error.message };
   }
 
-  revalidateBlocksPaths(existingBlock?.academic_term_id);
+  revalidateBlocksPaths();
   return { data: true };
 }

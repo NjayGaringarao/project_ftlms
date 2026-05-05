@@ -7,6 +7,8 @@ export type UsersListItem = {
   identity: UserDataReadModel["identity"];
   campus: UserDataReadModel["campus"];
   college: UserDataReadModel["college"];
+  account_type: UserDataReadModel["accountType"];
+  designations: UserDataReadModel["designations"];
 };
 
 export type UserDetail = {

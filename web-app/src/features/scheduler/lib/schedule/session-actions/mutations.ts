@@ -83,7 +83,7 @@ export const createClassSession = async (
     return { error: mapMutationError(linkError) };
   }
 
-  revalidatePath(`/scheduler/${context.academicTermId}`);
+  revalidatePath("/scheduler");
   return { data: { id: session.id } };
 };
 
@@ -246,7 +246,7 @@ export const updateSessionRoom = async (
     return { error: mapMutationError(error) };
   }
 
-  revalidatePath(`/scheduler/${context.academicTermId}`);
+  revalidatePath("/scheduler");
   return { data: true };
 };
 
@@ -348,7 +348,7 @@ export const replaceClassFaculty = async (
     return { error: userClassError.message };
   }
 
-  revalidatePath(`/scheduler/${academicTermId}`);
+  revalidatePath("/scheduler");
   return { data: true };
 };
 
@@ -388,7 +388,7 @@ export const deleteClassSession = async (
   await unlinkFacultyIfNoSessions(supabase, existing.class_id as string);
 
   if (academicTermId) {
-    revalidatePath(`/scheduler/${academicTermId}`);
+    revalidatePath("/scheduler");
   }
 
   return { data: true };

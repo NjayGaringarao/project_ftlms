@@ -43,8 +43,8 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
-    label: "Academic T&Y",
-    href: "/academic-years",
+    label: "Academic Calendar",
+    href: "/academic-calendar",
     icon: "calendar-days",
     allowedRoles: ["Admin"],
   },

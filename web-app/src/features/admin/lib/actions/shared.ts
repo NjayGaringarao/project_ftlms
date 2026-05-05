@@ -70,21 +70,21 @@ export const revalidateCampusesPaths = (id?: string) => {
 };
 
 export const revalidateTermsPaths = (yearId?: string) => {
-  revalidatePath("/academic-years");
+  revalidatePath("/academic-calendar");
 
   if (yearId) {
-    revalidatePath(`/academic-years/${yearId}`);
-    revalidatePath(`/academic-years/${yearId}/edit`);
+    revalidatePath(`/academic-calendar/${yearId}`);
+    revalidatePath(`/academic-calendar/${yearId}/edit`);
   }
 };
 
 export const revalidateAcademicYearsPaths = (id?: string) => {
-  revalidatePath("/academic-years");
-  revalidatePath("/academic-years/create");
+  revalidatePath("/academic-calendar");
+  revalidatePath("/academic-calendar/create");
 
   if (id) {
-    revalidatePath(`/academic-years/${id}`);
-    revalidatePath(`/academic-years/${id}/edit`);
+    revalidatePath(`/academic-calendar/${id}`);
+    revalidatePath(`/academic-calendar/${id}/edit`);
   }
 };
 
@@ -148,15 +148,8 @@ export const revalidateMajorOfferingsPaths = (id?: string) => {
   }
 };
 
-export const revalidateBlocksPaths = (academicTermId?: string, id?: string) => {
-  const basePath = academicTermId ? `/blocks/${academicTermId}` : "/blocks";
-  revalidatePath(basePath);
-  revalidatePath(`${basePath}/create`);
-
-  if (id) {
-    revalidatePath(`${basePath}/${id}`);
-    revalidatePath(`${basePath}/${id}/edit`);
-  }
+export const revalidateBlocksPaths = () => {
+  revalidatePath("/blocks");
 };
 
 export const revalidateDepartmentProgramsPaths = (

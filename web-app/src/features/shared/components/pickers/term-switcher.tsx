@@ -20,6 +20,7 @@ type QueryRouteConfig = {
   mode: "query";
   paramName: string;
   defaultToFirst?: boolean;
+  resetParamsOnSelect?: string[];
 };
 
 type TermSwitcherRouteConfig = SegmentRouteConfig | QueryRouteConfig;
@@ -100,6 +101,9 @@ const TermSwitcher = ({
     if (routeConfig.mode === "query") {
       const next = new URLSearchParams(searchParams.toString());
       next.set(routeConfig.paramName, termId);
+      routeConfig.resetParamsOnSelect?.forEach((paramName) => {
+        next.delete(paramName);
+      });
       const queryString = next.toString();
       router.replace(queryString ? `${pathname}?${queryString}` : pathname);
       if (refreshOnSelect) {
@@ -157,7 +161,8 @@ const TermSwitcher = ({
         onOpenChange={setOpen}
         title={title}
         description={description}
-        contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+        variant="floating-medium"
+        contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
       >
         <div className="flex h-full flex-col gap-3 overflow-hidden">
           <Input

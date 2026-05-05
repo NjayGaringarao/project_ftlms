@@ -146,3 +146,10 @@ export const getMajorsByProgram = async (
     };
   }) as MajorListItem[];
 };
+
+export const getMajorsByCollege = async (
+  collegeId: string,
+): Promise<MajorListItem[]> => {
+  const majors = await getMajorsList();
+  return majors.filter((major) => major.program?.college_id === collegeId);
+};

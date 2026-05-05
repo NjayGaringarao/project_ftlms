@@ -64,9 +64,10 @@ const ProgramOfferingPickerDialog = ({
       onOpenChange={onOpenChange}
       title="Select Program Offering"
       description="Choose a program offering."
-      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+      contentClassName="flex max-h-[85vh] flex-col overflow-hidden"
+      variant="floating-medium"
     >
-      <div className="flex h-full flex-col gap-1 overflow-hidden">
+      <div className="flex h-full flex-col gap-1 overflow-hidden p-4">
         <Input
           className="text-base"
           placeholder="Search program offering"

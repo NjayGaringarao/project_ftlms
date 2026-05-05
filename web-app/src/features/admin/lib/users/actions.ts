@@ -336,16 +336,72 @@ type UpdateUserProfessionalInput = {
   employment_status?: string | null;
   campus_id?: string | null;
   college_id?: string | null;
-  designations?: Array<{
-    id?: string;
-    campus_id?: string | null;
-    job_title: string;
-    college_id?: string | null;
-    program_offering_id?: string | null;
-    room_id?: string | null;
-    load?: number | null;
-  }>;
+  designations?: UserDesignationInput[];
 };
+
+type UserDesignationInput = {
+  id?: string;
+  campus_id?: string | null;
+  job_title: string;
+  college_id?: string | null;
+  program_offering_id?: string | null;
+  room_id?: string | null;
+  load?: number | null;
+};
+
+const getDesignationValidationError = (designation: UserDesignationInput) => {
+  const normalizedJobTitle = normalizeJobTitleKey(designation.job_title);
+  const campusId = designation.campus_id?.trim() || null;
+  const collegeId = designation.college_id?.trim() || null;
+  const programOfferingId = designation.program_offering_id?.trim() || null;
+  const roomId = designation.room_id?.trim() || null;
+
+  if (!designation.job_title?.trim()) {
+    return "Each designation must include a job title.";
+  }
+
+  if (
+    designation.load !== undefined &&
+    designation.load !== null &&
+    designation.load < 0
+  ) {
+    return "Designation load must be a non-negative number.";
+  }
+
+  if (normalizedJobTitle === "program chairperson" && !programOfferingId) {
+    return "Program Chairperson designation requires a program offering.";
+  }
+
+  if (normalizedJobTitle === "college dean" && !collegeId) {
+    return "College Dean designation requires a college.";
+  }
+
+  if (normalizedJobTitle === "campus director" && !campusId) {
+    return "Campus Director designation requires a campus.";
+  }
+
+  if (isHigherUpsTitle(designation.job_title)) {
+    return null;
+  }
+
+  const hasContext = campusId || collegeId || programOfferingId || roomId;
+  return hasContext
+    ? null
+    : "Each designation must include at least one context: campus, college, program offering, or room (except Director for Instruction, Vice President for Academic Affairs, and Quality Assurance).";
+};
+
+const toDesignationInsert = (
+  userId: string,
+  designation: UserDesignationInput,
+) => ({
+  user_id: userId,
+  campus_id: designation.campus_id?.trim() || null,
+  job_title: designation.job_title.trim(),
+  college_id: designation.college_id?.trim() || null,
+  program_offering_id: designation.program_offering_id?.trim() || null,
+  room_id: designation.room_id?.trim() || null,
+  load: designation.load ?? null,
+});
 
 export async function updateUserProfessional(
   input: UpdateUserProfessionalInput,
@@ -408,94 +464,17 @@ export async function updateUserProfessional(
 
     // Insert new designations
     if (input.designations.length > 0) {
-      const invalidDesignation = input.designations.find((d) => {
-        const normalizedJobTitle = normalizeJobTitleKey(d.job_title);
-        const campusId = d.campus_id?.trim() || null;
-        const collegeId = d.college_id?.trim() || null;
-        const programOfferingId = d.program_offering_id?.trim() || null;
-        const roomId = d.room_id?.trim() || null;
+      const designationError = input.designations
+        .map(getDesignationValidationError)
+        .find(Boolean);
 
-        if (!d.job_title?.trim()) {
-          return true;
-        }
-
-        if (d.load !== undefined && d.load !== null && d.load < 0) {
-          return true;
-        }
-
-        if (normalizedJobTitle === "program chairperson") {
-          return !programOfferingId;
-        }
-
-        if (normalizedJobTitle === "college dean") {
-          return !collegeId;
-        }
-
-        if (normalizedJobTitle === "campus director") {
-          return !campusId;
-        }
-
-        if (isHigherUpsTitle(d.job_title)) {
-          return false;
-        }
-
-        const hasContext = campusId || collegeId || programOfferingId || roomId;
-        return !hasContext;
-      });
-
-      if (invalidDesignation) {
-        const normalizedJobTitle = normalizeJobTitleKey(
-          invalidDesignation.job_title,
-        );
-
-        if (!invalidDesignation.job_title?.trim()) {
-          return { error: "Each designation must include a job title." };
-        }
-
-        if (
-          invalidDesignation.load !== undefined &&
-          invalidDesignation.load !== null &&
-          invalidDesignation.load < 0
-        ) {
-          return {
-            error: "Designation load must be a non-negative number.",
-          };
-        }
-
-        if (normalizedJobTitle === "program chairperson") {
-          return {
-            error:
-              "Program Chairperson designation requires a program offering.",
-          };
-        }
-
-        if (normalizedJobTitle === "college dean") {
-          return {
-            error: "College Dean designation requires a college.",
-          };
-        }
-
-        if (normalizedJobTitle === "campus director") {
-          return {
-            error: "Campus Director designation requires a campus.",
-          };
-        }
-
-        return {
-          error:
-            "Each designation must include at least one context: campus, college, program offering, or room (except Director for Instruction, Vice President for Academic Affairs, and Quality Assurance).",
-        };
+      if (designationError) {
+        return { error: designationError };
       }
 
-      const designationsToInsert = input.designations.map((d) => ({
-        user_id: input.user_id,
-        campus_id: d.campus_id || null,
-        job_title: d.job_title.trim(),
-        college_id: d.college_id?.trim() || null,
-        program_offering_id: d.program_offering_id?.trim() || null,
-        room_id: d.room_id?.trim() || null,
-        load: d.load ?? null,
-      }));
+      const designationsToInsert = input.designations.map((designation) =>
+        toDesignationInsert(input.user_id, designation),
+      );
 
       const { error: insertError } = await adminClient
         .from("designation")
@@ -510,6 +489,62 @@ export async function updateUserProfessional(
   revalidatePath("/users");
   revalidatePath(`/users/${input.user_id}`);
   revalidatePath(`/users/${input.user_id}/edit`);
+  return { data: true };
+}
+
+type AddUserDesignationInput = {
+  user_id: string;
+  designation: UserDesignationInput;
+};
+
+export async function addUserDesignation(
+  input: AddUserDesignationInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.user_id?.trim()) return { error: "User ID is required" };
+
+  const designationError = getDesignationValidationError(input.designation);
+  if (designationError) return { error: designationError };
+
+  const adminClient = await createAdminClient();
+  const { error } = await adminClient
+    .from("designation")
+    .insert(toDesignationInsert(input.user_id, input.designation));
+
+  if (error) {
+    return { error: `Failed to add designation: ${error.message}` };
+  }
+
+  revalidatePath("/users");
+  revalidatePath(`/users/${input.user_id}`);
+  return { data: true };
+}
+
+type RemoveUserDesignationInput = {
+  user_id: string;
+  designation_id: string;
+};
+
+export async function removeUserDesignation(
+  input: RemoveUserDesignationInput,
+): Promise<{ data?: boolean; error?: string }> {
+  if (!input.user_id?.trim()) return { error: "User ID is required" };
+  if (!input.designation_id?.trim()) {
+    return { error: "Designation ID is required" };
+  }
+
+  const adminClient = await createAdminClient();
+  const { error } = await adminClient
+    .from("designation")
+    .delete()
+    .eq("id", input.designation_id)
+    .eq("user_id", input.user_id);
+
+  if (error) {
+    return { error: `Failed to remove designation: ${error.message}` };
+  }
+
+  revalidatePath("/users");
+  revalidatePath(`/users/${input.user_id}`);
   return { data: true };
 }
 
@@ -586,6 +621,10 @@ export async function deleteUser(
   } = await supabase.auth.getUser();
   const isDeletingCurrentUser = currentUser?.id === userId;
 
+  if (isDeletingCurrentUser) {
+    return { error: "You cannot delete your own administrator account." };
+  }
+
   // Delete auth user (cascade delete in database handles identity, designations, degrees)
   const { error } = await adminClient.auth.admin.deleteUser(userId);
 
@@ -593,11 +632,6 @@ export async function deleteUser(
     return { error: error.message };
   }
 
-  if (isDeletingCurrentUser) {
-    // Prevent stale JWT cookies after self-deletion.
-    await supabase.auth.signOut();
-  }
-
   revalidatePath("/users");
-  return { data: true, deletedCurrentUser: isDeletingCurrentUser };
+  return { data: true, deletedCurrentUser: false };
 }

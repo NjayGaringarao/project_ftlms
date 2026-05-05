@@ -29,10 +29,11 @@ export const FacultyClassTable = ({
     if (!firstBlock) return;
 
     const params = new URLSearchParams();
+    params.set("academic_term_id", academicTermId);
     params.set("blockId", firstBlock.block_id);
     params.set("courseUtilizationId", firstBlock.course_utilization_id);
     params.set("facultyId", facultyId);
-    router.push(`/scheduler/${academicTermId}?${params.toString()}`);
+    router.push(`/scheduler?${params.toString()}`);
   };
 
   const totalAtl = rows.reduce((sum, r) => sum + r.atl, 0);

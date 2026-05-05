@@ -15,6 +15,7 @@ export const getProgramOfferingsList = async (): Promise<
     .select(
       `
       id,
+      code,
       campus_id,
       program_id,
       campus:campus_id (id, code, name, address),
