@@ -121,6 +121,7 @@ const BlockCoursePlanner = ({
     }
 
     const params = new URLSearchParams();
+    params.set("academic_term_id", academicTermId);
     params.set("blockId", blockId);
     if (row.course_utilization_id) {
       params.set("courseUtilizationId", row.course_utilization_id);
@@ -129,7 +130,7 @@ const BlockCoursePlanner = ({
       params.set("facultyId", row.faculty_id);
     }
 
-    router.push(`/scheduler/${academicTermId}?${params.toString()}`);
+    router.push(`/scheduler?${params.toString()}`);
   };
 
   const totalUnits: number = useMemo(

@@ -342,8 +342,8 @@ const SelectCourseOfferingDialog = ({
         open={open}
         onOpenChange={handleOpenChange}
         title="Select Course Offering"
-        description="Choose a course offering to schedule."
-        contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+        contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
+        variant="floating-medium"
       >
         <div className="flex h-full flex-col gap-3 overflow-hidden">
           <div className="flex items-center gap-2">

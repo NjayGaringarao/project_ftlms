@@ -254,7 +254,7 @@ const FacultyPickerDialog = ({
   open,
   onOpenChange,
   title = "Select Faculty",
-  description = "Select faculty.",
+  description,
   items,
   selectedId,
   onSelect,
@@ -270,7 +270,8 @@ const FacultyPickerDialog = ({
       onOpenChange={onOpenChange}
       title={title}
       description={description}
-      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+      contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
+      variant="floating-medium"
     >
       {open ? (
         <FacultyPickerDialogBody

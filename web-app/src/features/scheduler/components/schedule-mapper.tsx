@@ -963,7 +963,6 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         open={showFacultyDialog}
         onOpenChange={setShowFacultyDialog}
         title="Select Faculty"
-        description="Select faculty to map. You can select block and room independently."
         items={faculty}
         selectedId={selectedFacultyId}
         onSelect={(facultyId) => {

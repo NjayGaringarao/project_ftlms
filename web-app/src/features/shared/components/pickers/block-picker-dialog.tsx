@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Blocks, ChevronDown, X } from "lucide-react";
+import { Blocks, ChevronDown, Sliders, X } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
@@ -10,6 +10,7 @@ import type { CourseLoadingBlockListItem } from "@/features/faculty-teaching-loa
 import { Button } from "@/components/ui/button";
 import CampusPickerDialog from "@/features/shared/components/pickers/campus-picker-dialog";
 import ProgramOfferingPickerDialog from "@/features/shared/components/pickers/program-offering-picker-dialog";
+import { cn } from "@/utils/style";
 
 type BlockPickerDialogProps = {
   open: boolean;
@@ -114,10 +115,21 @@ const BlockPickerDialogBody = ({
 
       if (!normalized) return true;
 
-      return (
-        item.code.toLowerCase().includes(normalized) ||
-        item.program_offering_code.toLowerCase().includes(normalized)
-      );
+      const searchable = [
+        item.code,
+        item.program_offering_code,
+        item.program_code,
+        item.program_name,
+        item.campus_code,
+        item.campus_name,
+        `year ${item.year_level}`,
+        `year level ${item.year_level}`,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(normalized);
     });
   }, [
     items,
@@ -141,11 +153,14 @@ const BlockPickerDialogBody = ({
     onClick: () => void,
     onClear?: () => void,
   ) => (
-    <div className="flex items-center flex-1">
+    <div className="flex min-w-0 flex-1 items-center">
       <Button
         variant="outline"
-        size="xs"
-        className={selectedLabel ? "font-semibold flex-1" : "flex-1"}
+        size="sm"
+        className={cn(
+          "min-w-0 flex-1 justify-between font-normal",
+          !selectedLabel && "text-foreground/70",
+        )}
         onClick={onClick}
       >
         <span className="truncate">{selectedLabel ?? label}</span>
@@ -154,8 +169,8 @@ const BlockPickerDialogBody = ({
       {selectedLabel && onClear ? (
         <Button
           variant="ghost"
-          size="xs"
-          className="w-8"
+          size="sm"
+          className="w-8 px-0"
           onClick={onClear}
           title={`Clear ${label}`}
         >
@@ -167,61 +182,63 @@ const BlockPickerDialogBody = ({
 
   return (
     <>
-      <div className="flex h-full flex-col gap-1 overflow-hidden">
+      <div className="flex h-full flex-col gap-3 overflow-hidden">
         <Input
           placeholder={searchPlaceholder}
           value={blockQuery}
           onChange={(event) => setBlockQuery(event.target.value)}
         />
 
-        <div className="flex items-center gap-2">
-          {renderFilterButton(
-            "All Campus",
-            selectedCampus ? selectedCampus.name.concat(" Campus") : null,
-            () => {
-              setCampusQuery("");
-              setCampusDialogOpen(true);
-            },
-            blockCampusFilter
-              ? () => {
-                  setBlockCampusFilter("");
-                  setBlockProgramOfferingFilter("");
-                }
-              : undefined,
-          )}
-          {blockCampusFilter
-            ? renderFilterButton(
-                "All Program Offering",
-                selectedProgramOffering
-                  ? `${selectedProgramOffering.program_code ?? ""} ${selectedProgramOffering.program_name ?? ""}`.trim() ||
-                      null
-                  : null,
-                () => {
-                  setProgramOfferingQuery("");
-                  setProgramOfferingDialogOpen(true);
-                },
-                blockProgramOfferingFilter
-                  ? () => setBlockProgramOfferingFilter("")
-                  : undefined,
-              )
-            : null}
-          <select
-            value={blockYearFilter}
-            onChange={(event) => setBlockYearFilter(event.target.value)}
-            className="rounded-md border bg-background px-2 h-6 text-sm"
-          >
-            <option value="">All Year Level</option>
-            {blockYearOptions.map((year) => (
-              <option key={year} value={year}>
-                Year Level {year}
-              </option>
-            ))}
-          </select>
+        <div className="flex min-w-0 items-center gap-2">
+          <Sliders className="h-4 min-w-4 text-foreground/60" />
+          <div className="flex min-w-0 flex-1 gap-2">
+            {renderFilterButton(
+              "All Campus",
+              selectedCampus ? selectedCampus.code || selectedCampus.name : null,
+              () => {
+                setCampusQuery("");
+                setCampusDialogOpen(true);
+              },
+              blockCampusFilter
+                ? () => {
+                    setBlockCampusFilter("");
+                    setBlockProgramOfferingFilter("");
+                  }
+                : undefined,
+            )}
+            {renderFilterButton(
+              "All Program",
+              selectedProgramOffering
+                ? selectedProgramOffering.program_code ||
+                    selectedProgramOffering.program_name ||
+                    null
+                : null,
+              () => {
+                setProgramOfferingQuery("");
+                setProgramOfferingDialogOpen(true);
+              },
+              blockProgramOfferingFilter
+                ? () => setBlockProgramOfferingFilter("")
+                : undefined,
+            )}
+            <select
+              value={blockYearFilter}
+              onChange={(event) => setBlockYearFilter(event.target.value)}
+              className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm text-foreground/70"
+            >
+              <option value="">All Year</option>
+              {blockYearOptions.map((year) => (
+                <option key={year} value={year}>
+                  Year {year}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="flex-1 grid grid-cols-2 gap-2 overflow-y-auto">
+        <div className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2">
           {filteredBlocks.length === 0 && (
-            <p className="p-4 text-center text-sm text-foreground/70">
+            <p className="p-4 text-center text-sm text-foreground/70 md:col-span-2">
               No blocks found.
             </p>
           )}
@@ -238,6 +255,7 @@ const BlockPickerDialogBody = ({
               isSelected={item.id === selectedId}
               onClick={() => onSelect(item.id)}
               icon={<Blocks className="h-5 w-5 text-background/80" />}
+              listType="modal"
               annotations={
                 renderAnnotation ? (
                   renderAnnotation(item)
@@ -296,7 +314,7 @@ const BlockPickerDialog = ({
   selectedId,
   onSelect,
   title = "Select Block",
-  description = "Select block to map. You can select faculty and room independently.",
+  description,
   searchPlaceholder = "Search blocks",
   renderSubtitle,
   renderAnnotation,
@@ -307,7 +325,8 @@ const BlockPickerDialog = ({
       onOpenChange={onOpenChange}
       title={title}
       description={description}
-      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden"
+      contentClassName="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden p-4"
+      variant="floating-medium"
     >
       {open ? (
         <BlockPickerDialogBody
