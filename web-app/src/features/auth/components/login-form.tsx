@@ -76,7 +76,11 @@ export function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error === "NEXT_REDIRECT" ? (
+                <p className="text-sm text-green-500">LOGGING YOU IN...</p>
+              ) :  (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
