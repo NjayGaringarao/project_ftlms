@@ -55,9 +55,9 @@ export const NAV_ITEMS: NavigationItem[] = [
     allowedRoles: ["Admin"],
   },
   {
-    label: "Blocks",
-    href: "/blocks",
-    icon: "blocks",
+    label: "Sections",
+    href: "/sections",
+    icon: "sections",
     allowedRoles: ["Program Chairperson", "College Dean"],
   },
   {

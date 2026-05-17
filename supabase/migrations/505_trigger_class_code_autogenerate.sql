@@ -32,14 +32,14 @@ begin
     return new;
   end if;
 
-  -- Fetch the academic term for this class via block.
+  -- Fetch the academic term for this class via section.
   select b.academic_term_id
     into v_term_id
-  from public.block b
-  where b.id = new.block_id;
+  from public.section b
+  where b.id = new.section_id;
 
   if v_term_id is null then
-    raise exception 'Invalid block_id: no matching block found';
+    raise exception 'Invalid section_id: no matching section found';
   end if;
 
   -- Serialize code assignment per term to avoid race conditions.
@@ -54,8 +54,8 @@ begin
   from public.class c
   join public.course_utilization cu
     on cu.class_id = c.id
-  join public.block b
-    on b.id = cu.block_id
+  join public.section b
+    on b.id = cu.section_id
   where b.academic_term_id = v_term_id
     and c.code ~ '^C[A-Z][0-9]{3}$';
 

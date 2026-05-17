@@ -10,8 +10,8 @@ import ProgramOfferingPickerDialog from "@/features/shared/components/pickers/pr
 import DangerZone from "@/features/admin/components/danger-zone";
 import DeleteConfirmModal from "@/features/admin/components/delete-confirm-modal";
 import FormStatusBanner from "@/features/admin/components/form-status-banner";
-import { createBlock, deleteBlock, updateBlock } from "@/features/admin/lib/actions";
-import type { BlockListItem } from "@/features/admin/lib/blocks";
+import { createSection, deleteSection, updateSection } from "@/features/admin/lib/actions";
+import type { SectionListItem } from "@/features/admin/lib/sections";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
 import {
   getMajorOfferingsByProgramOffering,
@@ -19,12 +19,12 @@ import {
 } from "@/features/admin/lib/major-offerings";
 import type { ProgramOfferingListItem } from "@/features/admin/lib/program-offerings";
 import type { TermListItem } from "@/features/admin/lib/terms";
-import BlockCoursePlanner from "@/features/blocks/components/block-course-planner";
+import SectionCoursePlanner from "@/features/sections/components/section-course-planner";
 import { formatAcademicTermLabel } from "@/utils/string";
 import { cn } from "@/utils/style";
 
-type BlockInformationProps = {
-  block: BlockListItem | null;
+type SectionInformationProps = {
+  section: SectionListItem | null;
   academicTerm: TermListItem;
   campuses: CampusListItem[];
   programOfferings: ProgramOfferingListItem[];
@@ -35,50 +35,53 @@ type BlockInformationProps = {
   onRefresh: () => void;
 };
 
-type BlockFormState = {
+type SectionFormState = {
   campusId: string;
   programOfferingId: string;
   majorOfferingId: string;
   yearLevel: string;
-  section: string;
+  name: string;
+  classification: "regular" | "irregular";
   studentCount: string;
 };
 
-const emptyForm: BlockFormState = {
+const emptyForm: SectionFormState = {
   campusId: "",
   programOfferingId: "",
   majorOfferingId: "",
   yearLevel: "",
-  section: "",
+  name: "",
+  classification: "regular",
   studentCount: "",
 };
 
 const toForm = (
-  block: BlockListItem | null,
+  section: SectionListItem | null,
   fixedCampusId?: string,
-): BlockFormState =>
-  block
+): SectionFormState =>
+  section
     ? {
         campusId:
           fixedCampusId ??
-          block.major_offering?.program_offering?.campus_id ??
+          section.major_offering?.program_offering?.campus_id ??
           "",
         programOfferingId:
-          block.major_offering?.program_offering_id ??
+          section.major_offering?.program_offering_id ??
           "",
-        majorOfferingId: block.major_offering_id,
-        yearLevel: block.year_level.toString(),
-        section: block.section,
+        majorOfferingId: section.major_offering_id,
+        yearLevel: section.year_level.toString(),
+        name: section.name,
+        classification: section.classification,
         studentCount:
-          block.student_count !== null ? block.student_count.toString() : "",
+          section.student_count !== null ? section.student_count.toString() : "",
       }
     : {
         ...emptyForm,
         campusId: fixedCampusId ?? "",
       };
 
-export function BlockInformation({
-  block,
+export function SectionInformation({
+  section,
   academicTerm,
   campuses,
   programOfferings,
@@ -87,10 +90,10 @@ export function BlockInformation({
   onCreated,
   onDeleted,
   onRefresh,
-}: BlockInformationProps) {
-  const initial = toForm(block, fixedCampusId);
-  const [formData, setFormData] = useState<BlockFormState>(initial);
-  const [savedFormData, setSavedFormData] = useState<BlockFormState>(initial);
+}: SectionInformationProps) {
+  const initial = toForm(section, fixedCampusId);
+  const [formData, setFormData] = useState<SectionFormState>(initial);
+  const [savedFormData, setSavedFormData] = useState<SectionFormState>(initial);
   const [majorOfferings, setMajorOfferings] = useState<MajorOfferingListItem[]>(
     [],
   );
@@ -164,7 +167,7 @@ export function BlockInformation({
     [formData, savedFormData],
   );
 
-  const setField = (field: keyof BlockFormState, value: string) => {
+  const setField = (field: keyof SectionFormState, value: string) => {
     setFormData((current) => ({ ...current, [field]: value }));
     setError("");
     setSuccess("");
@@ -181,7 +184,7 @@ export function BlockInformation({
     if (!Number.isFinite(parsedYearLevel) || parsedYearLevel <= 0) {
       return "Year level must be a positive number";
     }
-    if (!formData.section.trim()) return "Section is required";
+    if (!formData.name.trim()) return "Section is required";
     if (
       parsedStudentCount !== null &&
       (!Number.isFinite(parsedStudentCount) || parsedStudentCount < 0)
@@ -196,7 +199,8 @@ export function BlockInformation({
     major_offering_id: formData.majorOfferingId,
     academic_term_id: academicTerm.id,
     year_level: Number(formData.yearLevel),
-    section: formData.section,
+    name: formData.name,
+    classification: formData.classification,
     student_count: formData.studentCount.trim()
       ? Number(formData.studentCount)
       : null,
@@ -214,10 +218,10 @@ export function BlockInformation({
     setSuccess("");
 
     const result =
-      isCreating || !block
-        ? await createBlock(getPayload())
-        : await updateBlock({
-            id: block.id,
+      isCreating || !section
+        ? await createSection(getPayload())
+        : await updateSection({
+            id: section.id,
             ...getPayload(),
           });
 
@@ -230,11 +234,11 @@ export function BlockInformation({
 
     const nextSaved = {
       ...formData,
-      section: formData.section.trim().toUpperCase(),
+      name: formData.name.trim().toUpperCase(),
     };
     setFormData(nextSaved);
     setSavedFormData(nextSaved);
-    setSuccess(isCreating ? "Block created successfully" : "Block updated");
+    setSuccess(isCreating ? "Section created successfully" : "Section updated");
     onRefresh();
 
     if (
@@ -248,10 +252,10 @@ export function BlockInformation({
   };
 
   const handleDelete = async () => {
-    if (!block) return;
+    if (!section) return;
     setIsSaving(true);
     setError("");
-    const result = await deleteBlock(block.id);
+    const result = await deleteSection(section.id);
     setIsSaving(false);
 
     if (result.error) {
@@ -277,11 +281,11 @@ export function BlockInformation({
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div>
-            <Label className="text-xs" htmlFor="block-academic-term">
+            <Label className="text-xs" htmlFor="section-academic-term">
               Academic Term *
             </Label>
             <Button
-              id="block-academic-term"
+              id="section-academic-term"
               type="button"
               variant="outline"
               className="mt-1 w-full justify-between text-sm text-foreground/70"
@@ -294,11 +298,11 @@ export function BlockInformation({
           </div>
 
           <div>
-            <Label className="text-xs" htmlFor="block-campus">
+            <Label className="text-xs" htmlFor="section-campus">
               Campus *
             </Label>
             <Button
-              id="block-campus"
+              id="section-campus"
               type="button"
               variant="outline"
               className={cn(
@@ -316,11 +320,11 @@ export function BlockInformation({
           </div>
 
           <div>
-            <Label className="text-xs" htmlFor="block-program-offering">
+            <Label className="text-xs" htmlFor="section-program-offering">
               Program Offering *
             </Label>
             <Button
-              id="block-program-offering"
+              id="section-program-offering"
               type="button"
               variant="outline"
               className={cn(
@@ -340,11 +344,11 @@ export function BlockInformation({
           </div>
 
           <div>
-            <Label className="text-xs" htmlFor="block-major-offering">
+            <Label className="text-xs" htmlFor="section-major-offering">
               Major Offering *
             </Label>
             <select
-              id="block-major-offering"
+              id="section-major-offering"
               className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
               value={formData.majorOfferingId}
               onChange={(event) =>
@@ -372,11 +376,11 @@ export function BlockInformation({
           </div>
 
           <div>
-            <Label className="text-xs" htmlFor="block-year-level">
+            <Label className="text-xs" htmlFor="section-year-level">
               Year Level *
             </Label>
             <Input
-              id="block-year-level"
+              id="section-year-level"
               type="number"
               min="1"
               value={formData.yearLevel}
@@ -387,15 +391,15 @@ export function BlockInformation({
           </div>
 
           <div>
-            <Label className="text-xs" htmlFor="block-section">
-              Section *
+            <Label className="text-xs" htmlFor="section-name">
+              Name *
             </Label>
             <Input
-              id="block-section"
-              value={formData.section}
-              onChange={(event) => setField("section", event.target.value)}
+              id="section-name"
+              value={formData.name}
+              onChange={(event) => setField("name", event.target.value)}
               onBlur={(event) =>
-                setField("section", event.target.value.trim().toUpperCase())
+                setField("name", event.target.value.trim().toUpperCase())
               }
               className="mt-1"
               disabled={isSaving}
@@ -403,11 +407,32 @@ export function BlockInformation({
           </div>
 
           <div>
-            <Label className="text-xs" htmlFor="block-student-count">
+            <Label className="text-xs" htmlFor="section-classification">
+              Classification *
+            </Label>
+            <select
+              id="section-classification"
+              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground"
+              value={formData.classification}
+              onChange={(event) =>
+                setField(
+                  "classification",
+                  event.target.value as "regular" | "irregular",
+                )
+              }
+              disabled={isSaving}
+            >
+              <option value="regular">Regular</option>
+              <option value="irregular">Irregular</option>
+            </select>
+          </div>
+
+          <div>
+            <Label className="text-xs" htmlFor="section-student-count">
               Student Count
             </Label>
             <Input
-              id="block-student-count"
+              id="section-student-count"
               type="number"
               min="0"
               value={formData.studentCount}
@@ -440,36 +465,36 @@ export function BlockInformation({
                   ? "Creating..."
                   : "Saving..."
                 : isCreating
-                  ? "Create Block"
+                  ? "Create Section"
                   : "Save Changes"}
             </Button>
           </div>
         ) : null}
       </section>
 
-      {!isCreating && block ? (
+      {!isCreating && section ? (
         <>
-          <BlockCoursePlanner
-            blockId={block.id}
+          <SectionCoursePlanner
+            sectionId={section.id}
             academicTermId={academicTerm.id}
           />
 
           <DangerZone
-            description="Deleting this block removes the assigned section from related class links."
-            buttonLabel="Delete Block"
+            description="Deleting this section removes the assigned section from related class links."
+            buttonLabel="Delete Section"
             onDeleteClick={() => setShowDeleteConfirm(true)}
             disabled={isSaving}
           />
 
           <DeleteConfirmModal
             isOpen={showDeleteConfirm}
-            title="Delete Block"
+            title="Delete Section"
             description={
               <p>
-                Are you sure you want to delete <strong>{block.code}</strong>?
+                Are you sure you want to delete <strong>{section.code}</strong>?
               </p>
             }
-            confirmLabel="Delete Block"
+            confirmLabel="Delete Section"
             isDeleting={isSaving}
             error={error}
             onCancel={() => setShowDeleteConfirm(false)}

@@ -39,7 +39,7 @@ export const getClassContext = async (
       `
       id,
       user_class(user_id),
-      course_utilization(block_id, block:block_id(academic_term_id))
+      course_utilization(section_id, section:section_id(academic_term_id))
       `,
     )
     .eq("id", classId)
@@ -57,20 +57,20 @@ export const getClassContext = async (
   const userId = userClass?.user_id ?? null;
 
   const utilizations = (row.course_utilization ?? []) as Array<{
-    block_id?: string;
-    block?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
+    section_id?: string;
+    section?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
   }>;
-  const blockIds = Array.from(
+  const sectionIds = Array.from(
     new Set(
       utilizations
-        .map((item) => item.block_id)
+        .map((item) => item.section_id)
         .filter((item): item is string => Boolean(item)),
     ),
   );
 
   const firstUtil = utilizations[0];
-  const block = first(firstUtil?.block);
-  const academicTermId = block?.academic_term_id ?? "";
+  const section = first(firstUtil?.section);
+  const academicTermId = section?.academic_term_id ?? "";
 
   if (!academicTermId) {
     return null;
@@ -80,7 +80,7 @@ export const getClassContext = async (
     classId,
     userId,
     academicTermId,
-    blockIds,
+    sectionIds,
   };
 };
 
@@ -96,7 +96,7 @@ export const getSessionContext = async (
       session:session_id(day, start_time, end_time, room_id),
       class:class_id(
         user_class(user_id),
-        course_utilization(block_id, block:block_id(academic_term_id))
+        course_utilization(section_id, section:section_id(academic_term_id))
       )
       `,
     )
@@ -124,19 +124,19 @@ export const getSessionContext = async (
   const userClass = first(classRow?.user_class) as { user_id?: string } | null;
   const facultyId = userClass?.user_id ?? "";
   const utilizations = (classRow?.course_utilization ?? []) as Array<{
-    block_id?: string;
-    block?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
+    section_id?: string;
+    section?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
   }>;
-  const blockIds = Array.from(
+  const sectionIds = Array.from(
     new Set(
       utilizations
-        .map((item) => item.block_id)
+        .map((item) => item.section_id)
         .filter((item): item is string => Boolean(item)),
     ),
   );
   const firstUtil = utilizations[0];
-  const block = first(firstUtil?.block);
-  const academicTermId = block?.academic_term_id ?? "";
+  const section = first(firstUtil?.section);
+  const academicTermId = section?.academic_term_id ?? "";
 
   if (
     !session?.day ||
@@ -152,7 +152,7 @@ export const getSessionContext = async (
     classId: data.class_id as string,
     facultyId,
     academicTermId,
-    blockIds,
+    sectionIds,
     day: session.day,
     start_time: session.start_time,
     end_time: session.end_time,
@@ -166,14 +166,14 @@ export const getSessionWindowsByPredicate = async (
   options: {
     roomId?: string | null;
     facultyId?: string | null;
-    blockIds?: string[];
+    sectionIds?: string[];
     excludeClassId?: string;
     excludeSessionId?: string;
   },
 ): Promise<Array<{ start_time: string; end_time: string }>> => {
   const supabase = await createClient();
   let facultyClassIds: string[] | null = null;
-  let blockClassIds: string[] | null = null;
+  let sectionClassIds: string[] | null = null;
 
   if (options.facultyId) {
     const { data: facultyClasses, error: facultyClassError } = await supabase
@@ -196,30 +196,30 @@ export const getSessionWindowsByPredicate = async (
     if (facultyClassIds.length === 0) return [];
   }
 
-  if (options.blockIds && options.blockIds.length > 0) {
-    const { data: blockClasses, error: blockClassError } = await supabase
+  if (options.sectionIds && options.sectionIds.length > 0) {
+    const { data: sectionClasses, error: sectionClassError } = await supabase
       .from("course_utilization")
-      .select("class_id, block:block_id(academic_term_id)")
-      .in("block_id", options.blockIds)
-      .eq("block.academic_term_id", academicTermId);
+      .select("class_id, section:section_id(academic_term_id)")
+      .in("section_id", options.sectionIds)
+      .eq("section.academic_term_id", academicTermId);
 
-    if (blockClassError) {
+    if (sectionClassError) {
       console.error(
-        "lib.schedule.session-actions.getSessionWindowsByPredicate.block ::",
-        blockClassError,
+        "lib.schedule.session-actions.getSessionWindowsByPredicate.name ::",
+        sectionClassError,
       );
       return [];
     }
 
-    blockClassIds = Array.from(
+    sectionClassIds = Array.from(
       new Set(
-        (blockClasses ?? [])
+        (sectionClasses ?? [])
           .map((row) => row.class_id as string)
           .filter(Boolean),
       ),
     );
 
-    if (blockClassIds.length === 0) return [];
+    if (sectionClassIds.length === 0) return [];
   }
   let query = supabase
     .from("session_class")
@@ -229,12 +229,12 @@ export const getSessionWindowsByPredicate = async (
       class:class_id(
         id,
         user_class(user_id),
-        course_utilization(block_id, block:block_id(academic_term_id))
+        course_utilization(section_id, section:section_id(academic_term_id))
       )
       `,
     )
     .eq("session.day", day)
-    .eq("class.course_utilization.block.academic_term_id", academicTermId);
+    .eq("class.course_utilization.section.academic_term_id", academicTermId);
 
   if (options.roomId) {
     query = query.eq("session.room_id", options.roomId);
@@ -244,8 +244,8 @@ export const getSessionWindowsByPredicate = async (
     query = query.in("class_id", facultyClassIds);
   }
 
-  if (blockClassIds) {
-    query = query.in("class_id", blockClassIds);
+  if (sectionClassIds) {
+    query = query.in("class_id", sectionClassIds);
   }
 
   if (options.excludeClassId) {

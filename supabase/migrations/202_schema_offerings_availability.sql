@@ -1,7 +1,7 @@
 -- =========================================================
 -- CORE SCHEMA (PART 3/6): OFFERINGS AND AVAILABILITY
 -- Description:
---   Defines campus offerings and term-aware blocks.
+--   Defines campus offerings and term-aware sections.
 --   Depends on: programs and key entities.
 -- =========================================================
 
@@ -19,12 +19,13 @@ create table if not exists public.major_offering (
   major_id uuid not null references public.major(id) on delete cascade
 );
 
-create table if not exists public.block (
+create table if not exists public.section (
   id uuid primary key default gen_random_uuid(),
   code text not null,
   major_offering_id uuid not null references public.major_offering(id) on delete cascade,
   academic_term_id uuid not null references public.academic_term(id) on delete cascade,
   year_level integer not null,
-  section text not null,
+  name text not null,
+  classification text not null default 'regular',
   student_count integer
 );

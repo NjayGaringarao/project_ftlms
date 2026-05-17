@@ -55,11 +55,11 @@ export function AdminInlineListSection({
             onClick={() => onEdit?.(item.id)}
           >
             <span className="min-w-0">
-              <span className="block truncate text-sm font-medium">
+              <span className="section truncate text-sm font-medium">
                 {item.title}
               </span>
               {item.description ? (
-                <span className="block truncate text-xs text-foreground/70">
+                <span className="section truncate text-xs text-foreground/70">
                   {item.description}
                 </span>
               ) : null}

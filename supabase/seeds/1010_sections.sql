@@ -1,13 +1,21 @@
 -- =========================================================
--- Block seed data
+-- Section seed data
 -- =========================================================
 
-INSERT INTO public.block (major_offering_id, academic_term_id, year_level, section, student_count)
+INSERT INTO public.section (
+	major_offering_id,
+	academic_term_id,
+	year_level,
+	name,
+	classification,
+	student_count
+)
 SELECT
 	mo.id,
 	at.id,
 	src.year_level,
-	src.section,
+	src.name,
+	'regular',
 	src.student_count
 FROM (
 	VALUES
@@ -23,7 +31,7 @@ FROM (
 		('BSIS', 2, 'A', 33, 'SECOND SEM - AY 2025-2026'),
 		('BSIS', 3, 'A', 30, 'SECOND SEM - AY 2025-2026'),
 		('BSIS', 4, 'A', 28, 'SECOND SEM - AY 2025-2026')
-) AS src(program_code, year_level, section, student_count, term_code)
+) AS src(program_code, year_level, name, student_count, term_code)
 JOIN public.major_offering mo
 	ON mo.id = (
 		SELECT mo2.id
@@ -38,6 +46,6 @@ JOIN public.major_offering mo
 	)
 JOIN public.academic_term at
 	ON at.code = src.term_code
-ON CONFLICT (major_offering_id, academic_term_id, year_level, section)
+ON CONFLICT (major_offering_id, academic_term_id, year_level, name)
 DO UPDATE SET
 	student_count = EXCLUDED.student_count;

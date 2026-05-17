@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import type { ClassInsertInput, ClassUpdateInput } from "./types";
 import {
   ensureCourseUtilizations,
-  findConflictingBlockAssignments,
+  findConflictingSectionAssignments,
   validateClassInsertInput,
 } from "./action-helpers";
 
@@ -22,22 +22,22 @@ export async function createClass(
 
   const supabase = await createClient();
 
-  const conflictingBlocks = await findConflictingBlockAssignments(
+  const conflictingSections = await findConflictingSectionAssignments(
     supabase,
     input.course_id,
-    input.block_ids,
+    input.section_ids,
   );
-  if (conflictingBlocks.length > 0) {
+  if (conflictingSections.length > 0) {
     return {
       error:
-        "One or more selected blocks already have this course assigned to a different class",
+        "One or more selected sections already have this course assigned to a different class",
     };
   }
 
   const utilizations = await ensureCourseUtilizations(
     supabase,
     input.course_id,
-    input.block_ids,
+    input.section_ids,
   );
   if (utilizations.length === 0) {
     return { error: "Failed to create course utilization rows" };
@@ -85,35 +85,35 @@ export async function createClass(
   return { data: { id: newClass.id } };
 }
 
-export async function createBlockCourses(
+export async function createSectionCourses(
   input: Omit<ClassInsertInput, "faculty_id">,
 ): Promise<{ data?: boolean; error?: string }> {
   if (!input.course_id?.trim()) return { error: "Course is required" };
   if (!input.academic_term_id?.trim()) {
     return { error: "Academic term is required" };
   }
-  if (!input.block_ids || input.block_ids.length === 0) {
-    return { error: "At least one block is required" };
+  if (!input.section_ids || input.section_ids.length === 0) {
+    return { error: "At least one section is required" };
   }
 
   const supabase = await createClient();
 
-  const conflictingBlocks = await findConflictingBlockAssignments(
+  const conflictingSections = await findConflictingSectionAssignments(
     supabase,
     input.course_id,
-    input.block_ids,
+    input.section_ids,
   );
-  if (conflictingBlocks.length > 0) {
+  if (conflictingSections.length > 0) {
     return {
       error:
-        "One or more selected blocks already have this course assigned to a class",
+        "One or more selected sections already have this course assigned to a class",
     };
   }
 
   const utilizations = await ensureCourseUtilizations(
     supabase,
     input.course_id,
-    input.block_ids,
+    input.section_ids,
   );
 
   if (utilizations.length === 0) {
@@ -133,7 +133,7 @@ export async function updateClass(
 
   const { data: existingUtilizations, error: utilError } = await supabase
     .from("course_utilization")
-    .select("id, block_id, course_id")
+    .select("id, section_id, course_id")
     .eq("class_id", input.class_id);
 
   if (utilError) {
@@ -150,31 +150,31 @@ export async function updateClass(
     return { error: "Course is required" };
   }
 
-  const existingBlocks = (existingUtilizations ?? []).filter(
+  const existingSections = (existingUtilizations ?? []).filter(
     (row) => row.course_id === nextCourseId,
   );
 
-  const desiredBlockIds =
-    input.block_ids ?? existingBlocks.map((row) => row.block_id);
+  const desiredSectionIds =
+    input.section_ids ?? existingSections.map((row) => row.section_id);
 
-  if (desiredBlockIds.length === 0) {
-    return { error: "At least one block is required" };
+  if (desiredSectionIds.length === 0) {
+    return { error: "At least one section is required" };
   }
 
-  const conflicts = await findConflictingBlockAssignments(
+  const conflicts = await findConflictingSectionAssignments(
     supabase,
     nextCourseId,
-    desiredBlockIds,
+    desiredSectionIds,
     input.class_id,
   );
   if (conflicts.length > 0) {
     return {
       error:
-        "One or more selected blocks already have this course assigned to a different class",
+        "One or more selected sections already have this course assigned to a different class",
     };
   }
 
-  await ensureCourseUtilizations(supabase, nextCourseId, desiredBlockIds);
+  await ensureCourseUtilizations(supabase, nextCourseId, desiredSectionIds);
 
   const { error: clearCourseError } = await supabase
     .from("course_utilization")
@@ -187,22 +187,22 @@ export async function updateClass(
     return { error: clearCourseError.message };
   }
 
-  const { error: clearBlockError } = await supabase
+  const { error: clearSectionError } = await supabase
     .from("course_utilization")
     .update({ class_id: null })
     .eq("class_id", input.class_id)
-    .not("block_id", "in", `(${desiredBlockIds.map((id) => `"${id}"`).join(",")})`);
+    .not("section_id", "in", `(${desiredSectionIds.map((id) => `"${id}"`).join(",")})`);
 
-  if (clearBlockError) {
-    console.error("lib.course-loading.updateClass.clearBlocks ::", clearBlockError);
-    return { error: clearBlockError.message };
+  if (clearSectionError) {
+    console.error("lib.course-loading.updateClass.clearSections ::", clearSectionError);
+    return { error: clearSectionError.message };
   }
 
   const { error: assignError } = await supabase
     .from("course_utilization")
     .update({ class_id: input.class_id })
     .eq("course_id", nextCourseId)
-    .in("block_id", desiredBlockIds);
+    .in("section_id", desiredSectionIds);
 
   if (assignError) {
     console.error("lib.course-loading.updateClass.assign ::", assignError);
@@ -258,7 +258,7 @@ export async function mergeClasses(
       user_class ( user_id ),
       course_utilization (
         course_id,
-        block:block_id (
+        section:section_id (
           major_offering:major_offering_id (
             program_offering:program_offering_id (
               campus_id
@@ -290,10 +290,10 @@ export async function mergeClasses(
       new Set(utilizations.map((row: { course_id?: string }) => row.course_id).filter(Boolean)),
     );
     const firstUtil = utilizations[0];
-    const block = Array.isArray(firstUtil?.block)
-      ? firstUtil?.block[0]
-      : firstUtil?.block;
-    const majorOffering = (block as { major_offering?: unknown })?.major_offering;
+    const section = Array.isArray(firstUtil?.section)
+      ? firstUtil?.section[0]
+      : firstUtil?.section;
+    const majorOffering = (section as { major_offering?: unknown })?.major_offering;
     const majorOfferingNorm = Array.isArray(majorOffering)
       ? majorOffering[0]
       : majorOffering;

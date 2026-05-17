@@ -26,16 +26,16 @@ begin
     return new;
   end if;
 
-  -- Fetch the academic term for this session via class -> course_utilization -> block.
+  -- Fetch the academic term for this session via class -> course_utilization -> section.
   select b.academic_term_id
     into v_term_id
   from public.course_utilization cu
-  join public.block b on b.id = cu.block_id
+  join public.section b on b.id = cu.section_id
   where cu.class_id = new.class_id
   limit 1;
 
   if v_term_id is null then
-    raise exception 'Invalid class_id: no matching class/block found';
+    raise exception 'Invalid class_id: no matching class/section found';
   end if;
 
   -- Serialize code assignment per term to avoid race conditions.
@@ -52,8 +52,8 @@ begin
     on sc.session_id = ses.id
   join public.course_utilization cu
     on cu.class_id = sc.class_id
-  join public.block b
-    on b.id = cu.block_id
+  join public.section b
+    on b.id = cu.section_id
   where b.academic_term_id = v_term_id
     and ses.code ~ '^S[A-Z][0-9]{3}$';
 

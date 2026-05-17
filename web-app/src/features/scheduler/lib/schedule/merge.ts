@@ -7,7 +7,7 @@ import { mergeClasses } from "@/features/faculty-teaching-load/lib/course-loadin
 
 export type SchedulerMergeCandidate = {
   class_id: string;
-  block_codes: string[];
+  section_codes: string[];
   student_count: number;
 };
 
@@ -16,7 +16,7 @@ type RawClassMergeRow = {
   user_class?: Array<{ user_id?: string | null }> | null;
   course_utilization?: Array<{
     course_id?: string | null;
-    block?: {
+    section?: {
       id?: string | null;
       code?: string | null;
       student_count?: number | null;
@@ -50,12 +50,12 @@ const normalizeClass = (row: RawClassMergeRow) => {
     new Set(utilizations.map((util) => util.course_id).filter(Boolean)),
   );
   const firstUtil = utilizations[0];
-  const block = first(firstUtil?.block);
-  const majorOffering = first(block?.major_offering);
+  const section = first(firstUtil?.section);
+  const majorOffering = first(section?.major_offering);
   const programOffering = first(majorOffering?.program_offering);
 
-  const blocks = utilizations
-    .map((util) => first(util.block))
+  const sections = utilizations
+    .map((util) => first(util.section))
     .filter((item): item is { id?: string | null; code?: string | null; student_count?: number | null } =>
       Boolean(item?.id),
     );
@@ -66,7 +66,7 @@ const normalizeClass = (row: RawClassMergeRow) => {
     course_id: courseIds[0] ?? null,
     has_multiple_courses: courseIds.length > 1,
     campus_id: programOffering?.campus_id ?? null,
-    blocks,
+    sections,
   };
 };
 
@@ -85,7 +85,7 @@ export const getMergeCandidatesForClass = async (
       user_class(user_id),
       course_utilization(
         course_id,
-        block:block_id(
+        section:section_id(
           id,
           code,
           student_count,
@@ -118,7 +118,7 @@ export const getMergeCandidatesForClass = async (
       user_class(user_id),
       course_utilization(
         course_id,
-        block:block_id(
+        section:section_id(
           id,
           code,
           student_count,
@@ -130,7 +130,7 @@ export const getMergeCandidatesForClass = async (
       )
       `,
     )
-    .eq("course_utilization.block.academic_term_id", academicTermId);
+    .eq("course_utilization.section.academic_term_id", academicTermId);
 
   if (error) {
     console.error("lib.schedule.merge.getMergeCandidatesForClass.list ::", error);
@@ -149,15 +149,15 @@ export const getMergeCandidatesForClass = async (
     )
     .map((row) => ({
       class_id: row.id,
-      block_codes: row.blocks.map((block) => block.code ?? "Unknown"),
-      student_count: row.blocks.reduce(
-        (sum, block) => sum + (block.student_count ?? 0),
+      section_codes: row.sections.map((section) => section.code ?? "Unknown"),
+      student_count: row.sections.reduce(
+        (sum, section) => sum + (section.student_count ?? 0),
         0,
       ),
     }));
 };
 
-export const mergeBlocksForScheduler = async (
+export const mergeSectionsForScheduler = async (
   targetClassId: string,
   sourceClassIds: string[],
   academicTermId: string,
@@ -170,8 +170,8 @@ export const mergeBlocksForScheduler = async (
 
 export type CourseUtilizationMergeCandidate = {
   utilization_id: string;
-  block_id: string;
-  block_code: string;
+  section_id: string;
+  section_code: string;
   student_count: number;
   class_id: string;
   faculty_id: string | null;
@@ -180,8 +180,8 @@ export type CourseUtilizationMergeCandidate = {
 
 export type CourseUtilizationUnmergeCandidate = {
   utilization_id: string;
-  block_id: string;
-  block_code: string;
+  section_id: string;
+  section_code: string;
   student_count: number;
   class_id: string;
 };
@@ -190,7 +190,7 @@ type RawUtilizationMergeRow = {
   id: string;
   course_id?: string | null;
   class_id?: string | null;
-  block?: {
+  section?: {
     id?: string | null;
     code?: string | null;
     student_count?: number | null;
@@ -225,8 +225,8 @@ type RawUtilizationMergeRow = {
 };
 
 const normalizeCampusId = (row: RawUtilizationMergeRow): string | null => {
-  const block = first(row.block);
-  const majorOffering = first(block?.major_offering);
+  const section = first(row.section);
+  const majorOffering = first(section?.major_offering);
   const programOffering = first(majorOffering?.program_offering);
   return programOffering?.campus_id ?? null;
 };
@@ -245,7 +245,7 @@ export const getMergeCandidatesForCourseUtilization = async (
       id,
       course_id,
       class_id,
-      block:block_id(
+      section:section_id(
         id,
         code,
         student_count,
@@ -281,7 +281,7 @@ export const getMergeCandidatesForCourseUtilization = async (
       id,
       course_id,
       class_id,
-      block:block_id(
+      section:section_id(
         id,
         code,
         student_count,
@@ -299,7 +299,7 @@ export const getMergeCandidatesForCourseUtilization = async (
       `,
     )
     .eq("course_id", courseId)
-    .eq("block.academic_term_id", academicTermId);
+    .eq("section.academic_term_id", academicTermId);
 
   if (error) {
     console.error(
@@ -315,16 +315,16 @@ export const getMergeCandidatesForCourseUtilization = async (
     .filter((row) => normalizeCampusId(row) === campusId)
     .filter((row) => Boolean(row.class_id))
     .map((row) => {
-      const block = first(row.block);
+      const section = first(row.section);
       const cls = first(row.class);
       const userClass = (cls?.user_class ?? [])[0];
       const faculty = first(userClass?.user);
 
       return {
         utilization_id: row.id,
-        block_id: block?.id ?? "",
-        block_code: block?.code ?? "Unknown",
-        student_count: Number(block?.student_count ?? 0),
+        section_id: section?.id ?? "",
+        section_code: section?.code ?? "Unknown",
+        student_count: Number(section?.student_count ?? 0),
         class_id: row.class_id ?? "",
         faculty_id: faculty?.id ?? null,
         faculty_name: first(faculty?.identity)?.name ?? null,
@@ -583,7 +583,7 @@ export const getUnmergeCandidatesForCourseUtilization = async (
       id,
       course_id,
       class_id,
-      block:block_id(
+      section:section_id(
         id,
         code,
         student_count,
@@ -615,7 +615,7 @@ export const getUnmergeCandidatesForCourseUtilization = async (
       id,
       class_id,
       course_id,
-      block:block_id(
+      section:section_id(
         id,
         code,
         student_count,
@@ -625,7 +625,7 @@ export const getUnmergeCandidatesForCourseUtilization = async (
     )
     .eq("class_id", classId)
     .eq("course_id", courseId)
-    .eq("block.academic_term_id", academicTermId);
+    .eq("section.academic_term_id", academicTermId);
 
   if (error) {
     console.error(
@@ -638,12 +638,12 @@ export const getUnmergeCandidatesForCourseUtilization = async (
   return (data as RawUtilizationMergeRow[])
     .filter((row) => row.id !== courseUtilizationId)
     .map((row) => {
-      const block = first(row.block);
+      const section = first(row.section);
       return {
         utilization_id: row.id,
-        block_id: block?.id ?? "",
-        block_code: block?.code ?? "Unknown",
-        student_count: Number(block?.student_count ?? 0),
+        section_id: section?.id ?? "",
+        section_code: section?.code ?? "Unknown",
+        student_count: Number(section?.student_count ?? 0),
         class_id: row.class_id ?? "",
       };
     });
@@ -654,14 +654,14 @@ export const detachOtherCourseUtilizations = async (
     courseUtilizationId: string;
     otherUtilizationIds: string[];
     academicTermId: string;
-    mode: "per_block" | "single_class";
+    mode: "per_section" | "single_class";
   },
 ): Promise<{ data?: boolean; error?: string }> => {
   if (!input.courseUtilizationId?.trim()) {
     return { error: "Course utilization is required" };
   }
   if (!input.otherUtilizationIds || input.otherUtilizationIds.length === 0) {
-    return { error: "Select at least one block to detach" };
+    return { error: "Select at least one section to detach" };
   }
 
   const supabase = await createClient();
@@ -698,7 +698,7 @@ export const detachOtherCourseUtilizations = async (
   );
 
   if (invalidRow) {
-    return { error: "Selected blocks must belong to the same class and course" };
+    return { error: "Selected sections must belong to the same class and course" };
   }
 
   const newClassIds: string[] = [];
@@ -736,7 +736,7 @@ export const detachOtherCourseUtilizations = async (
 
       if (newClassErr || !newClass) {
         console.error(
-          "lib.schedule.merge.detachOther.createClassPerBlock ::",
+          "lib.schedule.merge.detachOther.createClassPerSection ::",
           newClassErr,
         );
         return { error: newClassErr?.message ?? "Failed to create class" };
@@ -750,7 +750,7 @@ export const detachOtherCourseUtilizations = async (
         .eq("id", utilizationId);
 
       if (moveErr) {
-        console.error("lib.schedule.merge.detachOther.movePerBlock ::", moveErr);
+        console.error("lib.schedule.merge.detachOther.movePerSection ::", moveErr);
         return { error: moveErr.message };
       }
     }

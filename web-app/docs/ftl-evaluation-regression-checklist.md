@@ -82,7 +82,7 @@ Use this checklist after changes in:
 
 ## University Load (DI/VPAA)
 - [ ] Campus list search works and selecting a campus opens `/university-load/[campus_id]`.
-- [ ] Workspace reuses the same insights/data blocks as campus proposal control.
+- [ ] Workspace reuses the same insights/data sections as campus proposal control.
 - [ ] DI/VPAA ladder rendering is correct:
   - no campus proposal -> DI/VPAA cards hidden
   - invalidated campus proposal -> DI/VPAA cards hidden

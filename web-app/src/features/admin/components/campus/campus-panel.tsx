@@ -302,7 +302,7 @@ export function CampusPanel({
           </ResourceSection>
 
           <DangerZone
-            description="Deleting this campus removes related rooms, program offerings, blocks, and linked designations."
+            description="Deleting this campus removes related rooms, program offerings, sections, and linked designations."
             buttonLabel="Delete Campus"
             onDeleteClick={() => setShowDeleteConfirm(true)}
             disabled={isSaving}

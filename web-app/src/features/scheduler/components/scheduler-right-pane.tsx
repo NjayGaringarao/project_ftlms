@@ -20,6 +20,7 @@ import {
 } from "@/features/scheduler/lib/schedule/session-actions";
 import { dayLabel, toDisplayTime, toMinutes } from "@/features/scheduler/lib/schedule/utils";
 import { useScheduler } from "./scheduler-context";
+import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
 
 const SchedulerRightPane = () => {
   const {
@@ -193,8 +194,11 @@ const SchedulerRightPane = () => {
       remaining: `Remaining ${sessionType}: ${numberToHourDuration(expectedHours)}`,
       faculty: selectedOffering.faculty_name ?? "Unassigned",
       merged:
-        selectedOffering.merged_blocks.length > 0
-          ? selectedOffering.merged_blocks.map((block) => block.code).join(", ")
+        selectedOffering.merged_sections.length > 0
+          ? formatMergedSectionLabels(
+              selectedOffering.merged_sections,
+              (section) => section.code,
+            )
           : "None",
     };
   }, [selectedOffering, sessionType]);
@@ -373,7 +377,7 @@ const SchedulerRightPane = () => {
           ) : (
             <div className="h-full flex items-center justify-center">
               <p className="text-base text-foreground p-4 border border-dashed ">
-                Select block and course on the Block column
+                Select section and course on the Section column
               </p>
             </div>
           )}
@@ -456,9 +460,9 @@ const SchedulerRightPane = () => {
                   </div>
 
                   <div>
-                    <p>Block(s)</p>
+                    <p>Section(s)</p>
                     <span className="text-sm text-foreground ">
-                      {selectedSession.block_codes.join(", ")}
+                      {selectedSession.section_label}
                     </span>
                   </div>
 

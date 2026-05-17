@@ -204,7 +204,7 @@ const RoomPickerDialog = ({
   selectedId,
   onSelect,
   title = "Select Room",
-  description = "Select room to map. You can select faculty and block independently.",
+  description = "Select room to map. You can select faculty and section independently.",
   searchPlaceholder = "Search rooms",
   allowOnline = false,
   onlineLabel = "Online / No Room",

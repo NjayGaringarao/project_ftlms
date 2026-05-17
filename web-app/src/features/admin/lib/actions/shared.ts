@@ -148,8 +148,8 @@ export const revalidateMajorOfferingsPaths = (id?: string) => {
   }
 };
 
-export const revalidateBlocksPaths = () => {
-  revalidatePath("/blocks");
+export const revalidateSectionsPaths = () => {
+  revalidatePath("/sections");
 };
 
 export const revalidateDepartmentProgramsPaths = (

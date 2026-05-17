@@ -2,39 +2,39 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Blocks, ChevronDown, Sliders, User, X } from "lucide-react";
+import { Blocks as Sections, ChevronDown, Sliders, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ManagementContainer } from "@/components/layout/management-container";
 import CampusPickerDialog from "@/features/shared/components/pickers/campus-picker-dialog";
 import ProgramOfferingPickerDialog from "@/features/shared/components/pickers/program-offering-picker-dialog";
 import { AdminManagementList } from "@/features/admin/components/management/admin-management-list";
 import { ManagementPlaceholder } from "@/features/admin/components/management/management-placeholder";
-import type { BlockListItem } from "@/features/admin/lib/blocks";
+import type { SectionListItem } from "@/features/admin/lib/sections";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
 import type { ProgramOfferingListItem } from "@/features/admin/lib/program-offerings";
 import type { TermListItem } from "@/features/admin/lib/terms";
 import { cn } from "@/utils/style";
-import { BlockInformation } from "./block-information";
+import { SectionInformation } from "./section-information";
 
-type BlocksManagementProps = {
-  blocks: BlockListItem[];
+type SectionsManagementProps = {
+  sections: SectionListItem[];
   campuses: CampusListItem[];
   programOfferings: ProgramOfferingListItem[];
   academicTerm: TermListItem;
-  selectedBlock: BlockListItem | null;
+  selectedSection: SectionListItem | null;
   selectedId: string | null;
   isCreating: boolean;
 };
 
-export function BlocksManagement({
-  blocks,
+export function SectionsManagement({
+  sections,
   campuses,
   programOfferings,
   academicTerm,
-  selectedBlock,
+  selectedSection,
   selectedId,
   isCreating,
-}: BlocksManagementProps) {
+}: SectionsManagementProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -120,38 +120,38 @@ export function BlocksManagement({
     [programOfferingsForCampus],
   );
 
-  const filteredBlocks = useMemo(() => {
+  const filteredSections = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return blocks.filter((block) => {
-      if (block.academic_term_id !== academicTerm.id) return false;
+    return sections.filter((section) => {
+      if (section.academic_term_id !== academicTerm.id) return false;
 
-      const blockCampusId =
-        block.major_offering?.program_offering?.campus_id ?? "";
-      if (campusId && blockCampusId !== campusId) return false;
+      const sectionCampusId =
+        section.major_offering?.program_offering?.campus_id ?? "";
+      if (campusId && sectionCampusId !== campusId) return false;
 
-      const blockProgramOfferingId =
-        block.major_offering?.program_offering?.id ?? "";
-      if (programOfferingId && blockProgramOfferingId !== programOfferingId) {
+      const sectionProgramOfferingId =
+        section.major_offering?.program_offering?.id ?? "";
+      if (programOfferingId && sectionProgramOfferingId !== programOfferingId) {
         return false;
       }
 
       if (!q) return true;
 
       const searchable = [
-        block.code,
-        block.section,
-        `year ${block.year_level}`,
-        block.major_offering?.major?.name ?? "",
-        block.major_offering?.program_offering?.campus?.name ?? "",
-        block.major_offering?.program_offering?.program?.name ?? "",
+        section.code,
+        section.name,
+        `year ${section.year_level}`,
+        section.major_offering?.major?.name ?? "",
+        section.major_offering?.program_offering?.campus?.name ?? "",
+        section.major_offering?.program_offering?.program?.name ?? "",
       ]
         .join(" ")
         .toLowerCase();
 
       return searchable.includes(q);
     });
-  }, [academicTerm.id, blocks, campusId, programOfferingId, query]);
+  }, [academicTerm.id, sections, campusId, programOfferingId, query]);
 
   const setCampus = (nextCampusId: string) => {
     navigateWithQuery((next) => {
@@ -224,9 +224,9 @@ export function BlocksManagement({
             query={query}
             onQueryChange={setQuery}
             selectedId={selectedId}
-            createLabel="Create Block"
-            searchPlaceholder="Search blocks"
-            emptyMessage="No blocks match your search."
+            createLabel="Create Section"
+            searchPlaceholder="Search sections"
+            emptyMessage="No sections match your search."
             onCreate={openCreate}
             onSelect={openItem}
             filters={
@@ -261,17 +261,17 @@ export function BlocksManagement({
                 </div>
               </div>
             }
-            items={filteredBlocks.map((block) => ({
-              id: block.id,
-              title: block.code,
+            items={filteredSections.map((section) => ({
+              id: section.id,
+              title: section.code,
               subtitle: [
-                `${block.major_offering?.program_offering?.campus?.name ?? "Unknown"} Campus`,
+                `${section.major_offering?.program_offering?.campus?.name ?? "Unknown"} Campus`,
               ],
-              icon: <Blocks className="h-5 w-5" />,
+              icon: <Sections className="h-5 w-5" />,
               annotations: (
                 <span className="flex items-center gap-1 rounded-xl bg-foreground/10 px-2 py-1 text-xs text-foreground">
                   <User className="h-3 w-3" />
-                  {block.student_count ?? 0}
+                  {section.student_count ?? 0}
                 </span>
               ),
             }))}
@@ -280,17 +280,17 @@ export function BlocksManagement({
         panel={{
           open: isCreating || Boolean(selectedId),
           title: isCreating
-            ? "Create Block"
-            : (selectedBlock?.code ?? "Block not found"),
+            ? "Create Section"
+            : (selectedSection?.code ?? "Section not found"),
           
           content: (
-            <BlockInformation
+            <SectionInformation
               key={
                 isCreating
                   ? `new-${campusId || "all"}`
-                  : (selectedBlock?.id ?? "missing")
+                  : (selectedSection?.id ?? "missing")
               }
-              block={selectedBlock}
+              section={selectedSection}
               academicTerm={academicTerm}
               campuses={campuses}
               programOfferings={programOfferings}
@@ -307,8 +307,8 @@ export function BlocksManagement({
         }}
         panelPlaceholder={
           <ManagementPlaceholder
-            title="Select a block"
-            description="Block details and assigned courses will appear here."
+            title="Select a section"
+            description="Section details and assigned courses will appear here."
           />
         }
       />

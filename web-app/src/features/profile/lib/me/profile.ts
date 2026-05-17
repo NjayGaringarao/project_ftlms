@@ -391,9 +391,9 @@ export const getCurrentTermTeachingLoadByUserId = async (
         id,
         course_utilization(
           course:course_id(code, title, lecture_unit, laboratory_unit),
-          block:block_id(
+          section:section_id(
             year_level,
-            section,
+  name,
             major_offering:major_offering_id(
               program_offering:program_offering_id(
                 campus:campus_id(name)
@@ -405,7 +405,7 @@ export const getCurrentTermTeachingLoadByUserId = async (
       `,
     )
     .eq("user_id", userId)
-    .eq("class.course_utilization.block.academic_term_id", term.id);
+    .eq("class.course_utilization.section.academic_term_id", term.id);
 
   if (classError) {
     console.error(
@@ -432,28 +432,28 @@ export const getCurrentTermTeachingLoadByUserId = async (
       const lectureHour = Number(course?.lecture_unit ?? 0);
       const laboratoryHour = Number(course?.laboratory_unit ?? 0);
 
-      const blocks = utilizations.flatMap((item) => {
-        const block = item.block;
-        if (!block) return [];
-        return Array.isArray(block) ? block : [block];
+      const sections = utilizations.flatMap((item) => {
+        const section = item.section;
+        if (!section) return [];
+        return Array.isArray(section) ? section : [section];
       });
 
-      const yearSection = blocks
-        .map((block) => {
-          const yearLevel = block?.year_level;
-          const section = block?.section;
-          if (!yearLevel || !section) return null;
-          return `${yearLevel} - ${section}`;
+      const yearSection = sections
+        .map((section) => {
+          const yearLevel = section?.year_level;
+          const sectionName = section?.name;
+          if (!yearLevel || !sectionName) return null;
+          return `${yearLevel} - ${sectionName}`;
         })
         .filter((value): value is string => Boolean(value))
         .join(", ");
 
       const campusName = Array.from(
         new Set(
-          blocks
+          sections
             .map(
-              (block) => {
-                const majorOffering = first(block?.major_offering);
+              (section) => {
+                const majorOffering = first(section?.major_offering);
                 const programOffering = first(majorOffering?.program_offering);
                 const campus = first(programOffering?.campus);
                 return campus?.name ?? null;

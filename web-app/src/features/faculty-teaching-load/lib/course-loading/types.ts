@@ -12,14 +12,15 @@ export type CourseLoadingClassRow = {
 
 // ── Faculty-aware class row ──
 
-export type FacultyClassBlock = {
+export type FacultyClassSection = {
   course_utilization_id: string;
-  block_id: string;
-  block_code: string;
+  section_id: string;
+  section_code: string;
+  classification: "regular" | "irregular";
   program_code: string;
   major_code: string;
   year_level: number;
-  section: string;
+  name: string;
   student_count: number;
 };
 
@@ -27,21 +28,22 @@ export type FacultyClassRow = CourseLoadingClassRow & {
   campus_id: string;
   campus_code: string;
   campus_name: string;
-  blocks: FacultyClassBlock[];
-  merged_block_label: string;
+  sections: FacultyClassSection[];
+  merged_section_label: string;
   student_count: number;
   /** ATL = lecture_unit + (laboratory_unit × 3) × 0.75 */
   atl: number;
 };
 
-// ── Block-aware class row ──
+// ── Section-aware class row ──
 
-export type BlockClassMergedWith = {
-  block_id: string;
-  block_code: string;
+export type SectionClassMergedWith = {
+  section_id: string;
+  section_code: string;
+  classification: "regular" | "irregular";
 };
 
-export type BlockClassRow = CourseLoadingClassRow & {
+export type SectionClassRow = CourseLoadingClassRow & {
   course_utilization_id: string;
   faculty_id: string | null;
   faculty_name: string | null;
@@ -51,7 +53,7 @@ export type BlockClassRow = CourseLoadingClassRow & {
   lecture_hours: number;
   /** laboratory_unit + lecture_unit */
   unit: number;
-  merged_with: BlockClassMergedWith[];
+  merged_with: SectionClassMergedWith[];
   has_sessions: boolean;
   unscheduled_lecture_hours: number;
   unscheduled_laboratory_hours: number;
@@ -72,9 +74,10 @@ export type FacultyListItem = {
   college_name: string | null;
 };
 
-export type CourseLoadingBlockListItem = {
+export type CourseLoadingSectionListItem = {
   id: string;
   code: string;
+  classification: "regular" | "irregular";
   program_offering_code: string;
   program_offering_id?: string;
   program_code?: string;
@@ -94,7 +97,7 @@ export type ClassInsertInput = {
   academic_term_id: string;
   faculty_id: string;
   course_id: string;
-  block_ids: string[];
+  section_ids: string[];
 };
 
 export type ClassUpdateInput = {
@@ -102,5 +105,5 @@ export type ClassUpdateInput = {
   academic_term_id: string;
   faculty_id?: string;
   course_id?: string;
-  block_ids?: string[];
+  section_ids?: string[];
 };

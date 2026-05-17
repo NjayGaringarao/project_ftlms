@@ -1,15 +1,16 @@
 import { MajorOffering } from "./major-offering";
 
-export type Block = {
+export type Section = {
   id: string;
   code: string;
   major_offering_id: string;
   academic_term_id: string;
   year_level: number;
-  section: string;
+  name: string;
+  classification: "regular" | "irregular";
   student_count: number | null;
 };
 
-export type ExtendedBlock = Block & {
+export type ExtendedSection = Section & {
   major_offering: MajorOffering;
 };

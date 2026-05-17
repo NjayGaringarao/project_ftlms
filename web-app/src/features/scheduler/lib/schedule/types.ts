@@ -13,8 +13,8 @@ export type FacultyTeachingLoadRow = {
   lecture_hour: number;
   laboratory_hour: number;
   load: number;
-  blocks: string[];
-  merged_block_label: string;
+  sections: string[];
+  merged_section_label: string;
   campus_label: string;
 };
 
@@ -32,11 +32,11 @@ export type FacultyScheduleSessionInfo = {
 export type FacultyScheduleRow = {
   row_id: string;
   class_id: string;
-  primary_block_id: string | null;
+  primary_section_id: string | null;
   primary_course_utilization_id: string | null;
   course_code: string;
   course_title: string;
-  block_codes_label: string;
+  section_codes_label: string;
   student_count: number | null;
   lecture_hours: number | null;
   lecture_room: string | null;

@@ -5,8 +5,8 @@ import type { SessionType } from "@/features/shared/types/models";
 
 export type SchedulerCourseOfferingItem = {
   id: string;
-  block_id: string;
-  block_code: string;
+  section_id: string;
+  section_code: string;
   student_count: number;
   campus_id: string | null;
   merge_candidate_count: number;
@@ -19,17 +19,22 @@ export type SchedulerCourseOfferingItem = {
   faculty_name: string | null;
   unscheduled_lecture_hours: number;
   unscheduled_laboratory_hours: number;
-  merged_blocks: Array<{ id: string; code: string }>;
+  merged_sections: Array<{
+    id: string;
+    code: string;
+    classification: "regular" | "irregular";
+  }>;
 };
 
 type RawUtilizationRow = {
   id: string;
-  block_id?: string;
+  section_id?: string;
   course_id: string;
   class_id: string | null;
-  block?: {
+  section?: {
     id?: string | null;
     code?: string | null;
+    classification?: "regular" | "irregular" | null;
     student_count?: number | null;
     academic_term_id?: string | null;
     major_offering?: {
@@ -40,6 +45,7 @@ type RawUtilizationRow = {
   } | Array<{
     id?: string | null;
     code?: string | null;
+    classification?: "regular" | "irregular" | null;
     student_count?: number | null;
     academic_term_id?: string | null;
     major_offering?: {
@@ -66,7 +72,7 @@ type RawUtilizationRow = {
       user?: { id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null } | Array<{ id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null }>;
     }> | null;
     course_utilization?: Array<{
-      block?: { id?: string | null; code?: string | null } | Array<{ id?: string | null; code?: string | null }>;
+      section?: { id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null } | Array<{ id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null }>;
     }> | null;
     session_class?: Array<{
       session?: {
@@ -86,7 +92,7 @@ type RawUtilizationRow = {
       user?: { id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null } | Array<{ id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null }>;
     }> | null;
     course_utilization?: Array<{
-      block?: { id?: string | null; code?: string | null } | Array<{ id?: string | null; code?: string | null }>;
+      section?: { id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null } | Array<{ id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null }>;
     }> | null;
     session_class?: Array<{
       session?: {
@@ -121,10 +127,10 @@ const toHours = (minutes: number): number => {
   return minutes / 60;
 };
 
-export const getBlockCourseOfferingsForScheduler = async (
-  blockId: string,
+export const getSectionCourseOfferingsForScheduler = async (
+  sectionId: string,
 ): Promise<SchedulerCourseOfferingItem[]> => {
-  if (!blockId?.trim()) return [];
+  if (!sectionId?.trim()) return [];
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -134,11 +140,12 @@ export const getBlockCourseOfferingsForScheduler = async (
       id,
       course_id,
       class_id,
-      block_id,
+      section_id,
       course:course_id(id, code, title, lecture_unit, laboratory_unit),
-      block:block_id(
+      section:section_id(
         id,
         code,
+        classification,
         student_count,
         academic_term_id,
         major_offering:major_offering_id(
@@ -152,7 +159,7 @@ export const getBlockCourseOfferingsForScheduler = async (
           user:user_id(id, identity:identity(name))
         ),
         course_utilization(
-          block:block_id(id, code)
+          section:section_id(id, code, classification)
         ),
         session_class(
           session:session_id(type, start_time, end_time)
@@ -160,12 +167,12 @@ export const getBlockCourseOfferingsForScheduler = async (
       )
       `,
     )
-    .eq("block_id", blockId)
+    .eq("section_id", sectionId)
     .order("id", { ascending: true });
 
   if (error) {
     console.error(
-      "lib.schedule.course-offerings.getBlockCourseOfferingsForScheduler ::",
+      "lib.schedule.course-offerings.getSectionCourseOfferingsForScheduler ::",
       error,
     );
     return [];
@@ -174,8 +181,8 @@ export const getBlockCourseOfferingsForScheduler = async (
   const rows = (data ?? []).map((row) => {
     const raw = row as RawUtilizationRow;
     const course = first(raw.course);
-    const block = first(raw.block);
-    const majorOffering = first(block?.major_offering);
+    const section = first(raw.section);
+    const majorOffering = first(section?.major_offering);
     const programOffering = first(majorOffering?.program_offering);
     const cls = first(raw.class);
     const userClass = first(cls?.user_class) as { user?: unknown } | null;
@@ -203,19 +210,27 @@ export const getBlockCourseOfferingsForScheduler = async (
         return sum + toHours(minutes);
       }, 0);
 
-    const mergedBlocks = (cls?.course_utilization ?? [])
-      .map((util) => first(util.block))
-      .filter((block): block is { id?: string | null; code?: string | null } =>
-        Boolean(block?.id),
+    const mergedSections = (cls?.course_utilization ?? [])
+      .map((util) => first(util.section))
+      .filter((section): section is {
+        id?: string | null;
+        code?: string | null;
+        classification?: "regular" | "irregular" | null;
+      } =>
+        Boolean(section?.id),
       )
-      .filter((block) => block.id !== blockId)
-      .map((block) => ({ id: block.id ?? "", code: block.code ?? "Unknown" }));
+      .filter((section) => section.id !== sectionId)
+      .map((section) => ({
+        id: section.id ?? "",
+        code: section.code ?? "Unknown",
+        classification: section.classification ?? "regular",
+      }));
 
     return {
       id: raw.id,
-      block_id: raw.block_id ?? "",
-      block_code: block?.code ?? "Unknown",
-      student_count: Number(block?.student_count ?? 0),
+      section_id: raw.section_id ?? "",
+      section_code: section?.code ?? "Unknown",
+      student_count: Number(section?.student_count ?? 0),
       campus_id: programOffering?.campus_id ?? null,
       merge_candidate_count: 0,
       course_id: raw.course_id,
@@ -230,12 +245,12 @@ export const getBlockCourseOfferingsForScheduler = async (
         laboratoryTarget - laboratoryScheduled,
         0,
       ),
-      merged_blocks: mergedBlocks,
+      merged_sections: mergedSections,
     };
   });
 
   const academicTermId = rows[0]
-    ? first((data?.[0] as RawUtilizationRow)?.block)?.academic_term_id ?? null
+    ? first((data?.[0] as RawUtilizationRow)?.section)?.academic_term_id ?? null
     : null;
   const courseIds = Array.from(new Set(rows.map((row) => row.course_id)));
 
@@ -247,7 +262,7 @@ export const getBlockCourseOfferingsForScheduler = async (
         id,
         course_id,
         class_id,
-        block:block_id(
+        section:section_id(
           id,
           academic_term_id,
           major_offering:major_offering_id(
@@ -256,12 +271,12 @@ export const getBlockCourseOfferingsForScheduler = async (
         )
         `,
       )
-      .eq("block.academic_term_id", academicTermId)
+      .eq("section.academic_term_id", academicTermId)
       .in("course_id", courseIds);
 
     if (candidateErr) {
       console.error(
-        "lib.schedule.course-offerings.getBlockCourseOfferingsForScheduler.candidates ::",
+        "lib.schedule.course-offerings.getSectionCourseOfferingsForScheduler.candidates ::",
         candidateErr,
       );
       return rows;
@@ -269,8 +284,8 @@ export const getBlockCourseOfferingsForScheduler = async (
 
     const normalizedCandidates = (candidates ?? []).map((candidate) => {
       const raw = candidate as RawUtilizationRow;
-      const block = first(raw.block);
-      const majorOffering = first(block?.major_offering);
+      const section = first(raw.section);
+      const majorOffering = first(section?.major_offering);
       const programOffering = first(majorOffering?.program_offering);
       return {
         id: raw.id,

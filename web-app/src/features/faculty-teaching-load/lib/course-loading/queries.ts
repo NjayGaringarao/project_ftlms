@@ -4,13 +4,13 @@ import { createClient } from "@/utils/supabase/server";
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
 import type {
   FacultyListItem,
-  CourseLoadingBlockListItem,
+  CourseLoadingSectionListItem,
   FacultyClassRow,
-  BlockClassRow,
+  SectionClassRow,
 } from "./types";
 import {
-  mapBlockClassRow,
-  mapCourseLoadingBlockListItem,
+  mapSectionClassRow,
+  mapCourseLoadingSectionListItem,
   mapFacultyClassRow,
   mapFacultyListItem,
 } from "./mappers";
@@ -80,17 +80,18 @@ export const getFacultyListByTerm = async (
   return filtered.map(mapFacultyListItem);
 };
 
-export const getBlockListByTerm = async (
+export const getSectionListByTerm = async (
   termId: string,
-): Promise<CourseLoadingBlockListItem[]> => {
+): Promise<CourseLoadingSectionListItem[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("block")
+    .from("section")
     .select(
       `
       id,
       code,
+      classification,
       year_level,
       student_count,
       major_offering:major_offering_id (
@@ -111,14 +112,15 @@ export const getBlockListByTerm = async (
     .order("code", { ascending: true });
 
   if (error) {
-    console.error("lib.course-loading.getBlockListByTerm ::", error);
+    console.error("lib.course-loading.getSectionListByTerm ::", error);
     return [];
   }
 
   return (data ?? []).map((row) =>
-    mapCourseLoadingBlockListItem({
+    mapCourseLoadingSectionListItem({
       id: row.id,
       code: row.code,
+      classification: row.classification,
       year_level: row.year_level,
       student_count: row.student_count,
       major_offering: row.major_offering,
@@ -143,11 +145,12 @@ export const getClassesByFacultyAndTerm = async (
         course_utilization (
           id,
           course:course_id (id, code, title, lecture_unit, laboratory_unit),
-          block:block_id (
+          section:section_id (
             id,
             code,
+            classification,
             year_level,
-            section,
+            name,
             student_count,
             major_offering:major_offering_id (
               major:major_id (code),
@@ -162,7 +165,7 @@ export const getClassesByFacultyAndTerm = async (
     `,
     )
     .eq("user_id", userId)
-    .eq("class.course_utilization.block.academic_term_id", termId)
+    .eq("class.course_utilization.section.academic_term_id", termId)
     .order("class_id", { ascending: true });
 
   if (error) {
@@ -188,10 +191,10 @@ export const getClassesByFacultyAndTerm = async (
   );
 };
 
-export const getClassesByBlockAndTerm = async (
-  blockId: string,
+export const getClassesBySectionAndTerm = async (
+  sectionId: string,
   _termId: string,
-): Promise<BlockClassRow[]> => {
+): Promise<SectionClassRow[]> => {
   void _termId;
   const supabase = await createClient();
 
@@ -214,22 +217,22 @@ export const getClassesByBlockAndTerm = async (
           session:session_id (type, start_time, end_time)
         ),
         course_utilization (
-          block:block_id (id, code)
+          section:section_id (id, code, classification)
         )
       )
     `,
     )
-    .eq("block_id", blockId);
+    .eq("section_id", sectionId);
 
   if (error) {
-    console.error("lib.course-loading.getClassesByBlockAndTerm ::", error);
+    console.error("lib.course-loading.getClassesBySectionAndTerm ::", error);
     return [];
   }
 
   return (data ?? []).map((row) =>
-    mapBlockClassRow(
+    mapSectionClassRow(
       { class: row.class, course: row.course },
-      blockId,
+      sectionId,
       row.id,
     ),
   );

@@ -2,52 +2,52 @@
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Blocks, ChevronDown, Sliders, X } from "lucide-react";
+import { Blocks as Sections, ChevronDown, Sliders, X } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
-import type { CourseLoadingBlockListItem } from "@/features/faculty-teaching-load/lib/course-loading/types";
+import type { CourseLoadingSectionListItem } from "@/features/faculty-teaching-load/lib/course-loading/types";
 import { Button } from "@/components/ui/button";
 import CampusPickerDialog from "@/features/shared/components/pickers/campus-picker-dialog";
 import ProgramOfferingPickerDialog from "@/features/shared/components/pickers/program-offering-picker-dialog";
 import { cn } from "@/utils/style";
 
-type BlockPickerDialogProps = {
+type SectionPickerDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  items: CourseLoadingBlockListItem[];
+  items: CourseLoadingSectionListItem[];
   selectedId?: string | null;
   onSelect: (id: string) => void;
   title?: string;
   description?: string;
   searchPlaceholder?: string;
-  renderSubtitle?: (item: CourseLoadingBlockListItem) => string[];
-  renderAnnotation?: (item: CourseLoadingBlockListItem) => ReactNode;
+  renderSubtitle?: (item: CourseLoadingSectionListItem) => string[];
+  renderAnnotation?: (item: CourseLoadingSectionListItem) => ReactNode;
 };
 
 const toFixed = (value: number) => value.toFixed(2);
 
-type BlockPickerDialogBodyProps = {
-  items: CourseLoadingBlockListItem[];
+type SectionPickerDialogBodyProps = {
+  items: CourseLoadingSectionListItem[];
   selectedId?: string | null;
   onSelect: (id: string) => void;
   searchPlaceholder: string;
-  renderSubtitle?: (item: CourseLoadingBlockListItem) => string[];
-  renderAnnotation?: (item: CourseLoadingBlockListItem) => ReactNode;
+  renderSubtitle?: (item: CourseLoadingSectionListItem) => string[];
+  renderAnnotation?: (item: CourseLoadingSectionListItem) => ReactNode;
 };
 
-const BlockPickerDialogBody = ({
+const SectionPickerDialogBody = ({
   items,
   selectedId,
   onSelect,
   searchPlaceholder,
   renderSubtitle,
   renderAnnotation,
-}: BlockPickerDialogBodyProps) => {
-  const [blockQuery, setBlockQuery] = useState("");
-  const [blockYearFilter, setBlockYearFilter] = useState("");
-  const [blockCampusFilter, setBlockCampusFilter] = useState("");
-  const [blockProgramOfferingFilter, setBlockProgramOfferingFilter] =
+}: SectionPickerDialogBodyProps) => {
+  const [sectionQuery, setSectionQuery] = useState("");
+  const [sectionYearFilter, setSectionYearFilter] = useState("");
+  const [sectionCampusFilter, setSectionCampusFilter] = useState("");
+  const [sectionProgramOfferingFilter, setSectionProgramOfferingFilter] =
     useState("");
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
   const [programOfferingDialogOpen, setProgramOfferingDialogOpen] =
@@ -55,13 +55,13 @@ const BlockPickerDialogBody = ({
   const [campusQuery, setCampusQuery] = useState("");
   const [programOfferingQuery, setProgramOfferingQuery] = useState("");
 
-  const blockYearOptions = useMemo(() => {
+  const sectionYearOptions = useMemo(() => {
     const set = new Set<number>();
     items.forEach((item) => set.add(item.year_level));
     return Array.from(set).sort((a, b) => a - b);
   }, [items]);
 
-  const blockCampusOptions = useMemo(() => {
+  const sectionCampusOptions = useMemo(() => {
     const map = new Map<string, { id: string; code: string; name: string }>();
     items.forEach((item) => {
       if (!item.campus_id) return;
@@ -75,11 +75,11 @@ const BlockPickerDialogBody = ({
     return Array.from(map.values());
   }, [items]);
 
-  const blockProgramOfferingOptions = useMemo(() => {
+  const sectionProgramOfferingOptions = useMemo(() => {
     const map = new Map<string, (typeof items)[number]>();
     items.forEach((item) => {
       if (!item.program_offering_id) return;
-      if (blockCampusFilter && item.campus_id !== blockCampusFilter) return;
+      if (sectionCampusFilter && item.campus_id !== sectionCampusFilter) return;
       if (map.has(item.program_offering_id)) return;
       map.set(item.program_offering_id, item);
     });
@@ -92,24 +92,24 @@ const BlockPickerDialogBody = ({
       program_code: item.program_code,
       program_name: item.program_name,
     }));
-  }, [items, blockCampusFilter]);
+  }, [items, sectionCampusFilter]);
 
-  const filteredBlocks = useMemo(() => {
-    const normalized = blockQuery.trim().toLowerCase();
+  const filteredSections = useMemo(() => {
+    const normalized = sectionQuery.trim().toLowerCase();
 
     return items.filter((item) => {
-      if (blockCampusFilter && item.campus_id !== blockCampusFilter) {
+      if (sectionCampusFilter && item.campus_id !== sectionCampusFilter) {
         return false;
       }
 
       if (
-        blockProgramOfferingFilter &&
-        item.program_offering_id !== blockProgramOfferingFilter
+        sectionProgramOfferingFilter &&
+        item.program_offering_id !== sectionProgramOfferingFilter
       ) {
         return false;
       }
 
-      if (blockYearFilter && item.year_level !== Number(blockYearFilter)) {
+      if (sectionYearFilter && item.year_level !== Number(sectionYearFilter)) {
         return false;
       }
 
@@ -133,18 +133,18 @@ const BlockPickerDialogBody = ({
     });
   }, [
     items,
-    blockQuery,
-    blockYearFilter,
-    blockCampusFilter,
-    blockProgramOfferingFilter,
+    sectionQuery,
+    sectionYearFilter,
+    sectionCampusFilter,
+    sectionProgramOfferingFilter,
   ]);
 
   const selectedCampus =
-    blockCampusOptions.find((campus) => campus.id === blockCampusFilter) ??
+    sectionCampusOptions.find((campus) => campus.id === sectionCampusFilter) ??
     null;
   const selectedProgramOffering =
-    blockProgramOfferingOptions.find(
-      (offering) => offering.id === blockProgramOfferingFilter,
+    sectionProgramOfferingOptions.find(
+      (offering) => offering.id === sectionProgramOfferingFilter,
     ) ?? null;
 
   const renderFilterButton = (
@@ -185,8 +185,8 @@ const BlockPickerDialogBody = ({
       <div className="flex h-full flex-col gap-3 overflow-hidden">
         <Input
           placeholder={searchPlaceholder}
-          value={blockQuery}
-          onChange={(event) => setBlockQuery(event.target.value)}
+          value={sectionQuery}
+          onChange={(event) => setSectionQuery(event.target.value)}
         />
 
         <div className="flex min-w-0 items-center gap-2">
@@ -199,10 +199,10 @@ const BlockPickerDialogBody = ({
                 setCampusQuery("");
                 setCampusDialogOpen(true);
               },
-              blockCampusFilter
+              sectionCampusFilter
                 ? () => {
-                    setBlockCampusFilter("");
-                    setBlockProgramOfferingFilter("");
+                    setSectionCampusFilter("");
+                    setSectionProgramOfferingFilter("");
                   }
                 : undefined,
             )}
@@ -217,17 +217,17 @@ const BlockPickerDialogBody = ({
                 setProgramOfferingQuery("");
                 setProgramOfferingDialogOpen(true);
               },
-              blockProgramOfferingFilter
-                ? () => setBlockProgramOfferingFilter("")
+              sectionProgramOfferingFilter
+                ? () => setSectionProgramOfferingFilter("")
                 : undefined,
             )}
             <select
-              value={blockYearFilter}
-              onChange={(event) => setBlockYearFilter(event.target.value)}
+              value={sectionYearFilter}
+              onChange={(event) => setSectionYearFilter(event.target.value)}
               className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm text-foreground/70"
             >
               <option value="">All Year</option>
-              {blockYearOptions.map((year) => (
+              {sectionYearOptions.map((year) => (
                 <option key={year} value={year}>
                   Year {year}
                 </option>
@@ -237,13 +237,13 @@ const BlockPickerDialogBody = ({
         </div>
 
         <div className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2">
-          {filteredBlocks.length === 0 && (
+          {filteredSections.length === 0 && (
             <p className="p-4 text-center text-sm text-foreground/70 md:col-span-2">
-              No blocks found.
+              No sections found.
             </p>
           )}
 
-          {filteredBlocks.map((item) => (
+          {filteredSections.map((item) => (
             <ListItemSmall
               key={item.id}
               title={item.code}
@@ -254,7 +254,7 @@ const BlockPickerDialogBody = ({
               }
               isSelected={item.id === selectedId}
               onClick={() => onSelect(item.id)}
-              icon={<Blocks className="h-5 w-5 text-background/80" />}
+              icon={<Sections className="h-5 w-5 text-background/80" />}
               listType="modal"
               annotations={
                 renderAnnotation ? (
@@ -273,18 +273,18 @@ const BlockPickerDialogBody = ({
       <CampusPickerDialog
         open={campusDialogOpen}
         onOpenChange={setCampusDialogOpen}
-        campuses={blockCampusOptions.map((campus) => ({
+        campuses={sectionCampusOptions.map((campus) => ({
           id: campus.id,
           code: campus.code,
           name: campus.name,
           address: null,
         }))}
-        selectedCampusId={blockCampusFilter}
+        selectedCampusId={sectionCampusFilter}
         query={campusQuery}
         onQueryChange={setCampusQuery}
         onSelect={(nextCampusId) => {
-          setBlockCampusFilter(nextCampusId);
-          setBlockProgramOfferingFilter("");
+          setSectionCampusFilter(nextCampusId);
+          setSectionProgramOfferingFilter("");
           setCampusDialogOpen(false);
         }}
         emptyState="No campuses found."
@@ -293,12 +293,12 @@ const BlockPickerDialogBody = ({
       <ProgramOfferingPickerDialog
         open={programOfferingDialogOpen}
         onOpenChange={setProgramOfferingDialogOpen}
-        programOfferings={blockProgramOfferingOptions}
-        selectedProgramOfferingId={blockProgramOfferingFilter}
+        programOfferings={sectionProgramOfferingOptions}
+        selectedProgramOfferingId={sectionProgramOfferingFilter}
         query={programOfferingQuery}
         onQueryChange={setProgramOfferingQuery}
         onSelect={(offeringId) => {
-          setBlockProgramOfferingFilter(offeringId);
+          setSectionProgramOfferingFilter(offeringId);
           setProgramOfferingDialogOpen(false);
         }}
         emptyState="No program offerings found."
@@ -307,18 +307,18 @@ const BlockPickerDialogBody = ({
   );
 };
 
-const BlockPickerDialog = ({
+const SectionPickerDialog = ({
   open,
   onOpenChange,
   items,
   selectedId,
   onSelect,
-  title = "Select Block",
+  title = "Select Section",
   description,
-  searchPlaceholder = "Search blocks",
+  searchPlaceholder = "Search sections",
   renderSubtitle,
   renderAnnotation,
-}: BlockPickerDialogProps) => {
+}: SectionPickerDialogProps) => {
   return (
     <AppDialog
       open={open}
@@ -329,7 +329,7 @@ const BlockPickerDialog = ({
       variant="floating-medium"
     >
       {open ? (
-        <BlockPickerDialogBody
+        <SectionPickerDialogBody
           items={items}
           selectedId={selectedId}
           onSelect={onSelect}
@@ -342,4 +342,4 @@ const BlockPickerDialog = ({
   );
 };
 
-export default BlockPickerDialog;
+export default SectionPickerDialog;

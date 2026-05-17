@@ -33,7 +33,7 @@ export const getSessionConflictWindows = async (
     );
   }
 
-  const [facultySessions, blockSessions, roomSessions] = await Promise.all([
+  const [facultySessions, sectionSessions, roomSessions] = await Promise.all([
     conflictFacultyId
       ? getSessionWindowsByPredicate(context.academicTermId, day, {
           facultyId: conflictFacultyId,
@@ -41,7 +41,7 @@ export const getSessionConflictWindows = async (
         })
       : Promise.resolve([]),
     getSessionWindowsByPredicate(context.academicTermId, day, {
-      blockIds: context.blockIds,
+      sectionIds: context.sectionIds,
       excludeClassId: classId,
     }),
     roomId
@@ -75,11 +75,11 @@ export const getSessionConflictWindows = async (
     });
   });
 
-  blockSessions.forEach((row) => {
+  sectionSessions.forEach((row) => {
     windows.push({
       start_time: row.start_time,
       end_time: row.end_time,
-      reason: "Block has another schedule",
+      reason: "Section has another schedule",
     });
   });
 

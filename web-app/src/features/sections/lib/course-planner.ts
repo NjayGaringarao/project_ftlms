@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 
-export type BlockCourseRow = {
+export type SectionCourseRow = {
   id: string;
   course_id: string;
   course_code: string;
@@ -12,9 +12,9 @@ export type BlockCourseRow = {
   class_code: string | null;
 };
 
-export const getBlockCourses = async (
-  blockId: string,
-): Promise<BlockCourseRow[]> => {
+export const getSectionCourses = async (
+  sectionId: string,
+): Promise<SectionCourseRow[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -28,11 +28,11 @@ export const getBlockCourses = async (
       class:class_id(code)
       `,
     )
-    .eq("block_id", blockId)
+    .eq("section_id", sectionId)
     .order("id", { ascending: true });
 
   if (error) {
-    console.error("lib.blocks.course-planner.getBlockCourses ::", error);
+    console.error("lib.sections.course-planner.getSectionCourses ::", error);
     return [];
   }
 
@@ -51,44 +51,44 @@ export const getBlockCourses = async (
   });
 };
 
-export const addCourseToBlock = async (
-  blockId: string,
+export const addCourseToSection = async (
+  sectionId: string,
   courseId: string,
   academicTermId?: string | null,
 ): Promise<{ data?: boolean; error?: string }> => {
-  if (!blockId?.trim()) return { error: "Block is required" };
+  if (!sectionId?.trim()) return { error: "Section is required" };
   if (!courseId?.trim()) return { error: "Course is required" };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("course_utilization")
-    .insert({ block_id: blockId, course_id: courseId });
+    .insert({ section_id: sectionId, course_id: courseId });
 
   if (error) {
     return { error: error.message };
   }
 
   if (academicTermId) {
-    revalidatePath("/blocks");
+    revalidatePath("/sections");
   } else {
-    revalidatePath("/blocks");
+    revalidatePath("/sections");
   }
   return { data: true };
 };
 
-export const removeCourseFromBlock = async (
-  blockId: string,
+export const removeCourseFromSection = async (
+  sectionId: string,
   courseId: string,
   academicTermId?: string | null,
 ): Promise<{ data?: boolean; error?: string }> => {
-  if (!blockId?.trim()) return { error: "Block is required" };
+  if (!sectionId?.trim()) return { error: "Section is required" };
   if (!courseId?.trim()) return { error: "Course is required" };
 
   const supabase = await createClient();
   const { data: utilization, error: fetchError } = await supabase
     .from("course_utilization")
     .select("id, class_id")
-    .eq("block_id", blockId)
+    .eq("section_id", sectionId)
     .eq("course_id", courseId)
     .maybeSingle();
 
@@ -117,7 +117,7 @@ export const removeCourseFromBlock = async (
     }
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("course_utilization")
     .delete()
     .eq("id", utilization.id)
@@ -128,9 +128,9 @@ export const removeCourseFromBlock = async (
   }
 
   if (academicTermId) {
-    revalidatePath("/blocks");
+    revalidatePath("/sections");
   } else {
-    revalidatePath("/blocks");
+    revalidatePath("/sections");
   }
   return { data: true };
 };

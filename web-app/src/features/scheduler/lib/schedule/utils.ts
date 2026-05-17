@@ -46,7 +46,7 @@ export const computeTeachingLoad = (
   return lectureHour + laboratoryHour * 3 * 0.75;
 };
 
-export const mergeBlockLabels = (labels: string[]): string => {
+export const mergeSectionLabels = (labels: string[]): string => {
   if (labels.length === 0) return "Not assigned";
   return Array.from(new Set(labels)).join(", ");
 };

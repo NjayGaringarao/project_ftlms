@@ -16,7 +16,7 @@ create table if not exists public.course_utilization (
   id uuid primary key default gen_random_uuid(),
   class_id uuid references public.class(id) on delete set null,
   course_id uuid not null references public.course(id) on delete restrict,
-  block_id uuid not null references public.block(id) on delete cascade,
+  section_id uuid not null references public.section(id) on delete cascade,
   created_at timestamptz not null default now()
 );
 

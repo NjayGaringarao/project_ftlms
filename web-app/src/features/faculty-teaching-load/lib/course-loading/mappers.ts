@@ -1,8 +1,8 @@
 import type {
-  BlockClassMergedWith,
-  BlockClassRow,
-  CourseLoadingBlockListItem,
-  FacultyClassBlock,
+  SectionClassMergedWith,
+  SectionClassRow,
+  CourseLoadingSectionListItem,
+  FacultyClassSection,
   FacultyClassRow,
   FacultyListItem,
 } from "./types";
@@ -14,7 +14,7 @@ import {
   calculateUnit,
   toNumber,
 } from "./calculations";
-import { formatFacultyBlockLabels } from "./formatters";
+import { formatFacultySectionLabels } from "./formatters";
 import { asArray, first } from "./normalizers";
 
 type CourseUnits = {
@@ -49,20 +49,21 @@ const getLatestDegreeTitle = (degrees: Degree[]): string | null => {
   return latest.title ?? null;
 };
 
-const mapFacultyClassBlock = (utilRow: {
+const mapFacultyClassSection = (utilRow: {
   id: string;
-  block: unknown;
-}): FacultyClassBlock => {
-  const block = first(utilRow.block) as {
+  section: unknown;
+}): FacultyClassSection => {
+  const section = first(utilRow.section) as {
     id?: string;
     code?: string;
+    classification?: "regular" | "irregular";
     year_level?: number;
-    section?: string;
+    name?: string;
     student_count?: number;
     major_offering?: unknown;
   } | null;
 
-  const majorOffering = first(block?.major_offering) as {
+  const majorOffering = first(section?.major_offering) as {
     major?: unknown;
     program_offering?: unknown;
   } | null;
@@ -75,13 +76,14 @@ const mapFacultyClassBlock = (utilRow: {
 
   return {
     course_utilization_id: utilRow.id,
-    block_id: block?.id ?? "",
-    block_code: block?.code ?? "",
+    section_id: section?.id ?? "",
+    section_code: section?.code ?? "",
+    classification: section?.classification ?? "regular",
     program_code: program?.code ?? "",
     major_code: major?.code ?? "",
-    year_level: toNumber(block?.year_level),
-    section: block?.section ?? "",
-    student_count: toNumber(block?.student_count),
+    year_level: toNumber(section?.year_level),
+    name: section?.name ?? "",
+    student_count: toNumber(section?.student_count),
   };
 };
 
@@ -102,14 +104,15 @@ export const mapFacultyListItem = (row: UserDataReadModel): FacultyListItem => {
   };
 };
 
-export const mapCourseLoadingBlockListItem = (row: {
+export const mapCourseLoadingSectionListItem = (row: {
   id: string;
   code: string;
+  classification?: "regular" | "irregular";
   year_level: number;
   student_count: number;
   major_offering: unknown;
   course_utilization: unknown;
-}): CourseLoadingBlockListItem => {
+}): CourseLoadingSectionListItem => {
   const majorOffering = first(row.major_offering) as {
     program_offering?: unknown;
   } | null;
@@ -142,6 +145,7 @@ export const mapCourseLoadingBlockListItem = (row: {
   return {
     id: row.id,
     code: row.code,
+    classification: row.classification ?? "regular",
     student_count: toNumber(row.student_count),
     program_offering_code: programOffering?.code ?? "",
     program_offering_id: programOffering?.id ?? "",
@@ -164,19 +168,19 @@ export const mapFacultyClassRow = (cls: {
   const utilizations = asArray(cls.course_utilization) as {
     id: string;
     course?: unknown;
-    block?: unknown;
+    section?: unknown;
   }[];
 
   const firstUtil = utilizations[0];
   const units = getCourseUnits((firstUtil as { course?: unknown })?.course);
-  const blocks = utilizations.map((util) =>
-    mapFacultyClassBlock({ id: util.id, block: util.block }),
+  const sections = utilizations.map((util) =>
+    mapFacultyClassSection({ id: util.id, section: util.section }),
   );
 
-  const firstBlock = first(firstUtil?.block) as {
+  const firstSection = first(firstUtil?.section) as {
     major_offering?: unknown;
   } | null;
-  const majorOffering = first(firstBlock?.major_offering) as {
+  const majorOffering = first(firstSection?.major_offering) as {
     program_offering?: unknown;
   } | null;
   const programOffering = first(majorOffering?.program_offering) as {
@@ -188,8 +192,8 @@ export const mapFacultyClassRow = (cls: {
     name?: string;
   } | null;
 
-  const studentCount = blocks.reduce(
-    (sum, block) => sum + block.student_count,
+  const studentCount = sections.reduce(
+    (sum, section) => sum + section.student_count,
     0,
   );
 
@@ -204,21 +208,21 @@ export const mapFacultyClassRow = (cls: {
     campus_id: campus?.id ?? "",
     campus_code: campus?.code ?? "",
     campus_name: campus?.name ?? "",
-    blocks,
-    merged_block_label: formatFacultyBlockLabels(blocks),
+    sections,
+    merged_section_label: formatFacultySectionLabels(sections),
     student_count: studentCount,
     atl: calculateAtl(units.lectureUnit, units.laboratoryUnit),
   };
 };
 
-export const mapBlockClassRow = (
+export const mapSectionClassRow = (
   row: {
     course: unknown;
     class: unknown;
   },
-  blockId: string,
+  sectionId: string,
   courseUtilizationId: string,
-): BlockClassRow => {
+): SectionClassRow => {
   const cls = first(row.class) as {
     id?: string;
     code?: string;
@@ -236,22 +240,25 @@ export const mapBlockClassRow = (
   } | null;
   const identity = first(user?.identity) as { name?: string } | null;
 
-  const mergedWith: BlockClassMergedWith[] = asArray(cls?.course_utilization)
+  const mergedWith: SectionClassMergedWith[] = asArray(cls?.course_utilization)
     .filter((utilRow) => {
-      const block = first((utilRow as { block?: unknown }).block) as {
+      const section = first((utilRow as { section?: unknown }).section) as {
         id?: string;
+        classification?: "regular" | "irregular";
       } | null;
-      return block?.id && block.id !== blockId;
+      return section?.id && section.id !== sectionId;
     })
     .map((utilRow) => {
-      const block = first((utilRow as { block?: unknown }).block) as {
+      const section = first((utilRow as { section?: unknown }).section) as {
         id?: string;
         code?: string;
+        classification?: "regular" | "irregular";
       } | null;
 
       return {
-        block_id: block?.id ?? "",
-        block_code: block?.code ?? "",
+        section_id: section?.id ?? "",
+        section_code: section?.code ?? "",
+        classification: section?.classification ?? "regular",
       };
     });
 

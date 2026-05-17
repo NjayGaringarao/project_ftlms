@@ -35,10 +35,11 @@ export type ProposalScheduleSessionItem = {
   room_id: string | null;
   room_code: string | null;
   room_name: string | null;
-  block_id: string;
-  block_code: string;
+  section_id: string;
+  section_code: string;
+  section_classification: "regular" | "irregular";
   year_level: number;
-  section: string;
+  name: string;
   student_count: number | null;
 };
 

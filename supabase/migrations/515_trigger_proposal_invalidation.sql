@@ -71,7 +71,7 @@ begin
   select b.academic_term_id
   into v_term_id
   from public.course_utilization cu
-  join public.block b on b.id = cu.block_id
+  join public.section b on b.id = cu.section_id
   where cu.class_id = p_class_id
   limit 1;
 
@@ -180,7 +180,7 @@ begin
         select 1
         from public.user_class uc
         join public.course_utilization cu on cu.class_id = uc.class_id
-        join public.block b on b.id = cu.block_id
+        join public.section b on b.id = cu.section_id
         where cu.course_id = new.id
           and uc.user_id = p.user_id
           and b.academic_term_id = p.academic_term_id
@@ -211,13 +211,13 @@ begin
       and exists (
         select 1
         from public.user_class uc
-        join public.block b on b.id = old.block_id
+        join public.section b on b.id = old.section_id
         where uc.class_id = old.class_id
           and uc.user_id = p.user_id
           and b.academic_term_id = p.academic_term_id
       );
   elsif tg_op = 'UPDATE' then
-    if old.block_id is not distinct from new.block_id
+    if old.section_id is not distinct from new.section_id
        and old.course_id is not distinct from new.course_id
        and old.class_id is not distinct from new.class_id then
       return null;
@@ -230,7 +230,7 @@ begin
       and exists (
         select 1
         from public.user_class uc
-        join public.block b on b.id = old.block_id
+        join public.section b on b.id = old.section_id
         where uc.class_id = old.class_id
           and uc.user_id = p.user_id
           and b.academic_term_id = p.academic_term_id
@@ -243,7 +243,7 @@ begin
       and exists (
         select 1
         from public.user_class uc
-        join public.block b on b.id = new.block_id
+        join public.section b on b.id = new.section_id
         where uc.class_id = new.class_id
           and uc.user_id = p.user_id
           and b.academic_term_id = p.academic_term_id
@@ -257,7 +257,7 @@ begin
       and exists (
         select 1
         from public.user_class uc
-        join public.block b on b.id = new.block_id
+        join public.section b on b.id = new.section_id
         where uc.class_id = new.class_id
           and uc.user_id = p.user_id
           and b.academic_term_id = p.academic_term_id

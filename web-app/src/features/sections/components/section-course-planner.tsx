@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUp,
@@ -15,28 +15,27 @@ import { Button } from "@/components/ui/button";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { MultiPickerList } from "@/features/shared/components/pickers/multi-picker-list";
 import type { CourseListItem } from "@/features/admin/lib/courses";
-import type { BlockClassRow } from "@/features/faculty-teaching-load/lib/course-loading/types";
+import type { SectionClassRow } from "@/features/faculty-teaching-load/lib/course-loading/types";
 import {
-  addCourseToBlock,
-  removeCourseFromBlock,
-} from "@/features/blocks/lib/course-planner";
-import { getClassesByBlockAndTerm } from "@/features/faculty-teaching-load/lib/course-loading/queries";
+  addCourseToSection,
+  removeCourseFromSection,
+} from "@/features/sections/lib/course-planner";
+import { getClassesBySectionAndTerm } from "@/features/faculty-teaching-load/lib/course-loading/queries";
 import { numberToHourDuration } from "@/utils/time";
 import { Popover } from "radix-ui";
 import { cn } from "@/utils/style";
 
-type BlockCoursePlannerProps = {
-  blockId: string;
+type SectionCoursePlannerProps = {
+  sectionId: string;
   academicTermId: string | null;
 };
 
-const BlockCoursePlanner = ({
-  blockId,
+const SectionCoursePlanner = ({
+  sectionId,
   academicTermId,
-}: BlockCoursePlannerProps) => {
-  const [rows, setRows] = useState<BlockClassRow[]>([]);
+}: SectionCoursePlannerProps) => {
+  const [rows, setRows] = useState<SectionClassRow[]>([]);
   const [courses, setCourses] = useState<CourseListItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(
     () => new Set(),
@@ -45,24 +44,22 @@ const BlockCoursePlanner = ({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const load = async () => {
-    setLoading(true);
+  const load = useCallback(async () => {
     const [courseModule, classRows] = await Promise.all([
       import("@/features/admin/lib/courses"),
       academicTermId
-        ? getClassesByBlockAndTerm(blockId, academicTermId)
+        ? getClassesBySectionAndTerm(sectionId, academicTermId)
         : Promise.resolve([]),
     ]);
 
     const courseList = await courseModule.getCoursesList();
     setCourses(courseList);
     setRows(classRows);
-    setLoading(false);
-  };
+  }, [academicTermId, sectionId]);
 
   useEffect(() => {
     void load();
-  }, [blockId, academicTermId]);
+  }, [load]);
 
   const existingCourseIds = useMemo(
     () => new Set(rows.map((row) => row.course_id)),
@@ -82,8 +79,8 @@ const BlockCoursePlanner = ({
     setError("");
     startTransition(async () => {
       for (const courseId of selectedCourseIds) {
-        const result = await addCourseToBlock(
-          blockId,
+        const result = await addCourseToSection(
+          sectionId,
           courseId,
           academicTermId,
         );
@@ -101,8 +98,8 @@ const BlockCoursePlanner = ({
   const handleRemove = (courseId: string) => {
     setError("");
     startTransition(async () => {
-      const result = await removeCourseFromBlock(
-        blockId,
+      const result = await removeCourseFromSection(
+        sectionId,
         courseId,
         academicTermId,
       );
@@ -114,7 +111,7 @@ const BlockCoursePlanner = ({
     });
   };
 
-  const handleManageSchedule = (row: BlockClassRow) => {
+  const handleManageSchedule = (row: SectionClassRow) => {
     if (!academicTermId) {
       setError("Academic term is required to manage schedule.");
       return;
@@ -122,7 +119,7 @@ const BlockCoursePlanner = ({
 
     const params = new URLSearchParams();
     params.set("academic_term_id", academicTermId);
-    params.set("blockId", blockId);
+    params.set("sectionId", sectionId);
     if (row.course_utilization_id) {
       params.set("courseUtilizationId", row.course_utilization_id);
     }
@@ -145,7 +142,7 @@ const BlockCoursePlanner = ({
           <NotebookTabs className="w-5 h-5" />
           <h3 className="text-base font-semibold">Course Utilization</h3>
           <div
-            title={totalUnits > 21 ? "Units for this block is overload" : ""}
+            title={totalUnits > 21 ? "Units for this section is overload" : ""}
             className="text-xs flex flex-row items-center bg-foreground/10 text-foreground/80 rounded-md px-2 py-0.5"
           >
             <span>Total Units: {totalUnits.toFixed(2)}</span>
@@ -210,7 +207,7 @@ const BlockCoursePlanner = ({
                   </td>
                   <td className="px-3 py-2 text-foreground/60 text-xs">
                     {row.merged_with.length > 0
-                      ? row.merged_with.map((m) => m.block_code).join(", ")
+                      ? row.merged_with.map((m) => m.section_code).join(", ")
                       : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -273,8 +270,8 @@ const BlockCoursePlanner = ({
             setError("");
           }
         }}
-        title="Add Course to Block"
-        description="Pick one or more courses to add to this block."
+        title="Add Course to Section"
+        description="Pick one or more courses to add to this section."
         variant="floating-medium"
         contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
       >
@@ -324,4 +321,4 @@ const BlockCoursePlanner = ({
   );
 };
 
-export default BlockCoursePlanner;
+export default SectionCoursePlanner;

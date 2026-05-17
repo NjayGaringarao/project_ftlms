@@ -6,7 +6,7 @@ export type ClassContext = {
   classId: string;
   userId: string | null;
   academicTermId: string;
-  blockIds: string[];
+  sectionIds: string[];
 };
 
 export type SessionContext = {
@@ -14,7 +14,7 @@ export type SessionContext = {
   classId: string;
   facultyId: string;
   academicTermId: string;
-  blockIds: string[];
+  sectionIds: string[];
   day: SessionDay;
   start_time: string;
   end_time: string;
@@ -76,11 +76,11 @@ export type RawMajorOfferingRow = {
   program_offering?: RawProgramOfferingRow | RawProgramOfferingRow[] | null;
 };
 
-export type RawBlockRow = {
+export type RawSectionRow = {
   id?: string;
   code?: string | null;
   year_level?: number | null;
-  section?: string | null;
+  name?: string | null;
   student_count?: number | null;
   academic_term_id?: string | null;
   major_offering?: RawMajorOfferingRow | RawMajorOfferingRow[] | null;
@@ -118,7 +118,7 @@ export type RawClassDetailsRow = {
   course_utilization?:
     | Array<{
         course?: RawCourseRow | RawCourseRow[] | null;
-        block?: RawBlockRow | RawBlockRow[] | null;
+        section?: RawSectionRow | RawSectionRow[] | null;
       }>
     | null;
 };
@@ -156,11 +156,11 @@ export type SchedulerDialogRoom = {
   campus_name: string | null;
 };
 
-export type SchedulerDialogBlock = {
+export type SchedulerDialogSection = {
   id: string;
   code: string;
   year_level: number | null;
-  section: string | null;
+  name: string | null;
   student_count: number | null;
   program_name: string | null;
   major_name: string | null;
@@ -184,7 +184,7 @@ export type SchedulerDialogDetails = {
   total_hours: number;
   unscheduled_lecture_hours: number;
   unscheduled_laboratory_hours: number;
-  blocks: SchedulerDialogBlock[];
+  sections: SchedulerDialogSection[];
   rooms: SchedulerDialogRoom[];
   sessions: SchedulerDialogSession[];
 };
@@ -212,7 +212,8 @@ export type SessionSummary = {
   start_time: string;
   end_time: string;
   type: SessionType;
-  block_codes: string[];
+  section_codes: string[];
+  section_label: string;
 };
 
 export type SessionRoomOption = {
@@ -237,7 +238,7 @@ export type CreateClassSessionInput = {
 
 export type CreateSessionFromOfferingInput = {
   academicTermId: string;
-  blockId: string;
+  sectionId: string;
   courseUtilizationId: string;
   facultyId: string;
   roomId: string | null;

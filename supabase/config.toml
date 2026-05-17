@@ -77,7 +77,7 @@ sql_paths = [
   "./seeds/1007_major_offerings.sql",
   "./seeds/1008_academic_years.sql",
   "./seeds/1009_academic_terms.sql",
-  "./seeds/1010_blocks.sql",
+  "./seeds/1010_sections.sql",
   "./seeds/1011_rooms.sql"
 ]
 
@@ -85,10 +85,10 @@ sql_paths = [
 # Enable management of network restrictions.
 enabled = false
 # List of IPv4 CIDR blocks allowed to connect to the database.
-# Defaults to allow all IPv4 connections. Set empty array to block all IPs.
+# Defaults to allow all IPv4 connections. Set empty array to section all IPs.
 allowed_cidrs = ["0.0.0.0/0"]
 # List of IPv6 CIDR blocks allowed to connect to the database.
-# Defaults to allow all IPv6 connections. Set empty array to block all IPs.
+# Defaults to allow all IPv6 connections. Set empty array to section all IPs.
 allowed_cidrs_v6 = ["::/0"]
 
 # Uncomment to reject non-secure connections to the database.

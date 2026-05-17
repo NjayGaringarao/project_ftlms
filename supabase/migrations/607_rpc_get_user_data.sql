@@ -85,7 +85,7 @@ as $$
       coalesce(co.laboratory_unit, 0) as laboratory_unit,
       coalesce(
         string_agg(
-          distinct concat_ws(' - ', b.year_level::text, b.section),
+          distinct concat_ws(' - ', b.year_level::text, b.name),
           ', '
         ) filter (where b.id is not null),
         'Not assigned'
@@ -101,7 +101,7 @@ as $$
     join public.class cls on cls.id = uc.class_id
     join public.course_utilization cu on cu.class_id = cls.id
     join public.course co on co.id = cu.course_id
-    join public.block b on b.id = cu.block_id
+    join public.section b on b.id = cu.section_id
     join selected_term st on st.id = b.academic_term_id
     left join public.major_offering mo on mo.id = b.major_offering_id
     left join public.program_offering po on po.id = mo.program_offering_id

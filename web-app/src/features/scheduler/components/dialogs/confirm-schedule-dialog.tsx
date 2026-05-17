@@ -7,7 +7,7 @@ import { numberToHourDuration } from "@/utils/time";
 import { toDisplayTime } from "@/features/scheduler/lib/schedule/utils";
 import type { SessionType } from "@/features/shared/types/models";
 import type {
-  CourseLoadingBlockListItem,
+  CourseLoadingSectionListItem,
   FacultyListItem,
 } from "@/features/faculty-teaching-load/lib/course-loading/types";
 import type { ExtendedRoom } from "@/features/shared/types/models";
@@ -24,7 +24,7 @@ type ConfirmScheduleDialogProps = {
   } | null;
   timeSlots: Array<{ start: string; end: string }>;
   sessionType: SessionType;
-  selectedBlock: CourseLoadingBlockListItem | null;
+  selectedSection: CourseLoadingSectionListItem | null;
   selectedOffering: SchedulerCourseOfferingItem | null;
   selectedFaculty: FacultyListItem | null;
   selectedRoom: ExtendedRoom | null;
@@ -39,7 +39,7 @@ const ConfirmScheduleDialog = ({
   pendingRange,
   timeSlots,
   sessionType,
-  selectedBlock,
+  selectedSection,
   selectedOffering,
   selectedFaculty,
   selectedRoom,
@@ -89,7 +89,7 @@ const ConfirmScheduleDialog = ({
           ) : null}
 
           <div className="grid grid-cols-2 mt-2 text-sm">
-            <p>Block: {selectedBlock?.code ?? "None"}</p>
+            <p>Section: {selectedSection?.code ?? "None"}</p>
             <p>Course: {selectedOffering?.course_code ?? "None"}</p>
             <p>Faculty: {selectedFaculty?.name ?? "None"}</p>
             <p>Room: {selectedRoom?.code ?? "Online / None"}</p>

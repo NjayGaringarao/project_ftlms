@@ -1,11 +1,11 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { ExtendedAcademicTerm, ExtendedBlock } from "@/features/shared/types/models";
+import { ExtendedAcademicTerm, ExtendedSection } from "@/features/shared/types/models";
 
-export type BlockListItem = ExtendedBlock & {
+export type SectionListItem = ExtendedSection & {
   academic_term: ExtendedAcademicTerm | null;
-  major_offering: ExtendedBlock["major_offering"] & {
+  major_offering: ExtendedSection["major_offering"] & {
     major: {
       id: string;
       code: string;
@@ -34,11 +34,11 @@ export type BlockListItem = ExtendedBlock & {
   };
 };
 
-export const getBlocksList = async (): Promise<BlockListItem[]> => {
+export const getSectionsList = async (): Promise<SectionListItem[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("block")
+    .from("section")
     .select(
       `
       id,
@@ -46,7 +46,8 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
       major_offering_id,
       academic_term_id,
       year_level,
-      section,
+      name,
+      classification,
       student_count,
       academic_term:academic_term_id (
         id,
@@ -76,10 +77,10 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
       `,
     )
     .order("year_level", { ascending: true })
-    .order("section", { ascending: true });
+    .order("name", { ascending: true });
 
   if (error) {
-    console.error("lib.admin.blocks.getBlocksList ::", error);
+    console.error("lib.admin.sections.getSectionsList ::", error);
     return [];
   }
 
@@ -114,16 +115,16 @@ export const getBlocksList = async (): Promise<BlockListItem[]> => {
         },
       },
     };
-  }) as BlockListItem[];
+  }) as SectionListItem[];
 };
 
-export const getBlockById = async (
-  blockId: string,
-): Promise<BlockListItem | null> => {
+export const getSectionById = async (
+  sectionId: string,
+): Promise<SectionListItem | null> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("block")
+    .from("section")
     .select(
       `
       id,
@@ -131,7 +132,8 @@ export const getBlockById = async (
       major_offering_id,
       academic_term_id,
       year_level,
-      section,
+      name,
+      classification,
       student_count,
       academic_term:academic_term_id (
         id,
@@ -166,11 +168,11 @@ export const getBlockById = async (
       )
       `,
     )
-    .eq("id", blockId)
+    .eq("id", sectionId)
     .maybeSingle();
 
   if (error) {
-    console.error("lib.admin.blocks.getBlockById ::", error);
+    console.error("lib.admin.sections.getSectionById ::", error);
     return null;
   }
 
@@ -212,14 +214,14 @@ export const getBlockById = async (
           : programOffering?.program,
       },
     },
-  } as BlockListItem;
+  } as SectionListItem;
 };
 
-export const getBlocksByCampus = async (
+export const getSectionsByCampus = async (
   campusId: string,
-): Promise<BlockListItem[]> => {
-  const blocks = await getBlocksList();
-  return blocks.filter(
-    (block) => block.major_offering?.program_offering?.campus_id === campusId,
+): Promise<SectionListItem[]> => {
+  const sections = await getSectionsList();
+  return sections.filter(
+    (section) => section.major_offering?.program_offering?.campus_id === campusId,
   );
 };

@@ -1,6 +1,6 @@
 create or replace function public.get_scheduler_matrices(
   academic_term_id uuid,
-  block_id uuid default null,
+  section_id uuid default null,
   faculty_id uuid default null,
   room_id uuid default null
 )
@@ -10,7 +10,7 @@ stable
 set search_path = public
 as $$
   select jsonb_build_object(
-    'block',
+    'section',
     case
       when $2 is null then '[]'::jsonb
       else coalesce(
@@ -31,8 +31,8 @@ as $$
               on c.id = sc.class_id
             join public.course_utilization cu
               on cu.class_id = c.id
-            join public.block b
-              on b.id = cu.block_id
+            join public.section b
+              on b.id = cu.section_id
             where b.id = $2
               and b.academic_term_id = $1
           ) t
@@ -63,8 +63,8 @@ as $$
               on uc.class_id = c.id
             join public.course_utilization cu
               on cu.class_id = c.id
-            join public.block b
-              on b.id = cu.block_id
+            join public.section b
+              on b.id = cu.section_id
             where uc.user_id = $3
               and b.academic_term_id = $1
           ) t
@@ -92,8 +92,8 @@ as $$
               on c.id = sc.class_id
             join public.course_utilization cu
               on cu.class_id = c.id
-            join public.block b
-              on b.id = cu.block_id
+            join public.section b
+              on b.id = cu.section_id
             where s.room_id is null
               and b.academic_term_id = $1
           ) t
@@ -118,8 +118,8 @@ as $$
               on c.id = sc.class_id
             join public.course_utilization cu
               on cu.class_id = c.id
-            join public.block b
-              on b.id = cu.block_id
+            join public.section b
+              on b.id = cu.section_id
             where s.room_id = $4
               and b.academic_term_id = $1
           ) t

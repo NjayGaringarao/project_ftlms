@@ -6,7 +6,7 @@ import {
   normalizeCode,
   normalizeDescription,
   normalizeName,
-  revalidateBlocksPaths,
+  revalidateSectionsPaths,
   revalidateCampusProgramMajorOfferingsPaths,
   revalidateCampusProgramOfferingDetailPath,
   revalidateDepartmentProgramDetailPath,
@@ -497,28 +497,30 @@ export async function deleteMajorOffering(
   return { data: true };
 }
 
-type BlockInput = {
+type SectionInput = {
   major_offering_id: string;
   academic_term_id: string;
   year_level: number;
-  section: string;
+  name: string;
+  classification: "regular" | "irregular";
   student_count?: number | null;
 };
 
-type UpdateBlockInput = BlockInput & {
+type UpdateSectionInput = SectionInput & {
   id: string;
 };
 
-const normalizeBlockInput = (input: BlockInput) => ({
+const normalizeSectionInput = (input: SectionInput) => ({
   major_offering_id: input.major_offering_id.trim(),
   academic_term_id: input.academic_term_id.trim(),
   year_level: input.year_level,
-  section: normalizeCode(input.section),
+  name: normalizeCode(input.name),
+  classification: input.classification,
   student_count: input.student_count ?? null,
 });
 
-export async function createBlock(
-  input: BlockInput,
+export async function createSection(
+  input: SectionInput,
 ): Promise<{ data?: { id: string }; error?: string }> {
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
@@ -527,7 +529,10 @@ export async function createBlock(
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
     return { error: "Year level must be greater than zero" };
   }
-  if (!input.section?.trim()) return { error: "Section is required" };
+  if (!input.name?.trim()) return { error: "Section is required" };
+  if (!["regular", "irregular"].includes(input.classification)) {
+    return { error: "Classification must be regular or irregular" };
+  }
   if (
     input.student_count !== undefined &&
     input.student_count !== null &&
@@ -560,29 +565,29 @@ export async function createBlock(
   }
 
   const { data, error } = await supabase
-    .from("block")
-    .insert(normalizeBlockInput(input))
+    .from("section")
+    .insert(normalizeSectionInput(input))
     .select("id")
     .single();
 
   if (error) {
     return {
       error: mapDuplicateError(
-        "Block",
+        "Section",
         "for this major offering, year level, and section",
         error,
       ),
     };
   }
 
-  revalidateBlocksPaths();
+  revalidateSectionsPaths();
   return { data: { id: data.id } };
 }
 
-export async function updateBlock(
-  input: UpdateBlockInput,
+export async function updateSection(
+  input: UpdateSectionInput,
 ): Promise<{ data?: boolean; error?: string }> {
-  if (!input.id?.trim()) return { error: "Block ID is required" };
+  if (!input.id?.trim()) return { error: "Section ID is required" };
   if (!input.major_offering_id?.trim())
     return { error: "Major offering is required" };
   if (!input.academic_term_id?.trim())
@@ -590,7 +595,10 @@ export async function updateBlock(
   if (!Number.isFinite(input.year_level) || input.year_level <= 0) {
     return { error: "Year level must be greater than zero" };
   }
-  if (!input.section?.trim()) return { error: "Section is required" };
+  if (!input.name?.trim()) return { error: "Section is required" };
+  if (!["regular", "irregular"].includes(input.classification)) {
+    return { error: "Classification must be regular or irregular" };
+  }
   if (
     input.student_count !== undefined &&
     input.student_count !== null &&
@@ -604,7 +612,7 @@ export async function updateBlock(
   const [
     { data: majorOffering },
     { data: academicTerm },
-    { data: existingBlock },
+    { data: existingSection },
   ] = await Promise.all([
     supabase
       .from("major_offering")
@@ -617,7 +625,7 @@ export async function updateBlock(
       .eq("id", input.academic_term_id)
       .maybeSingle(),
     supabase
-      .from("block")
+      .from("section")
       .select("academic_term_id")
       .eq("id", input.id)
       .maybeSingle(),
@@ -632,42 +640,42 @@ export async function updateBlock(
   }
 
   const { error } = await supabase
-    .from("block")
-    .update(normalizeBlockInput(input))
+    .from("section")
+    .update(normalizeSectionInput(input))
     .eq("id", input.id);
 
   if (error) {
     return {
       error: mapDuplicateError(
-        "Block",
+        "Section",
         "for this major offering, year level, and section",
         error,
       ),
     };
   }
 
-  revalidateBlocksPaths();
+  revalidateSectionsPaths();
   if (
-    existingBlock?.academic_term_id &&
-    existingBlock.academic_term_id !== input.academic_term_id
+    existingSection?.academic_term_id &&
+    existingSection.academic_term_id !== input.academic_term_id
   ) {
-    revalidateBlocksPaths();
+    revalidateSectionsPaths();
   }
   return { data: true };
 }
 
-export async function deleteBlock(
-  blockId: string,
+export async function deleteSection(
+  sectionId: string,
 ): Promise<{ data?: boolean; error?: string }> {
-  if (!blockId?.trim()) return { error: "Block ID is required" };
+  if (!sectionId?.trim()) return { error: "Section ID is required" };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("block").delete().eq("id", blockId);
+  const { error } = await supabase.from("section").delete().eq("id", sectionId);
 
   if (error) {
     return { error: error.message };
   }
 
-  revalidateBlocksPaths();
+  revalidateSectionsPaths();
   return { data: true };
 }

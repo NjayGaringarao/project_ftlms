@@ -39,7 +39,7 @@ const SchedulerPage = async ({ searchParams }: SchedulerPageProps) => {
             paramName: "academic_term_id",
             resetParamsOnSelect: [
               "facultyId",
-              "blockId",
+              "sectionId",
               "roomId",
               "courseUtilizationId",
             ],

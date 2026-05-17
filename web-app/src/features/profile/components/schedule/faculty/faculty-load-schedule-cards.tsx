@@ -45,7 +45,7 @@ export const FacultyTeachingLoadCard = ({
                 <tr className="border-b text-left text-foreground/70">
                   <th className="px-2 py-1.5 min-w-24">Course</th>
                   <th className="px-2 py-1.5 min-w-48">Title</th>
-                  <th className="px-2 py-1.5 min-w-40">Block(s)</th>
+                  <th className="px-2 py-1.5 min-w-40">Section(s)</th>
                   <th className="px-2 py-1.5 min-w-28">Campus</th>
                   <th className="px-2 py-1.5 ">Load</th>
                 </tr>
@@ -56,7 +56,7 @@ export const FacultyTeachingLoadCard = ({
                     <td className="px-2 py-1.5 font-medium">{row.course_code}</td>
                     <td className="px-2 py-1.5">{row.course_title}</td>
                     <td className="px-2 py-1.5 text-xs text-foreground/80">
-                      {row.merged_block_label}
+                      {row.merged_section_label}
                     </td>
                     <td className="px-2 py-1.5 text-xs text-foreground/80">
                       {row.campus_label}
@@ -121,7 +121,7 @@ export const FacultyScheduleCard = ({
                   <th className="px-1.5 py-1.5 min-w-32">Lec. Rm</th>
                   <th className="px-1.5 py-1.5 min-w-16">Lab. Hr(s)</th>
                   <th className="px-1.5 py-1.5 min-w-32">Lab. Rm</th>
-                  <th className="px-1.5 py-1.5 min-w-20">Block(s) (Code)</th>
+                  <th className="px-1.5 py-1.5 min-w-20">Section(s) (Code)</th>
                   <th className="px-1.5 py-1.5 min-w-14">No of Students</th>
                   {hasManageActions ? <th className="px-1.5 py-1.5 w-10" /> : null}
                 </tr>
@@ -163,7 +163,7 @@ export const FacultyScheduleCard = ({
                         {row.laboratory_room ?? "-"}
                       </td>
                       <td className="px-1.5 py-1.5 text-xs text-foreground/80">
-                        {row.block_codes_label}
+                        {row.section_codes_label}
                       </td>
                       <td className="px-1.5 py-1.5  tabular-nums">
                         {row.student_count ?? "-"}

@@ -5,7 +5,8 @@ import {
   formatProposalDesignationItems,
 } from "@/features/ftl-evaluation/lib/load-proposal/snapshot";
 import type { FacultyScheduleRow } from "@/features/scheduler/lib/schedule/types";
-import { mergeBlockLabels, sortScheduleRows, toMinutes } from "@/features/scheduler/lib/schedule/utils";
+import { sortScheduleRows, toMinutes } from "@/features/scheduler/lib/schedule/utils";
+import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
 import type { ProposalScheduleSessionItem } from "@/features/shared/types/models";
 import { getUserOverviewById } from "@/features/profile/lib/user-overview";
 import { createClient } from "@/utils/supabase/server";
@@ -133,9 +134,11 @@ const toScheduleSessions = (
       const startTime = toNonEmptyText(row.start_time ?? null, "");
       const endTime = toNonEmptyText(row.end_time ?? null, "");
       const type = toNonEmptyText(row.type ?? null, "");
-      const blockId = toNonEmptyText(row.block_id ?? null, "");
-      const blockCode = toNonEmptyText(row.block_code ?? null, "");
-      const section = toNonEmptyText(row.section ?? null, "");
+      const sectionId = toNonEmptyText(row.section_id ?? null, "");
+      const sectionCode = toNonEmptyText(row.section_code ?? null, "");
+      const sectionClassification =
+        row.section_classification === "irregular" ? "irregular" : "regular";
+      const sectionName = toNonEmptyText(row.name ?? null, "");
 
       if (
         !sessionId ||
@@ -145,9 +148,9 @@ const toScheduleSessions = (
         !startTime ||
         !endTime ||
         !type ||
-        !blockId ||
-        !blockCode ||
-        !section
+        !sectionId ||
+        !sectionCode ||
+        !sectionName
       ) {
         return null;
       }
@@ -165,10 +168,11 @@ const toScheduleSessions = (
         room_id: toNullableText(row.room_id ?? null),
         room_code: toNullableText(row.room_code ?? null),
         room_name: toNullableText(row.room_name ?? null),
-        block_id: blockId,
-        block_code: blockCode,
+        section_id: sectionId,
+        section_code: sectionCode,
+        section_classification: sectionClassification,
         year_level: Math.max(0, Math.round(toNumber(row.year_level))),
-        section,
+        name: sectionName,
         student_count:
           row.student_count === null || row.student_count === undefined
             ? null
@@ -211,28 +215,35 @@ const toDisplayScheduleRows = (
     }
 
     const firstSession = classSessions[0]!;
-    const seenBlocks = new Set<string>();
-    const uniqueBlockRows = classSessions.filter((session) => {
-      const dedupeKey = session.block_id.trim() || session.block_code.trim();
+    const seenSections = new Set<string>();
+    const uniqueSectionRows = classSessions.filter((session) => {
+      const dedupeKey = session.section_id.trim() || session.section_code.trim();
       if (!dedupeKey) return true;
-      if (seenBlocks.has(dedupeKey)) return false;
-      seenBlocks.add(dedupeKey);
+      if (seenSections.has(dedupeKey)) return false;
+      seenSections.add(dedupeKey);
       return true;
     });
 
-    const blockCodes = Array.from(
-      new Set(
-        uniqueBlockRows
-          .map((session) => session.block_code.trim())
-          .filter((value): value is string => Boolean(value)),
-      ),
+    const sectionCodes = Array.from(
+      new Map(
+        uniqueSectionRows
+          .map((session) => ({
+            code: session.section_code.trim(),
+            classification: session.section_classification,
+          }))
+          .filter((section) => Boolean(section.code))
+          .map((section) => [section.code, section]),
+      ).values(),
     );
 
-    const studentCount = uniqueBlockRows.reduce(
+    const studentCount = uniqueSectionRows.reduce(
       (sum, session) => sum + Number(session.student_count ?? 0),
       0,
     );
-    const mergedBlockCodeLabel = mergeBlockLabels(blockCodes);
+    const mergedSectionCodeLabel = formatMergedSectionLabels(
+      sectionCodes,
+      (section) => section.code,
+    );
 
     const groupedSessions = new Map<
       string,
@@ -288,11 +299,11 @@ const toDisplayScheduleRows = (
       return {
         row_id: `${classId}:${representativeSession.type}:${representativeSession.start_time}:${representativeSession.end_time}:${roomLabel ?? ""}:${sessionDays.join(",")}`,
         class_id: classId,
-        primary_block_id: firstSession.block_id,
+        primary_section_id: firstSession.section_id,
         primary_course_utilization_id: firstSession.course_utilization_id,
         course_code: firstSession.course_code,
         course_title: firstSession.course_title,
-        block_codes_label: mergedBlockCodeLabel,
+        section_codes_label: mergedSectionCodeLabel,
         student_count: studentCount > 0 ? studentCount : null,
         lecture_hours: isLecture ? sessionHours : null,
         lecture_room: isLecture ? roomLabel : null,

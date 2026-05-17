@@ -1,25 +1,25 @@
 do $$
 begin
-  -- Block section should be unique per major offering and academic term.
+  -- Section name should be unique per major offering and academic term.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'block_major_term_year_section_unique'
-      and conrelid = 'public.block'::regclass
+    where conname = 'section_major_term_year_name_unique'
+      and conrelid = 'public.section'::regclass
   ) then
-    alter table public.block
-      add constraint block_major_term_year_section_unique
-      unique (major_offering_id, academic_term_id, year_level, section);
+    alter table public.section
+      add constraint section_major_term_year_name_unique
+      unique (major_offering_id, academic_term_id, year_level, name);
   end if;
 
-  -- Course utilization should be unique per block and course.
+  -- Course utilization should be unique per section and course.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'course_utilization_block_course_unique'
+    where conname = 'course_utilization_section_course_unique'
       and conrelid = 'public.course_utilization'::regclass
   ) then
     alter table public.course_utilization
-      add constraint course_utilization_block_course_unique
-      unique (block_id, course_id);
+      add constraint course_utilization_section_course_unique
+      unique (section_id, course_id);
   end if;
 
   -- One faculty per class.
@@ -62,8 +62,8 @@ $$;
 create index if not exists session_day_time_idx
   on public.session (day, start_time, end_time);
 
-create index if not exists course_utilization_block_idx
-  on public.course_utilization (block_id);
+create index if not exists course_utilization_section_idx
+  on public.course_utilization (section_id);
 
 create index if not exists course_utilization_class_idx
   on public.course_utilization (class_id);

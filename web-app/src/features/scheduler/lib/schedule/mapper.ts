@@ -5,7 +5,7 @@ import { SessionDay } from "@/features/shared/types/models";
 
 export type SchedulerMapperContext = {
   facultyId?: string | null;
-  blockId?: string | null;
+  sectionId?: string | null;
   roomId?: string | null;
 };
 
@@ -29,7 +29,7 @@ export type SchedulerMatrixSession = {
 };
 
 export type SchedulerMatricesResult = {
-  block: SchedulerMatrixSession[];
+  section: SchedulerMatrixSession[];
   faculty: SchedulerMatrixSession[];
   room: SchedulerMatrixSession[];
 };
@@ -89,7 +89,7 @@ const toHours = (minutes: number): number => {
 };
 
 const isNoContext = (context: SchedulerMapperContext): boolean => {
-  return !context.facultyId && !context.blockId && !context.roomId;
+  return !context.facultyId && !context.sectionId && !context.roomId;
 };
 
 const normalizeSessionDay = (
@@ -127,9 +127,9 @@ const getClassIdsForTerm = async (
 
   const { data, error } = await supabase
     .from("course_utilization")
-    .select("class_id, block:block_id(academic_term_id)")
+    .select("class_id, section:section_id(academic_term_id)")
     .in("class_id", classIds)
-    .eq("block.academic_term_id", academicTermId);
+    .eq("section.academic_term_id", academicTermId);
 
   if (error) {
     console.error("lib.schedule.mapper.getClassIdsForTerm ::", error);
@@ -145,19 +145,19 @@ const getClassIdsForTerm = async (
   );
 };
 
-const getClassIdsByBlock = async (
+const getClassIdsBySection = async (
   academicTermId: string,
-  blockId: string,
+  sectionId: string,
 ): Promise<string[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("course_utilization")
-    .select("class_id, block:block_id(academic_term_id)")
-    .eq("block_id", blockId)
-    .eq("block.academic_term_id", academicTermId);
+    .select("class_id, section:section_id(academic_term_id)")
+    .eq("section_id", sectionId)
+    .eq("section.academic_term_id", academicTermId);
 
   if (error) {
-    console.error("lib.schedule.mapper.getClassIdsByBlock ::", error);
+    console.error("lib.schedule.mapper.getClassIdsBySection ::", error);
     return [];
   }
 
@@ -227,8 +227,8 @@ export const getSchedulerMapperClassList = async (
 
   if (context.facultyId) {
     classIds = await getClassIdsByFaculty(academicTermId, context.facultyId);
-  } else if (context.blockId) {
-    classIds = await getClassIdsByBlock(academicTermId, context.blockId);
+  } else if (context.sectionId) {
+    classIds = await getClassIdsBySection(academicTermId, context.sectionId);
   } else if (context.roomId) {
     classIds = await getClassIdsByRoom(academicTermId, context.roomId);
   }
@@ -301,11 +301,11 @@ const getSchedulerMapperClassListByFaculty = async (
   return getSchedulerMapperClassList(academicTermId, { facultyId });
 };
 
-const getSchedulerMapperClassListByBlock = async (
+const getSchedulerMapperClassListBySection = async (
   academicTermId: string,
-  blockId: string,
+  sectionId: string,
 ): Promise<SchedulerMapperClassListItem[]> => {
-  return getSchedulerMapperClassList(academicTermId, { blockId });
+  return getSchedulerMapperClassList(academicTermId, { sectionId });
 };
 
 const getSchedulerMapperClassListByRoom = async (
@@ -370,15 +370,15 @@ export const getSchedulerMapperMatrixByFaculty = async (
   return loadMatrixSessions(classIds);
 };
 
-export const getSchedulerMapperMatrixByBlock = async (
+export const getSchedulerMapperMatrixBySection = async (
   academicTermId: string,
-  blockId: string,
+  sectionId: string,
 ): Promise<SchedulerMatrixSession[]> => {
-  if (!academicTermId?.trim() || !blockId?.trim()) {
+  if (!academicTermId?.trim() || !sectionId?.trim()) {
     return [];
   }
 
-  const classIds = await getClassIdsByBlock(academicTermId, blockId);
+  const classIds = await getClassIdsBySection(academicTermId, sectionId);
   return loadMatrixSessions(classIds);
 };
 
@@ -396,12 +396,12 @@ export const getSchedulerMapperMatrixByRoom = async (
     .select(
       `
       class_id,
-      class:class_id(code, course_utilization(block:block_id(academic_term_id))),
+      class:class_id(code, course_utilization(section:section_id(academic_term_id))),
       session:session_id(id, day, start_time, end_time, room_id)
       `,
     )
     .eq("session.room_id", roomId)
-    .eq("class.course_utilization.block.academic_term_id", academicTermId);
+    .eq("class.course_utilization.section.academic_term_id", academicTermId);
 
   if (error) {
     console.error("lib.schedule.mapper.getSchedulerMapperMatrixByRoom ::", error);
@@ -429,15 +429,15 @@ export const getSchedulerMapperMatrixByRoom = async (
     .filter((row): row is SchedulerMatrixSession => Boolean(row));
 };
 
-export const getSchedulerMapperMatrixByOnlineBlock = async (
+export const getSchedulerMapperMatrixByOnlineSection = async (
   academicTermId: string,
-  blockId: string,
+  sectionId: string,
 ): Promise<SchedulerMatrixSession[]> => {
-  if (!academicTermId?.trim() || !blockId?.trim()) {
+  if (!academicTermId?.trim() || !sectionId?.trim()) {
     return [];
   }
 
-  const classIds = await getClassIdsByBlock(academicTermId, blockId);
+  const classIds = await getClassIdsBySection(academicTermId, sectionId);
   if (classIds.length === 0) return [];
 
   const supabase = await createClient();
@@ -455,7 +455,7 @@ export const getSchedulerMapperMatrixByOnlineBlock = async (
 
   if (error) {
     console.error(
-      "lib.schedule.mapper.getSchedulerMapperMatrixByOnlineBlock ::",
+      "lib.schedule.mapper.getSchedulerMapperMatrixByOnlineSection ::",
       error,
     );
     return [];
@@ -482,64 +482,64 @@ export const getSchedulerMapperMatrixByOnlineBlock = async (
     .filter((row): row is SchedulerMatrixSession => Boolean(row));
 };
 
-export const getMergedBlockConflictSessions = async (
+export const getMergedSectionConflictSessions = async (
   academicTermId: string,
   classId: string | null | undefined,
-  currentBlockId: string | null | undefined,
+  currentSectionId: string | null | undefined,
 ): Promise<SchedulerMatrixSession[]> => {
   if (!academicTermId?.trim() || !classId?.trim()) return [];
 
   const supabase = await createClient();
-  const { data: classBlocks, error: classBlocksError } = await supabase
+  const { data: classSections, error: classSectionsError } = await supabase
     .from("course_utilization")
-    .select("block_id")
+    .select("section_id")
     .eq("class_id", classId);
 
-  if (classBlocksError) {
+  if (classSectionsError) {
     console.error(
-      "lib.schedule.mapper.getMergedBlockConflictSessions.classBlocks ::",
-      classBlocksError,
+      "lib.schedule.mapper.getMergedSectionConflictSessions.classSections ::",
+      classSectionsError,
     );
     return [];
   }
 
-  const mergedBlockIds = Array.from(
+  const mergedSectionIds = Array.from(
     new Set(
-      (classBlocks ?? [])
-        .map((row) => row.block_id as string)
-        .filter((id) => Boolean(id) && id !== currentBlockId),
+      (classSections ?? [])
+        .map((row) => row.section_id as string)
+        .filter((id) => Boolean(id) && id !== currentSectionId),
     ),
   );
 
-  if (mergedBlockIds.length === 0) return [];
+  if (mergedSectionIds.length === 0) return [];
 
   const { data: conflictClasses, error: conflictClassesError } = await supabase
     .from("course_utilization")
-    .select("class_id, block:block_id(id, code, academic_term_id)")
-    .in("block_id", mergedBlockIds)
-    .eq("block.academic_term_id", academicTermId)
+    .select("class_id, section:section_id(id, code, academic_term_id)")
+    .in("section_id", mergedSectionIds)
+    .eq("section.academic_term_id", academicTermId)
     .neq("class_id", classId);
 
   if (conflictClassesError) {
     console.error(
-      "lib.schedule.mapper.getMergedBlockConflictSessions.conflictClasses ::",
+      "lib.schedule.mapper.getMergedSectionConflictSessions.conflictClasses ::",
       conflictClassesError,
     );
     return [];
   }
 
-  const classToBlock = new Map<string, string>();
+  const classToSection = new Map<string, string>();
   (conflictClasses ?? []).forEach((row) => {
-    const block = first((row as { block?: unknown }).block) as
+    const section = first((row as { section?: unknown }).section) as
       | { code?: string | null }
       | null;
     const conflictClassId = row.class_id as string | null;
-    if (conflictClassId && block?.code) {
-      classToBlock.set(conflictClassId, block.code);
+    if (conflictClassId && section?.code) {
+      classToSection.set(conflictClassId, section.code);
     }
   });
 
-  const conflictClassIds = Array.from(classToBlock.keys());
+  const conflictClassIds = Array.from(classToSection.keys());
   if (conflictClassIds.length === 0) return [];
 
   const { data, error } = await supabase
@@ -555,7 +555,7 @@ export const getMergedBlockConflictSessions = async (
 
   if (error) {
     console.error(
-      "lib.schedule.mapper.getMergedBlockConflictSessions.sessions ::",
+      "lib.schedule.mapper.getMergedSectionConflictSessions.sessions ::",
       error,
     );
     return [];
@@ -575,7 +575,7 @@ export const getMergedBlockConflictSessions = async (
       return;
     }
     const conflictClassId = row.class_id as string;
-    const blockCode = classToBlock.get(conflictClassId);
+    const sectionCode = classToSection.get(conflictClassId);
 
     sessions.push({
       id: `merged-conflict-${session.id}`,
@@ -585,9 +585,9 @@ export const getMergedBlockConflictSessions = async (
       start_time: session.start_time,
       end_time: session.end_time,
       visual_source: "merged_conflict",
-      visual_label: blockCode
-        ? `Merged block occupied: ${blockCode}`
-        : "Merged block occupied",
+      visual_label: sectionCode
+        ? `Merged section occupied: ${sectionCode}`
+        : "Merged section occupied",
     });
   });
 
@@ -636,30 +636,30 @@ export const getSchedulerMapperMatrices = async (
   context: SchedulerMapperContext,
 ): Promise<SchedulerMatricesResult> => {
   if (!academicTermId?.trim() || isNoContext(context)) {
-    return { block: [], faculty: [], room: [] };
+    return { section: [], faculty: [], room: [] };
   }
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_scheduler_matrices", {
     academic_term_id: academicTermId,
-    block_id: context.blockId ?? null,
+    section_id: context.sectionId ?? null,
     faculty_id: context.facultyId ?? null,
     room_id: context.roomId ?? null,
   });
 
   if (error) {
     console.error("lib.schedule.mapper.getSchedulerMapperMatrices ::", error);
-    return { block: [], faculty: [], room: [] };
+    return { section: [], faculty: [], room: [] };
   }
 
   const payload = (data ?? {}) as {
-    block?: unknown;
+    section?: unknown;
     faculty?: unknown;
     room?: unknown;
   };
 
   return {
-    block: normalizeRpcSessions(payload.block),
+    section: normalizeRpcSessions(payload.section),
     faculty: normalizeRpcSessions(payload.faculty),
     room: normalizeRpcSessions(payload.room),
   };
@@ -667,6 +667,6 @@ export const getSchedulerMapperMatrices = async (
 
 export {
   getSchedulerMapperClassListByFaculty,
-  getSchedulerMapperClassListByBlock,
+  getSchedulerMapperClassListBySection,
   getSchedulerMapperClassListByRoom,
 };

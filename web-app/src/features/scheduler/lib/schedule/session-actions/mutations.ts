@@ -22,7 +22,7 @@ import {
 import type {
   CreateClassSessionInput,
   CreateSessionFromOfferingInput,
-  RawBlockRow,
+  RawSectionRow,
   SessionMutationData,
   UpdateSessionTimeInput,
 } from "./types";
@@ -111,14 +111,14 @@ export const createSessionFromOffering = async (
   input: CreateSessionFromOfferingInput,
 ): Promise<{ data?: SessionMutationData; error?: string }> => {
   if (!input.academicTermId?.trim()) return { error: "Academic term is required" };
-  if (!input.blockId?.trim()) return { error: "Block is required" };
+  if (!input.sectionId?.trim()) return { error: "Section is required" };
   if (!input.courseUtilizationId?.trim()) return { error: "Course offering is required" };
   if (!input.facultyId?.trim()) return { error: "Faculty is required" };
 
   const supabase = await createClient();
   const { data: utilization, error } = await supabase
     .from("course_utilization")
-    .select("id, class_id, block_id, block:block_id(academic_term_id)")
+    .select("id, class_id, section_id, section:section_id(academic_term_id)")
     .eq("id", input.courseUtilizationId)
     .maybeSingle();
 
@@ -126,15 +126,15 @@ export const createSessionFromOffering = async (
     return { error: error?.message ?? "Course offering not found" };
   }
 
-  const block = first((utilization as { block?: unknown }).block) as {
+  const section = first((utilization as { section?: unknown }).section) as {
     academic_term_id?: string | null;
   } | null;
 
-  if (utilization.block_id !== input.blockId) {
-    return { error: "Course offering does not belong to the selected block" };
+  if (utilization.section_id !== input.sectionId) {
+    return { error: "Course offering does not belong to the selected section" };
   }
 
-  if (block?.academic_term_id !== input.academicTermId) {
+  if (section?.academic_term_id !== input.academicTermId) {
     return { error: "Course offering does not belong to the selected term" };
   }
 
@@ -216,7 +216,7 @@ export const updateSessionRoom = async (
   const context = await getSessionContext(sessionId);
   if (!context) return { error: "Session context not found" };
 
-  const [facultyWindows, blockWindows, roomWindows] = await Promise.all([
+  const [facultyWindows, sectionWindows, roomWindows] = await Promise.all([
     context.facultyId
       ? getSessionWindowsByPredicate(context.academicTermId, context.day, {
           facultyId: context.facultyId,
@@ -224,7 +224,7 @@ export const updateSessionRoom = async (
         })
       : Promise.resolve([]),
     getSessionWindowsByPredicate(context.academicTermId, context.day, {
-      blockIds: context.blockIds,
+      sectionIds: context.sectionIds,
       excludeSessionId: sessionId,
     }),
     roomId
@@ -239,8 +239,8 @@ export const updateSessionRoom = async (
   facultyWindows.forEach((window) =>
     conflicts.push({ ...window, reason: "Faculty has another schedule" }),
   );
-  blockWindows.forEach((window) =>
-    conflicts.push({ ...window, reason: "Block has another schedule" }),
+  sectionWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Section has another schedule" }),
   );
   roomWindows.forEach((window) =>
     conflicts.push({ ...window, reason: "Room is occupied" }),
@@ -285,7 +285,7 @@ export const updateSessionTime = async (
   const context = await getSessionContext(sessionId);
   if (!context) return { error: "Session context not found" };
 
-  const [facultyWindows, blockWindows, roomWindows] = await Promise.all([
+  const [facultyWindows, sectionWindows, roomWindows] = await Promise.all([
     context.facultyId
       ? getSessionWindowsByPredicate(context.academicTermId, input.day, {
           facultyId: context.facultyId,
@@ -293,7 +293,7 @@ export const updateSessionTime = async (
         })
       : Promise.resolve([]),
     getSessionWindowsByPredicate(context.academicTermId, input.day, {
-      blockIds: context.blockIds,
+      sectionIds: context.sectionIds,
       excludeSessionId: sessionId,
     }),
     context.room_id
@@ -312,8 +312,8 @@ export const updateSessionTime = async (
   facultyWindows.forEach((window) =>
     conflicts.push({ ...window, reason: "Faculty has another schedule" }),
   );
-  blockWindows.forEach((window) =>
-    conflicts.push({ ...window, reason: "Block has another schedule" }),
+  sectionWindows.forEach((window) =>
+    conflicts.push({ ...window, reason: "Section has another schedule" }),
   );
   roomWindows.forEach((window) =>
     conflicts.push({ ...window, reason: "Room is occupied" }),
@@ -392,7 +392,7 @@ export const replaceClassFaculty = async (
     .select(
       `
       id,
-      course_utilization(block_id, block:block_id(academic_term_id))
+      course_utilization(section_id, section:section_id(academic_term_id))
       `,
     )
     .eq("id", classId)
@@ -404,13 +404,13 @@ export const replaceClassFaculty = async (
 
   const utilizations = (classRow as { course_utilization?: unknown })
     .course_utilization as Array<{
-    block_id?: string;
-    block?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
+    section_id?: string;
+    section?: { academic_term_id?: string } | Array<{ academic_term_id?: string }>;
   }> | null;
 
   const firstUtil = (utilizations ?? [])[0];
-  const block = first(firstUtil?.block);
-  const academicTermId = block?.academic_term_id ?? "";
+  const section = first(firstUtil?.section);
+  const academicTermId = section?.academic_term_id ?? "";
 
   if (!academicTermId) {
     return { error: "Academic term not found for class" };
@@ -477,7 +477,7 @@ export const deleteClassSession = async (
   const { data: existing, error: existingError } = await supabase
     .from("session_class")
     .select(
-      "class_id, class:class_id(course_utilization(block:block_id(academic_term_id)))",
+      "class_id, class:class_id(course_utilization(section:section_id(academic_term_id)))",
     )
     .eq("session_id", sessionId)
     .maybeSingle();
@@ -491,10 +491,10 @@ export const deleteClassSession = async (
   } | null;
   const firstUtil = first(
     (classRow?.course_utilization ?? []) as Array<{
-      block?: RawBlockRow | RawBlockRow[] | null;
+      section?: RawSectionRow | RawSectionRow[] | null;
     }>,
   );
-  const academicTermId = first(firstUtil?.block)?.academic_term_id ?? null;
+  const academicTermId = first(firstUtil?.section)?.academic_term_id ?? null;
 
   const { error } = await supabase.from("session").delete().eq("id", sessionId);
   if (error) {

@@ -12,18 +12,19 @@ import {
 } from "./types";
 import {
   computeTeachingLoad,
-  mergeBlockLabels,
   sortScheduleRows,
   toMinutes,
 } from "./utils";
+import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
 
-type ClassBlockRow = {
-  block?: {
+type ClassSectionRow = {
+  section?: {
     id?: string | null;
     code?: string | null;
+    classification?: "regular" | "irregular" | null;
     student_count?: number | null;
     year_level?: number | null;
-    section?: string | null;
+    name?: string | null;
     major_offering?: {
       program_offering?: {
         campus?: {
@@ -63,7 +64,7 @@ type ClassRow = {
       lecture_unit?: number | null;
       laboratory_unit?: number | null;
     }> | null;
-    block?: ClassBlockRow["block"] | Array<ClassBlockRow["block"]> | null;
+    section?: ClassSectionRow["section"] | Array<ClassSectionRow["section"]> | null;
   }> | null;
   session_class?: Array<{
     session?: ClassSessionRow | ClassSessionRow[] | null;
@@ -169,12 +170,13 @@ const getClassRowsByFacultyAndTerm = async (
         course_utilization(
           id,
           course:course_id(code, title, lecture_unit, laboratory_unit),
-          block:block_id(
+          section:section_id(
             id,
             code,
+            classification,
             student_count,
             year_level,
-            section,
+            name,
             major_offering:major_offering_id(
               program_offering:program_offering_id(
                 campus:campus_id(name)
@@ -197,7 +199,7 @@ const getClassRowsByFacultyAndTerm = async (
       `,
     )
     .eq("user_id", userId)
-    .eq("class.course_utilization.block.academic_term_id", academicTermId);
+    .eq("class.course_utilization.section.academic_term_id", academicTermId);
 
   if (error) {
     console.error("lib.schedule.getClassRowsByFacultyAndTerm ::", error);
@@ -211,12 +213,12 @@ const getClassRowsByFacultyAndTerm = async (
   });
 };
 
-const formatBlockLabel = (
+const formatSectionLabel = (
   yearLevel: number | null | undefined,
-  section: string | null | undefined,
+  name: string | null | undefined,
 ): string | null => {
-  if (!yearLevel || !section) return null;
-  return `${yearLevel}${section}`;
+  if (!yearLevel || !name) return null;
+  return `${yearLevel}${name}`;
 };
 
 const mapSession = (session: ClassSessionRow): FacultyScheduleSessionInfo => {
@@ -252,20 +254,31 @@ const mapTeachingLoadRows = (classRows: ClassRow[]): FacultyTeachingLoadRow[] =>
     const lectureHour = Number(course?.lecture_unit ?? 0);
     const laboratoryHour = Number(course?.laboratory_unit ?? 0);
 
-    const blocks = (item.course_utilization ?? [])
-      .map((entry) => first(entry.block))
+    const sections = (item.course_utilization ?? [])
+      .map((entry) => first(entry.section))
       .filter(Boolean)
-      .map((block) =>
-        formatBlockLabel(block?.year_level ?? null, block?.section ?? null),
+      .map((section) =>
+        formatSectionLabel(section?.year_level ?? null, section?.name ?? null),
       )
       .filter((value): value is string => Boolean(value));
+    const sectionLabelRows = (item.course_utilization ?? [])
+      .map((entry) => first(entry.section))
+      .filter((section): section is NonNullable<typeof section> => Boolean(section))
+      .map((section) => ({
+        label: formatSectionLabel(section.year_level ?? null, section.name ?? null),
+        classification: section.classification ?? "regular",
+      }))
+      .filter((section): section is {
+        label: string;
+        classification: "regular" | "irregular";
+      } => Boolean(section.label));
 
     const campusLabel = Array.from(
       new Set(
         (item.course_utilization ?? [])
           .map((entry) => {
-            const block = first(entry.block);
-            const majorOffering = first(block?.major_offering);
+            const section = first(entry.section);
+            const majorOffering = first(section?.major_offering);
             const programOffering = first(majorOffering?.program_offering);
             const campus = first(programOffering?.campus);
             return campus?.name ?? null;
@@ -281,8 +294,11 @@ const mapTeachingLoadRows = (classRows: ClassRow[]): FacultyTeachingLoadRow[] =>
       lecture_hour: lectureHour,
       laboratory_hour: laboratoryHour,
       load: computeTeachingLoad(lectureHour, laboratoryHour),
-      blocks,
-      merged_block_label: mergeBlockLabels(blocks),
+      sections,
+      merged_section_label: formatMergedSectionLabels(
+        sectionLabelRows,
+        (section) => section.label,
+      ),
       campus_label: campusLabel || "Not assigned",
     };
   });
@@ -293,36 +309,43 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
 
   classRows.forEach((item) => {
     const firstUtil = (item.course_utilization ?? [])[0];
-    const primaryBlock = first(firstUtil?.block);
-    const primaryBlockId = primaryBlock?.id ?? null;
+    const primarySection = first(firstUtil?.section);
+    const primarySectionId = primarySection?.id ?? null;
     const primaryCourseUtilizationId = firstUtil?.id ?? null;
     const course = first(firstUtil?.course);
-    const blockRows = (item.course_utilization ?? [])
-      .map((entry) => first(entry.block))
-      .filter((block): block is NonNullable<typeof block> => Boolean(block));
+    const sectionRows = (item.course_utilization ?? [])
+      .map((entry) => first(entry.section))
+      .filter((section): section is NonNullable<typeof section> => Boolean(section));
 
-    const blockCodes = Array.from(
-      new Set(
-        blockRows
-          .map((block) => block.code?.trim() ?? "")
-          .filter((value): value is string => Boolean(value)),
-      ),
+    const sectionCodes = Array.from(
+      new Map(
+        sectionRows
+          .map((section) => ({
+            code: section.code?.trim() ?? "",
+            classification: section.classification ?? "regular",
+          }))
+          .filter((section) => Boolean(section.code))
+          .map((section) => [section.code, section]),
+      ).values(),
     );
 
-    const seenBlockIds = new Set<string>();
-    const uniqueBlockRows = blockRows.filter((block) => {
-      const dedupeKey = block.id?.trim() || block.code?.trim() || "";
+    const seenSectionIds = new Set<string>();
+    const uniqueSectionRows = sectionRows.filter((section) => {
+      const dedupeKey = section.id?.trim() || section.code?.trim() || "";
       if (!dedupeKey) return true;
-      if (seenBlockIds.has(dedupeKey)) return false;
-      seenBlockIds.add(dedupeKey);
+      if (seenSectionIds.has(dedupeKey)) return false;
+      seenSectionIds.add(dedupeKey);
       return true;
     });
 
-    const studentCount = uniqueBlockRows.reduce(
-      (sum, block) => sum + Number(block.student_count ?? 0),
+    const studentCount = uniqueSectionRows.reduce(
+      (sum, section) => sum + Number(section.student_count ?? 0),
       0,
     );
-    const mergedBlockCodeLabel = mergeBlockLabels(blockCodes);
+    const mergedSectionCodeLabel = formatMergedSectionLabels(
+      sectionCodes,
+      (section) => section.code,
+    );
     const sessions = (item.session_class ?? [])
       .map((entry) => first(entry.session))
       .filter((session): session is ClassSessionRow => Boolean(session))
@@ -332,11 +355,11 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
       rows.push({
         row_id: `${item.id}:no-session`,
         class_id: item.id,
-        primary_block_id: primaryBlockId,
+        primary_section_id: primarySectionId,
         primary_course_utilization_id: primaryCourseUtilizationId,
         course_code: course?.code ?? "Unknown",
         course_title: course?.title ?? "Untitled Course",
-        block_codes_label: mergedBlockCodeLabel,
+        section_codes_label: mergedSectionCodeLabel,
         student_count: studentCount > 0 ? studentCount : null,
         lecture_hours: null,
         lecture_room: null,
@@ -399,11 +422,11 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
       return {
         row_id: `${item.id}:${representativeSession.type}:${representativeSession.start_time}:${representativeSession.end_time}:${roomLabel ?? ""}:${sessionDays.join(",")}`,
         class_id: item.id,
-        primary_block_id: primaryBlockId,
+        primary_section_id: primarySectionId,
         primary_course_utilization_id: primaryCourseUtilizationId,
         course_code: course?.code ?? "Unknown",
         course_title: course?.title ?? "Untitled Course",
-        block_codes_label: mergedBlockCodeLabel,
+        section_codes_label: mergedSectionCodeLabel,
         student_count: studentCount > 0 ? studentCount : null,
         lecture_hours: isLecture ? sessionHours : null,
         lecture_room: isLecture ? roomLabel : null,

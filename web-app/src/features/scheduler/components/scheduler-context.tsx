@@ -4,7 +4,7 @@ import { createContext, useContext } from "react";
 import type { SessionType } from "@/features/shared/types/models";
 import type { SchedulerCourseOfferingItem } from "@/features/scheduler/lib/schedule/course-offerings";
 import type {
-  CourseLoadingBlockListItem,
+  CourseLoadingSectionListItem,
   FacultyListItem,
 } from "@/features/faculty-teaching-load/lib/course-loading/types";
 import type { SessionSummary } from "@/features/scheduler/lib/schedule/session-actions";
@@ -12,13 +12,13 @@ import type { SchedulerMatrixSession } from "@/features/scheduler/lib/schedule/m
 import type { ExtendedRoom } from "@/features/shared/types/models";
 
 export type SchedulerContextValue = {
-  blocks: CourseLoadingBlockListItem[];
+  sections: CourseLoadingSectionListItem[];
   rooms: ExtendedRoom[];
   offerings: SchedulerCourseOfferingItem[];
-  blockSessions: SchedulerMatrixSession[];
+  sectionSessions: SchedulerMatrixSession[];
   facultySessions: SchedulerMatrixSession[];
   roomSessions: SchedulerMatrixSession[];
-  selectedBlockId: string | null;
+  selectedSectionId: string | null;
   selectedFacultyId: string | null;
   selectedRoomId: string | null;
   selectedOffering: SchedulerCourseOfferingItem | null;

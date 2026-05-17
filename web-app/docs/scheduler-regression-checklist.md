@@ -7,7 +7,7 @@ Use this checklist after changes in:
 
 ## Preconditions
 - Log in as an allowed scheduler role: `Admin`, `Program Chairperson`, or `College Dean`.
-- Have at least one academic term, one block, and at least one course offering/class to schedule.
+- Have at least one academic term, one section, and at least one course offering/class to schedule.
 - Keep browser devtools open (network + console) for failed requests/runtime warnings.
 
 ## Routing And Term Switching
@@ -22,14 +22,14 @@ Use this checklist after changes in:
 - [ ] Disallowed roles are blocked/redirected according to app guard rules.
 
 ## Context Selection And URL Sync
-- [ ] Selecting `Faculty`, `Block`, and `Room` updates query params (`facultyId`, `blockId`, `roomId`).
+- [ ] Selecting `Faculty`, `Section`, and `Room` updates query params (`facultyId`, `sectionId`, `roomId`).
 - [ ] Clearing each context removes only its own query param.
 - [ ] Selecting course offering sets `courseUtilizationId` in URL.
 - [ ] Reloading the page preserves selected contexts from query params.
 - [ ] Deep link with prefilled params opens expected context (including links coming from FTL “Manage Schedule”).
 
 ## Matrix Rendering
-- [ ] Block matrix loads sessions for selected block.
+- [ ] Section matrix loads sessions for selected section.
 - [ ] Faculty matrix loads sessions for selected faculty.
 - [ ] Room matrix loads sessions for selected room.
 - [ ] Loading states appear and clear properly; no stale matrix after refresh.
@@ -46,7 +46,7 @@ Use this checklist after changes in:
 - [ ] Prevent create when end time <= start time.
 - [ ] Prevent create when class already has overlapping session.
 - [ ] Prevent create when faculty has overlapping session.
-- [ ] Prevent create when block has overlapping session.
+- [ ] Prevent create when section has overlapping session.
 - [ ] Prevent create when room is occupied.
 - [ ] Conflict message contains reason and time window.
 

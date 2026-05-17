@@ -86,14 +86,14 @@ migrations/
 - 500_triggers_updated_at.sql
 - 501_triggers_auth_signup.sql
 - 503_triggers_designation_uniqueness.sql
-- 504_trigger_class_block_schedule_course_uniqueness.sql
+- 504_trigger_class_section_schedule_course_uniqueness.sql
 - 505_trigger_class_code_autogenerate.sql
-- 506_trigger_class_block_term_change.sql
+- 506_trigger_class_section_term_change.sql
 - 507_trigger_course_utilization_autocreate_class.sql
 - 508_trigger_session_code_autogenerate.sql
 - 509_trigger_course_utilization_prevent_delete_with_sessions.sql
 - 510_trigger_major_offering_code.sql
-- 511_trigger_block_code.sql
+- 511_trigger_section_code.sql
 - 512_trigger_program_offering_code.sql
 - 513_trigger_academic_term_code.sql
 - 514_trigger_academic_year_code.sql
@@ -115,7 +115,7 @@ migrations/
   - Program and major structures.
 
 - `202_schema_offerings_availability.sql`
-  - Program/major offerings and term-scoped blocks.
+  - Program/major offerings and term-scoped sections.
 
 - `203_schema_user_domain.sql`
   - User profile, identity, degree, and designation entities.
@@ -137,7 +137,7 @@ migrations/
   - Canonical owner of: `program_offering_unique`, `major_offering_unique`.
 
 - `301_constraints_check.sql`
-  - General check constraints (course/block/room/session/evaluation).
+  - General check constraints (course/section/room/session/evaluation).
   - Canonical owner of: `session_time_range_valid`.
 
 - `302_constraints_academic_term.sql`
@@ -145,7 +145,7 @@ migrations/
 
 - `304_constraints_scheduling.sql`
   - Scheduling uniqueness constraints and performance indexes.
-  - Canonical owner of: `schedule_user_term_unique`, `block_major_term_year_section_unique`, `class_schedule_course_code_unique`, `class_block_unique`.
+  - Canonical owner of: `schedule_user_term_unique`, `section_major_term_year_name_unique`, `class_schedule_course_code_unique`, `class_section_unique`.
 
 - `305_constraints_designation.sql`
   - Designation check constraints only.
@@ -274,12 +274,12 @@ Seed SQL files are stored in `seeds/` and loaded during `db reset` based on `con
 * `1007_major_offerings.sql`
 * `1008_academic_years.sql`
 * `1009_academic_terms.sql`
-* `1010_blocks.sql`
+* `1010_sections.sql`
 * `1011_rooms.sql`
 
 > **Note:**
 > - `1008_academic_years.sql` and `1009_academic_terms.sql` replace the old `1008_academic_terms.sql`.
-> - `1010_blocks.sql` and `1011_rooms.sql` replace the old `1009_blocks.sql` and `1010_rooms.sql`.
+> - `1010_sections.sql` and `1011_rooms.sql` replace the old `1009_blocks.sql` and `1010_rooms.sql`.
 > - The order in this list must match the `sql_paths` in `config.toml` for correct dependency loading.
 
 ## Useful Commands

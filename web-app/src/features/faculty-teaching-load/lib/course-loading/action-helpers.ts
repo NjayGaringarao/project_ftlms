@@ -11,8 +11,8 @@ export const validateClassInsertInput = (
   if (!input.academic_term_id?.trim()) {
     return { error: "Academic term is required" };
   }
-  if (!input.block_ids || input.block_ids.length === 0) {
-    return { error: "At least one block is required" };
+  if (!input.section_ids || input.section_ids.length === 0) {
+    return { error: "At least one section is required" };
   }
   return {};
 };
@@ -20,34 +20,34 @@ export const validateClassInsertInput = (
 export const ensureCourseUtilizations = async (
   supabase: CourseLoadingSupabase,
   courseId: string,
-  blockIds: string[],
-): Promise<Array<{ id: string; block_id: string; class_id: string | null }>> => {
-  if (blockIds.length === 0) return [];
+  sectionIds: string[],
+): Promise<Array<{ id: string; section_id: string; class_id: string | null }>> => {
+  if (sectionIds.length === 0) return [];
 
   const { data: existing, error: existingError } = await supabase
     .from("course_utilization")
-    .select("id, block_id, class_id")
+    .select("id, section_id, class_id")
     .eq("course_id", courseId)
-    .in("block_id", blockIds);
+    .in("section_id", sectionIds);
 
   if (existingError) {
     console.error("lib.course-loading.ensureCourseUtilizations ::", existingError);
     return [];
   }
 
-  const existingBlockIds = new Set((existing ?? []).map((row) => row.block_id));
-  const missing = blockIds.filter((blockId) => !existingBlockIds.has(blockId));
+  const existingSectionIds = new Set((existing ?? []).map((row) => row.section_id));
+  const missing = sectionIds.filter((sectionId) => !existingSectionIds.has(sectionId));
 
   if (missing.length > 0) {
     const { data: inserted, error: insertError } = await supabase
       .from("course_utilization")
       .insert(
-        missing.map((blockId) => ({
+        missing.map((sectionId) => ({
           course_id: courseId,
-          block_id: blockId,
+          section_id: sectionId,
         })),
       )
-      .select("id, block_id, class_id");
+      .select("id, section_id, class_id");
 
     if (insertError) {
       console.error("lib.course-loading.ensureCourseUtilizations.insert ::", insertError);
@@ -60,23 +60,23 @@ export const ensureCourseUtilizations = async (
   return existing ?? [];
 };
 
-export const findConflictingBlockAssignments = async (
+export const findConflictingSectionAssignments = async (
   supabase: CourseLoadingSupabase,
   courseId: string,
-  blockIds: string[],
+  sectionIds: string[],
   excludedClassId?: string,
 ): Promise<string[]> => {
-  if (blockIds.length === 0) return [];
+  if (sectionIds.length === 0) return [];
 
   const { data, error } = await supabase
     .from("course_utilization")
-    .select("block_id, class_id")
+    .select("section_id, class_id")
     .eq("course_id", courseId)
-    .in("block_id", blockIds);
+    .in("section_id", sectionIds);
 
   if (error) {
     console.error(
-      "lib.course-loading.findConflictingBlockAssignments ::",
+      "lib.course-loading.findConflictingSectionAssignments ::",
       error,
     );
     return [];
@@ -90,23 +90,23 @@ export const findConflictingBlockAssignments = async (
           if (excludedClassId && row.class_id === excludedClassId) return false;
           return true;
         })
-        .map((row) => row.block_id as string),
+        .map((row) => row.section_id as string),
     ),
   ];
 };
 
-export const diffBlockIds = (
-  existing: { id: string; block_id: string }[],
-  desiredBlockIds: string[],
+export const diffSectionIds = (
+  existing: { id: string; section_id: string }[],
+  desiredSectionIds: string[],
 ): {
-  toRemove: { id: string; block_id: string }[];
+  toRemove: { id: string; section_id: string }[];
   toAdd: string[];
 } => {
-  const existingBlockIds = new Set(existing.map((cb) => cb.block_id));
-  const desired = new Set(desiredBlockIds);
+  const existingSectionIds = new Set(existing.map((cb) => cb.section_id));
+  const desired = new Set(desiredSectionIds);
 
   return {
-    toRemove: existing.filter((cb) => !desired.has(cb.block_id)),
-    toAdd: desiredBlockIds.filter((blockId) => !existingBlockIds.has(blockId)),
+    toRemove: existing.filter((cb) => !desired.has(cb.section_id)),
+    toAdd: desiredSectionIds.filter((sectionId) => !existingSectionIds.has(sectionId)),
   };
 };

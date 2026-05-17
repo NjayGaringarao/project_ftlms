@@ -72,7 +72,7 @@ const SelectCourseOfferingDialog = ({
   const [selectedUnmergeCandidates, setSelectedUnmergeCandidates] = useState<
     Set<string>
   >(() => new Set());
-  const [detachMode, setDetachMode] = useState<"per_block" | "single_class">(
+  const [detachMode, setDetachMode] = useState<"per_section" | "single_class">(
     "single_class",
   );
 
@@ -255,7 +255,7 @@ const SelectCourseOfferingDialog = ({
   const handleJoinToThem = async () => {
     if (!mergeOffering) return;
     if (selectedCandidateRows.length === 0) {
-      setMergeError("Select at least one candidate block.");
+      setMergeError("Select at least one candidate section.");
       return;
     }
     const targetClassId = selectedCandidateRows[0]?.class_id;
@@ -286,7 +286,7 @@ const SelectCourseOfferingDialog = ({
   const handleGetThemJoin = async () => {
     if (!mergeOffering) return;
     if (selectedCandidateRows.length === 0) {
-      setMergeError("Select at least one candidate block.");
+      setMergeError("Select at least one candidate section.");
       return;
     }
     if (!mergeOffering.class_id) {
@@ -387,7 +387,7 @@ const SelectCourseOfferingDialog = ({
                 icon={<BookOpen className="h-5 w-5 text-background/80" />}
                 annotations={
                   <div className="flex flex-col gap-1">
-                    {item.merged_blocks.length > 0 ? (
+                    {item.merged_sections.length > 0 ? (
                       <Button
                         size="sm"
                         title="Unmerge from other class"
@@ -425,15 +425,15 @@ const SelectCourseOfferingDialog = ({
         onOpenChange={(openValue) => {
           if (!openValue) closeMergeDialogs();
         }}
-        title="Merge Blocks"
-        description="Select blocks to merge with the current block."
+        title="Merge Sections"
+        description="Select sections to merge with the current section."
         contentClassName="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden"
       >
         <div className="flex flex-col gap-3 overflow-hidden">
           {mergeOffering && (
             <div className="rounded-md border bg-background/60 p-3 text-xs">
               <p>
-                Current block: {mergeOffering.block_code} - Students:{" "}
+                Current section: {mergeOffering.section_code} - Students:{" "}
                 {mergeOffering.student_count}
               </p>
             </div>
@@ -472,7 +472,7 @@ const SelectCourseOfferingDialog = ({
                   </div>
                   <div className="flex-1">
                     <p>
-                      {candidate.block_code} - Students:{" "}
+                      {candidate.section_code} - Students:{" "}
                       {candidate.student_count}
                     </p>
                     <p className="text-[10px] text-foreground/60">
@@ -492,7 +492,7 @@ const SelectCourseOfferingDialog = ({
             }
             className="text-xs text-foreground/70 flex flex-row items-center"
           >
-            Total students (selected blocks): {totalStudents}{" "}
+            Total students (selected sections): {totalStudents}{" "}
             {totalStudents > 50 && <ArrowUp className="h-4 w-4 text-red-400" />}
           </div>
 
@@ -532,15 +532,15 @@ const SelectCourseOfferingDialog = ({
         onOpenChange={(openValue) => {
           if (!openValue) closeMergeDialogs();
         }}
-        title="Unmerge Block"
-        description="Detach blocks from the merged class."
+        title="Unmerge Section"
+        description="Detach sections from the merged class."
         contentClassName="flex max-h-[75vh] w-full max-w-md flex-col overflow-hidden"
       >
         <div className="flex flex-col gap-3">
           {mergeOffering && (
             <div className="rounded-md border bg-background/60 p-3 text-xs">
               <p>
-                Block: {mergeOffering.block_code} - Students:{" "}
+                Section: {mergeOffering.section_code} - Students:{" "}
                 {mergeOffering.student_count}
               </p>
             </div>
@@ -551,7 +551,7 @@ const SelectCourseOfferingDialog = ({
               variant={unmergeMode === "self" ? "default" : "outline"}
               onClick={() => setUnmergeMode("self")}
             >
-              Detach This Block
+              Detach This Section
             </Button>
             <Button
               size="xs"
@@ -567,7 +567,7 @@ const SelectCourseOfferingDialog = ({
             <div className="flex flex-col gap-2">
               {unmergeCandidates.length === 0 ? (
                 <p className="text-xs text-foreground/60">
-                  No other blocks found to detach.
+                  No other sections found to detach.
                 </p>
               ) : (
                 <>
@@ -599,7 +599,7 @@ const SelectCourseOfferingDialog = ({
                           </div>
                           <div className="flex-1">
                             <p>
-                              {candidate.block_code} - Students:{" "}
+                              {candidate.section_code} - Students:{" "}
                               {candidate.student_count}
                             </p>
                           </div>
@@ -623,10 +623,10 @@ const SelectCourseOfferingDialog = ({
                       <input
                         type="radio"
                         name="detach-mode"
-                        checked={detachMode === "per_block"}
-                        onChange={() => setDetachMode("per_block")}
+                        checked={detachMode === "per_section"}
+                        onChange={() => setDetachMode("per_section")}
                       />
-                      New class per block
+                      New class per section
                     </label>
                   </div>
                 </>

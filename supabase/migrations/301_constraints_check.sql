@@ -19,14 +19,25 @@ begin
       add constraint course_laboratory_unit_nonnegative check (laboratory_unit >= 0);
   end if;
 
-  -- Block's student count should be non negative.
+  -- Section's student count should be non negative.
   if not exists (
     select 1 from pg_constraint
-    where conname = 'block_student_count_nonnegative'
-      and conrelid = 'public.block'::regclass
+    where conname = 'section_student_count_nonnegative'
+      and conrelid = 'public.section'::regclass
   ) then
-    alter table public.block
-      add constraint block_student_count_nonnegative check (student_count >= 0);
+    alter table public.section
+      add constraint section_student_count_nonnegative check (student_count >= 0);
+  end if;
+
+  -- Section classification should be one of the supported load categories.
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'section_classification_valid'
+      and conrelid = 'public.section'::regclass
+  ) then
+    alter table public.section
+      add constraint section_classification_valid
+      check (classification in ('regular', 'irregular'));
   end if;
 
   -- Room capacity should be non-negative.

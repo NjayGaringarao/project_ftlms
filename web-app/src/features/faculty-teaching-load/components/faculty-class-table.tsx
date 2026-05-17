@@ -1,11 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUp, ClipboardClock, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { FacultyClassRow } from "@/features/faculty-teaching-load/lib/course-loading/types";
-import { formatFacultyBlockLabel } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
+import { formatFacultySectionLabel } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover } from "radix-ui";
 
@@ -25,13 +23,13 @@ export const FacultyClassTable = ({
   const router = useRouter();
 
   const handleManageSchedule = (row: FacultyClassRow) => {
-    const firstBlock = row.blocks[0];
-    if (!firstBlock) return;
+    const firstSection = row.sections[0];
+    if (!firstSection) return;
 
     const params = new URLSearchParams();
     params.set("academic_term_id", academicTermId);
-    params.set("blockId", firstBlock.block_id);
-    params.set("courseUtilizationId", firstBlock.course_utilization_id);
+    params.set("sectionId", firstSection.section_id);
+    params.set("courseUtilizationId", firstSection.course_utilization_id);
     params.set("facultyId", facultyId);
     router.push(`/scheduler?${params.toString()}`);
   };
@@ -54,7 +52,7 @@ export const FacultyClassTable = ({
             <tr className="text-left text-xs">
               <th className="px-3 py-2">Campus</th>
               <th className="px-3 py-2">Course</th>
-              <th className="px-3 py-2">Block(s)</th>
+              <th className="px-3 py-2">Section(s)</th>
               <th className="px-3 py-2">Student</th>
               <th className="px-3 py-2">Laboratory</th>
               <th className="px-3 py-2">Lecture</th>
@@ -74,12 +72,12 @@ export const FacultyClassTable = ({
                 </td>
                 <td className="px-3 py-2 text-foreground/70">
                   <div className="flex flex-col gap-1">
-                    {row.blocks.map((block) => (
+                    {row.sections.map((section) => (
                       <span
-                        key={block.course_utilization_id}
+                        key={section.course_utilization_id}
                         className="rounded bg-foreground/10 px-1.5 py-0.5 text-xs"
                       >
-                        {formatFacultyBlockLabel(block)}
+                        {formatFacultySectionLabel(section)}
                       </span>
                     ))}
                   </div>
@@ -114,11 +112,11 @@ export const FacultyClassTable = ({
                         <div className="flex flex-col bg-background rounded-md overflow-hidden shadow-md border">
                           <button
                             className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-foreground/10 disabled:cursor-not-allowed disabled:hover:bg-transparent border-b"
-                            disabled={row.blocks.length === 0}
+                            disabled={row.sections.length === 0}
                             onClick={() => handleManageSchedule(row)}
                             title={
-                              row.blocks.length === 0
-                                ? "No block assigned."
+                              row.sections.length === 0
+                                ? "No section assigned."
                                 : "Manage Schedule"
                             }
                           >

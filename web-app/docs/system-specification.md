@@ -62,7 +62,7 @@ Schema evolution is migration-driven and ordered by file prefix:
 - `6xx_`: RPC and workflow procedures
 
 Core data domains represented in migrations/models:
-- Academic structure: colleges, programs, majors, offerings, terms, blocks
+- Academic structure: colleges, programs, majors, offerings, terms, sections
 - Identity and staffing: users, designations, ranks, degrees
 - Scheduling: classes, sessions, room assignment, user-class mapping
 - Faculty load workflow: proposals, campus load, evaluation steps, statuses

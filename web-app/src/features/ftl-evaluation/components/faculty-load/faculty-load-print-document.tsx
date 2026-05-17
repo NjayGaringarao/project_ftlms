@@ -264,7 +264,7 @@ const FacultyLoadPrintDocument = ({
                         {row.laboratory_room ?? (row.laboratory_hours ? "ONLINE" : "-")}
                       </td>
                       <td className="border-r border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
-                        {row.block_codes_label || "-"}
+                        {row.section_codes_label || "-"}
                       </td>
                       <td className="border-b border-[#111] px-1 py-2 text-center align-top leading-[1.2]">
                         {row.student_count ?? "-"}

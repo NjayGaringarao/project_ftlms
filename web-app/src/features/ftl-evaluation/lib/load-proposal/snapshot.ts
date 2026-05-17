@@ -328,19 +328,21 @@ type RawClassRow = {
           title?: string | null;
         }>
       | null;
-    block?:
+    section?:
       | {
           id?: string | null;
           code?: string | null;
+          classification?: "regular" | "irregular" | null;
           year_level?: number | null;
-          section?: string | null;
+          name?: string | null;
           student_count?: number | null;
         }
       | Array<{
           id?: string | null;
           code?: string | null;
+          classification?: "regular" | "irregular" | null;
           year_level?: number | null;
-          section?: string | null;
+          name?: string | null;
           student_count?: number | null;
         }>
       | null;
@@ -365,7 +367,7 @@ const getRawScheduleSessions = async (
         course_utilization(
           id,
           course:course_id(code, title),
-          block:block_id(id, code, year_level, section, student_count)
+          section:section_id(id, code, classification, year_level, name, student_count)
         ),
         session_class(
           session:session_id(
@@ -382,7 +384,7 @@ const getRawScheduleSessions = async (
       `,
     )
     .eq("user_id", userId)
-    .eq("class.course_utilization.block.academic_term_id", academicTermId);
+    .eq("class.course_utilization.section.academic_term_id", academicTermId);
 
   if (error) {
     console.error("loadProposal.snapshot.getRawScheduleSessions ::", error);
@@ -408,14 +410,16 @@ const getRawScheduleSessions = async (
 
     utilizations.forEach((utilization) => {
       const course = first(utilization.course);
-      const block = first(utilization.block);
+      const section = first(utilization.section);
       const courseUtilizationId = toNonEmptyText(utilization.id);
-      const blockId = toNonEmptyText(block?.id);
-      const blockCode = toNonEmptyText(block?.code);
-      const section = toNonEmptyText(block?.section);
+      const sectionId = toNonEmptyText(section?.id);
+      const sectionCode = toNonEmptyText(section?.code);
+      const sectionClassification =
+        section?.classification === "irregular" ? "irregular" : "regular";
+      const sectionName = toNonEmptyText(section?.name);
       const dayRows = sessions;
 
-      if (!courseUtilizationId || !blockId || !blockCode || !section) return;
+      if (!courseUtilizationId || !sectionId || !sectionCode || !sectionName) return;
 
       dayRows.forEach((session) => {
         const sessionId = toNonEmptyText(session.id);
@@ -440,14 +444,15 @@ const getRawScheduleSessions = async (
           room_id: toNonEmptyText(session.room_id),
           room_code: toNonEmptyText(room?.code),
           room_name: toNonEmptyText(room?.name),
-          block_id: blockId,
-          block_code: blockCode,
-          year_level: Math.max(0, Math.round(toNumber(block?.year_level))),
-          section,
+          section_id: sectionId,
+          section_code: sectionCode,
+          section_classification: sectionClassification,
+          year_level: Math.max(0, Math.round(toNumber(section?.year_level))),
+          name: sectionName,
           student_count:
-            block?.student_count === null || block?.student_count === undefined
+            section?.student_count === null || section?.student_count === undefined
               ? null
-              : Math.max(0, Math.round(toNumber(block.student_count))),
+              : Math.max(0, Math.round(toNumber(section.student_count))),
         });
       });
     });
@@ -463,7 +468,7 @@ const getRawScheduleSessions = async (
     const courseDiff = left.course_code.localeCompare(right.course_code);
     if (courseDiff !== 0) return courseDiff;
 
-    return left.block_code.localeCompare(right.block_code);
+    return left.section_code.localeCompare(right.section_code);
   });
 };
 

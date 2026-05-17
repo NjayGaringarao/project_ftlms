@@ -79,14 +79,14 @@ Use this checklist after refactors touching `src/lib/admin/*`, admin pages, or s
 - [ ] Create term validates `name`, `start`, `end`, and start <= end.
 - [ ] Duplicate term-in-year conflict is handled.
 - [ ] Edit term persists changes.
-- [ ] Delete term is blocked when blocks exist for that term.
+- [ ] Delete term is blocked when sections exist for that term.
 
-## Blocks (`/blocks`)
-- [ ] Term-scoped blocks list loads correctly.
-- [ ] Create block validates `major_offering`, `academic_term`, positive `year_level`, non-empty `section`, and non-negative `student_count`.
-- [ ] Duplicate block conflict (same major offering + year + section) is handled.
-- [ ] Edit block persists changes and refreshes both old/new term lists if term changed.
-- [ ] Delete block removes record and refreshes term list.
+## Sections (`/sections`)
+- [ ] Term-scoped sections list loads correctly.
+- [ ] Create section validates `major_offering`, `academic_term`, positive `year_level`, non-empty `name`, valid `classification`, and non-negative `student_count`.
+- [ ] Duplicate section conflict (same major offering + year + name) is handled.
+- [ ] Edit section persists changes and refreshes both old/new term lists if term changed.
+- [ ] Delete section removes record and refreshes term list.
 
 ## Users (`/users`)
 - [ ] List/search/filter still works.

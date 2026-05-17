@@ -2,17 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Blocks, BookOpen, ChevronDown, DoorOpen, User, X } from "lucide-react";
+import { Blocks as Sections, BookOpen, ChevronDown, DoorOpen, User, X } from "lucide-react";
 import type { SessionDay, SessionType } from "@/features/shared/types/models";
 import { toDisplayTime, toMinutes } from "@/features/scheduler/lib/schedule/utils";
 import {
-  getMergedBlockConflictSessions,
+  getMergedSectionConflictSessions,
   getSchedulerMapperMatrices,
-  getSchedulerMapperMatrixByOnlineBlock,
+  getSchedulerMapperMatrixByOnlineSection,
   type SchedulerMatrixSession,
 } from "@/features/scheduler/lib/schedule/mapper";
 import {
-  getBlockCourseOfferingsForScheduler,
+  getSectionCourseOfferingsForScheduler,
   type SchedulerCourseOfferingItem,
 } from "@/features/scheduler/lib/schedule/course-offerings";
 import {
@@ -23,16 +23,17 @@ import {
 } from "@/features/scheduler/lib/schedule/session-actions";
 import MatrixRenderer from "./matrix-renderer";
 import { getSelectedContextsFromSearchParams } from "./utils";
-import BlockPickerDialog from "@/features/shared/components/pickers/block-picker-dialog";
+import SectionPickerDialog from "@/features/shared/components/pickers/section-picker-dialog";
 import FacultyPickerDialog from "@/features/shared/components/pickers/faculty-picker-dialog";
 import RoomPickerDialog from "@/features/shared/components/pickers/room-picker-dialog";
 import SelectCourseOfferingDialog from "@/features/scheduler/components/dialogs/select-course-offering-dialog";
 import SchedulerRightPane from "./scheduler-right-pane";
 import { SchedulerProvider } from "./scheduler-context";
 import type {
-  CourseLoadingBlockListItem,
+  CourseLoadingSectionListItem,
   FacultyListItem,
 } from "@/features/faculty-teaching-load/lib/course-loading/types";
+import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
 import type { ExtendedRoom } from "@/features/shared/types/models";
 import { Button } from "@/components/ui/button";
 import ConfirmScheduleDialog from "@/features/scheduler/components/dialogs/confirm-schedule-dialog";
@@ -107,12 +108,12 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const searchParams = useSearchParams();
   const selectedContexts = getSelectedContextsFromSearchParams(searchParams);
   const selectedFacultyId = selectedContexts.facultyId ?? null;
-  const selectedBlockId = selectedContexts.blockId ?? null;
+  const selectedSectionId = selectedContexts.sectionId ?? null;
   const selectedRoomId = selectedContexts.roomId ?? null;
   const selectedCourseUtilizationId =
     selectedContexts.courseUtilizationId ?? null;
 
-  const [blockSessions, setBlockSessions] = useState<SchedulerMatrixSession[]>(
+  const [sectionSessions, setSectionSessions] = useState<SchedulerMatrixSession[]>(
     [],
   );
   const [facultySessions, setFacultySessions] = useState<
@@ -124,28 +125,28 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   const [mergedConflictSessions, setMergedConflictSessions] = useState<
     SchedulerMatrixSession[]
   >([]);
-  const [blockLoading, setBlockLoading] = useState(false);
+  const [sectionLoading, setSectionLoading] = useState(false);
   const [facultyLoading, setFacultyLoading] = useState(false);
   const [roomLoading, setRoomLoading] = useState(false);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [faculty, setFaculty] = useState<FacultyListItem[]>([]);
   const [rooms, setRooms] = useState<ExtendedRoom[]>([]);
-  const [blocks, setBlocks] = useState<CourseLoadingBlockListItem[]>([]);
+  const [sections, setSections] = useState<CourseLoadingSectionListItem[]>([]);
   const [offerings, setOfferings] = useState<SchedulerCourseOfferingItem[]>([]);
   const [offeringsLoading, setOfferingsLoading] = useState(false);
-  const [offeringsLoadedForBlockId, setOfferingsLoadedForBlockId] = useState<
+  const [offeringsLoadedForSectionId, setOfferingsLoadedForSectionId] = useState<
     string | null
   >(null);
   const [contextNotice, setContextNotice] = useState("");
   const [showFacultyDialog, setShowFacultyDialog] = useState(false);
-  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showSectionDialog, setShowSectionDialog] = useState(false);
   const [showRoomDialog, setShowRoomDialog] = useState(false);
   const [showOfferingDialog, setShowOfferingDialog] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [dragError, setDragError] = useState("");
   const [selectedCell, setSelectedCell] = useState<{
-    source: "Block" | "Faculty" | "Room";
+    source: "Section" | "Faculty" | "Room";
     sessions: SchedulerMatrixSession[];
   } | null>(null);
   const [selectedCellRequestKey, setSelectedCellRequestKey] = useState(0);
@@ -194,7 +195,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   };
 
   const setContextParam = (
-    key: "facultyId" | "blockId" | "roomId" | "courseUtilizationId",
+    key: "facultyId" | "sectionId" | "roomId" | "courseUtilizationId",
     value: string,
   ) => {
     setQueryParams((next) => {
@@ -203,7 +204,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   };
 
   const clearContextParam = (
-    key: "facultyId" | "blockId" | "roomId" | "courseUtilizationId",
+    key: "facultyId" | "sectionId" | "roomId" | "courseUtilizationId",
   ) => {
     setQueryParams((next) => {
       next.delete(key);
@@ -269,15 +270,15 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   const selectedFaculty =
     faculty.find((item) => item.id === selectedFacultyId) ?? null;
-  const selectedBlock =
-    blocks.find((item) => item.id === selectedBlockId) ?? null;
+  const selectedSection =
+    sections.find((item) => item.id === selectedSectionId) ?? null;
   const selectedRoom = rooms.find((item) => item.id === selectedRoomId) ?? null;
   const selectedOffering =
     offerings.find((item) => item.id === selectedCourseUtilizationId) ?? null;
 
   useEffect(() => {
     setContextNotice("");
-  }, [selectedBlockId]);
+  }, [selectedSectionId]);
 
   useEffect(() => {
     if (selectedOffering) {
@@ -296,18 +297,18 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
           import("@/features/admin/lib/rooms"),
         ]);
 
-        const [facultyRows, roomRows, blockRows] = await Promise.all([
+        const [facultyRows, roomRows, sectionRows] = await Promise.all([
           courseLoadingModule.getFacultyListByTerm(academic_term_id, {
             includeEmpty: true,
           }),
           roomModule.getRooms(),
-          courseLoadingModule.getBlockListByTerm(academic_term_id),
+          courseLoadingModule.getSectionListByTerm(academic_term_id),
         ]);
 
         if (cancelled) return;
         setFaculty(facultyRows);
         setRooms(roomRows);
-        setBlocks(blockRows);
+        setSections(sectionRows);
       } catch (error) {
         console.error("scheduler.lookup.load ::", error);
       } finally {
@@ -327,16 +328,16 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     let cancelled = false;
 
     const loadOfferings = async () => {
-      if (!selectedBlockId) {
+      if (!selectedSectionId) {
         setOfferings([]);
         setOfferingsLoading(false);
-        setOfferingsLoadedForBlockId(null);
+        setOfferingsLoadedForSectionId(null);
         return;
       }
       setOfferingsLoading(true);
-      setOfferingsLoadedForBlockId(null);
+      setOfferingsLoadedForSectionId(null);
       try {
-        const rows = await getBlockCourseOfferingsForScheduler(selectedBlockId);
+        const rows = await getSectionCourseOfferingsForScheduler(selectedSectionId);
         if (cancelled) return;
         setOfferings(rows);
       } catch (error) {
@@ -346,7 +347,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       } finally {
         if (cancelled) return;
         setOfferingsLoading(false);
-        setOfferingsLoadedForBlockId(selectedBlockId);
+        setOfferingsLoadedForSectionId(selectedSectionId);
       }
     };
 
@@ -355,32 +356,32 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     return () => {
       cancelled = true;
     };
-  }, [selectedBlockId, refreshKey]);
+  }, [selectedSectionId, refreshKey]);
 
   useEffect(() => {
-    setBlockSessions([]);
-    setBlockLoading(Boolean(selectedBlockId));
-  }, [selectedBlockId]);
+    setSectionSessions([]);
+    setSectionLoading(Boolean(selectedSectionId));
+  }, [selectedSectionId]);
 
   useEffect(() => {
     if (!selectedCourseUtilizationId) return;
-    if (!selectedBlockId) return;
+    if (!selectedSectionId) return;
     if (offeringsLoading) return;
-    if (offeringsLoadedForBlockId !== selectedBlockId) return;
+    if (offeringsLoadedForSectionId !== selectedSectionId) return;
     const exists = offerings.some(
       (item) => item.id === selectedCourseUtilizationId,
     );
     if (!exists) {
       clearContextParam("courseUtilizationId");
       setContextNotice(
-        "Course offering not found for this block. Please reselect.",
+        "Course offering not found for this section. Please reselect.",
       );
     }
   }, [
     offerings,
-    offeringsLoadedForBlockId,
+    offeringsLoadedForSectionId,
     offeringsLoading,
-    selectedBlockId,
+    selectedSectionId,
     selectedCourseUtilizationId,
   ]);
 
@@ -407,37 +408,37 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     let cancelled = false;
 
     const load = async () => {
-      if (!selectedBlockId && !selectedFacultyId && !selectedRoomId) {
-        setBlockSessions([]);
+      if (!selectedSectionId && !selectedFacultyId && !selectedRoomId) {
+        setSectionSessions([]);
         setFacultySessions([]);
         setRoomSessions([]);
-        setBlockLoading(false);
+        setSectionLoading(false);
         setFacultyLoading(false);
         setRoomLoading(false);
         return;
       }
 
-      setBlockLoading(Boolean(selectedBlockId));
+      setSectionLoading(Boolean(selectedSectionId));
       setFacultyLoading(Boolean(selectedFacultyId));
       setRoomLoading(Boolean(selectedRoomId));
 
       const requestId = (matrixRequestIdRef.current += 1);
       const result = await getSchedulerMapperMatrices(academic_term_id, {
-        blockId: selectedBlockId ?? null,
+        sectionId: selectedSectionId ?? null,
         facultyId: selectedFacultyId ?? null,
         roomId: selectedRoomId ?? null,
       });
 
       if (cancelled || requestId !== matrixRequestIdRef.current) return;
 
-      setBlockSessions(selectedBlockId ? result.block : []);
+      setSectionSessions(selectedSectionId ? result.section : []);
       setFacultySessions(selectedFacultyId ? result.faculty : []);
       if (selectedRoomId) {
         setRoomSessions(result.room);
-      } else if (selectedBlockId) {
-        const onlineSessions = await getSchedulerMapperMatrixByOnlineBlock(
+      } else if (selectedSectionId) {
+        const onlineSessions = await getSchedulerMapperMatrixByOnlineSection(
           academic_term_id,
-          selectedBlockId,
+          selectedSectionId,
         );
         if (cancelled || requestId !== matrixRequestIdRef.current) return;
         setRoomSessions(onlineSessions);
@@ -445,7 +446,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         setRoomSessions([]);
       }
 
-      setBlockLoading(false);
+      setSectionLoading(false);
       setFacultyLoading(false);
       setRoomLoading(false);
     };
@@ -457,7 +458,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     };
   }, [
     academic_term_id,
-    selectedBlockId,
+    selectedSectionId,
     selectedFacultyId,
     selectedRoomId,
     refreshKey,
@@ -469,17 +470,17 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     const loadMergedConflicts = async () => {
       if (
         !selectedOffering?.class_id ||
-        !selectedBlockId ||
-        selectedOffering.merged_blocks.length === 0
+        !selectedSectionId ||
+        selectedOffering.merged_sections.length === 0
       ) {
         setMergedConflictSessions([]);
         return;
       }
 
-      const rows = await getMergedBlockConflictSessions(
+      const rows = await getMergedSectionConflictSessions(
         academic_term_id,
         selectedOffering.class_id,
-        selectedBlockId,
+        selectedSectionId,
       );
       if (cancelled) return;
       setMergedConflictSessions(rows);
@@ -492,15 +493,15 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     };
   }, [
     academic_term_id,
-    selectedBlockId,
+    selectedSectionId,
     selectedOffering?.class_id,
-    selectedOffering?.merged_blocks.length,
+    selectedOffering?.merged_sections.length,
     refreshKey,
   ]);
 
-  const blockMatrix = useMemo(
-    () => buildMatrix([...blockSessions, ...mergedConflictSessions], slotStarts),
-    [blockSessions, mergedConflictSessions, slotStarts],
+  const sectionMatrix = useMemo(
+    () => buildMatrix([...sectionSessions, ...mergedConflictSessions], slotStarts),
+    [sectionSessions, mergedConflictSessions, slotStarts],
   );
   const facultyMatrix = useMemo(
     () => buildMatrix(facultySessions, slotStarts),
@@ -535,7 +536,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   const canDrag = Boolean(
     movingSession ||
-      (selectedBlockId &&
+      (selectedSectionId &&
         selectedCourseUtilizationId &&
         selectedFacultyId &&
         selectedOffering),
@@ -563,7 +564,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   const selectMatrixSessions = useCallback(
     async (
-      source: "Block" | "Faculty" | "Room",
+      source: "Section" | "Faculty" | "Room",
       sessions: SchedulerMatrixSession[],
     ) => {
       if (sessions.length === 0) return;
@@ -591,7 +592,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     endIndex: number,
   ) => {
     if (!canDrag) {
-      setDragError("Select a block, course offering, and faculty to schedule.");
+      setDragError("Select a section, course offering, and faculty to schedule.");
       setDragging(null);
       return;
     }
@@ -600,14 +601,14 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
     if (
       hasMatrixConflict(
-        blockMatrix,
+        sectionMatrix,
         day,
         startIndex,
         endIndex,
         excludedSessionId,
       )
     ) {
-      setDragError("Block already has a schedule in that time range.");
+      setDragError("Section already has a schedule in that time range.");
       setDragging(null);
       return;
     }
@@ -666,13 +667,13 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     );
 
     if (selectableItems.length > 0 && !movingSession) {
-      void selectMatrixSessions("Block", selectableItems);
+      void selectMatrixSessions("Section", selectableItems);
       return;
     }
     if (selectableItems.length > 0 && !isMovingCurrentSession) return;
 
     if (!canDrag) {
-      setDragError("Select a block, course offering, and faculty to schedule.");
+      setDragError("Select a section, course offering, and faculty to schedule.");
       return;
     }
 
@@ -707,7 +708,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
   };
 
   const handleSessionClick =
-    (source: "Block" | "Faculty" | "Room") =>
+    (source: "Section" | "Faculty" | "Room") =>
     (_day: SessionDay, _rowIndex: number, items: SchedulerMatrixSession[]) => {
       if (movingSession) return;
       const selectableItems = items.filter(
@@ -806,7 +807,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     if (pendingRange.mode === "move") {
       if (!movingSession) return;
 
-      const previousBlockSessions = blockSessions;
+      const previousSectionSessions = sectionSessions;
       const previousFacultySessions = facultySessions;
       const previousRoomSessions = roomSessions;
       const movedMatrixSession: SchedulerMatrixSession = {
@@ -819,7 +820,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       };
 
       setIsSaving(true);
-      setBlockSessions((prev) => replaceMatrixSession(prev, movedMatrixSession));
+      setSectionSessions((prev) => replaceMatrixSession(prev, movedMatrixSession));
       setFacultySessions((prev) =>
         selectedFacultyId
           ? replaceMatrixSession(prev, movedMatrixSession)
@@ -846,7 +847,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       });
 
       if (result.error) {
-        setBlockSessions(previousBlockSessions);
+        setSectionSessions(previousSectionSessions);
         setFacultySessions(previousFacultySessions);
         setRoomSessions(previousRoomSessions);
         setDragError(result.error);
@@ -865,7 +866,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       return;
     }
 
-    if (!selectedOffering || !selectedFacultyId || !selectedBlockId) {
+    if (!selectedOffering || !selectedFacultyId || !selectedSectionId) {
       return;
     }
 
@@ -890,24 +891,34 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       room_id: selectedRoomId,
       room_code: selectedRoom?.code ?? null,
       room_name: selectedRoom?.name ?? null,
-      campus_id: selectedBlock?.campus_id ?? null,
-      college_id: selectedBlock?.college_id ?? null,
+      campus_id: selectedSection?.campus_id ?? null,
+      college_id: selectedSection?.college_id ?? null,
       day: pendingRange.day,
       start_time: startSlot.start,
       end_time: endSlot.end,
       type: sessionType,
-      block_codes: [
-        selectedBlock?.code ?? selectedOffering.block_code,
-        ...selectedOffering.merged_blocks.map((block) => block.code),
+      section_codes: [
+        selectedSection?.code ?? selectedOffering.section_code,
+        ...selectedOffering.merged_sections.map((section) => section.code),
       ],
+      section_label: formatMergedSectionLabels(
+        [
+          {
+            code: selectedSection?.code ?? selectedOffering.section_code,
+            classification: selectedSection?.classification ?? "regular",
+          },
+          ...selectedOffering.merged_sections,
+        ],
+        (section) => section.code,
+      ),
     };
-    const previousBlockSessions = blockSessions;
+    const previousSectionSessions = sectionSessions;
     const previousFacultySessions = facultySessions;
     const previousRoomSessions = roomSessions;
     const previousOverlappingSessions = overlappingSessions;
 
     setIsSaving(true);
-    setBlockSessions((prev) => [...prev, optimisticSession]);
+    setSectionSessions((prev) => [...prev, optimisticSession]);
     setFacultySessions((prev) => [...prev, optimisticSession]);
     setRoomSessions((prev) => [...prev, optimisticSession]);
     setSelectedCell(null);
@@ -917,7 +928,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
     const result = await createSessionFromOffering({
       academicTermId: academic_term_id,
-      blockId: selectedBlockId,
+      sectionId: selectedSectionId,
       courseUtilizationId: selectedOffering.id,
       facultyId: selectedFacultyId,
       roomId: selectedRoomId,
@@ -928,7 +939,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     });
 
     if (result.error) {
-      setBlockSessions(previousBlockSessions);
+      setSectionSessions(previousSectionSessions);
       setFacultySessions(previousFacultySessions);
       setRoomSessions(previousRoomSessions);
       setOverlappingSessions(previousOverlappingSessions);
@@ -952,7 +963,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         start_time: result.data.start_time,
         end_time: result.data.end_time,
       };
-      setBlockSessions((prev) => [
+      setSectionSessions((prev) => [
         ...removeMatrixSession(prev, tempId),
         realSession,
       ]);
@@ -1020,9 +1031,9 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     </>
   );
 
-  const clearBlockSelection = () => {
+  const clearSectionSelection = () => {
     setContextParams((next) => {
-      next.delete("blockId");
+      next.delete("sectionId");
       next.delete("courseUtilizationId");
       next.delete("facultyId");
     });
@@ -1033,13 +1044,13 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
   const schedulerContextValue = useMemo(
     () => ({
-      blocks,
+      sections,
       rooms,
       offerings,
-      blockSessions,
+      sectionSessions,
       facultySessions,
       roomSessions,
-      selectedBlockId,
+      selectedSectionId,
       selectedFacultyId,
       selectedRoomId,
       selectedOffering,
@@ -1059,8 +1070,8 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     }),
     [
       activeSessionId,
-      blockSessions,
-      blocks,
+      sectionSessions,
+      sections,
       clearSelection,
       dragError,
       faculty,
@@ -1073,7 +1084,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       roomSessions,
       selectSession,
       selectedClassId,
-      selectedBlockId,
+      selectedSectionId,
       selectedFacultyId,
       selectedOffering,
       selectedRoomId,
@@ -1093,16 +1104,16 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
     setDragError("");
   };
 
-  const renderBlockHeader = () => (
+  const renderSectionHeader = () => (
     <div className="flex items-center gap-1 w-full">
       {renderHeaderButton(
-        "Block",
-        "Change Block",
-        "Select Block",
-        <Blocks className="h-3 w-3" />,
-        selectedBlock?.code ?? null,
-        () => setShowBlockDialog(true),
-        clearBlockSelection,
+        "Section",
+        "Change Section",
+        "Select Section",
+        <Sections className="h-3 w-3" />,
+        selectedSection?.code ?? null,
+        () => setShowSectionDialog(true),
+        clearSectionSelection,
       )}
       <Button
         title={
@@ -1111,7 +1122,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         variant="outline"
         className={getHeaderButtonClass(Boolean(selectedOffering))}
         onClick={() => setShowOfferingDialog(true)}
-        disabled={!selectedBlockId || lookupLoading || offeringsLoading}
+        disabled={!selectedSectionId || lookupLoading || offeringsLoading}
       >
         <BookOpen className="h-3 w-3" />
         <span className="truncate">
@@ -1198,21 +1209,21 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
 
               {/* MATRIX RENDERERS */}
               <MatrixRenderer
-                title="Block"
-                headerAction={renderBlockHeader()}
+                title="Section"
+                headerAction={renderSectionHeader()}
                 days={DAYS}
                 timeSlots={timeSlots.map((slot) => slot.start)}
-                matrix={blockMatrix}
+                matrix={sectionMatrix}
                 hoveredRow={hoveredRow}
                 onHoverRow={setHoveredRow}
-                loading={blockLoading}
+                loading={sectionLoading}
                 startColumn={2}
                 highlightedClassId={selectedOffering?.class_id ?? null}
                 selectedSessionId={activeSessionId}
                 selectedRange={dragging}
                 onCellMouseDown={handleCellMouseDown}
                 onCellMouseEnter={handleCellMouseEnter}
-                onCellClick={handleSessionClick("Block")}
+                onCellClick={handleSessionClick("Section")}
               />
 
               <MatrixRenderer
@@ -1288,18 +1299,18 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
           setDragError("");
           setShowFacultyDialog(false);
         }}
-        defaultCampusId={selectedBlock?.campus_id ?? null}
-        defaultCollegeId={selectedBlock?.college_id ?? null}
+        defaultCampusId={selectedSection?.campus_id ?? null}
+        defaultCollegeId={selectedSection?.college_id ?? null}
       />
 
-      <BlockPickerDialog
-        open={showBlockDialog}
-        onOpenChange={setShowBlockDialog}
-        items={blocks}
-        selectedId={selectedBlockId}
-        onSelect={(blockId: string) => {
+      <SectionPickerDialog
+        open={showSectionDialog}
+        onOpenChange={setShowSectionDialog}
+        items={sections}
+        selectedId={selectedSectionId}
+        onSelect={(sectionId: string) => {
           setContextParams((next) => {
-            next.set("blockId", blockId);
+            next.set("sectionId", sectionId);
             next.delete("courseUtilizationId");
             next.delete("facultyId");
           });
@@ -1307,7 +1318,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
           setPendingRange(null);
           setConfirmOpen(false);
           setMovingSession(null);
-          setShowBlockDialog(false);
+          setShowSectionDialog(false);
           setRefreshKey((prev) => prev + 1);
         }}
       />
@@ -1352,7 +1363,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         }}
         allowOnline
         onlineLabel="Online / No Room"
-        defaultCampusId={selectedBlock?.campus_id ?? null}
+        defaultCampusId={selectedSection?.campus_id ?? null}
       />
 
       <ConfirmScheduleDialog
@@ -1366,7 +1377,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         pendingRange={pendingRange}
         timeSlots={timeSlots}
         sessionType={sessionType}
-        selectedBlock={selectedBlock}
+        selectedSection={selectedSection}
         selectedOffering={selectedOffering}
         selectedFaculty={selectedFaculty}
         selectedRoom={selectedRoom}

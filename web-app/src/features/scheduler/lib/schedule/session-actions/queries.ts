@@ -6,13 +6,14 @@ import type {
   RawClassDetailsRow,
   RawRoomRow,
   RawSessionRow,
-  SchedulerDialogBlock,
+  SchedulerDialogSection,
   SchedulerDialogDetails,
   SchedulerDialogRoom,
   SchedulerDialogSession,
   SessionRoomOption,
   SessionSummary,
 } from "./types";
+import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
 
 export const getSessionSummaries = async (
   sessionIds: string[],
@@ -31,8 +32,9 @@ export const getSessionSummaries = async (
         user_class(user:user_id(id, identity:identity(name))),
         course_utilization(
           course:course_id(code, title),
-          block:block_id(
+          section:section_id(
             code,
+            classification,
             major_offering:major_offering_id(
               program_offering:program_offering_id(
                 campus_id,
@@ -82,28 +84,38 @@ export const getSessionSummaries = async (
     const utilization = first(
       (classRow?.course_utilization ?? []) as Array<{
         course?: unknown;
-        block?: unknown;
+        section?: unknown;
       }>,
-    ) as { course?: unknown; block?: unknown } | null;
+    ) as { course?: unknown; section?: unknown } | null;
     const course = first(utilization?.course) as {
       code?: string;
       title?: string;
     } | null;
-    const blocks = (classRow?.course_utilization ?? []) as Array<{
-      block?: unknown;
+    const sections = (classRow?.course_utilization ?? []) as Array<{
+      section?: unknown;
     }>;
-    const blockCodes = Array.from(
-      new Set(
-        blocks
-          .map((entry) => first(entry.block) as { code?: string } | null)
-          .map((block) => block?.code ?? "")
-          .filter(Boolean),
-      ),
+    const sectionRows = sections
+      .map((entry) =>
+        first(entry.section) as {
+          code?: string;
+          classification?: "regular" | "irregular";
+        } | null,
+      )
+      .filter((section): section is {
+        code?: string;
+        classification?: "regular" | "irregular";
+      } => Boolean(section?.code));
+    const sectionCodes = Array.from(
+      new Set(sectionRows.map((section) => section.code ?? "").filter(Boolean)),
     );
-    const block = first(utilization?.block) as {
+    const sectionLabel = formatMergedSectionLabels(
+      sectionRows,
+      (section) => section.code ?? "Unknown",
+    );
+    const section = first(utilization?.section) as {
       major_offering?: unknown;
     } | null;
-    const majorOffering = first(block?.major_offering) as {
+    const majorOffering = first(section?.major_offering) as {
       program_offering?: unknown;
     } | null;
     const programOffering = first(majorOffering?.program_offering) as {
@@ -129,7 +141,8 @@ export const getSessionSummaries = async (
       start_time: session?.start_time ?? "00:00:00",
       end_time: session?.end_time ?? "00:00:00",
       type: normalizeType((session?.type as SessionSummary["type"]) ?? "Lecture"),
-      block_codes: blockCodes,
+      section_codes: sectionCodes,
+      section_label: sectionLabel,
     };
   });
 };
@@ -150,7 +163,7 @@ export const getSessionSummariesByClass = async (
         user_class(user:user_id(id, identity:identity(name))),
         course_utilization(
           course:course_id(code, title),
-          block:block_id(
+          section:section_id(
             code,
             major_offering:major_offering_id(
               program_offering:program_offering_id(
@@ -196,7 +209,7 @@ export const getRoomsForClass = async (
     .select(
       `
       course_utilization(
-        block:block_id(
+        section:section_id(
           major_offering:major_offering_id(
             program_offering:program_offering_id(campus_id)
           )
@@ -215,13 +228,13 @@ export const getRoomsForClass = async (
   }
 
   const utilizations = (classData as { course_utilization?: unknown })
-    .course_utilization as Array<{ block?: unknown }> | null;
+    .course_utilization as Array<{ section?: unknown }> | null;
   const campusIds = Array.from(
     new Set(
       (utilizations ?? [])
-        .map((item) => first(item.block) as { major_offering?: unknown } | null)
-        .map((block) => {
-          const majorOffering = first(block?.major_offering as unknown) as {
+        .map((item) => first(item.section) as { major_offering?: unknown } | null)
+        .map((section) => {
+          const majorOffering = first(section?.major_offering as unknown) as {
             program_offering?: unknown;
           } | null;
           return first(majorOffering?.program_offering as unknown) as {
@@ -289,11 +302,11 @@ export const getClassSchedulerDetails = async (
       ),
       course_utilization(
         course:course_id(id, code, title, lecture_unit, laboratory_unit),
-        block:block_id(
+        section:section_id(
           id,
           code,
           year_level,
-          section,
+  name,
           student_count,
           academic_term_id,
           major_offering:major_offering_id(
@@ -338,20 +351,20 @@ export const getClassSchedulerDetails = async (
     laboratory_unit?: number | null;
   } | null;
 
-  const blocks: SchedulerDialogBlock[] = utilizations.map((util) => {
-    const block = first(util.block);
-    const majorOffering = first(block?.major_offering);
+  const sections: SchedulerDialogSection[] = utilizations.map((util) => {
+    const section = first(util.section);
+    const majorOffering = first(section?.major_offering);
     const major = first(majorOffering?.major);
     const programOffering = first(majorOffering?.program_offering);
     const program = first(programOffering?.program);
     const campus = first(programOffering?.campus);
 
     return {
-      id: block?.id ?? "",
-      code: block?.code ?? "Unknown",
-      year_level: block?.year_level ?? null,
-      section: block?.section ?? null,
-      student_count: block?.student_count ?? null,
+      id: section?.id ?? "",
+      code: section?.code ?? "Unknown",
+      year_level: section?.year_level ?? null,
+      name: section?.name ?? null,
+      student_count: section?.student_count ?? null,
       program_name: program?.name ?? null,
       major_name: major?.name ?? null,
       campus_id: campus?.id ?? null,
@@ -362,7 +375,7 @@ export const getClassSchedulerDetails = async (
 
   const campusIds = Array.from(
     new Set(
-      blocks
+      sections
         .map((item) => item.campus_id)
         .filter((item): item is string => Boolean(item)),
     ),
@@ -444,7 +457,7 @@ export const getClassSchedulerDetails = async (
     };
   });
 
-  const academicTermId = first(firstUtil?.block)?.academic_term_id ?? "";
+  const academicTermId = first(firstUtil?.section)?.academic_term_id ?? "";
 
   return {
     data: {
@@ -465,7 +478,7 @@ export const getClassSchedulerDetails = async (
         laboratoryTarget - laboratoryScheduled,
         0,
       ),
-      blocks,
+      sections,
       rooms,
       sessions,
     },
