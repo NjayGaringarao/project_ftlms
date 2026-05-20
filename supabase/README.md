@@ -124,7 +124,7 @@ migrations/
   - Class/session operations (`class`, `course_utilization`, `user_class`, `session`, `session_class`).
 
 - `205_schema_load_evaluations.sql`
-  - Load proposal/evaluation entities (`faculty_load_proposal`, `campus_load`, `campus_load_member`, `faculty_load_evaluation`, `campus_load_evaluation`).
+  - Campus-college load workflow entities (`campus_college_load`, `campus_college_load_revision`, `campus_college_load_evaluation`).
   - Includes `document_export_job` schema (async export job persistence).
 
 ### Constraint Ownership (3xx)
@@ -152,8 +152,8 @@ migrations/
   - Canonical owner of: `designation_load_nonnegative`, `designation_role_context_rules`.
 
 - `306_constraints_evaluation.sql`
-  - Proposal lifecycle and evaluation workflow constraints.
-  - Canonical owner of: `faculty_load_proposal_current_user_term_unique`, `campus_load_current_campus_term_unique`, `faculty_load_evaluation_step_unique`, `campus_load_evaluation_step_unique`.
+  - Campus-college load workflow constraints.
+  - Canonical owner of: `campus_college_load_scope_unique`, `campus_college_load_revision_number_unique`, `campus_college_load_evaluation_step_unique`.
 
 - `503_triggers_designation_uniqueness.sql`
   - Designation uniqueness enforcement logic (trigger/function), complementary to `305` checks.
@@ -167,44 +167,32 @@ migrations/
   - Scope: prevents deleting `course_utilization` rows when linked classes still have sessions.
 
 - `515_trigger_proposal_invalidation.sql`
-  - Canonical owner of:
-    - `invalidate_current_campus_loads`
-    - `invalidate_current_proposals_for_user`
-    - `invalidate_current_proposals_for_user_term`
-    - `invalidate_current_proposals_for_user_class`
-    - `trg_invalidate_proposals_on_designation`
-    - `trg_invalidate_proposals_on_user_class`
-    - `trg_invalidate_proposals_on_course_units`
-    - `trg_invalidate_proposals_on_course_utilization`
-    - `trg_invalidate_campus_load_on_faculty_load_proposal_change`
-  - Scope: proposal invalidation propagation from load/scope/lifecycle changes.
+  - Placeholder documenting that invalidation was retired.
+  - Scope: campus-college load revisions are immutable snapshots and refresh only on resubmit.
 
 - `516_trigger_proposal_workflow.sql`
   - Canonical owner of:
-    - `trg_validate_campus_load_creation`
-    - `trg_validate_campus_load_member`
-    - `trg_validate_faculty_load_evaluation`
-    - `trg_apply_faculty_load_evaluation`
-    - `trg_validate_campus_load_evaluation`
-    - `trg_apply_campus_load_evaluation`
-  - Scope: proposal workflow validation and evaluation transitions.
+    - `designation_program_offering_scope`
+    - `trg_validate_campus_college_load_revision`
+    - `trg_apply_campus_college_load_revision`
+    - `trg_validate_campus_college_load_evaluation`
+    - `trg_apply_campus_college_load_evaluation`
+  - Scope: campus-college load submission and evaluation transitions.
 
 - `608_rpc_proposal_transactions.sql`
   - Canonical owner of:
-    - `create_faculty_load_proposal`
-    - `create_campus_load_proposal`
     - `claim_document_export_job`
-  - Scope: proposal transaction RPCs and async export job claim locking.
+  - Scope: async export job claim locking.
 
 
 ## Regression Harness (Development)
 
-- `tests/campus_load_invalidation_regression.sql`
-  - Verifies trigger-driven campus proposal invalidation for:
-    - individual proposal insert as `ACTIVE`
-    - lifecycle transitions to `INVALIDATED` or `REJECTED`
-    - delete
-    - campus/term scope change (old and new scope)
+- `tests/campus_college_load_workflow_regression.sql`
+  - Verifies campus-college load workflow guards for:
+    - Program Chairperson submission scope
+    - same-campus, same-college revision
+    - Campus Director, DI, and VPAA step ordering
+    - required return comments
   - Runs inside a transaction and rolls back automatically.
   - Execute via Supabase SQL Editor (local/linked) or any SQL client against your dev database.
 

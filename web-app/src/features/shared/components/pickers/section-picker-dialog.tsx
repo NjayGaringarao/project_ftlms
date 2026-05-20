@@ -6,7 +6,7 @@ import { Blocks as Sections, ChevronDown, Sliders, X } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
-import type { CourseLoadingSectionListItem } from "@/features/faculty-teaching-load/lib/course-loading/types";
+import type { CourseLoadingSectionListItem } from "@/features/course-loading/lib/types";
 import { Button } from "@/components/ui/button";
 import CampusPickerDialog from "@/features/shared/components/pickers/campus-picker-dialog";
 import ProgramOfferingPickerDialog from "@/features/shared/components/pickers/program-offering-picker-dialog";

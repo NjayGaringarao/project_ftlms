@@ -1,10 +1,10 @@
 do $$
 begin
-  create type public.proposal_lifecycle_enum as enum (
-    'ACTIVE',
-    'APPROVED',
-    'REJECTED',
-    'INVALIDATED'
+  create type public.campus_college_load_status_enum as enum (
+    'DRAFT',
+    'SUBMITTED',
+    'RETURNED',
+    'APPROVED'
   );
 exception
   when duplicate_object then

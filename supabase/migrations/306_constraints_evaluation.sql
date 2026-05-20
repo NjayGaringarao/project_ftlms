@@ -1,88 +1,68 @@
 do $$
 begin
   if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and indexname = 'faculty_load_proposal_current_user_term_unique'
+    select 1 from pg_constraint
+    where conname = 'campus_college_load_scope_unique'
+      and conrelid = 'public.campus_college_load'::regclass
   ) then
-    create unique index faculty_load_proposal_current_user_term_unique
-      on public.faculty_load_proposal (user_id, academic_term_id)
-      where lifecycle_status in ('ACTIVE', 'APPROVED');
-  end if;
-
-  if not exists (
-    select 1 from pg_indexes
-    where schemaname = 'public'
-      and indexname = 'campus_load_current_campus_term_unique'
-  ) then
-    create unique index campus_load_current_campus_term_unique
-      on public.campus_load (campus_id, academic_term_id)
-      where lifecycle_status in ('ACTIVE', 'APPROVED');
+    alter table public.campus_college_load
+      add constraint campus_college_load_scope_unique
+      unique (campus_id, college_id, academic_term_id);
   end if;
 
   if not exists (
     select 1 from pg_constraint
-    where conname = 'campus_load_member_source_unique'
-      and conrelid = 'public.campus_load_member'::regclass
+    where conname = 'campus_college_load_revision_number_unique'
+      and conrelid = 'public.campus_college_load_revision'::regclass
   ) then
-    alter table public.campus_load_member
-      add constraint campus_load_member_source_unique
-      unique (campus_load_id, source_faculty_load_proposal_id);
+    alter table public.campus_college_load_revision
+      add constraint campus_college_load_revision_number_unique
+      unique (campus_college_load_id, revision_number);
   end if;
 
   if not exists (
     select 1 from pg_constraint
-    where conname = 'faculty_load_evaluation_step_unique'
-      and conrelid = 'public.faculty_load_evaluation'::regclass
+    where conname = 'campus_college_load_revision_snapshot_object_check'
+      and conrelid = 'public.campus_college_load_revision'::regclass
   ) then
-    alter table public.faculty_load_evaluation
-      add constraint faculty_load_evaluation_step_unique
-      unique (faculty_load_proposal_id, step);
+    alter table public.campus_college_load_revision
+      add constraint campus_college_load_revision_snapshot_object_check
+      check (jsonb_typeof(snapshot) = 'object');
   end if;
 
   if not exists (
     select 1 from pg_constraint
-    where conname = 'campus_load_evaluation_step_unique'
-      and conrelid = 'public.campus_load_evaluation'::regclass
+    where conname = 'campus_college_load_evaluation_step_unique'
+      and conrelid = 'public.campus_college_load_evaluation'::regclass
   ) then
-    alter table public.campus_load_evaluation
-      add constraint campus_load_evaluation_step_unique
-      unique (campus_load_id, step);
+    alter table public.campus_college_load_evaluation
+      add constraint campus_college_load_evaluation_step_unique
+      unique (campus_college_load_revision_id, step);
   end if;
 
   if not exists (
     select 1 from pg_constraint
-    where conname = 'faculty_load_evaluation_status_final'
-      and conrelid = 'public.faculty_load_evaluation'::regclass
+    where conname = 'campus_college_load_return_comment_required'
+      and conrelid = 'public.campus_college_load_evaluation'::regclass
   ) then
-    alter table public.faculty_load_evaluation
-      add constraint faculty_load_evaluation_status_final
-      check (status in ('APPROVED', 'REJECTED'));
+    alter table public.campus_college_load_evaluation
+      add constraint campus_college_load_return_comment_required
+      check (status <> 'RETURNED' or length(btrim(coalesce(comment, ''))) > 0);
   end if;
 
   if not exists (
     select 1 from pg_constraint
-    where conname = 'campus_load_evaluation_status_final'
-      and conrelid = 'public.campus_load_evaluation'::regclass
+    where conname = 'campus_college_load_attachment_pdf_check'
+      and conrelid = 'public.campus_college_load_evaluation'::regclass
   ) then
-    alter table public.campus_load_evaluation
-      add constraint campus_load_evaluation_status_final
-      check (status in ('APPROVED', 'REJECTED'));
-  end if;
-
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'faculty_load_proposal_snapshot_arrays_check'
-      and conrelid = 'public.faculty_load_proposal'::regclass
-  ) then
-    alter table public.faculty_load_proposal
-      add constraint faculty_load_proposal_snapshot_arrays_check
+    alter table public.campus_college_load_evaluation
+      add constraint campus_college_load_attachment_pdf_check
       check (
-        jsonb_typeof(bachelors_degree) = 'array'
-        and jsonb_typeof(masters_degree) = 'array'
-        and jsonb_typeof(doctorate_degree) = 'array'
-        and jsonb_typeof(designations) = 'array'
-        and jsonb_typeof(schedule_sessions) = 'array'
+        attachment_path is null
+        or (
+          attachment_bucket = 'ftl-evaluation-return-attachment'
+          and attachment_mime_type = 'application/pdf'
+        )
       );
   end if;
 
@@ -103,7 +83,7 @@ begin
   ) then
     alter table public.document_export_job
       add constraint document_export_job_document_type_check
-      check (document_type in ('faculty_load'));
+      check (document_type in ('campus_college_load'));
   end if;
 
   if not exists (
@@ -134,6 +114,15 @@ begin
   end if;
 end;
 $$;
+
+create index if not exists idx_campus_college_load_status_step
+  on public.campus_college_load (status, current_step);
+
+create index if not exists idx_campus_college_load_revision_load_submitted
+  on public.campus_college_load_revision (campus_college_load_id, submitted_at desc);
+
+create index if not exists idx_campus_college_load_evaluation_revision_created
+  on public.campus_college_load_evaluation (campus_college_load_revision_id, created_at);
 
 create index if not exists idx_document_export_job_requester_created_at
   on public.document_export_job (requester_user_id, created_at desc);

@@ -13,7 +13,7 @@ import type {
   SessionRoomOption,
   SessionSummary,
 } from "./types";
-import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
+import { formatMergedSectionLabels } from "@/features/course-loading/lib/formatters";
 
 export const getSessionSummaries = async (
   sessionIds: string[],

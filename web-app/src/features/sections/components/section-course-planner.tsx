@@ -15,12 +15,12 @@ import { Button } from "@/components/ui/button";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { MultiPickerList } from "@/features/shared/components/pickers/multi-picker-list";
 import type { CourseListItem } from "@/features/admin/lib/courses";
-import type { SectionClassRow } from "@/features/faculty-teaching-load/lib/course-loading/types";
+import type { SectionClassRow } from "@/features/course-loading/lib/types";
 import {
   addCourseToSection,
   removeCourseFromSection,
 } from "@/features/sections/lib/course-planner";
-import { getClassesBySectionAndTerm } from "@/features/faculty-teaching-load/lib/course-loading/queries";
+import { getClassesBySectionAndTerm } from "@/features/course-loading/lib/queries";
 import { numberToHourDuration } from "@/utils/time";
 import { Popover } from "radix-ui";
 import { cn } from "@/utils/style";

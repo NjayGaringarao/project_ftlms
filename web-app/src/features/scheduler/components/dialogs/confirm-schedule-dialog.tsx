@@ -9,7 +9,7 @@ import type { SessionType } from "@/features/shared/types/models";
 import type {
   CourseLoadingSectionListItem,
   FacultyListItem,
-} from "@/features/faculty-teaching-load/lib/course-loading/types";
+} from "@/features/course-loading/lib/types";
 import type { ExtendedRoom } from "@/features/shared/types/models";
 import type { SchedulerCourseOfferingItem } from "@/features/scheduler/lib/schedule/course-offerings";
 

@@ -20,7 +20,7 @@ import {
 } from "@/features/scheduler/lib/schedule/session-actions";
 import { dayLabel, toDisplayTime, toMinutes } from "@/features/scheduler/lib/schedule/utils";
 import { useScheduler } from "./scheduler-context";
-import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
+import { formatMergedSectionLabels } from "@/features/course-loading/lib/formatters";
 
 const SchedulerRightPane = () => {
   const {

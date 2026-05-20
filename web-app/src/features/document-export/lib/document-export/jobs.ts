@@ -111,7 +111,7 @@ export const toRawDocumentExportJobRow = (
     id: row.id,
     requester_user_id: row.requester_user_id,
     academic_term_id: row.academic_term_id,
-    document_type: row.document_type ?? "faculty_load",
+    document_type: row.document_type ?? "campus_college_load",
     scope_kind: row.scope_kind,
     scope_payload: row.scope_payload ?? {},
     resolved_entity_ids: row.resolved_entity_ids ?? [],

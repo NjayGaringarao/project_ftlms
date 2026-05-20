@@ -6,7 +6,7 @@ import { ChevronDown, User, X } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
-import type { FacultyListItem } from "@/features/faculty-teaching-load/lib/course-loading/types";
+import type { FacultyListItem } from "@/features/course-loading/lib/types";
 import CampusPickerDialog from "@/features/shared/components/pickers/campus-picker-dialog";
 import CollegePickerDialog from "@/features/shared/components/pickers/college-picker-dialog";
 import { Button } from "@/components/ui/button";

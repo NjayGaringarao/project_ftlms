@@ -6,7 +6,7 @@ import type { SchedulerCourseOfferingItem } from "@/features/scheduler/lib/sched
 import type {
   CourseLoadingSectionListItem,
   FacultyListItem,
-} from "@/features/faculty-teaching-load/lib/course-loading/types";
+} from "@/features/course-loading/lib/types";
 import type { SessionSummary } from "@/features/scheduler/lib/schedule/session-actions";
 import type { SchedulerMatrixSession } from "@/features/scheduler/lib/schedule/mapper";
 import type { ExtendedRoom } from "@/features/shared/types/models";

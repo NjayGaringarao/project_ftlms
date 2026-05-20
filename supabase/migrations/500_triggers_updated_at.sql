@@ -20,15 +20,9 @@ before update on public.class
 for each row
 execute function public.set_updated_at();
 
-drop trigger if exists trg_faculty_load_proposal_set_updated_at on public.faculty_load_proposal;
-create trigger trg_faculty_load_proposal_set_updated_at
-before update on public.faculty_load_proposal
-for each row
-execute function public.set_updated_at();
-
-drop trigger if exists trg_campus_load_set_updated_at on public.campus_load;
-create trigger trg_campus_load_set_updated_at
-before update on public.campus_load
+drop trigger if exists trg_campus_college_load_set_updated_at on public.campus_college_load;
+create trigger trg_campus_college_load_set_updated_at
+before update on public.campus_college_load
 for each row
 execute function public.set_updated_at();
 

@@ -32,8 +32,8 @@ import { SchedulerProvider } from "./scheduler-context";
 import type {
   CourseLoadingSectionListItem,
   FacultyListItem,
-} from "@/features/faculty-teaching-load/lib/course-loading/types";
-import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
+} from "@/features/course-loading/lib/types";
+import { formatMergedSectionLabels } from "@/features/course-loading/lib/formatters";
 import type { ExtendedRoom } from "@/features/shared/types/models";
 import { Button } from "@/components/ui/button";
 import ConfirmScheduleDialog from "@/features/scheduler/components/dialogs/confirm-schedule-dialog";
@@ -293,7 +293,7 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
       setLookupLoading(true);
       try {
         const [courseLoadingModule, roomModule] = await Promise.all([
-          import("@/features/faculty-teaching-load/lib/course-loading/queries"),
+          import("@/features/course-loading/lib/queries"),
           import("@/features/admin/lib/rooms"),
         ]);
 

@@ -3,7 +3,6 @@ import type { DocumentType } from "@/features/document-export/lib/document-expor
 import {
   DocumentExportError,
 } from "@/features/document-export/lib/document-export/errors";
-import { facultyLoadDocumentExportProvider } from "@/features/document-export/lib/faculty-load-export/provider";
 
 export type DocumentExportProvider = {
   documentType: DocumentType;
@@ -31,9 +30,7 @@ export type DocumentExportProvider = {
   }) => string | Promise<string>;
 };
 
-const providersByType: Record<DocumentType, DocumentExportProvider> = {
-  faculty_load: facultyLoadDocumentExportProvider,
-};
+const providersByType: Partial<Record<DocumentType, DocumentExportProvider>> = {};
 
 const assertProviderContract = (provider: DocumentExportProvider): void => {
   const requiredKeys: Array<keyof DocumentExportProvider> = [

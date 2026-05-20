@@ -1,7 +1,11 @@
 do $$
 begin
-  create type public.faculty_load_step_enum as enum (
-    'CAMPUS_DIRECTOR'
+  create type public.campus_college_load_step_enum as enum (
+    'PROGRAM_CHAIR',
+    'CAMPUS_DIRECTOR',
+    'DIRECTOR_FOR_INSTRUCTION',
+    'VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS',
+    'COMPLETED'
   );
 exception
   when duplicate_object then
@@ -11,9 +15,22 @@ $$;
 
 do $$
 begin
-  create type public.campus_load_step_enum as enum (
+  create type public.campus_college_load_evaluation_step_enum as enum (
+    'CAMPUS_DIRECTOR',
     'DIRECTOR_FOR_INSTRUCTION',
     'VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS'
+  );
+exception
+  when duplicate_object then
+    null;
+end
+$$;
+
+do $$
+begin
+  create type public.campus_college_load_evaluation_status_enum as enum (
+    'APPROVED',
+    'RETURNED'
   );
 exception
   when duplicate_object then

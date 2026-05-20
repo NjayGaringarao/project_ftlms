@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { calculateAtl } from "@/features/faculty-teaching-load/lib/course-loading/calculations";
+import { calculateAtl } from "@/features/course-loading/lib/calculations";
 import { getCurrentUser } from "@/features/auth/lib/utils";
 import { Identity } from "@/features/shared/types/models/identity";
 import { ExtendedDesignation } from "@/features/shared/types/models/designation";

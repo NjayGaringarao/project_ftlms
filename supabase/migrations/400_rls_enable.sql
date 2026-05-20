@@ -52,6 +52,15 @@ values ('ftl-exports', 'ftl-exports', false)
 on conflict (id) do update
 set public = excluded.public;
 
+insert into storage.buckets (id, name, public)
+values (
+  'ftl-evaluation-return-attachment',
+  'ftl-evaluation-return-attachment',
+  false
+)
+on conflict (id) do update
+set public = excluded.public;
+
 do $$
 begin
   if not exists (
@@ -109,6 +118,34 @@ begin
       for delete
       to authenticated
       using (bucket_id = 'ftl-exports');
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'ftl_return_attachment_auth_select'
+  ) then
+    create policy ftl_return_attachment_auth_select
+      on storage.objects
+      for select
+      to authenticated
+      using (bucket_id = 'ftl-evaluation-return-attachment');
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'ftl_return_attachment_auth_insert'
+  ) then
+    create policy ftl_return_attachment_auth_insert
+      on storage.objects
+      for insert
+      to authenticated
+      with check (bucket_id = 'ftl-evaluation-return-attachment');
   end if;
 end
 $$;

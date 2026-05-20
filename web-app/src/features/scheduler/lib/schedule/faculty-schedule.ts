@@ -15,7 +15,7 @@ import {
   sortScheduleRows,
   toMinutes,
 } from "./utils";
-import { formatMergedSectionLabels } from "@/features/faculty-teaching-load/lib/course-loading/formatters";
+import { formatMergedSectionLabels } from "@/features/course-loading/lib/formatters";
 
 type ClassSectionRow = {
   section?: {

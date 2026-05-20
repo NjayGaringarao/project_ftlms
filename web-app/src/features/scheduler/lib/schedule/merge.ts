@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { createClient } from "@/utils/supabase/server";
-import { mergeClasses } from "@/features/faculty-teaching-load/lib/course-loading/actions";
+import { mergeClasses } from "@/features/course-loading/lib/actions";
 
 export type SchedulerMergeCandidate = {
   class_id: string;

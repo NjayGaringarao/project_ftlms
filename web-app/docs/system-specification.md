@@ -65,7 +65,7 @@ Core data domains represented in migrations/models:
 - Academic structure: colleges, programs, majors, offerings, terms, sections
 - Identity and staffing: users, designations, ranks, degrees
 - Scheduling: classes, sessions, room assignment, user-class mapping
-- Faculty load workflow: proposals, campus load, evaluation steps, statuses
+- Campus-college load workflow: scoped load revisions, evaluation steps, statuses
 - Export operations: document export job persistence and claim RPC
 
 ### 2.6 Document Export and Print Architecture
@@ -97,7 +97,7 @@ Styling and UI:
 
 Data and backend integration:
 - `@supabase/supabase-js` and `@supabase/ssr`
-- Supabase RPC usage for role resolution and workflow transactions
+- Supabase RPC usage for role resolution and export job locking
 
 Document generation:
 - `puppeteer-core`
@@ -151,14 +151,14 @@ Authentication requirements:
 
 Role constraints:
 - Major feature areas are role-scoped through navigation and route-level checks
-- Evaluation flows are segmented across Campus Director, DI, and VPAA responsibilities
+- Campus-college load evaluation is segmented across Campus Director, DI, and VPAA responsibilities
 
 ### 4.3 Data and Workflow Constraints
 
 Database governance constraints:
 - Migration order is semantically significant and must be preserved
 - Seed ordering is dependency-sensitive and defined in `supabase/config.toml`
-- Triggers and constraints enforce scheduling integrity, proposal invalidation, and evaluation workflow transitions
+- Triggers and constraints enforce scheduling integrity and campus-college load workflow transitions
 
 Workflow isolation constraints:
 - Export job claim uses RPC-based lock semantics (`claim_document_export_job`)
@@ -218,7 +218,7 @@ Primary sources used for this summary:
 - `web-app/src/app/api/puppeteer/pdf/documents/[document_type]/scope/[academic_term_id]/route.ts`
 - `web-app/src/lib/document-export/*`
 - `web-app/src/lib/puppeteer/browser.ts`
-- `web-app/src/lib/faculty-load-export/scope.ts`
+- `web-app/src/features/campus-college-load/*`
 - `supabase/README.md`
 - `supabase/config.toml`
 - `supabase/migrations/*`

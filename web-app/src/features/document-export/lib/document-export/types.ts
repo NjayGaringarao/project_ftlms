@@ -1,4 +1,4 @@
-export type DocumentType = "faculty_load";
+export type DocumentType = "campus_college_load";
 
 export type DocumentExportJobStatus =
   | "QUEUED"
@@ -6,7 +6,7 @@ export type DocumentExportJobStatus =
   | "COMPLETED"
   | "FAILED";
 
-export const DOCUMENT_TYPES: DocumentType[] = ["faculty_load"];
+export const DOCUMENT_TYPES: DocumentType[] = [];
 
 export const isDocumentType = (value: string): value is DocumentType => {
   return DOCUMENT_TYPES.includes(value as DocumentType);
