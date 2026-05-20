@@ -315,7 +315,9 @@ const DetailPanel = ({
                 <div key={evaluation.id} className="rounded-md border p-3 text-sm">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium">
-                      {evaluationStepLabel[evaluation.step]}
+                      {evaluation.system_generated
+                        ? "Automatic Return"
+                        : evaluationStepLabel[evaluation.step]}
                     </p>
                     <span
                       className={`rounded border px-1.5 py-0.5 text-xs ${
@@ -329,6 +331,11 @@ const DetailPanel = ({
                   </div>
                   {evaluation.comment ? (
                     <p className="mt-2 text-foreground/70">{evaluation.comment}</p>
+                  ) : null}
+                  {evaluation.system_generated ? (
+                    <p className="mt-2 text-xs text-foreground/50">
+                      Source schedule data changed after this revision was submitted.
+                    </p>
                   ) : null}
                   {evaluation.attachment_path ? (
                     <a

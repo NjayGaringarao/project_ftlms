@@ -21,6 +21,7 @@ export type CampusCollegeLoadEvaluation = {
   attachment_path: string | null;
   attachment_file_name: string | null;
   attachment_mime_type: string | null;
+  system_generated: boolean;
   created_at: string | null;
 };
 

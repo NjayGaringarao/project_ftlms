@@ -114,6 +114,7 @@ const normalizeEvaluation = (
   attachment_path: (row.attachment_path as string | null) ?? null,
   attachment_file_name: (row.attachment_file_name as string | null) ?? null,
   attachment_mime_type: (row.attachment_mime_type as string | null) ?? null,
+  system_generated: Boolean(row.system_generated),
   created_at: (row.created_at as string | null) ?? null,
 });
 
