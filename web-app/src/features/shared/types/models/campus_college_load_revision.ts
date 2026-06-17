@@ -9,6 +9,11 @@ export type CampusCollegeLoadSnapshotFaculty = {
   academic_rank: string | null;
   college_code: string | null;
   campus_code: string | null;
+  designation_summary?: string | null;
+  lecture_hours?: number;
+  laboratory_hours?: number;
+  preparation_count?: number;
+  equivalent_units?: number;
   equivalent_teaching_load: number;
   actual_teaching_load: number;
   total_working_load: number;
@@ -20,6 +25,8 @@ export type CampusCollegeLoadSnapshotFaculty = {
     year_section: string;
     lecture_unit: number;
     laboratory_unit: number;
+    lecture_hours?: number;
+    laboratory_hours?: number;
     load: number;
   }>;
 };
@@ -32,10 +39,17 @@ export type CampusCollegeLoadSnapshot = {
   college_code: string | null;
   college_name: string | null;
   academic_term_id: string;
+  academic_term_code?: string | null;
+  academic_term_name?: string | null;
+  academic_year_code?: string | null;
   generated_at: string;
   faculty: CampusCollegeLoadSnapshotFaculty[];
   totals: {
     faculty_count: number;
+    lecture_hours?: number;
+    laboratory_hours?: number;
+    preparation_count?: number;
+    equivalent_units?: number;
     equivalent_teaching_load: number;
     actual_teaching_load: number;
     total_working_load: number;
@@ -49,6 +63,7 @@ export type CampusCollegeLoadRevision = {
   snapshot: CampusCollegeLoadSnapshot;
   submitted_by_user_id: string;
   submitted_by_designation_id: string | null;
+  submitted_by_name?: string | null;
   submitted_at: string | null;
 };
 

@@ -36,11 +36,15 @@ export const SubmitCampusCollegeLoadForm = ({
   campusId,
   collegeId,
   label,
+  className = "flex flex-col gap-2",
+  buttonClassName = "w-full",
 }: {
   academicTermId: string;
   campusId: string;
   collegeId: string;
   label: string;
+  className?: string;
+  buttonClassName?: string;
 }) => {
   const [state, formAction, pending] = useActionState(
     createOrResubmitCampusCollegeLoadAction,
@@ -48,11 +52,11 @@ export const SubmitCampusCollegeLoadForm = ({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form action={formAction} className={className}>
       <input type="hidden" name="academicTermId" value={academicTermId} />
       <input type="hidden" name="campusId" value={campusId} />
       <input type="hidden" name="collegeId" value={collegeId} />
-      <Button type="submit" size="sm" disabled={pending}>
+      <Button type="submit" size="sm" disabled={pending} className={buttonClassName}>
         {label.includes("Resubmit") ? (
           <RotateCcw className="h-4 w-4" />
         ) : (
@@ -94,14 +98,14 @@ export const CampusCollegeLoadEvaluationForm = ({
             className="min-h-20 rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             placeholder="Return comment"
           />
-          <label className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-foreground/70">
+          <label className="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-foreground/70">
             <Upload className="h-4 w-4" />
             <span className="flex-1">Optional PDF attachment</span>
             <input
               name="attachment"
               type="file"
               accept="application/pdf,.pdf"
-              className="w-44 text-xs"
+              className="w-full min-w-0 text-xs"
             />
           </label>
         </>
@@ -113,6 +117,7 @@ export const CampusCollegeLoadEvaluationForm = ({
         size="sm"
         variant={isReturn ? "outline" : "default"}
         disabled={pending}
+        className="w-full"
       >
         {isReturn ? <Undo2 className="h-4 w-4" /> : <Check className="h-4 w-4" />}
         {pending ? "Submitting..." : isReturn ? "Return" : "Approve"}
