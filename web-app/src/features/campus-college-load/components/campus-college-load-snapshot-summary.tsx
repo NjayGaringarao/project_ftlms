@@ -1,33 +1,27 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BookCopy, ClipboardCheck, FileText, History } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { FileText, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppDialog } from "@/components/ui/app-dialog";
 import { Button } from "@/components/ui/button";
-import { ManagementContainer } from "@/components/layout/management-container";
-import { AdminManagementList } from "@/features/admin/components/management/admin-management-list";
-import { ManagementPlaceholder } from "@/features/admin/components/management/management-placeholder";
+import type { CampusCollegeLoadDetail } from "@/features/campus-college-load/lib/queries";
+import { CampusCollegeLoadEvaluationForm } from "@/features/campus-college-load/components/action-forms";
 import type {
-  CampusCollegeLoadDetail,
-  CampusCollegeLoadListItem,
-} from "@/features/campus-college-load/lib/queries";
-import type { CampusCollegeLoadSnapshotFaculty } from "@/features/shared/types/models";
-import {
-  CampusCollegeLoadEvaluationForm,
-  SubmitCampusCollegeLoadForm,
-} from "@/features/campus-college-load/components/action-forms";
+  CampusCollegeLoadSnapshotClass,
+  CampusCollegeLoadSnapshotFaculty,
+} from "@/features/shared/types/models";
+import { normalizeCampusCollegeLoadSnapshot } from "@/features/shared/types/models";
 import { formatDateTime } from "@/utils/time";
 
-const statusClass: Record<string, string> = {
+export const statusClass: Record<string, string> = {
   DRAFT: "border-slate-200 bg-slate-100 text-slate-700",
   SUBMITTED: "border-sky-200 bg-sky-100 text-sky-800",
   RETURNED: "border-amber-200 bg-amber-100 text-amber-900",
   APPROVED: "border-emerald-200 bg-emerald-100 text-emerald-800",
 };
 
-const stepLabel: Record<string, string> = {
+export const stepLabel: Record<string, string> = {
   PROGRAM_CHAIR: "Program Chairperson",
   CAMPUS_DIRECTOR: "Campus Director",
   DIRECTOR_FOR_INSTRUCTION: "Director for Instruction",
@@ -35,7 +29,7 @@ const stepLabel: Record<string, string> = {
   COMPLETED: "Completed",
 };
 
-const evaluationStepLabel: Record<string, string> = {
+export const evaluationStepLabel: Record<string, string> = {
   CAMPUS_DIRECTOR: "Campus Director",
   DIRECTOR_FOR_INSTRUCTION: "Director for Instruction",
   VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS: "VPAA",
@@ -56,32 +50,6 @@ const formatNumber = (value: unknown) => {
   const parsed = Number(value ?? 0);
   return numberFormat.format(Number.isFinite(parsed) ? parsed : 0);
 };
-
-const sumFaculty = (faculty: CampusCollegeLoadSnapshotFaculty[]) =>
-  faculty.reduce(
-    (totals, row) => ({
-      equivalent_teaching_load:
-        totals.equivalent_teaching_load + Number(row.equivalent_teaching_load ?? 0),
-      lecture_hours: totals.lecture_hours + Number(row.lecture_hours ?? 0),
-      laboratory_hours: totals.laboratory_hours + Number(row.laboratory_hours ?? 0),
-      preparation_count:
-        totals.preparation_count + Number(row.preparation_count ?? row.classes.length),
-      equivalent_units: totals.equivalent_units + Number(row.equivalent_units ?? 0),
-      actual_teaching_load:
-        totals.actual_teaching_load + Number(row.actual_teaching_load ?? 0),
-      total_working_load:
-        totals.total_working_load + Number(row.total_working_load ?? 0),
-    }),
-    {
-      equivalent_teaching_load: 0,
-      lecture_hours: 0,
-      laboratory_hours: 0,
-      preparation_count: 0,
-      equivalent_units: 0,
-      actual_teaching_load: 0,
-      total_working_load: 0,
-    },
-  );
 
 const getFacultySummaryRow = (faculty: CampusCollegeLoadSnapshotFaculty) => {
   const lectureHours =
@@ -131,15 +99,84 @@ const groupSnapshotFaculty = (faculty: CampusCollegeLoadSnapshotFaculty[]) => {
   ];
 };
 
-const getItemKey = (item: CampusCollegeLoadListItem) =>
-  item.load?.id ?? `${item.campus_id}:${item.college_id}`;
+const ClassScheduleTable = ({
+  classes,
+  collegeCode,
+  legacy,
+}: {
+  classes: CampusCollegeLoadSnapshotClass[];
+  collegeCode: string | null;
+  legacy: boolean;
+}) => {
+  if (legacy) {
+    return (
+      <div className="rounded-md border border-dashed p-4 text-sm text-foreground/70">
+        Class schedule data is not available for this older revision.
+      </div>
+    );
+  }
 
-const getItemTitle = (item: CampusCollegeLoadListItem) =>
-  `${item.college_code ?? "Department"} - ${item.campus_name ?? "Campus"}`;
+  if (classes.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed p-4 text-sm text-foreground/70">
+        No classes recorded for this scope.
+      </div>
+    );
+  }
 
-const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
-  const snapshot = detail.latest_revision?.snapshot ?? null;
-  if (!snapshot) {
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <table className="min-w-[860px] w-full text-sm">
+        <thead className="bg-slate-100 text-left text-xs uppercase text-slate-700">
+          <tr>
+            <th className="px-3 py-2">Class Code</th>
+            <th className="px-3 py-2">Course</th>
+            <th className="px-3 py-2">Section</th>
+            <th className="px-3 py-2">Instructor</th>
+            <th className="px-3 py-2 text-right">Lecture Hours</th>
+            <th className="px-3 py-2 text-right">Lab Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {classes.map((classRow) => (
+            <tr key={classRow.class_id} className="border-t">
+              <td className="px-3 py-2">{classRow.class_code}</td>
+              <td className="px-3 py-2">
+                {classRow.course_code} — {classRow.course_title}
+              </td>
+              <td className="px-3 py-2">{classRow.section_code ?? "N/A"}</td>
+              <td className="px-3 py-2">
+                {classRow.instructor_name ?? (
+                  <span className="text-foreground/50">Unassigned</span>
+                )}
+                {classRow.instructor_name &&
+                classRow.instructor_college_code &&
+                classRow.instructor_college_code !== collegeCode ? (
+                  <span className="ml-2 rounded border border-amber-200 bg-amber-100 px-1 py-0.5 text-[10px] text-amber-900">
+                    Other College
+                  </span>
+                ) : null}
+              </td>
+              <td className="px-3 py-2 text-right">
+                {formatNumber(classRow.lecture_hours)}
+              </td>
+              <td className="px-3 py-2 text-right">
+                {formatNumber(classRow.laboratory_hours)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
+  const normalized = normalizeCampusCollegeLoadSnapshot(
+    detail.viewed_revision?.snapshot ?? null,
+  );
+
+  if (!normalized) {
     return (
       <Card>
         <CardContent className="p-4 text-sm text-foreground/70">
@@ -148,12 +185,11 @@ const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
       </Card>
     );
   }
-  const groups = groupSnapshotFaculty(snapshot.faculty);
-  const overallTotals = sumFaculty(snapshot.faculty);
-  const academicTermText = [
-    snapshot.academic_term_name,
-    snapshot.academic_year_code,
-  ]
+
+  const { metadata, faculty_load, class_schedule, legacy } = normalized;
+  const groups = groupSnapshotFaculty(faculty_load.faculty);
+  const totals = faculty_load.totals;
+  const academicTermText = [metadata.academic_term_name, metadata.academic_year_code]
     .filter(Boolean)
     .join(", ");
 
@@ -164,57 +200,63 @@ const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
           <div>
             <CardTitle className="text-base">Frozen Load Snapshot</CardTitle>
             <p className="text-sm text-foreground/60">
-              Revision {detail.latest_revision?.revision_number ?? 0} submitted{" "}
-              {formatDateTime(detail.latest_revision?.submitted_at ?? undefined)}
+              Revision {detail.viewed_revision?.revision_number ?? 0} submitted{" "}
+              {formatDateTime(detail.viewed_revision?.submitted_at ?? undefined)}
             </p>
           </div>
           <div className="text-right text-xs text-foreground/60">
-            <p>{snapshot.campus_name ?? detail.load.campus?.name ?? "Campus"}</p>
-            <p>{snapshot.college_name ?? detail.load.college?.name ?? "College"}</p>
+            <p>{metadata.campus_name ?? detail.load.campus?.name ?? "Campus"}</p>
+            <p>{metadata.college_name ?? detail.load.college?.name ?? "College"}</p>
           </div>
         </div>
+        {legacy ? (
+          <p className="mt-2 rounded-md border border-dashed p-2 text-xs text-foreground/60">
+            This revision predates per-faculty full-load tracking; the faculty list
+            below is limited to classes owned by this scope only.
+          </p>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-5 p-4">
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-md border p-3">
             <p className="text-xs text-foreground/60">College</p>
             <p className="font-medium">
-              {snapshot.college_name ?? detail.load.college?.name ?? "College"}
+              {metadata.college_name ?? detail.load.college?.name ?? "College"}
             </p>
             <p className="text-xs text-foreground/60">
-              {snapshot.college_code ?? detail.load.college?.code ?? ""}
+              {metadata.college_code ?? detail.load.college?.code ?? ""}
             </p>
           </div>
           <div className="rounded-md border p-3">
             <p className="text-xs text-foreground/60">Campus</p>
             <p className="font-medium">
-              {snapshot.campus_name ?? detail.load.campus?.name ?? "Campus"}
+              {metadata.campus_name ?? detail.load.campus?.name ?? "Campus"}
             </p>
             <p className="text-xs text-foreground/60">
-              {snapshot.campus_code ?? detail.load.campus?.code ?? ""}
+              {metadata.campus_code ?? detail.load.campus?.code ?? ""}
             </p>
           </div>
           <div className="rounded-md border p-3">
             <p className="text-xs text-foreground/60">Academic Term</p>
             <p className="font-medium">
-              {academicTermText || snapshot.academic_term_code || "Academic Term"}
+              {academicTermText || metadata.academic_term_code || "Academic Term"}
             </p>
             <p className="text-xs text-foreground/60">
-              Frozen {formatDateTime(snapshot.generated_at)}
+              Frozen {formatDateTime(metadata.generated_at)}
             </p>
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
-            ["Faculty", snapshot.totals.faculty_count],
-            ["ETL", overallTotals.equivalent_teaching_load],
-            ["ATL", overallTotals.actual_teaching_load],
-            ["TWL", overallTotals.total_working_load],
-            ["Lecture Hours", overallTotals.lecture_hours],
-            ["Lab Hours", overallTotals.laboratory_hours],
-            ["Preparations", overallTotals.preparation_count],
-            ["Equivalent Units", overallTotals.equivalent_units],
+            ["Faculty", totals.faculty_count],
+            ["ETL", totals.equivalent_teaching_load],
+            ["ATL", totals.actual_teaching_load],
+            ["TWL", totals.total_working_load],
+            ["Lecture Hours", totals.lecture_hours],
+            ["Lab Hours", totals.laboratory_hours],
+            ["Preparations", totals.preparation_count],
+            ["Equivalent Units", totals.equivalent_units],
           ].map(([label, value]) => (
             <div key={label} className="rounded-md border p-3">
               <p className="text-xs text-foreground/60">{label}</p>
@@ -240,7 +282,32 @@ const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
               </tr>
             </thead>
             {groups.map((group) => {
-              const totals = sumFaculty(group.faculty);
+              const groupTotals = group.faculty.reduce(
+                (sum, faculty) => {
+                  const row = getFacultySummaryRow(faculty);
+                  return {
+                    equivalent_teaching_load:
+                      sum.equivalent_teaching_load + row.equivalent_teaching_load,
+                    lecture_hours: sum.lecture_hours + row.lecture_hours,
+                    laboratory_hours: sum.laboratory_hours + row.laboratory_hours,
+                    preparation_count: sum.preparation_count + row.preparation_count,
+                    equivalent_units: sum.equivalent_units + row.equivalent_units,
+                    actual_teaching_load:
+                      sum.actual_teaching_load + row.actual_teaching_load,
+                    total_working_load:
+                      sum.total_working_load + row.total_working_load,
+                  };
+                },
+                {
+                  equivalent_teaching_load: 0,
+                  lecture_hours: 0,
+                  laboratory_hours: 0,
+                  preparation_count: 0,
+                  equivalent_units: 0,
+                  actual_teaching_load: 0,
+                  total_working_load: 0,
+                },
+              );
               return (
                 <tbody key={group.status}>
                   <tr className="border-t bg-slate-50">
@@ -286,25 +353,25 @@ const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
                       {group.status} Total
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatNumber(totals.equivalent_teaching_load)}
+                      {formatNumber(groupTotals.equivalent_teaching_load)}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatNumber(totals.lecture_hours)}
+                      {formatNumber(groupTotals.lecture_hours)}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatNumber(totals.laboratory_hours)}
+                      {formatNumber(groupTotals.laboratory_hours)}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatNumber(totals.preparation_count)}
+                      {formatNumber(groupTotals.preparation_count)}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatNumber(totals.equivalent_units)}
+                      {formatNumber(groupTotals.equivalent_units)}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatNumber(totals.actual_teaching_load)}
+                      {formatNumber(groupTotals.actual_teaching_load)}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {formatNumber(totals.total_working_load)}
+                      {formatNumber(groupTotals.total_working_load)}
                     </td>
                   </tr>
                 </tbody>
@@ -348,6 +415,15 @@ const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
           ))}
         </div>
 
+        <div className="space-y-2 border-t pt-4">
+          <h3 className="text-sm font-semibold">Class Schedule</h3>
+          <ClassScheduleTable
+            classes={class_schedule.classes}
+            collegeCode={metadata.college_code}
+            legacy={legacy}
+          />
+        </div>
+
         <div className="grid gap-3 border-t pt-4 md:grid-cols-3">
           {[
             detail.signatures.prepared,
@@ -373,7 +449,7 @@ const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
   );
 };
 
-const LadderHistoryContent = ({
+export const LadderHistoryContent = ({
   detail,
 }: {
   detail: CampusCollegeLoadDetail;
@@ -448,7 +524,66 @@ const LadderHistoryContent = ({
   </div>
 );
 
-const ActionContent = ({
+/**
+ * Status row + History dialog + SnapshotSummary shared by both the Program
+ * Chair and Evaluator views. Only the action button (Submit/Resubmit vs.
+ * Evaluate) and the optional revision selector differ between the two.
+ */
+export const CampusCollegeLoadDetailPanel = ({
+  detail,
+  actionSlot,
+  revisionSlot,
+}: {
+  detail: CampusCollegeLoadDetail;
+  actionSlot?: ReactNode;
+  revisionSlot?: ReactNode;
+}) => {
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 rounded-md border p-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <p className="text-sm text-foreground/60">
+            Current step: {stepLabel[detail.load.current_step]}
+          </p>
+          <span
+            className={`rounded border px-2 py-1 text-xs ${statusClass[detail.load.status]}`}
+          >
+            {detail.load.status}
+          </span>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {revisionSlot}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <History className="h-4 w-4" />
+            History
+          </Button>
+          {actionSlot}
+        </div>
+      </div>
+
+      <SnapshotSummary detail={detail} />
+
+      <AppDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        title="Load History"
+        variant="floating-medium"
+        contentClassName="p-4"
+      >
+        <LadderHistoryContent detail={detail} />
+      </AppDialog>
+    </div>
+  );
+};
+
+export const ActionContent = ({
   detail,
 }: {
   detail: CampusCollegeLoadDetail | null;
@@ -479,7 +614,7 @@ const ActionContent = ({
   );
 };
 
-const getActionLabel = ({
+export const getActionLabel = ({
   detail,
 }: {
   detail: CampusCollegeLoadDetail | null;
@@ -490,260 +625,3 @@ const getActionLabel = ({
   if (detail?.can_evaluate_step) return "Evaluate";
   return null;
 };
-
-const DetailPanel = ({
-  detail,
-  selectedDraftScope,
-  academicTermId,
-}: {
-  detail: CampusCollegeLoadDetail | null;
-  selectedDraftScope: CampusCollegeLoadListItem | null;
-  academicTermId: string;
-}) => {
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [actionOpen, setActionOpen] = useState(false);
-
-  if (!detail && selectedDraftScope) {
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-foreground/70">
-            Create the first frozen revision for this campus-college load.
-          </p>
-          <SubmitCampusCollegeLoadForm
-            academicTermId={academicTermId}
-            campusId={selectedDraftScope.campus_id}
-            collegeId={selectedDraftScope.college_id}
-            label="Submit Load"
-            className="flex flex-col gap-2 sm:items-end"
-            buttonClassName="w-full sm:w-auto"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (!detail) {
-    return (
-      <div className="flex min-h-64 items-center justify-center p-6 text-sm text-foreground/70">
-        Select a campus-college load to begin.
-      </div>
-    );
-  }
-
-  const actionLabel = getActionLabel({ detail });
-  const hasModalAction = Boolean(detail.can_evaluate_step);
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 rounded-md border p-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <p className="text-sm text-foreground/60">
-            Current step: {stepLabel[detail.load.current_step]}
-          </p>
-          <span
-            className={`rounded border px-2 py-1 text-xs ${statusClass[detail.load.status]}`}
-          >
-            {detail.load.status}
-          </span>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => setHistoryOpen(true)}>
-            <History className="h-4 w-4" />
-            History
-          </Button>
-          {actionLabel && detail.can_submit_revision ? (
-            <SubmitCampusCollegeLoadForm
-              academicTermId={detail.load.academic_term_id}
-              campusId={detail.load.campus_id}
-              collegeId={detail.load.college_id}
-              label={actionLabel}
-              className="flex flex-col gap-2 sm:items-end"
-              buttonClassName="w-full sm:w-auto"
-            />
-          ) : actionLabel && hasModalAction ? (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setActionOpen(true)}
-            >
-              <ClipboardCheck className="h-4 w-4" />
-              {actionLabel}
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      <SnapshotSummary detail={detail} />
-
-      <AppDialog
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        title="Load History"
-        variant="floating-medium"
-        contentClassName="p-4"
-      >
-        <LadderHistoryContent detail={detail} />
-      </AppDialog>
-
-      {actionLabel && hasModalAction ? (
-        <AppDialog
-          open={actionOpen}
-          onOpenChange={setActionOpen}
-          title={actionLabel}
-          variant="floating-medium"
-          contentClassName="p-4"
-        >
-          <ActionContent detail={detail} />
-        </AppDialog>
-      ) : null}
-    </div>
-  );
-};
-
-const CampusCollegeLoadWorkspace = ({
-  items,
-  detail,
-  selectedId,
-  selectedDraftScope,
-  academicTermId,
-}: {
-  items: CampusCollegeLoadListItem[];
-  detail: CampusCollegeLoadDetail | null;
-  selectedId: string | null;
-  selectedDraftScope: CampusCollegeLoadListItem | null;
-  academicTermId: string;
-}) => {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [query, setQuery] = useState("");
-
-  const selectedDraftKey = selectedDraftScope
-    ? getItemKey(selectedDraftScope)
-    : null;
-  const activeSelectedId = selectedId ?? selectedDraftKey;
-  const selectedItem =
-    items.find((item) => getItemKey(item) === activeSelectedId) ?? null;
-
-  const navigateWithQuery = useCallback(
-    (mutate: (next: URLSearchParams) => void, replace = false) => {
-      const next = new URLSearchParams(searchParams.toString());
-      mutate(next);
-      const queryString = next.toString();
-      const href = queryString ? `${pathname}?${queryString}` : pathname;
-      if (replace) {
-        router.replace(href);
-      } else {
-        router.push(href);
-      }
-    },
-    [pathname, router, searchParams],
-  );
-
-  const openItem = (item: CampusCollegeLoadListItem) =>
-    navigateWithQuery((next) => {
-      if (item.load) {
-        next.set("id", item.load.id);
-        next.delete("campus_id");
-        next.delete("college_id");
-        return;
-      }
-
-      next.delete("id");
-      next.set("campus_id", item.campus_id);
-      next.set("college_id", item.college_id);
-    });
-
-  const closePanel = () =>
-    navigateWithQuery((next) => {
-      next.delete("id");
-      next.delete("campus_id");
-      next.delete("college_id");
-    });
-
-  const openCreate = () => {
-    const target =
-      items.find((item) => !item.load || item.load.status === "RETURNED") ??
-      items[0];
-    if (target) openItem(target);
-  };
-
-  const filteredItems = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-
-    return items.filter((item) =>
-      [
-        item.campus_code,
-        item.campus_name,
-        item.college_code,
-        item.college_name,
-        item.load?.status ?? "DRAFT",
-        stepLabel[item.load?.current_step ?? "PROGRAM_CHAIR"],
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(q),
-    );
-  }, [items, query]);
-
-  return (
-    <ManagementContainer
-      list={
-        <AdminManagementList
-          query={query}
-          onQueryChange={setQuery}
-          selectedId={activeSelectedId}
-          createLabel="Start Load"
-          searchPlaceholder="Search campus-college loads"
-          emptyMessage="No campus-college loads match your search."
-          onCreate={openCreate}
-          onSelect={(id) => {
-            const item = items.find((entry) => getItemKey(entry) === id);
-            if (item) openItem(item);
-          }}
-          items={filteredItems.map((item) => {
-            const status = item.load?.status ?? "DRAFT";
-            return {
-              id: getItemKey(item),
-              title: getItemTitle(item),
-              subtitle: [],
-              icon: <BookCopy className="h-5 w-5" />,
-              annotations: (
-                <span
-                  className={`rounded border px-2 py-1 text-xs ${statusClass[status]}`}
-                >
-                  {status}
-                </span>
-              ),
-            };
-          })}
-        />
-      }
-      panel={{
-        open: Boolean(detail || selectedDraftScope),
-        title: selectedItem
-          ? getItemTitle(selectedItem)
-          : "Campus College Load",
-        content: (
-          <DetailPanel
-            detail={detail}
-            selectedDraftScope={selectedDraftScope}
-            academicTermId={academicTermId}
-          />
-        ),
-        onOpenChange: (open) => {
-          if (!open) closePanel();
-        },
-      }}
-      panelPlaceholder={
-        <ManagementPlaceholder
-          title="Select a campus-college load"
-          description="Snapshot details, revision history, and approval actions will appear here."
-        />
-      }
-    />
-  );
-};
-
-export default CampusCollegeLoadWorkspace;

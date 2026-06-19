@@ -21,10 +21,13 @@ export type CampusCollegeLoadScope = {
   designation_id: string;
 };
 
+export type CampusCollegeLoadEvaluatorBucket = "PENDING" | "APPROVED" | "RETURNED";
+
 export type CampusCollegeLoadListItem = CampusCollegeLoadScope & {
   load: CampusCollegeLoad | null;
   latest_revision: CampusCollegeLoadRevision | null;
   actionable: boolean;
+  evaluator_bucket: CampusCollegeLoadEvaluatorBucket | null;
 };
 
 export type CampusCollegeLoadDetail = {
@@ -33,6 +36,7 @@ export type CampusCollegeLoadDetail = {
     college?: { code?: string | null; name?: string | null } | null;
   };
   latest_revision: CampusCollegeLoadRevision | null;
+  viewed_revision: CampusCollegeLoadRevision | null;
   revisions: CampusCollegeLoadRevision[];
   evaluations: Array<
     CampusCollegeLoadEvaluation & {
@@ -266,28 +270,74 @@ export const getCampusCollegeLoadList = async (
         !match?.load ||
         match.load.status === "DRAFT" ||
         match.load.status === "RETURNED",
+      evaluator_bucket: null,
     });
   });
 
-  loadRows.forEach((row) => {
-    const canCampusDirectorAct =
-      row.load.status === "SUBMITTED" &&
-      row.load.current_step === "CAMPUS_DIRECTOR" &&
-      campusDirectorCampusIds.has(row.load.campus_id);
-    const canDiAct =
-      row.load.status === "SUBMITTED" &&
-      row.load.current_step === "DIRECTOR_FOR_INSTRUCTION" &&
-      roles.has("Director for Instruction");
-    const canVpaaAct =
-      row.load.status === "SUBMITTED" &&
-      row.load.current_step === "VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS" &&
-      roles.has("Vice President for Academic Affairs");
-    if (!canCampusDirectorAct && !canDiAct && !canVpaaAct) {
-      return;
-    }
+  const latestRevisionIds = loadRows
+    .map((row) => row.latest_revision?.id)
+    .filter((id): id is string => Boolean(id));
+  const { data: approvedEvaluationRows } =
+    latestRevisionIds.length > 0
+      ? await supabase
+          .from("campus_college_load_evaluation")
+          .select("campus_college_load_revision_id, step, evaluator_user_id")
+          .in("campus_college_load_revision_id", latestRevisionIds)
+          .eq("status", "APPROVED")
+      : { data: [] };
+  const approvedByRevision = new Map<string, Set<string>>();
+  (approvedEvaluationRows ?? []).forEach((row) => {
+    const revisionId = String(row.campus_college_load_revision_id);
+    const set = approvedByRevision.get(revisionId) ?? new Set<string>();
+    set.add(`${row.step}:${row.evaluator_user_id}`);
+    approvedByRevision.set(revisionId, set);
+  });
+  const currentUserId = currentUserData?.id ?? null;
 
+  const evaluatorChain: Array<{
+    step: CampusCollegeLoadEvaluationStep;
+    eligible: (campusId: string) => boolean;
+  }> = [
+    {
+      step: "CAMPUS_DIRECTOR",
+      eligible: (campusId) => campusDirectorCampusIds.has(campusId),
+    },
+    {
+      step: "DIRECTOR_FOR_INSTRUCTION",
+      eligible: () => roles.has("Director for Instruction"),
+    },
+    {
+      step: "VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS",
+      eligible: () => roles.has("Vice President for Academic Affairs"),
+    },
+  ];
+
+  loadRows.forEach((row) => {
     const key = `${row.load.campus_id}:${row.load.college_id}`;
     if (items.has(key)) return;
+
+    let bucket: CampusCollegeLoadEvaluatorBucket | null = null;
+    for (const { step, eligible } of evaluatorChain) {
+      if (!eligible(row.load.campus_id)) continue;
+
+      if (row.load.status === "SUBMITTED" && row.load.current_step === step) {
+        bucket = "PENDING";
+        break;
+      }
+      if (row.load.status === "RETURNED") {
+        bucket = "RETURNED";
+        break;
+      }
+      const approvedSet = row.latest_revision
+        ? approvedByRevision.get(row.latest_revision.id)
+        : undefined;
+      if (currentUserId && approvedSet?.has(`${step}:${currentUserId}`)) {
+        bucket = "APPROVED";
+        break;
+      }
+    }
+
+    if (!bucket) return;
     items.set(key, {
       campus_id: row.load.campus_id,
       campus_code: row.campus?.code ?? null,
@@ -298,7 +348,8 @@ export const getCampusCollegeLoadList = async (
       designation_id: "",
       load: row.load,
       latest_revision: row.latest_revision,
-      actionable: canCampusDirectorAct || canDiAct || canVpaaAct,
+      actionable: bucket === "PENDING",
+      evaluator_bucket: bucket,
     });
   });
 
@@ -307,6 +358,7 @@ export const getCampusCollegeLoadList = async (
 
 export const getCampusCollegeLoadDetail = async (
   loadId: string,
+  options?: { revisionId?: string | null },
 ): Promise<CampusCollegeLoadDetail | null> => {
   const supabase = await createClient();
   const { data: rawLoad, error: loadError } = await supabase
@@ -352,12 +404,16 @@ export const getCampusCollegeLoadDetail = async (
     .map((row) => normalizeRevision(row, submitterNames))
     .filter((row): row is CampusCollegeLoadRevision => Boolean(row));
   const latestRevision = revisions[0] ?? null;
+  const requestedRevision = options?.revisionId
+    ? (revisions.find((revision) => revision.id === options.revisionId) ?? null)
+    : null;
+  const viewedRevision = requestedRevision ?? latestRevision;
 
-  const { data: rawEvaluations } = latestRevision
+  const { data: rawEvaluations } = viewedRevision
     ? await supabase
         .from("campus_college_load_evaluation")
         .select("*")
-        .eq("campus_college_load_revision_id", latestRevision.id)
+        .eq("campus_college_load_revision_id", viewedRevision.id)
         .order("created_at", { ascending: true })
     : { data: [] };
 
@@ -496,6 +552,7 @@ export const getCampusCollegeLoadDetail = async (
       college: first(rawLoad.college),
     },
     latest_revision: latestRevision,
+    viewed_revision: viewedRevision,
     revisions,
     evaluations,
     signatures: {

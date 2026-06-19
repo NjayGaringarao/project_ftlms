@@ -19,11 +19,11 @@ type AdminManagementListProps = {
   onQueryChange: (value: string) => void;
   filters?: ReactNode;
   selectedId: string | null;
-  createLabel: string;
+  createLabel?: string;
   searchPlaceholder: string;
   emptyMessage: string;
   items: AdminManagementListItem[];
-  onCreate: () => void;
+  onCreate?: () => void;
   onSelect: (id: string) => void;
 };
 
@@ -49,10 +49,12 @@ export function AdminManagementList({
             onChange={(event) => onQueryChange(event.target.value)}
           />
         </div>
-        <Button type="button" onClick={onCreate} size="sm">
-          <Plus className="h-4 w-4" />
-          {createLabel}
-        </Button>
+        {onCreate ? (
+          <Button type="button" onClick={onCreate} size="sm">
+            <Plus className="h-4 w-4" />
+            {createLabel}
+          </Button>
+        ) : null}
       </div>
       {filters ? <div>{filters}</div> : null}
 

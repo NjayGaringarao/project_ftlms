@@ -3,6 +3,8 @@
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
 import type {
   CampusCollegeLoadSnapshot,
+  CampusCollegeLoadSnapshotClass,
+  CampusCollegeLoadSnapshotClassTotals,
   CampusCollegeLoadSnapshotFaculty,
 } from "@/features/shared/types/models";
 import { calculateLaboratoryContactHours } from "@/features/course-loading/lib/calculations";
@@ -47,6 +49,49 @@ type SessionMetric = {
   laboratory_hours: number;
 };
 
+const first = <T>(value: T | T[] | null | undefined): T | null => {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+};
+
+const getSessionMetrics = async (
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classIds: string[],
+): Promise<Map<string, SessionMetric>> => {
+  const metrics = new Map<string, SessionMetric>();
+  if (classIds.length === 0) return metrics;
+
+  const { data: sessionRows } = await supabase
+    .from("session_class")
+    .select(
+      `
+      class_id,
+      session:session_id (type, start_time, end_time)
+      `,
+    )
+    .in("class_id", classIds);
+
+  (sessionRows ?? []).forEach((row) => {
+    const session = Array.isArray(row.session) ? row.session[0] : row.session;
+    const classId = row.class_id as string | null;
+    if (!classId || !session) return;
+
+    const current = metrics.get(classId) ?? {
+      lecture_hours: 0,
+      laboratory_hours: 0,
+    };
+    const duration = getDurationHours(session.start_time, session.end_time);
+    if (session.type === "Laboratory") {
+      current.laboratory_hours += duration;
+    } else {
+      current.lecture_hours += duration;
+    }
+    metrics.set(classId, current);
+  });
+
+  return metrics;
+};
+
 export const buildCampusCollegeLoadSnapshot = async ({
   academicTermId,
   campusId,
@@ -57,123 +102,42 @@ export const buildCampusCollegeLoadSnapshot = async ({
   collegeId: string;
 }): Promise<CampusCollegeLoadSnapshot> => {
   const supabase = await createClient();
-  const [
-    { data: scopedUtilizations },
-    { data: campus },
-    { data: college },
-    { data: academicTerm },
-  ] = await Promise.all([
-      supabase
-        .from("course_utilization")
-        .select(
-          `
-          class_id,
-          section:section_id(
-            major_offering:major_offering_id(
-              program_offering:program_offering_id(
-                campus_id,
-                campus:campus_id(code, name),
-                program:program_id(
-                  college_id,
-                  college:college_id(code, name)
-                )
-              )
-            )
-          )
-          `,
-        )
-        .eq("section.academic_term_id", academicTermId),
-      supabase
-        .from("campus")
-        .select("code, name")
-        .eq("id", campusId)
-        .maybeSingle(),
-      supabase
-        .from("college")
-        .select("code, name")
-        .eq("id", collegeId)
-        .maybeSingle(),
+  const [{ data: campus }, { data: college }, { data: academicTerm }, rows] =
+    await Promise.all([
+      supabase.from("campus").select("code, name").eq("id", campusId).maybeSingle(),
+      supabase.from("college").select("code, name").eq("id", collegeId).maybeSingle(),
       supabase
         .from("academic_term")
         .select("code, name, academic_year:academic_year_id(code)")
         .eq("id", academicTermId)
         .maybeSingle(),
+      getUserDataList({
+        academicTermId,
+        includeClasses: true,
+        includeDegrees: true,
+        includeDesignations: true,
+        includeLoads: true,
+      }),
     ]);
 
-  const scopedClassIds = new Set(
-    (scopedUtilizations ?? [])
-      .filter((row) => {
-        const section = Array.isArray(row.section) ? row.section[0] : row.section;
-        const majorOffering = Array.isArray(section?.major_offering)
-          ? section?.major_offering[0]
-          : section?.major_offering;
-        const programOffering = Array.isArray(majorOffering?.program_offering)
-          ? majorOffering?.program_offering[0]
-          : majorOffering?.program_offering;
-        const program = Array.isArray(programOffering?.program)
-          ? programOffering?.program[0]
-          : programOffering?.program;
-
-        return (
-          row.class_id &&
-          programOffering?.campus_id === campusId &&
-          program?.college_id === collegeId
-        );
-      })
-      .map((row) => row.class_id as string),
+  // --- faculty_load: scoped by the faculty's own home campus/college; keeps
+  // every class they teach this term, even classes owned by other colleges.
+  const homeFacultyRows = rows.filter(
+    (row) => row.campus_id === campusId && row.college_id === collegeId,
   );
-  const scopedClassIdList = Array.from(scopedClassIds);
+  const homeFacultyClassIds = Array.from(
+    new Set(homeFacultyRows.flatMap((row) => row.classes.map((cls) => cls.id))),
+  );
+  const facultySessionMetrics = await getSessionMetrics(
+    supabase,
+    homeFacultyClassIds,
+  );
 
-  const { data: sessionRows } =
-    scopedClassIdList.length > 0
-      ? await supabase
-          .from("session_class")
-          .select(
-            `
-            class_id,
-            session:session_id(type, start_time, end_time)
-            `,
-          )
-          .in("class_id", scopedClassIdList)
-      : { data: [] };
-
-  const sessionMetrics = new Map<string, SessionMetric>();
-  (sessionRows ?? []).forEach((row) => {
-    const session = Array.isArray(row.session) ? row.session[0] : row.session;
-    const classId = row.class_id as string | null;
-    if (!classId || !session) return;
-
-    const current = sessionMetrics.get(classId) ?? {
-      lecture_hours: 0,
-      laboratory_hours: 0,
-    };
-    const duration = getDurationHours(session.start_time, session.end_time);
-    if (session.type === "Laboratory") {
-      current.laboratory_hours += duration;
-    } else {
-      current.lecture_hours += duration;
-    }
-    sessionMetrics.set(classId, current);
-  });
-
-  const rows = await getUserDataList({
-    academicTermId,
-    includeClasses: true,
-    includeDegrees: true,
-    includeDesignations: true,
-    includeLoads: true,
-  });
-
-  const faculty = rows
-    .map((row) => ({
-      ...row,
-      classes: row.classes.filter((classRow) => scopedClassIds.has(classRow.id)),
-    }))
-    .filter((row) => row.classes.length > 0)
+  const faculty = homeFacultyRows
     .map((row): CampusCollegeLoadSnapshotFaculty => {
       const facultyName = row.identity?.name?.trim() || "Unnamed Faculty";
       const classes = row.classes.map((classRow) => {
-        const scheduled = sessionMetrics.get(classRow.id);
+        const scheduled = facultySessionMetrics.get(classRow.id);
         const fallbackLectureHours = toNumber(classRow.lecture_unit);
         const fallbackLaboratoryHours = calculateLaboratoryContactHours(
           toNumber(classRow.laboratory_unit),
@@ -237,8 +201,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
     })
     .sort((left, right) => left.faculty_name.localeCompare(right.faculty_name));
 
-  const firstFaculty = faculty[0] ?? null;
-  const totals = faculty.reduce(
+  const facultyTotals = faculty.reduce(
     (sum, row) => ({
       equivalent_teaching_load:
         sum.equivalent_teaching_load + row.equivalent_teaching_load,
@@ -259,26 +222,152 @@ export const buildCampusCollegeLoadSnapshot = async ({
       total_working_load: 0,
     },
   );
+
+  // --- class_schedule: scoped by the class/section's owning campus/college,
+  // regardless of which college the assigned instructor belongs to.
+  const { data: scopedRows } = await supabase
+    .from("course_utilization")
+    .select(
+      `
+      class_id,
+      course:course_id (code, title, lecture_unit, laboratory_unit),
+      section:section_id (
+        code,
+        academic_term_id,
+        major_offering:major_offering_id (
+          program_offering:program_offering_id (
+            campus_id,
+            program:program_id (college_id)
+          )
+        )
+      ),
+      class:class_id (
+        code,
+        user_class (
+          user:user_id (
+            id,
+            campus:campus_id (code),
+            college:college_id (code),
+            identity:identity (name)
+          )
+        )
+      )
+      `,
+    )
+    .eq("section.academic_term_id", academicTermId);
+
+  const classScheduleRows = new Map<string, CampusCollegeLoadSnapshotClass>();
+  (scopedRows ?? []).forEach((row) => {
+    const classId = row.class_id as string | null;
+    if (!classId || classScheduleRows.has(classId)) return;
+
+    const section = first(row.section);
+    const majorOffering = first(section?.major_offering);
+    const programOffering = first(majorOffering?.program_offering);
+    const program = first(programOffering?.program);
+    if (
+      programOffering?.campus_id !== campusId ||
+      program?.college_id !== collegeId
+    ) {
+      return;
+    }
+
+    const course = first(row.course);
+    const classInfo = first(row.class);
+    const userClassRow = first(classInfo?.user_class);
+    const instructor = first(userClassRow?.user);
+    const instructorCampus = first(instructor?.campus);
+    const instructorCollege = first(instructor?.college);
+    const instructorIdentity = first(instructor?.identity);
+
+    classScheduleRows.set(classId, {
+      class_id: classId,
+      class_code: classInfo?.code ?? "",
+      course_code: course?.code ?? "Unknown",
+      course_title: course?.title ?? "Untitled Course",
+      section_code: section?.code ?? null,
+      lecture_unit: toNumber(course?.lecture_unit),
+      laboratory_unit: toNumber(course?.laboratory_unit),
+      lecture_hours: 0,
+      laboratory_hours: 0,
+      instructor_id: instructor?.id ?? null,
+      instructor_name: instructorIdentity?.name?.trim() || null,
+      instructor_college_code: instructorCollege?.code ?? null,
+      instructor_campus_code: instructorCampus?.code ?? null,
+    });
+  });
+
+  const classScheduleSessionMetrics = await getSessionMetrics(
+    supabase,
+    Array.from(classScheduleRows.keys()),
+  );
+
+  const classes = Array.from(classScheduleRows.values())
+    .map((classRow) => {
+      const scheduled = classScheduleSessionMetrics.get(classRow.class_id);
+      const fallbackLectureHours = classRow.lecture_unit;
+      const fallbackLaboratoryHours = calculateLaboratoryContactHours(
+        classRow.laboratory_unit,
+      );
+      return {
+        ...classRow,
+        lecture_hours:
+          scheduled && scheduled.lecture_hours > 0
+            ? scheduled.lecture_hours
+            : fallbackLectureHours,
+        laboratory_hours:
+          scheduled && scheduled.laboratory_hours > 0
+            ? scheduled.laboratory_hours
+            : fallbackLaboratoryHours,
+      };
+    })
+    .sort((left, right) => left.class_code.localeCompare(right.class_code));
+
+  const classTotals: CampusCollegeLoadSnapshotClassTotals = classes.reduce(
+    (sum, classRow) => ({
+      class_count: sum.class_count + 1,
+      assigned_count: sum.assigned_count + (classRow.instructor_id ? 1 : 0),
+      unassigned_count: sum.unassigned_count + (classRow.instructor_id ? 0 : 1),
+      lecture_hours: sum.lecture_hours + classRow.lecture_hours,
+      laboratory_hours: sum.laboratory_hours + classRow.laboratory_hours,
+    }),
+    {
+      class_count: 0,
+      assigned_count: 0,
+      unassigned_count: 0,
+      lecture_hours: 0,
+      laboratory_hours: 0,
+    },
+  );
+
   const academicYear = Array.isArray(academicTerm?.academic_year)
     ? academicTerm?.academic_year[0]
     : academicTerm?.academic_year;
 
   return {
-    campus_id: campusId,
-    campus_code: campus?.code ?? firstFaculty?.campus_code ?? null,
-    campus_name: campus?.name ?? null,
-    college_id: collegeId,
-    college_code: college?.code ?? firstFaculty?.college_code ?? null,
-    college_name: college?.name ?? null,
-    academic_term_id: academicTermId,
-    academic_term_code: academicTerm?.code ?? null,
-    academic_term_name: academicTerm?.name ?? null,
-    academic_year_code: academicYear?.code ?? null,
-    generated_at: new Date().toISOString(),
-    faculty,
-    totals: {
-      faculty_count: faculty.length,
-      ...totals,
+    metadata: {
+      campus_id: campusId,
+      campus_code: campus?.code ?? null,
+      campus_name: campus?.name ?? null,
+      college_id: collegeId,
+      college_code: college?.code ?? null,
+      college_name: college?.name ?? null,
+      academic_term_id: academicTermId,
+      academic_term_code: academicTerm?.code ?? null,
+      academic_term_name: academicTerm?.name ?? null,
+      academic_year_code: academicYear?.code ?? null,
+      generated_at: new Date().toISOString(),
+    },
+    faculty_load: {
+      faculty,
+      totals: {
+        faculty_count: faculty.length,
+        ...facultyTotals,
+      },
+    },
+    class_schedule: {
+      classes,
+      totals: classTotals,
     },
   };
 };
