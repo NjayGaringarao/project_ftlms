@@ -188,7 +188,7 @@ const CampusCollegeLoadEvaluator = ({
       }
       panel={{
         open: Boolean(detail),
-        title: selectedItem ? getItemTitle(selectedItem) : "Campus College Load",
+        title: selectedItem ? `${getItemTitle(selectedItem)} College Load` : "Campus College Load",
         content: <DetailPanel detail={detail} />,
         onOpenChange: (open) => {
           if (!open) closePanel();

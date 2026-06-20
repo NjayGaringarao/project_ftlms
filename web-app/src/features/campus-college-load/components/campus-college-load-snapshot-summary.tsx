@@ -54,7 +54,10 @@ const formatNumber = (value: unknown) => {
 const getFacultySummaryRow = (faculty: CampusCollegeLoadSnapshotFaculty) => {
   const lectureHours =
     faculty.lecture_hours ??
-    faculty.classes.reduce((sum, classRow) => sum + Number(classRow.lecture_unit ?? 0), 0);
+    faculty.classes.reduce(
+      (sum, classRow) => sum + Number(classRow.lecture_unit ?? 0),
+      0,
+    );
   const laboratoryHours =
     faculty.laboratory_hours ??
     faculty.classes.reduce(
@@ -125,53 +128,60 @@ const ClassScheduleTable = ({
   }
 
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <table className="min-w-[860px] w-full text-sm">
-        <thead className="bg-slate-100 text-left text-xs uppercase text-slate-700">
-          <tr>
-            <th className="px-3 py-2">Class Code</th>
-            <th className="px-3 py-2">Course</th>
-            <th className="px-3 py-2">Section</th>
-            <th className="px-3 py-2">Instructor</th>
-            <th className="px-3 py-2 text-right">Lecture Hours</th>
-            <th className="px-3 py-2 text-right">Lab Hours</th>
-          </tr>
-        </thead>
-        <tbody>
-          {classes.map((classRow) => (
-            <tr key={classRow.class_id} className="border-t">
-              <td className="px-3 py-2">{classRow.class_code}</td>
-              <td className="px-3 py-2">
-                {classRow.course_code} — {classRow.course_title}
-              </td>
-              <td className="px-3 py-2">{classRow.section_code ?? "N/A"}</td>
-              <td className="px-3 py-2">
-                {classRow.instructor_name ?? (
-                  <span className="text-foreground/50">Unassigned</span>
-                )}
-                {classRow.instructor_name &&
-                classRow.instructor_college_code &&
-                classRow.instructor_college_code !== collegeCode ? (
-                  <span className="ml-2 rounded border border-amber-200 bg-amber-100 px-1 py-0.5 text-[10px] text-amber-900">
-                    Other College
-                  </span>
-                ) : null}
-              </td>
-              <td className="px-3 py-2 text-right">
-                {formatNumber(classRow.lecture_hours)}
-              </td>
-              <td className="px-3 py-2 text-right">
-                {formatNumber(classRow.laboratory_hours)}
-              </td>
+    <div>
+      <h3 className="font-semibold mb-2">Class Schedule</h3>
+      <div className="overflow-x-auto rounded-md border">
+        <table className="min-w-[860px] w-full text-sm">
+          <thead className="bg-slate-100 text-left text-xs uppercase text-slate-700">
+            <tr>
+              <th className="px-3 py-2">Class Code</th>
+              <th className="px-3 py-2">Course</th>
+              <th className="px-3 py-2">Section</th>
+              <th className="px-3 py-2">Instructor</th>
+              <th className="px-3 py-2 text-right">Lecture Hours</th>
+              <th className="px-3 py-2 text-right">Lab Hours</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {classes.map((classRow) => (
+              <tr key={classRow.class_id} className="border-t">
+                <td className="px-3 py-2">{classRow.class_code}</td>
+                <td className="px-3 py-2">
+                  {classRow.course_code} — {classRow.course_title}
+                </td>
+                <td className="px-3 py-2">{classRow.section_code ?? "N/A"}</td>
+                <td className="px-3 py-2">
+                  {classRow.instructor_name ?? (
+                    <span className="text-foreground/50">Unassigned</span>
+                  )}
+                  {classRow.instructor_name &&
+                  classRow.instructor_college_code &&
+                  classRow.instructor_college_code !== collegeCode ? (
+                    <span className="ml-2 rounded border border-amber-200 bg-amber-100 px-1 py-0.5 text-[10px] text-amber-900">
+                      Other College
+                    </span>
+                  ) : null}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {formatNumber(classRow.lecture_hours)}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {formatNumber(classRow.laboratory_hours)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
-export const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail }) => {
+export const SnapshotSummary = ({
+  detail,
+}: {
+  detail: CampusCollegeLoadDetail;
+}) => {
   const normalized = normalizeCampusCollegeLoadSnapshot(
     detail.viewed_revision?.snapshot ?? null,
   );
@@ -189,82 +199,17 @@ export const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail })
   const { metadata, faculty_load, class_schedule, legacy } = normalized;
   const groups = groupSnapshotFaculty(faculty_load.faculty);
   const totals = faculty_load.totals;
-  const academicTermText = [metadata.academic_term_name, metadata.academic_year_code]
+  const academicTermText = [
+    metadata.academic_term_name,
+    metadata.academic_year_code,
+  ]
     .filter(Boolean)
     .join(", ");
 
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-base">Frozen Load Snapshot</CardTitle>
-            <p className="text-sm text-foreground/60">
-              Revision {detail.viewed_revision?.revision_number ?? 0} submitted{" "}
-              {formatDateTime(detail.viewed_revision?.submitted_at ?? undefined)}
-            </p>
-          </div>
-          <div className="text-right text-xs text-foreground/60">
-            <p>{metadata.campus_name ?? detail.load.campus?.name ?? "Campus"}</p>
-            <p>{metadata.college_name ?? detail.load.college?.name ?? "College"}</p>
-          </div>
-        </div>
-        {legacy ? (
-          <p className="mt-2 rounded-md border border-dashed p-2 text-xs text-foreground/60">
-            This revision predates per-faculty full-load tracking; the faculty list
-            below is limited to classes owned by this scope only.
-          </p>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-5 p-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-md border p-3">
-            <p className="text-xs text-foreground/60">College</p>
-            <p className="font-medium">
-              {metadata.college_name ?? detail.load.college?.name ?? "College"}
-            </p>
-            <p className="text-xs text-foreground/60">
-              {metadata.college_code ?? detail.load.college?.code ?? ""}
-            </p>
-          </div>
-          <div className="rounded-md border p-3">
-            <p className="text-xs text-foreground/60">Campus</p>
-            <p className="font-medium">
-              {metadata.campus_name ?? detail.load.campus?.name ?? "Campus"}
-            </p>
-            <p className="text-xs text-foreground/60">
-              {metadata.campus_code ?? detail.load.campus?.code ?? ""}
-            </p>
-          </div>
-          <div className="rounded-md border p-3">
-            <p className="text-xs text-foreground/60">Academic Term</p>
-            <p className="font-medium">
-              {academicTermText || metadata.academic_term_code || "Academic Term"}
-            </p>
-            <p className="text-xs text-foreground/60">
-              Frozen {formatDateTime(metadata.generated_at)}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            ["Faculty", totals.faculty_count],
-            ["ETL", totals.equivalent_teaching_load],
-            ["ATL", totals.actual_teaching_load],
-            ["TWL", totals.total_working_load],
-            ["Lecture Hours", totals.lecture_hours],
-            ["Lab Hours", totals.laboratory_hours],
-            ["Preparations", totals.preparation_count],
-            ["Equivalent Units", totals.equivalent_units],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-md border p-3">
-              <p className="text-xs text-foreground/60">{label}</p>
-              <p className="text-lg font-semibold">{formatNumber(value)}</p>
-            </div>
-          ))}
-        </div>
-
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <h3 className="font-semibold text-foreground">Faculty Load</h3>
         <div className="hidden overflow-x-auto rounded-md border md:block">
           <table className="min-w-[980px] w-full text-sm">
             <thead className="bg-slate-100 text-left text-xs uppercase text-slate-700">
@@ -287,11 +232,15 @@ export const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail })
                   const row = getFacultySummaryRow(faculty);
                   return {
                     equivalent_teaching_load:
-                      sum.equivalent_teaching_load + row.equivalent_teaching_load,
+                      sum.equivalent_teaching_load +
+                      row.equivalent_teaching_load,
                     lecture_hours: sum.lecture_hours + row.lecture_hours,
-                    laboratory_hours: sum.laboratory_hours + row.laboratory_hours,
-                    preparation_count: sum.preparation_count + row.preparation_count,
-                    equivalent_units: sum.equivalent_units + row.equivalent_units,
+                    laboratory_hours:
+                      sum.laboratory_hours + row.laboratory_hours,
+                    preparation_count:
+                      sum.preparation_count + row.preparation_count,
+                    equivalent_units:
+                      sum.equivalent_units + row.equivalent_units,
                     actual_teaching_load:
                       sum.actual_teaching_load + row.actual_teaching_load,
                     total_working_load:
@@ -348,89 +297,67 @@ export const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail })
                       </tr>
                     );
                   })}
-                  <tr className="border-t bg-slate-50 font-medium">
-                    <td colSpan={3} className="px-3 py-2 text-right">
-                      {group.status} Total
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatNumber(groupTotals.equivalent_teaching_load)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatNumber(groupTotals.lecture_hours)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatNumber(groupTotals.laboratory_hours)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatNumber(groupTotals.preparation_count)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatNumber(groupTotals.equivalent_units)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatNumber(groupTotals.actual_teaching_load)}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      {formatNumber(groupTotals.total_working_load)}
-                    </td>
-                  </tr>
                 </tbody>
               );
             })}
           </table>
         </div>
-
-        <div className="space-y-3 md:hidden">
-          {groups.map((group) => (
-            <div key={group.status} className="space-y-2">
-              <p className="text-sm font-semibold">{group.status}</p>
-              {group.faculty.map((faculty, index) => {
-                const row = getFacultySummaryRow(faculty);
-                return (
-                  <div key={faculty.faculty_id} className="rounded-md border p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs text-foreground/50">No. {index + 1}</p>
-                        <p className="font-medium">{faculty.faculty_name}</p>
-                        <p className="text-xs text-foreground/60">
-                          {row.designation_summary}
-                        </p>
-                      </div>
-                      <p className="text-right text-sm font-semibold">
-                        TWL {formatNumber(row.total_working_load)}
+      </div>
+      <div className="space-y-3 md:hidden">
+        {groups.map((group) => (
+          <div key={group.status} className="space-y-2">
+            <p className="text-sm font-semibold">{group.status}</p>
+            {group.faculty.map((faculty, index) => {
+              const row = getFacultySummaryRow(faculty);
+              return (
+                <div key={faculty.faculty_id} className="rounded-md border p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-foreground/50">
+                        No. {index + 1}
+                      </p>
+                      <p className="font-medium">{faculty.faculty_name}</p>
+                      <p className="text-xs text-foreground/60">
+                        {row.designation_summary}
                       </p>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <p>ETL: {formatNumber(row.equivalent_teaching_load)}</p>
-                      <p>ATL: {formatNumber(row.actual_teaching_load)}</p>
-                      <p>Lecture: {formatNumber(row.lecture_hours)}</p>
-                      <p>Lab: {formatNumber(row.laboratory_hours)}</p>
-                      <p>Preparations: {formatNumber(row.preparation_count)}</p>
-                      <p>Eq Units: {formatNumber(row.equivalent_units)}</p>
-                    </div>
+                    <p className="text-right text-sm font-semibold">
+                      TWL {formatNumber(row.total_working_load)}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <p>ETL: {formatNumber(row.equivalent_teaching_load)}</p>
+                    <p>ATL: {formatNumber(row.actual_teaching_load)}</p>
+                    <p>Lecture: {formatNumber(row.lecture_hours)}</p>
+                    <p>Lab: {formatNumber(row.laboratory_hours)}</p>
+                    <p>Preparations: {formatNumber(row.preparation_count)}</p>
+                    <p>Eq Units: {formatNumber(row.equivalent_units)}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
 
-        <div className="space-y-2 border-t pt-4">
-          <h3 className="text-sm font-semibold">Class Schedule</h3>
-          <ClassScheduleTable
-            classes={class_schedule.classes}
-            collegeCode={metadata.college_code}
-            legacy={legacy}
-          />
-        </div>
+      <ClassScheduleTable
+        classes={class_schedule.classes}
+        collegeCode={metadata.college_code}
+        legacy={legacy}
+      />
 
-        <div className="grid gap-3 border-t pt-4 md:grid-cols-3">
+      <div className="flex flex-col gap-2">
+        <h3 className="font-semibold text-foreground">Approval Status</h3>
+        <div className="grid gap-3 md:grid-cols-3">
           {[
             detail.signatures.prepared,
             detail.signatures.recommending_approval,
             detail.signatures.approved,
           ].map((signature) => (
-            <div key={signature.label} className="rounded-md border p-3 text-sm">
+            <div
+              key={signature.label}
+              className="rounded-md border p-3 text-sm"
+            >
               <p className="text-xs text-foreground/60">{signature.label}</p>
               <p className="mt-1 font-medium">{signature.role}</p>
               <p className="text-sm text-foreground/70">
@@ -444,8 +371,8 @@ export const SnapshotSummary = ({ detail }: { detail: CampusCollegeLoadDetail })
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
@@ -544,14 +471,20 @@ export const CampusCollegeLoadDetailPanel = ({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 rounded-md border p-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <p className="text-sm text-foreground/60">
-            Current step: {stepLabel[detail.load.current_step]}
-          </p>
-          <span
-            className={`rounded border px-2 py-1 text-xs ${statusClass[detail.load.status]}`}
-          >
-            {detail.load.status}
-          </span>
+          <div className="flex flex-col gap-1">
+            <p className="text-base text-foreground ">
+              Revision {detail.viewed_revision?.revision_number ?? 0} submitted{" "}
+              {formatDateTime(
+                detail.viewed_revision?.submitted_at ?? undefined,
+              )}
+            </p>
+
+            <p className="text-sm text-foreground/60">
+              {stepLabel[detail.load.current_step] !== "COMPLETED"
+                ? `For approval by ${stepLabel[detail.load.current_step]}`
+                : `Approval Complete`}
+            </p>
+          </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {revisionSlot}
@@ -620,7 +553,9 @@ export const getActionLabel = ({
   detail: CampusCollegeLoadDetail | null;
 }): string | null => {
   if (detail?.can_submit_revision) {
-    return detail.load.status === "RETURNED" ? "Resubmit Revision" : "Submit Load";
+    return detail.load.status === "RETURNED"
+      ? "Resubmit Revision"
+      : "Submit Load";
   }
   if (detail?.can_evaluate_step) return "Evaluate";
   return null;
