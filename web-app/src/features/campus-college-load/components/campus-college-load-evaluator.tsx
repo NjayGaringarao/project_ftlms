@@ -9,6 +9,7 @@ import { ManagementContainer } from "@/components/layout/management-container";
 import { AdminManagementList } from "@/features/admin/components/management/admin-management-list";
 import { ManagementPlaceholder } from "@/features/admin/components/management/management-placeholder";
 import { FilterChipGroup } from "@/components/ui/filter-chip-group";
+import RevisionSelector from "@/features/shared/components/pickers/revision-selector";
 import type {
   CampusCollegeLoadDetail,
   CampusCollegeLoadEvaluatorBucket,
@@ -56,6 +57,7 @@ const DetailPanel = ({
     <>
       <CampusCollegeLoadDetailPanel
         detail={detail}
+        revisionSlot={<RevisionSelector detail={detail} />}
         actionSlot={
           hasModalAction ? (
             <Button type="button" size="sm" onClick={() => setActionOpen(true)}>

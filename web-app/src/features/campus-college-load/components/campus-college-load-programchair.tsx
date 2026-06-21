@@ -4,9 +4,9 @@ import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BookCopy, ChevronDown } from "lucide-react";
 import { AppDialog } from "@/components/ui/app-dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ListItemSmall from "@/components/ui/list-item-small";
+import RevisionSelector from "@/features/shared/components/pickers/revision-selector";
 import type {
   CampusCollegeLoadDetail,
   CampusCollegeLoadListItem,
@@ -41,7 +41,6 @@ const CampusCollegeLoadProgramChair = ({
   const searchParams = useSearchParams();
   const [scopeDialogOpen, setScopeDialogOpen] = useState(false);
   const [scopeQuery, setScopeQuery] = useState("");
-  const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
 
   const navigateWithQuery = useCallback(
     (mutate: (next: URLSearchParams) => void) => {
@@ -69,15 +68,6 @@ const CampusCollegeLoadProgramChair = ({
       next.delete("revision_id");
     });
 
-  const openRevision = (revisionId: string | null) =>
-    navigateWithQuery((next) => {
-      if (revisionId) {
-        next.set("revision_id", revisionId);
-      } else {
-        next.delete("revision_id");
-      }
-    });
-
   const filteredScopes = items.filter((scope) => {
     const q = scopeQuery.trim().toLowerCase();
     if (!q) return true;
@@ -95,9 +85,6 @@ const CampusCollegeLoadProgramChair = ({
     );
   }
 
-  const isLatestRevisionViewed =
-    !detail?.viewed_revision ||
-    detail.viewed_revision.id === detail.latest_revision?.id;
   const actionLabel = detail?.can_submit_revision
     ? detail.load.status === "RETURNED"
       ? "Resubmit Revision"
@@ -119,19 +106,7 @@ const CampusCollegeLoadProgramChair = ({
       {detail ? (
         <CampusCollegeLoadDetailPanel
           detail={detail}
-          revisionSlot={
-            detail.revisions.length > 1 ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setRevisionDialogOpen(true)}
-              >
-                Revision {detail.viewed_revision?.revision_number ?? 0}
-                {isLatestRevisionViewed ? " (Latest)" : ""}
-              </Button>
-            ) : null
-          }
+          revisionSlot={<RevisionSelector detail={detail} />}
           actionSlot={
             actionLabel ? (
               <SubmitCampusCollegeLoadForm
@@ -202,37 +177,6 @@ const CampusCollegeLoadProgramChair = ({
           </div>
         </div>
       </AppDialog>
-
-      {detail ? (
-        <AppDialog
-          open={revisionDialogOpen}
-          onOpenChange={setRevisionDialogOpen}
-          title="Select Revision"
-          description="View a previously frozen snapshot."
-          variant="floating-medium"
-          contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
-        >
-          <div className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto">
-            {detail.revisions.map((revision) => (
-              <ListItemSmall
-                key={revision.id}
-                title={`Revision ${revision.revision_number}`}
-                subtitle={[
-                  revision.submitted_by_name ?? "Unknown submitter",
-                  revision.id === detail.latest_revision?.id ? "Latest" : "",
-                ].filter(Boolean)}
-                isSelected={revision.id === detail.viewed_revision?.id}
-                onClick={() => {
-                  openRevision(
-                    revision.id === detail.latest_revision?.id ? null : revision.id,
-                  );
-                  setRevisionDialogOpen(false);
-                }}
-              />
-            ))}
-          </div>
-        </AppDialog>
-      ) : null}
     </div>
   );
 };
