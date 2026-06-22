@@ -1,3 +1,4 @@
+import "@/features/document-export/lib/document-export/register-providers";
 import { type NextRequest } from "next/server";
 import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";
 import { toDocumentExportError } from "@/features/document-export/lib/document-export/errors";

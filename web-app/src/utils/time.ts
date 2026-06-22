@@ -58,6 +58,17 @@ export const calculateAge = (birthDate: string | Date) => {
   return age;
 };
 
+export const formatTimeOfDay = (value: string): string => {
+  const [hourStr, minuteStr] = value.split(":");
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return value;
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`;
+};
+
 export const numberToHourDuration = (hours : number) => {
   const wholeHours = Math.floor(hours);
   const minutes = Math.round((hours - wholeHours) * 60);

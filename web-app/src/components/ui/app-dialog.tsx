@@ -19,6 +19,7 @@ type AppDialogProps = {
   children: ReactNode;
   variant?: AppDialogVariant;
   contentClassName?: string;
+  headerActions?: ReactNode;
 };
 
 export function AppDialog({
@@ -29,6 +30,7 @@ export function AppDialog({
   children,
   variant = "floating-small",
   contentClassName,
+  headerActions,
 }: AppDialogProps) {
   const contentModeClassName =
     variant === "full-screen"
@@ -74,6 +76,10 @@ export function AppDialog({
                 </Dialog.Description>
               )}
             </div>
+
+            {headerActions ? (
+              <div className="flex items-center gap-1">{headerActions}</div>
+            ) : null}
 
             {variant !== "full-screen" && (
               <Dialog.Close

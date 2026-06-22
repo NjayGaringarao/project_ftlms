@@ -1,3 +1,4 @@
+import "@/features/document-export/lib/document-export/register-providers";
 import DocumentPrintShell from "@/features/document-export/components/document-print-shell";
 import type { ReactNode } from "react";
 import { requireAuthenticatedForPrintPage } from "@/features/document-export/lib/document-export/auth";

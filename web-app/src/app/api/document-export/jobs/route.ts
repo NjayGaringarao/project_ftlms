@@ -1,3 +1,4 @@
+import "@/features/document-export/lib/document-export/register-providers";
 import { type NextRequest } from "next/server";
 import {
   ASYNC_PDF_MAX_COUNT,

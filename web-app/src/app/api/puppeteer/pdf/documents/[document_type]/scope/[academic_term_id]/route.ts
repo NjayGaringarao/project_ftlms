@@ -1,3 +1,4 @@
+import "@/features/document-export/lib/document-export/register-providers";
 import { type NextRequest } from "next/server";
 import { SYNC_PDF_MAX_COUNT } from "@/features/document-export/lib/document-export/constants";
 import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";

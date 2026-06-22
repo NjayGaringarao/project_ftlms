@@ -44,12 +44,24 @@ export type CampusCollegeLoadSnapshotTotals = {
   total_working_load: number;
 };
 
+export type CampusCollegeLoadSnapshotSession = {
+  day: string;
+  start_time: string;
+  end_time: string;
+  type: string;
+  room_code: string | null;
+  room_name: string | null;
+};
+
 export type CampusCollegeLoadSnapshotClass = {
   class_id: string;
   class_code: string;
   course_code: string;
   course_title: string;
+  section_id: string | null;
   section_code: string | null;
+  year_level: number | null;
+  classification: string | null;
   lecture_unit: number;
   laboratory_unit: number;
   lecture_hours: number;
@@ -58,6 +70,7 @@ export type CampusCollegeLoadSnapshotClass = {
   instructor_name: string | null;
   instructor_college_code?: string | null;
   instructor_campus_code?: string | null;
+  sessions: CampusCollegeLoadSnapshotSession[];
 };
 
 export type CampusCollegeLoadSnapshotClassTotals = {
@@ -66,6 +79,19 @@ export type CampusCollegeLoadSnapshotClassTotals = {
   unassigned_count: number;
   lecture_hours: number;
   laboratory_hours: number;
+};
+
+/**
+ * Every section in scope for this campus-college, independent of whether any
+ * subject/class has actually been assigned to it yet — sourced directly from
+ * the `section` table, not derived from `class_schedule.classes`, so a
+ * section with zero classes still shows up.
+ */
+export type CampusCollegeLoadSnapshotSection = {
+  section_id: string;
+  section_code: string;
+  year_level: number | null;
+  classification: string | null;
 };
 
 export type CampusCollegeLoadSnapshotMetadata = {
@@ -90,6 +116,7 @@ export type CampusCollegeLoadSnapshot = {
   };
   class_schedule: {
     classes: CampusCollegeLoadSnapshotClass[];
+    sections: CampusCollegeLoadSnapshotSection[];
     totals: CampusCollegeLoadSnapshotClassTotals;
   };
 };
@@ -169,7 +196,7 @@ export const normalizeCampusCollegeLoadSnapshot = (
         generated_at: raw.generated_at,
       },
       faculty_load: { faculty: raw.faculty, totals: raw.totals },
-      class_schedule: { classes: [], totals: emptyClassTotals },
+      class_schedule: { classes: [], sections: [], totals: emptyClassTotals },
     };
   }
 
@@ -178,7 +205,23 @@ export const normalizeCampusCollegeLoadSnapshot = (
     return null;
   }
 
-  return { ...snapshot, legacy: false };
+  return {
+    ...snapshot,
+    legacy: false,
+    class_schedule: {
+      ...snapshot.class_schedule,
+      classes: snapshot.class_schedule.classes.map((classRow) => ({
+        ...classRow,
+        section_id: classRow.section_id ?? null,
+        year_level: classRow.year_level ?? null,
+        classification: classRow.classification ?? null,
+        sessions: Array.isArray(classRow.sessions) ? classRow.sessions : [],
+      })),
+      sections: Array.isArray(snapshot.class_schedule.sections)
+        ? snapshot.class_schedule.sections
+        : [],
+    },
+  };
 };
 
 export type CampusCollegeLoadRevision = {

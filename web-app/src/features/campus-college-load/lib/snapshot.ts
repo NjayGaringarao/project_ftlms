@@ -6,6 +6,8 @@ import type {
   CampusCollegeLoadSnapshotClass,
   CampusCollegeLoadSnapshotClassTotals,
   CampusCollegeLoadSnapshotFaculty,
+  CampusCollegeLoadSnapshotSection,
+  CampusCollegeLoadSnapshotSession,
 } from "@/features/shared/types/models";
 import { calculateLaboratoryContactHours } from "@/features/course-loading/lib/calculations";
 import { createClient } from "@/utils/supabase/server";
@@ -90,6 +92,44 @@ const getSessionMetrics = async (
   });
 
   return metrics;
+};
+
+const getSessionDetails = async (
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classIds: string[],
+): Promise<Map<string, CampusCollegeLoadSnapshotSession[]>> => {
+  const sessionsByClass = new Map<string, CampusCollegeLoadSnapshotSession[]>();
+  if (classIds.length === 0) return sessionsByClass;
+
+  const { data: sessionRows } = await supabase
+    .from("session_class")
+    .select(
+      `
+      class_id,
+      session:session_id (day, start_time, end_time, type, room:room_id (code, name))
+      `,
+    )
+    .in("class_id", classIds);
+
+  (sessionRows ?? []).forEach((row) => {
+    const session = first(row.session);
+    const classId = row.class_id as string | null;
+    if (!classId || !session) return;
+
+    const room = first(session.room);
+    const list = sessionsByClass.get(classId) ?? [];
+    list.push({
+      day: session.day ?? "",
+      start_time: session.start_time ?? "",
+      end_time: session.end_time ?? "",
+      type: session.type ?? "",
+      room_code: room?.code ?? null,
+      room_name: room?.name ?? null,
+    });
+    sessionsByClass.set(classId, list);
+  });
+
+  return sessionsByClass;
 };
 
 export const buildCampusCollegeLoadSnapshot = async ({
@@ -225,36 +265,77 @@ export const buildCampusCollegeLoadSnapshot = async ({
 
   // --- class_schedule: scoped by the class/section's owning campus/college,
   // regardless of which college the assigned instructor belongs to.
-  const { data: scopedRows } = await supabase
-    .from("course_utilization")
-    .select(
-      `
-      class_id,
-      course:course_id (code, title, lecture_unit, laboratory_unit),
-      section:section_id (
+  const [{ data: scopedRows }, { data: allSectionRows }] = await Promise.all([
+    supabase
+      .from("course_utilization")
+      .select(
+        `
+        class_id,
+        course:course_id (code, title, lecture_unit, laboratory_unit),
+        section:section_id (
+          id,
+          code,
+          year_level,
+          classification,
+          academic_term_id,
+          major_offering:major_offering_id (
+            program_offering:program_offering_id (
+              campus_id,
+              program:program_id (college_id)
+            )
+          )
+        ),
+        class:class_id (
+          code,
+          user_class (
+            user:user_id (
+              id,
+              campus:campus_id (code),
+              college:college_id (code),
+              identity:identity (name)
+            )
+          )
+        )
+        `,
+      )
+      .eq("section.academic_term_id", academicTermId),
+    // Every section in scope, independent of whether it has any classes
+    // assigned, so sections with zero subjects still appear in the snapshot.
+    supabase
+      .from("section")
+      .select(
+        `
+        id,
         code,
-        academic_term_id,
+        year_level,
+        classification,
         major_offering:major_offering_id (
           program_offering:program_offering_id (
             campus_id,
             program:program_id (college_id)
           )
         )
-      ),
-      class:class_id (
-        code,
-        user_class (
-          user:user_id (
-            id,
-            campus:campus_id (code),
-            college:college_id (code),
-            identity:identity (name)
-          )
-        )
+        `,
       )
-      `,
-    )
-    .eq("section.academic_term_id", academicTermId);
+      .eq("academic_term_id", academicTermId),
+  ]);
+
+  const sections: CampusCollegeLoadSnapshotSection[] = (allSectionRows ?? [])
+    .filter((row) => {
+      const majorOffering = first(row.major_offering);
+      const programOffering = first(majorOffering?.program_offering);
+      const program = first(programOffering?.program);
+      return (
+        programOffering?.campus_id === campusId && program?.college_id === collegeId
+      );
+    })
+    .map((row) => ({
+      section_id: row.id,
+      section_code: row.code,
+      year_level: row.year_level ?? null,
+      classification: row.classification ?? null,
+    }))
+    .sort((left, right) => left.section_code.localeCompare(right.section_code));
 
   const classScheduleRows = new Map<string, CampusCollegeLoadSnapshotClass>();
   (scopedRows ?? []).forEach((row) => {
@@ -285,7 +366,10 @@ export const buildCampusCollegeLoadSnapshot = async ({
       class_code: classInfo?.code ?? "",
       course_code: course?.code ?? "Unknown",
       course_title: course?.title ?? "Untitled Course",
+      section_id: section?.id ?? null,
       section_code: section?.code ?? null,
+      year_level: section?.year_level ?? null,
+      classification: section?.classification ?? null,
       lecture_unit: toNumber(course?.lecture_unit),
       laboratory_unit: toNumber(course?.laboratory_unit),
       lecture_hours: 0,
@@ -294,13 +378,16 @@ export const buildCampusCollegeLoadSnapshot = async ({
       instructor_name: instructorIdentity?.name?.trim() || null,
       instructor_college_code: instructorCollege?.code ?? null,
       instructor_campus_code: instructorCampus?.code ?? null,
+      sessions: [],
     });
   });
 
-  const classScheduleSessionMetrics = await getSessionMetrics(
-    supabase,
-    Array.from(classScheduleRows.keys()),
-  );
+  const classScheduleClassIds = Array.from(classScheduleRows.keys());
+  const [classScheduleSessionMetrics, classScheduleSessionDetails] =
+    await Promise.all([
+      getSessionMetrics(supabase, classScheduleClassIds),
+      getSessionDetails(supabase, classScheduleClassIds),
+    ]);
 
   const classes = Array.from(classScheduleRows.values())
     .map((classRow) => {
@@ -319,6 +406,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
           scheduled && scheduled.laboratory_hours > 0
             ? scheduled.laboratory_hours
             : fallbackLaboratoryHours,
+        sessions: classScheduleSessionDetails.get(classRow.class_id) ?? [],
       };
     })
     .sort((left, right) => left.class_code.localeCompare(right.class_code));
@@ -367,6 +455,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
     },
     class_schedule: {
       classes,
+      sections,
       totals: classTotals,
     },
   };

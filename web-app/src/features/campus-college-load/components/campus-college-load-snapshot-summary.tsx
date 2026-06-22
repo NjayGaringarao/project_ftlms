@@ -9,6 +9,7 @@ import { CampusCollegeLoadEvaluationForm } from "@/features/campus-college-load/
 import { FacultyLoadTable } from "@/features/campus-college-load/components/snapshot/faculty-load-table";
 import { ClassScheduleTable } from "@/features/campus-college-load/components/snapshot/class-schedule-table";
 import { ApprovalStatusCards } from "@/features/campus-college-load/components/snapshot/approval-status-cards";
+import { RevisionSupersessionNotice } from "@/features/campus-college-load/components/snapshot/revision-supersession-notice";
 import { RevisionHeader } from "@/features/campus-college-load/components/snapshot/revision-header";
 import { normalizeCampusCollegeLoadSnapshot } from "@/features/shared/types/models";
 import { formatDateTime } from "@/utils/time";
@@ -53,17 +54,23 @@ export const SnapshotSummary = ({
     );
   }
 
-  const { metadata, faculty_load, class_schedule, legacy } = normalized;
+  const { faculty_load, class_schedule, legacy } = normalized;
 
   return (
     <div className="flex flex-col gap-4">
       <FacultyLoadTable faculty={faculty_load.faculty} />
       <ClassScheduleTable
         classes={class_schedule.classes}
-        collegeCode={metadata.college_code}
+        sections={class_schedule.sections}
         legacy={legacy}
+        revisionId={detail.viewed_revision?.id ?? ""}
+        academicTermId={detail.load.academic_term_id}
       />
-      <ApprovalStatusCards signatures={detail.signatures} />
+      {detail.viewed_revision?.id !== detail.latest_revision?.id ? (
+        <RevisionSupersessionNotice evaluations={detail.evaluations} />
+      ) : (
+        <ApprovalStatusCards signatures={detail.signatures} />
+      )}
     </div>
   );
 };

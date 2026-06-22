@@ -55,7 +55,12 @@ const assertProviderContract = (provider: DocumentExportProvider): void => {
   }
 };
 
-Object.values(providersByType).forEach(assertProviderContract);
+export const registerDocumentExportProvider = (
+  provider: DocumentExportProvider,
+): void => {
+  assertProviderContract(provider);
+  providersByType[provider.documentType] = provider;
+};
 
 export const getDocumentExportProvider = (
   documentType: string,
