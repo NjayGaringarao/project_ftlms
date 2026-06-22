@@ -198,17 +198,15 @@ const uploadReturnAttachment = async ({
     return { bucket: null, path: null, fileName: null, mimeType: null };
   }
 
-  const isPdf =
-    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  if (!isPdf) return { error: "Return attachment must be a PDF file." };
-
   const supabase = await createClient();
-  const path = `${revisionId}/${step}-${Date.now()}.pdf`;
+  const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]+/g, "-");
+  const path = `${revisionId}/${step}-${Date.now()}-${sanitizedFileName}`;
+  const contentType = file.type || "application/octet-stream";
   const bytes = await file.arrayBuffer();
   const { error } = await supabase.storage
     .from(RETURN_ATTACHMENT_BUCKET)
     .upload(path, bytes, {
-      contentType: "application/pdf",
+      contentType,
       upsert: false,
     });
 
@@ -221,7 +219,7 @@ const uploadReturnAttachment = async ({
     bucket: RETURN_ATTACHMENT_BUCKET,
     path,
     fileName: file.name,
-    mimeType: "application/pdf",
+    mimeType: contentType,
   };
 };
 

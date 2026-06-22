@@ -1,11 +1,15 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { FileText } from "lucide-react";
+import { Check, FileText, Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppDialog } from "@/components/ui/app-dialog";
 import type { CampusCollegeLoadDetail } from "@/features/campus-college-load/lib/queries";
-import { CampusCollegeLoadEvaluationForm } from "@/features/campus-college-load/components/action-forms";
+import {
+  ApproveConfirmForm,
+  ReturnConfirmForm,
+} from "@/features/campus-college-load/components/action-forms";
 import { FacultyLoadTable } from "@/features/campus-college-load/components/snapshot/faculty-load-table";
 import { ClassScheduleTable } from "@/features/campus-college-load/components/snapshot/class-schedule-table";
 import { ApprovalStatusCards } from "@/features/campus-college-load/components/snapshot/approval-status-cards";
@@ -201,28 +205,52 @@ export const ActionContent = ({
 }: {
   detail: CampusCollegeLoadDetail | null;
 }) => {
+  const [view, setView] = useState<"choose" | "approve" | "return">("choose");
   const latestRevision = detail?.latest_revision ?? null;
 
-  if (latestRevision && detail?.can_evaluate_step) {
+  if (!latestRevision || !detail?.can_evaluate_step) {
     return (
-      <div className="space-y-3">
-        <CampusCollegeLoadEvaluationForm
-          revisionId={latestRevision.id}
-          step={detail.can_evaluate_step}
-          status="APPROVED"
-        />
-        <CampusCollegeLoadEvaluationForm
-          revisionId={latestRevision.id}
-          step={detail.can_evaluate_step}
-          status="RETURNED"
-        />
-      </div>
+      <p className="rounded-md border border-dashed p-4 text-sm text-foreground/70">
+        There is no available action for your role at the current step.
+      </p>
+    );
+  }
+
+  if (view === "approve") {
+    return (
+      <ApproveConfirmForm
+        revisionId={latestRevision.id}
+        step={detail.can_evaluate_step}
+        onCancel={() => setView("choose")}
+      />
+    );
+  }
+
+  if (view === "return") {
+    return (
+      <ReturnConfirmForm
+        revisionId={latestRevision.id}
+        step={detail.can_evaluate_step}
+        onCancel={() => setView("choose")}
+      />
     );
   }
 
   return (
-    <p className="rounded-md border border-dashed p-4 text-sm text-foreground/70">
-      There is no available action for your role at the current step.
-    </p>
+    <div className="flex gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        className="flex-1"
+        onClick={() => setView("return")}
+      >
+        <Undo2 className="h-4 w-4" />
+        Return
+      </Button>
+      <Button type="button" className="flex-1" onClick={() => setView("approve")}>
+        <Check className="h-4 w-4" />
+        Approve
+      </Button>
+    </div>
   );
 };
