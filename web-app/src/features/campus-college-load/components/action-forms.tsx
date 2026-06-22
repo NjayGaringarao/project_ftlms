@@ -1,9 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Check, RotateCcw, Send, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FileAttachmentComposer } from "@/components/ui/file-attachment-composer";
+import { FileField } from "@/features/files/components/file-field";
+import { RETURN_ATTACHMENT_FILE_POLICY } from "@/features/files/lib/file-policy";
+import type { StagedFile } from "@/features/files/lib/types";
+import {
+  stageReturnAttachment,
+  unstageReturnAttachment,
+} from "@/features/campus-college-load/lib/attachment-actions";
 import {
   createOrResubmitCampusCollegeLoadAction,
   submitCampusCollegeLoadEvaluationAction,
@@ -131,22 +137,109 @@ export const ReturnConfirmForm = ({
     submitCampusCollegeLoadEvaluationAction,
     initialState,
   );
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+  const [uploadingFileIds, setUploadingFileIds] = useState<string[]>([]);
+  const stagedFile = stagedFiles[0] ?? null;
+
+  const handleAddFiles = async (files: File[]) => {
+    const file = files[0];
+    if (!file) return;
+
+    const previous = stagedFiles[0];
+    if (previous) {
+      setStagedFiles([]);
+      void unstageReturnAttachment(previous.objectPath);
+    }
+
+    const tempId = crypto.randomUUID();
+    setStagedFiles([
+      {
+        id: tempId,
+        objectPath: tempId,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || null,
+        previewUrl: null,
+        classification: "return-attachment",
+        status: "UNCOMMITTED",
+      },
+    ]);
+    setUploadingFileIds((ids) => [...ids, tempId]);
+
+    const formData = new FormData();
+    formData.set("revisionId", revisionId);
+    formData.set("step", step);
+    formData.set("file", file);
+    const result = await stageReturnAttachment(formData);
+
+    setUploadingFileIds((ids) => ids.filter((id) => id !== tempId));
+    if (result.success) {
+      setStagedFiles((current) =>
+        current[0]?.id === tempId ? [result.file] : current,
+      );
+    } else {
+      setStagedFiles((current) =>
+        current[0]?.id === tempId ? [] : current,
+      );
+    }
+  };
+
+  const handleRemoveUncommitted = async (id: string) => {
+    const file = stagedFiles.find((item) => item.id === id);
+    setStagedFiles([]);
+    if (file && !uploadingFileIds.includes(id)) {
+      await unstageReturnAttachment(file.objectPath);
+    }
+  };
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="revisionId" value={revisionId} />
       <input type="hidden" name="step" value={step} />
       <input type="hidden" name="status" value="RETURNED" />
+      {stagedFile ? (
+        <>
+          <input
+            type="hidden"
+            name="stagedObjectPath"
+            value={stagedFile.objectPath}
+          />
+          <input
+            type="hidden"
+            name="stagedFileName"
+            value={stagedFile.fileName}
+          />
+          <input
+            type="hidden"
+            name="stagedFileMimeType"
+            value={stagedFile.mimeType ?? ""}
+          />
+        </>
+      ) : null}
       <p className="text-sm text-foreground/70">
         Returning this load will send it back to the Program Chairperson for
         revision. They will need to address your feedback and resubmit before
         it can be evaluated again.
       </p>
-      <FileAttachmentComposer
-        fileInputName="attachment"
-        commentName="comment"
-        commentPlaceholder="Explain what needs to change"
+      <textarea
+        name="comment"
         required
+        rows={3}
+        className="min-h-20 rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        placeholder="Explain what needs to change"
+      />
+      <FileField
+        label="Attachment (optional)"
+        uncommittedFiles={stagedFiles}
+        committedFiles={[]}
+        onAddFiles={handleAddFiles}
+        onRemoveUncommitted={handleRemoveUncommitted}
+        onRemoveCommitted={() => {}}
+        allowedFileTypes={[...RETURN_ATTACHMENT_FILE_POLICY.allowedExtensions]}
+        maxSizeBytes={RETURN_ATTACHMENT_FILE_POLICY.maxSizeBytes}
+        multiple={false}
+        uploadingFileIds={uploadingFileIds}
+        listClassName="grid-cols-1"
       />
       <div className="flex gap-2">
         <Button
@@ -160,7 +253,7 @@ export const ReturnConfirmForm = ({
         <Button
           type="submit"
           variant="outline"
-          disabled={pending}
+          disabled={pending || uploadingFileIds.length > 0}
           className="flex-1"
         >
           <Undo2 className="h-4 w-4" />

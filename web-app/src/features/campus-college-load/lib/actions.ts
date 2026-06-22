@@ -9,8 +9,11 @@ import type {
   CampusCollegeLoadEvaluationStatus,
 } from "@/features/shared/types/models";
 import { buildCampusCollegeLoadSnapshot } from "@/features/campus-college-load/lib/snapshot";
-
-const RETURN_ATTACHMENT_BUCKET = "ftl-evaluation-return-attachment";
+import {
+  RETURN_ATTACHMENT_BUCKET,
+  RETURN_ATTACHMENT_STAGING_PREFIX,
+  stagedReturnAttachmentStorage,
+} from "@/features/campus-college-load/lib/attachment-storage";
 
 type ActionState = {
   error?: string;
@@ -176,50 +179,51 @@ export const createOrResubmitCampusCollegeLoadAction = async (
   return { success: "Campus-college load submitted." };
 };
 
-const uploadReturnAttachment = async ({
-  file,
+const commitReturnAttachment = async ({
+  stagedObjectPath,
+  stagedFileName,
+  stagedFileMimeType,
   revisionId,
   step,
 }: {
-  file: File | null;
+  stagedObjectPath: string;
+  stagedFileName: string;
+  stagedFileMimeType: string | null;
   revisionId: string;
   step: CampusCollegeLoadEvaluationStep;
 }): Promise<
   | {
-      bucket: string | null;
-      path: string | null;
-      fileName: string | null;
+      bucket: string;
+      path: string;
+      fileName: string;
       mimeType: string | null;
       error?: never;
     }
   | { error: string }
 > => {
-  if (!file || file.size === 0) {
-    return { bucket: null, path: null, fileName: null, mimeType: null };
+  if (!stagedObjectPath.startsWith(`${RETURN_ATTACHMENT_STAGING_PREFIX}/`)) {
+    return { error: "Invalid attachment." };
   }
 
-  const supabase = await createClient();
-  const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]+/g, "-");
-  const path = `${revisionId}/${step}-${Date.now()}-${sanitizedFileName}`;
-  const contentType = file.type || "application/octet-stream";
-  const bytes = await file.arrayBuffer();
-  const { error } = await supabase.storage
-    .from(RETURN_ATTACHMENT_BUCKET)
-    .upload(path, bytes, {
-      contentType,
-      upsert: false,
-    });
+  const sanitizedFileName = (stagedFileName || "attachment").replace(
+    /[^a-zA-Z0-9.-]+/g,
+    "-",
+  );
+  const committedPath = `${revisionId}/${step}-${Date.now()}-${sanitizedFileName}`;
+  const moveResult = await stagedReturnAttachmentStorage.moveObject(
+    stagedObjectPath,
+    committedPath,
+  );
 
-  if (error) {
-    console.error("campusCollegeLoad.return.uploadAttachment ::", error);
-    return { error: "Unable to upload the return attachment." };
+  if (moveResult === "missing") {
+    return { error: "The attached file could not be found. Please re-attach it." };
   }
 
   return {
     bucket: RETURN_ATTACHMENT_BUCKET,
-    path,
-    fileName: file.name,
-    mimeType: contentType,
+    path: committedPath,
+    fileName: stagedFileName || sanitizedFileName,
+    mimeType: stagedFileMimeType,
   };
 };
 
@@ -231,7 +235,10 @@ export const submitCampusCollegeLoadEvaluationAction = async (
   const step = String(formData.get("step") ?? "");
   const status = String(formData.get("status") ?? "");
   const comment = String(formData.get("comment") ?? "").trim();
-  const attachment = formData.get("attachment");
+  const stagedObjectPath = String(formData.get("stagedObjectPath") ?? "").trim();
+  const stagedFileName = String(formData.get("stagedFileName") ?? "").trim();
+  const stagedFileMimeType =
+    String(formData.get("stagedFileMimeType") ?? "").trim() || null;
 
   if (!revisionId || !isEvaluationStep(step) || !isEvaluationStatus(status)) {
     return { error: "Evaluation request is incomplete." };
@@ -273,12 +280,24 @@ export const submitCampusCollegeLoadEvaluationAction = async (
     return { error: "You do not have the required designation for this step." };
   }
 
-  const uploaded = await uploadReturnAttachment({
-    file: attachment instanceof File ? attachment : null,
-    revisionId,
-    step,
-  });
-  if ("error" in uploaded) return { error: uploaded.error };
+  let attachment: {
+    bucket: string | null;
+    path: string | null;
+    fileName: string | null;
+    mimeType: string | null;
+  } = { bucket: null, path: null, fileName: null, mimeType: null };
+
+  if (stagedObjectPath) {
+    const committed = await commitReturnAttachment({
+      stagedObjectPath,
+      stagedFileName,
+      stagedFileMimeType,
+      revisionId,
+      step,
+    });
+    if ("error" in committed) return { error: committed.error };
+    attachment = committed;
+  }
 
   const { error } = await supabase.from("campus_college_load_evaluation").insert({
     campus_college_load_revision_id: revisionId,
@@ -287,10 +306,10 @@ export const submitCampusCollegeLoadEvaluationAction = async (
     designation_id: designation.id,
     status,
     comment: comment || null,
-    attachment_bucket: uploaded.bucket,
-    attachment_path: uploaded.path,
-    attachment_file_name: uploaded.fileName,
-    attachment_mime_type: uploaded.mimeType,
+    attachment_bucket: attachment.bucket,
+    attachment_path: attachment.path,
+    attachment_file_name: attachment.fileName,
+    attachment_mime_type: attachment.mimeType,
   });
 
   if (error) {
