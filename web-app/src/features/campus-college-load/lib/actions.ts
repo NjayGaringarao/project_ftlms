@@ -235,10 +235,15 @@ export const submitCampusCollegeLoadEvaluationAction = async (
   const step = String(formData.get("step") ?? "");
   const status = String(formData.get("status") ?? "");
   const comment = String(formData.get("comment") ?? "").trim();
-  const stagedObjectPath = String(formData.get("stagedObjectPath") ?? "").trim();
-  const stagedFileName = String(formData.get("stagedFileName") ?? "").trim();
-  const stagedFileMimeType =
-    String(formData.get("stagedFileMimeType") ?? "").trim() || null;
+  const stagedObjectPaths = formData
+    .getAll("stagedObjectPath")
+    .map((value) => String(value).trim());
+  const stagedFileNames = formData
+    .getAll("stagedFileName")
+    .map((value) => String(value).trim());
+  const stagedFileMimeTypes = formData
+    .getAll("stagedFileMimeType")
+    .map((value) => String(value).trim() || null);
 
   if (!revisionId || !isEvaluationStep(step) || !isEvaluationStatus(status)) {
     return { error: "Evaluation request is incomplete." };
@@ -280,41 +285,66 @@ export const submitCampusCollegeLoadEvaluationAction = async (
     return { error: "You do not have the required designation for this step." };
   }
 
-  let attachment: {
-    bucket: string | null;
-    path: string | null;
-    fileName: string | null;
+  const committedAttachments: Array<{
+    bucket: string;
+    path: string;
+    fileName: string;
     mimeType: string | null;
-  } = { bucket: null, path: null, fileName: null, mimeType: null };
+  }> = [];
 
-  if (stagedObjectPath) {
+  for (let index = 0; index < stagedObjectPaths.length; index += 1) {
+    const stagedObjectPath = stagedObjectPaths[index];
+    if (!stagedObjectPath) continue;
+
     const committed = await commitReturnAttachment({
       stagedObjectPath,
-      stagedFileName,
-      stagedFileMimeType,
+      stagedFileName: stagedFileNames[index] ?? "",
+      stagedFileMimeType: stagedFileMimeTypes[index] ?? null,
       revisionId,
       step,
     });
     if ("error" in committed) return { error: committed.error };
-    attachment = committed;
+    committedAttachments.push(committed);
   }
 
-  const { error } = await supabase.from("campus_college_load_evaluation").insert({
-    campus_college_load_revision_id: revisionId,
-    step,
-    evaluator_user_id: currentUser.id,
-    designation_id: designation.id,
-    status,
-    comment: comment || null,
-    attachment_bucket: attachment.bucket,
-    attachment_path: attachment.path,
-    attachment_file_name: attachment.fileName,
-    attachment_mime_type: attachment.mimeType,
-  });
+  const { data: insertedEvaluation, error } = await supabase
+    .from("campus_college_load_evaluation")
+    .insert({
+      campus_college_load_revision_id: revisionId,
+      step,
+      evaluator_user_id: currentUser.id,
+      designation_id: designation.id,
+      status,
+      comment: comment || null,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !insertedEvaluation) {
     console.error("campusCollegeLoad.evaluate.insert ::", error);
     return { error: "Unable to submit the evaluation." };
+  }
+
+  if (committedAttachments.length > 0) {
+    const { error: attachmentError } = await supabase
+      .from("campus_college_load_evaluation_attachment")
+      .insert(
+        committedAttachments.map((attachment) => ({
+          campus_college_load_evaluation_id: insertedEvaluation.id,
+          attachment_bucket: attachment.bucket,
+          attachment_path: attachment.path,
+          attachment_file_name: attachment.fileName,
+          attachment_mime_type: attachment.mimeType,
+        })),
+      );
+
+    if (attachmentError) {
+      console.error(
+        "campusCollegeLoad.evaluate.insertAttachments ::",
+        attachmentError,
+      );
+      return { error: "Unable to attach the uploaded files." };
+    }
   }
 
   revalidatePath("/campus-college-load");

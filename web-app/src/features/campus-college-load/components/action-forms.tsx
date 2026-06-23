@@ -60,7 +60,12 @@ export const SubmitCampusCollegeLoadForm = ({
       <input type="hidden" name="academicTermId" value={academicTermId} />
       <input type="hidden" name="campusId" value={campusId} />
       <input type="hidden" name="collegeId" value={collegeId} />
-      <Button type="submit" size="sm" disabled={pending} className={buttonClassName}>
+      <Button
+        type="submit"
+        size="sm"
+        disabled={pending}
+        className={buttonClassName}
+      >
         {label.includes("Resubmit") ? (
           <RotateCcw className="h-4 w-4" />
         ) : (
@@ -139,20 +144,11 @@ export const ReturnConfirmForm = ({
   );
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
   const [uploadingFileIds, setUploadingFileIds] = useState<string[]>([]);
-  const stagedFile = stagedFiles[0] ?? null;
 
-  const handleAddFiles = async (files: File[]) => {
-    const file = files[0];
-    if (!file) return;
-
-    const previous = stagedFiles[0];
-    if (previous) {
-      setStagedFiles([]);
-      void unstageReturnAttachment(previous.objectPath);
-    }
-
+  const stageOneFile = async (file: File) => {
     const tempId = crypto.randomUUID();
-    setStagedFiles([
+    setStagedFiles((current) => [
+      ...current,
       {
         id: tempId,
         objectPath: tempId,
@@ -173,20 +169,24 @@ export const ReturnConfirmForm = ({
     const result = await stageReturnAttachment(formData);
 
     setUploadingFileIds((ids) => ids.filter((id) => id !== tempId));
-    if (result.success) {
-      setStagedFiles((current) =>
-        current[0]?.id === tempId ? [result.file] : current,
-      );
-    } else {
-      setStagedFiles((current) =>
-        current[0]?.id === tempId ? [] : current,
-      );
-    }
+    setStagedFiles((current) =>
+      current
+        .map((item) =>
+          item.id === tempId ? (result.success ? result.file : null) : item,
+        )
+        .filter((item): item is StagedFile => item !== null),
+    );
+  };
+
+  const handleAddFiles = (files: File[]) => {
+    files.forEach((file) => {
+      void stageOneFile(file);
+    });
   };
 
   const handleRemoveUncommitted = async (id: string) => {
     const file = stagedFiles.find((item) => item.id === id);
-    setStagedFiles([]);
+    setStagedFiles((current) => current.filter((item) => item.id !== id));
     if (file && !uploadingFileIds.includes(id)) {
       await unstageReturnAttachment(file.objectPath);
     }
@@ -197,29 +197,27 @@ export const ReturnConfirmForm = ({
       <input type="hidden" name="revisionId" value={revisionId} />
       <input type="hidden" name="step" value={step} />
       <input type="hidden" name="status" value="RETURNED" />
-      {stagedFile ? (
-        <>
-          <input
-            type="hidden"
-            name="stagedObjectPath"
-            value={stagedFile.objectPath}
-          />
-          <input
-            type="hidden"
-            name="stagedFileName"
-            value={stagedFile.fileName}
-          />
-          <input
-            type="hidden"
-            name="stagedFileMimeType"
-            value={stagedFile.mimeType ?? ""}
-          />
-        </>
-      ) : null}
+      {stagedFiles
+        .filter((file) => !uploadingFileIds.includes(file.id))
+        .map((file) => (
+          <span key={file.id}>
+            <input
+              type="hidden"
+              name="stagedObjectPath"
+              value={file.objectPath}
+            />
+            <input type="hidden" name="stagedFileName" value={file.fileName} />
+            <input
+              type="hidden"
+              name="stagedFileMimeType"
+              value={file.mimeType ?? ""}
+            />
+          </span>
+        ))}
       <p className="text-sm text-foreground/70">
         Returning this load will send it back to the Program Chairperson for
-        revision. They will need to address your feedback and resubmit before
-        it can be evaluated again.
+        revision. They will need to address your feedback and resubmit before it
+        can be evaluated again.
       </p>
       <textarea
         name="comment"
@@ -229,7 +227,7 @@ export const ReturnConfirmForm = ({
         placeholder="Explain what needs to change"
       />
       <FileField
-        label="Attachment (optional)"
+        label="Attachments (optional)"
         uncommittedFiles={stagedFiles}
         committedFiles={[]}
         onAddFiles={handleAddFiles}
@@ -237,9 +235,9 @@ export const ReturnConfirmForm = ({
         onRemoveCommitted={() => {}}
         allowedFileTypes={[...RETURN_ATTACHMENT_FILE_POLICY.allowedExtensions]}
         maxSizeBytes={RETURN_ATTACHMENT_FILE_POLICY.maxSizeBytes}
-        multiple={false}
+        multiple
         uploadingFileIds={uploadingFileIds}
-        listClassName="grid-cols-1"
+        listClassName="grid grid-cols-1 sm:grid-cols-2"
       />
       <div className="flex gap-2">
         <Button
@@ -257,7 +255,7 @@ export const ReturnConfirmForm = ({
           className="flex-1"
         >
           <Undo2 className="h-4 w-4" />
-          {pending ? "Submitting..." : "Return"}
+          {pending ? "Submitting..." : "Return / Disapprove"}
         </Button>
       </div>
       <FormMessage state={state} />

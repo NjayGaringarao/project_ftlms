@@ -135,15 +135,20 @@ export const LadderHistoryContent = ({
               Source schedule data changed after this revision was submitted.
             </p>
           ) : null}
-          {evaluation.attachment_path ? (
-            <a
-              href={evaluation.attachment_signed_url ?? "#"}
-              className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
-              aria-disabled={!evaluation.attachment_signed_url}
-            >
-              <FileText className="h-3 w-3" />
-              {evaluation.attachment_file_name ?? "PDF attachment"}
-            </a>
+          {evaluation.attachments.length > 0 ? (
+            <div className="mt-2 flex flex-col gap-1">
+              {evaluation.attachments.map((attachment) => (
+                <a
+                  key={attachment.id}
+                  href={attachment.signed_url ?? "#"}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  aria-disabled={!attachment.signed_url}
+                >
+                  <FileText className="h-3 w-3" />
+                  {attachment.file_name}
+                </a>
+              ))}
+            </div>
           ) : null}
           <p className="mt-2 text-xs text-foreground/50">
             {formatDateTime(evaluation.created_at ?? undefined)}
@@ -244,10 +249,13 @@ export const ActionContent = ({
         className="flex-1"
         onClick={() => setView("return")}
       >
-        <Undo2 className="h-4 w-4" />
-        Return
+        Return / Disapprove
       </Button>
-      <Button type="button" className="flex-1" onClick={() => setView("approve")}>
+      <Button
+        type="button"
+        className="flex-1"
+        onClick={() => setView("approve")}
+      >
         <Check className="h-4 w-4" />
         Approve
       </Button>

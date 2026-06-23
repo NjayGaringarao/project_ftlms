@@ -23,6 +23,13 @@ export type CampusCollegeLoadScope = {
 
 export type CampusCollegeLoadEvaluatorBucket = "PENDING" | "APPROVED" | "RETURNED";
 
+export type CampusCollegeLoadEvaluationAttachment = {
+  id: string;
+  file_name: string;
+  mime_type: string | null;
+  signed_url: string | null;
+};
+
 export type CampusCollegeLoadListItem = CampusCollegeLoadScope & {
   load: CampusCollegeLoad | null;
   latest_revision: CampusCollegeLoadRevision | null;
@@ -43,6 +50,7 @@ export type CampusCollegeLoadDetail = {
       attachment_signed_url?: string | null;
       evaluator_name?: string | null;
       designation_title?: string | null;
+      attachments: CampusCollegeLoadEvaluationAttachment[];
     }
   >;
   signatures: {
@@ -460,6 +468,28 @@ export const getCampusCollegeLoadDetail = async (
     ]),
   );
 
+  const evaluationIds = evaluationRows
+    .map((row) => row.id)
+    .filter((value): value is string => typeof value === "string");
+  const { data: rawAttachmentRows } =
+    evaluationIds.length > 0
+      ? await supabase
+          .from("campus_college_load_evaluation_attachment")
+          .select("*")
+          .in("campus_college_load_evaluation_id", evaluationIds)
+          .order("created_at", { ascending: true })
+      : { data: [] };
+  const attachmentRowsByEvaluationId = new Map<
+    string,
+    Array<Record<string, unknown>>
+  >();
+  (rawAttachmentRows ?? []).forEach((row) => {
+    const evaluationId = String(row.campus_college_load_evaluation_id);
+    const list = attachmentRowsByEvaluationId.get(evaluationId) ?? [];
+    list.push(row as Record<string, unknown>);
+    attachmentRowsByEvaluationId.set(evaluationId, list);
+  });
+
   const evaluations = await Promise.all(
     evaluationRows.map(
       async (row) => {
@@ -473,19 +503,47 @@ export const getCampusCollegeLoadDetail = async (
             ? (designationTitles.get(evaluation.designation_id) ?? null)
             : null,
         };
-        if (!evaluation.attachment_path || !evaluation.attachment_bucket) {
-          return { ...enrichedEvaluation, attachment_signed_url: null };
+
+        const attachments: CampusCollegeLoadEvaluationAttachment[] = [];
+
+        if (evaluation.attachment_path && evaluation.attachment_bucket) {
+          const { data } = await supabase.storage
+            .from(evaluation.attachment_bucket)
+            .createSignedUrl(evaluation.attachment_path, 60 * 10, {
+              download: evaluation.attachment_file_name ?? true,
+            });
+          attachments.push({
+            id: evaluation.id,
+            file_name: evaluation.attachment_file_name ?? "Attachment",
+            mime_type: evaluation.attachment_mime_type,
+            signed_url: data?.signedUrl ?? null,
+          });
         }
 
-        const { data } = await supabase.storage
-          .from(evaluation.attachment_bucket)
-          .createSignedUrl(evaluation.attachment_path, 60 * 10, {
-            download: evaluation.attachment_file_name ?? true,
+        const additionalRows = attachmentRowsByEvaluationId.get(evaluation.id) ?? [];
+        for (const attachmentRow of additionalRows) {
+          const bucket = String(attachmentRow.attachment_bucket ?? "");
+          const path = String(attachmentRow.attachment_path ?? "");
+          if (!bucket || !path) continue;
+
+          const { data } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(path, 60 * 10, {
+              download: (attachmentRow.attachment_file_name as string | null) ?? true,
+            });
+          attachments.push({
+            id: String(attachmentRow.id),
+            file_name:
+              (attachmentRow.attachment_file_name as string | null) ?? "Attachment",
+            mime_type: (attachmentRow.attachment_mime_type as string | null) ?? null,
+            signed_url: data?.signedUrl ?? null,
           });
+        }
 
         return {
           ...enrichedEvaluation,
-          attachment_signed_url: data?.signedUrl ?? null,
+          attachment_signed_url: attachments[0]?.signed_url ?? null,
+          attachments,
         };
       },
     ),
