@@ -139,13 +139,15 @@ export function FileItem({
       <div
         className={cn(
           layout === "compact"
-            ? "relative flex min-h-12 w-64 max-w-full shrink-0 items-center overflow-hidden rounded-2xl border bg-card/80 text-foreground transition hover:border-foreground/30 hover:bg-accent/50"
+            ? "relative flex min-h-12 w-64 max-w-full shrink-0 items-center overflow-hidden rounded-md border bg-card/80 text-foreground transition hover:border-foreground/30 hover:bg-accent/50"
             : "relative flex min-h-14 items-center overflow-hidden rounded-lg border bg-card text-foreground transition hover:border-foreground/30 hover:bg-accent/50",
           className,
         )}
       >
         {resolvedAnnotations && annotationsPlacement === "overlay" ? (
-          <div className={cn("absolute right-2 top-2 z-10", annotationClassName)}>
+          <div
+            className={cn("absolute right-2 top-2 z-10", annotationClassName)}
+          >
             {resolvedAnnotations}
           </div>
         ) : null}
@@ -268,7 +270,9 @@ export function FileItem({
                   <FileX className="h-10 w-10" />
                 )}
                 <div className="flex flex-col">
-                  <p className="text-xl font-medium">Preview is not available</p>
+                  <p className="text-xl font-medium">
+                    Preview is not available
+                  </p>
                   <p className="-mt-1 text-sm text-muted-foreground">
                     You can download to open the file.
                   </p>

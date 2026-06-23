@@ -339,6 +339,12 @@ export const submitCampusCollegeLoadEvaluationAction = async (
       );
 
     if (attachmentError) {
+      // Compensating delete: remove the evaluation row so the unique constraint
+      // doesn't block a retry if the user tries to submit again.
+      await supabase
+        .from("campus_college_load_evaluation")
+        .delete()
+        .eq("id", insertedEvaluation.id);
       console.error(
         "campusCollegeLoad.evaluate.insertAttachments ::",
         attachmentError,

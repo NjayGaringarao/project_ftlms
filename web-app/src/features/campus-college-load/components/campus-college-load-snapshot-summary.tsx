@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { Check, FileText, Undo2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppDialog } from "@/components/ui/app-dialog";
@@ -14,7 +14,9 @@ import { FacultyLoadTable } from "@/features/campus-college-load/components/snap
 import { ClassScheduleTable } from "@/features/campus-college-load/components/snapshot/class-schedule-table";
 import { ApprovalStatusCards } from "@/features/campus-college-load/components/snapshot/approval-status-cards";
 import { RevisionSupersessionNotice } from "@/features/campus-college-load/components/snapshot/revision-supersession-notice";
+import { ReturnReasonSection } from "@/features/campus-college-load/components/snapshot/return-reason-section";
 import { RevisionHeader } from "@/features/campus-college-load/components/snapshot/revision-header";
+import { FileItem } from "@/features/files/components/file-item";
 import { normalizeCampusCollegeLoadSnapshot } from "@/features/shared/types/models";
 import { formatDateTime } from "@/utils/time";
 
@@ -72,6 +74,8 @@ export const SnapshotSummary = ({
       />
       {detail.viewed_revision?.id !== detail.latest_revision?.id ? (
         <RevisionSupersessionNotice evaluations={detail.evaluations} />
+      ) : detail.load.status === "RETURNED" ? (
+        <ReturnReasonSection evaluations={detail.evaluations} />
       ) : (
         <ApprovalStatusCards signatures={detail.signatures} />
       )}
@@ -136,17 +140,19 @@ export const LadderHistoryContent = ({
             </p>
           ) : null}
           {evaluation.attachments.length > 0 ? (
-            <div className="mt-2 flex flex-col gap-1">
+            <div className="mt-2 flex flex-wrap gap-2">
               {evaluation.attachments.map((attachment) => (
-                <a
+                <FileItem
                   key={attachment.id}
-                  href={attachment.signed_url ?? "#"}
-                  className="flex items-center gap-1 text-xs text-primary hover:underline"
-                  aria-disabled={!attachment.signed_url}
-                >
-                  <FileText className="h-3 w-3" />
-                  {attachment.file_name}
-                </a>
+                  fileName={attachment.file_name}
+                  fileSizeLabel=""
+                  status="Committed"
+                  previewUrl={attachment.signed_url}
+                  mimeType={attachment.mime_type}
+                  hideStatus
+                  hideRemoveAction
+                  layout="compact"
+                />
               ))}
             </div>
           ) : null}

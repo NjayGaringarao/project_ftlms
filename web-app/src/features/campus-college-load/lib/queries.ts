@@ -509,9 +509,7 @@ export const getCampusCollegeLoadDetail = async (
         if (evaluation.attachment_path && evaluation.attachment_bucket) {
           const { data } = await supabase.storage
             .from(evaluation.attachment_bucket)
-            .createSignedUrl(evaluation.attachment_path, 60 * 10, {
-              download: evaluation.attachment_file_name ?? true,
-            });
+            .createSignedUrl(evaluation.attachment_path, 60 * 60);
           attachments.push({
             id: evaluation.id,
             file_name: evaluation.attachment_file_name ?? "Attachment",
@@ -528,9 +526,7 @@ export const getCampusCollegeLoadDetail = async (
 
           const { data } = await supabase.storage
             .from(bucket)
-            .createSignedUrl(path, 60 * 10, {
-              download: (attachmentRow.attachment_file_name as string | null) ?? true,
-            });
+            .createSignedUrl(path, 60 * 60);
           attachments.push({
             id: String(attachmentRow.id),
             file_name:
