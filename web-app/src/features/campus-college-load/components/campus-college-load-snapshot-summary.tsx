@@ -181,9 +181,13 @@ export const CampusCollegeLoadDetailPanel = ({
 }) => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const statusLine =
-    stepLabel[detail.load.current_step] !== "COMPLETED"
-      ? `For approval by ${stepLabel[detail.load.current_step]}`
-      : "Approval Complete";
+    stepLabel[detail.load.current_step] === "Program Chairperson"
+      ? "For Revision by Program Chairperson"
+      : stepLabel[detail.load.status] !== "COMPLETED"
+        ? `For approval by ${stepLabel[detail.load.current_step]}`
+        : stepLabel[detail.load.current_step] !== "COMPLETED"
+          ? "Approval Complete"
+          : "";
 
   return (
     <div className="flex flex-col gap-4">
