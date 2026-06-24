@@ -1,5 +1,8 @@
+import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/features/campus-college-load/utils/format-number";
 import type { CampusCollegeLoadSnapshotFaculty } from "@/features/shared/types/models";
+import { Download, FileText, Printer } from "lucide-react";
+import { Popover } from "radix-ui";
 
 const employmentStatusOrder = [
   "Regular",
@@ -69,7 +72,40 @@ export const FacultyLoadTable = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
+      <div className="w-full flex flex-row gap-2 items-center justify-between">
         <h3 className="font-semibold text-foreground">Faculty Load</h3>
+        <Popover.Root>
+          <Popover.Trigger asChild>
+            <Button
+              variant="outline"
+               
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content className="rounded-md border bg-white p-2 shadow-md" sideOffset={6} align="end">
+            <div className="flex flex-col">
+              <Button
+                variant="ghost"
+                className="w-full flex flex-row gap-2 items-center justify-start"
+                >
+                  <FileText className="h-4 w-4" />
+                  Export as PDF
+                </Button>
+                <Button
+                variant="ghost"
+                className="w-full flex flex-row gap-2 items-center justify-start"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print
+                </Button>
+            </div>
+            <Popover.Arrow />
+          </Popover.Content>
+        </Popover.Root>
+      </div>
+
         <div className="hidden overflow-x-auto rounded-md border md:block">
           <table className="min-w-[980px] w-full text-sm">
             <thead className="bg-slate-100 text-left text-xs uppercase text-slate-700">
@@ -170,3 +206,4 @@ export const FacultyLoadTable = ({
     </div>
   );
 };
+
