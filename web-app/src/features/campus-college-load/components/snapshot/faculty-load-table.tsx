@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/features/campus-college-load/utils/format-number";
 import type { CampusCollegeLoadSnapshotFaculty } from "@/features/shared/types/models";
@@ -64,10 +66,16 @@ const groupSnapshotFaculty = (faculty: CampusCollegeLoadSnapshotFaculty[]) => {
 
 export const FacultyLoadTable = ({
   faculty,
+  revisionId,
+  academicTermId,
 }: {
   faculty: CampusCollegeLoadSnapshotFaculty[];
+  revisionId: string;
+  academicTermId: string;
 }) => {
   const groups = groupSnapshotFaculty(faculty);
+  const pdfUrl = `/api/puppeteer/pdf/documents/campus_college_load/single/${academicTermId}/${revisionId}`;
+  const printUrl = `/print/documents/campus_college_load/single/${academicTermId}/${revisionId}?autoPrint=1`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -78,7 +86,7 @@ export const FacultyLoadTable = ({
           <Popover.Trigger asChild>
             <Button
               variant="outline"
-               
+
             >
               <Download className="h-4 w-4" />
               Export
@@ -89,6 +97,7 @@ export const FacultyLoadTable = ({
               <Button
                 variant="ghost"
                 className="w-full flex flex-row gap-2 items-center justify-start"
+                onClick={() => window.open(pdfUrl, "_blank")}
                 >
                   <FileText className="h-4 w-4" />
                   Export as PDF
@@ -96,6 +105,7 @@ export const FacultyLoadTable = ({
                 <Button
                 variant="ghost"
                 className="w-full flex flex-row gap-2 items-center justify-start"
+                onClick={() => window.open(printUrl, "_blank")}
                 >
                   <Printer className="h-4 w-4" />
                   Print
@@ -107,7 +117,7 @@ export const FacultyLoadTable = ({
       </div>
 
         <div className="hidden overflow-x-auto rounded-md border md:block">
-          <table className="min-w-[980px] w-full text-sm">
+          <table className="min-w-245 w-full text-sm">
             <thead className="bg-slate-100 text-left text-xs uppercase text-slate-700">
               <tr>
                 <th className="w-12 px-3 py-2 text-center">No.</th>
@@ -206,4 +216,3 @@ export const FacultyLoadTable = ({
     </div>
   );
 };
-

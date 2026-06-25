@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { YearLevelSectionGroups } from "@/features/campus-college-load/components/snapshot/year-level-section-groups";
 import type {
@@ -20,6 +22,9 @@ export const ClassScheduleTable = ({
   revisionId: string;
   academicTermId: string;
 }) => {
+  const pdfUrl = `/api/puppeteer/pdf/documents/class_schedule/single/${academicTermId}/${revisionId}`;
+  const printUrl = `/print/documents/class_schedule/single/${academicTermId}/${revisionId}?autoPrint=1`;
+
   if (legacy) {
     return (
       <div className="rounded-md border border-dashed p-4 text-sm text-foreground/70">
@@ -30,13 +35,13 @@ export const ClassScheduleTable = ({
 
   return (
     <div>
-           <div className="w-full flex flex-row gap-2 items-center justify-between">
-        <h3 className="font-semibold text-foreground">Faculty Load</h3>
+      <div className="w-full flex flex-row gap-2 items-center justify-between">
+        <h3 className="font-semibold text-foreground">Class Schedule</h3>
         <Popover.Root>
           <Popover.Trigger asChild>
             <Button
               variant="outline"
-               
+
             >
               <Download className="h-4 w-4" />
               Export
@@ -47,6 +52,7 @@ export const ClassScheduleTable = ({
               <Button
                 variant="ghost"
                 className="w-full flex flex-row gap-2 items-center justify-start"
+                onClick={() => window.open(pdfUrl, "_blank")}
                 >
                   <FileText className="h-4 w-4" />
                   Export as PDF
@@ -54,6 +60,7 @@ export const ClassScheduleTable = ({
                 <Button
                 variant="ghost"
                 className="w-full flex flex-row gap-2 items-center justify-start"
+                onClick={() => window.open(printUrl, "_blank")}
                 >
                   <Printer className="h-4 w-4" />
                   Print
@@ -72,4 +79,3 @@ export const ClassScheduleTable = ({
     </div>
   );
 };
-

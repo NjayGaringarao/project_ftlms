@@ -64,7 +64,11 @@ export const SnapshotSummary = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <FacultyLoadTable faculty={faculty_load.faculty} />
+      <FacultyLoadTable
+        faculty={faculty_load.faculty}
+        revisionId={detail.viewed_revision?.id ?? ""}
+        academicTermId={detail.load.academic_term_id}
+      />
       <ClassScheduleTable
         classes={class_schedule.classes}
         sections={class_schedule.sections}
