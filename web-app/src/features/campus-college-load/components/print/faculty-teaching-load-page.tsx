@@ -101,7 +101,7 @@ const InfoRow = ({
   value: React.ReactNode;
 }) => (
   <tr>
-    <td className="text-[10px] leading-tight align-top whitespace-nowrap pr-1">
+    <td className="text-[10px] leading-tight align-top pr-1">
       {label}
     </td>
     <td className="text-[10px] leading-tight align-top px-0.5">:</td>
@@ -149,7 +149,12 @@ export const FacultyTeachingLoadPage = ({
         {/* Left sidebar */}
         <div className="w-1/4 flex-shrink-0 border-2 border-gray-900 flex flex-col">
           <div className="flex flex-col h-14 border-b-2 border-gray-900">
-            <table className="w-full border-collapse">
+            <table className="w-full table-fixed border-collapse">
+              <colgroup>
+                <col style={{ width: "55%" }} />
+                <col style={{ width: "8%" }} />
+                <col />
+              </colgroup>
               <tbody>
                 <InfoRow label="Campus" value={metadata.campus_name ?? "—"} />
                 <InfoRow
@@ -178,7 +183,12 @@ export const FacultyTeachingLoadPage = ({
             <p className="text-[10px]">Note: Do not leave each item blank.</p>
           </div>
 
-          <table className="mt-1 w-full border-collapse">
+          <table className="mt-1 w-full table-fixed border-collapse">
+            <colgroup>
+              <col style={{ width: "55%" }} />
+              <col style={{ width: "8%" }} />
+              <col />
+            </colgroup>
             <tbody>
               <InfoRow
                 label="Employment Status"
@@ -320,34 +330,34 @@ export const FacultyTeachingLoadPage = ({
                   : "TBA";
                 return (
                   <tr key={i} className="border-t border-gray-300">
-                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">
+                    <td className="border border-gray-900 px-1 py-0.5 whitespace-nowrap">
                       {timeStr}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">
+                    <td className="border border-gray-900 px-1 py-0.5 whitespace-nowrap">
                       {dayStr}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5">
+                    <td className="border border-gray-900  px-1 py-0.5">
                       {row.courseCode}: {row.courseTitle}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.lecUnits > 0 ? formatNumber(row.lecUnits) : ""}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.lecHrs > 0 ? formatNumber(row.lecHrs) : ""}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.labUnits > 0 ? formatNumber(row.labUnits) : ""}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.labHrs > 0 ? formatNumber(row.labHrs) : ""}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5">
+                    <td className="border border-gray-900 px-1 py-0.5">
                       {row.room ?? "TBA"}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5">
+                    <td className="border border-gray-900 px-1 py-0.5">
                       {row.courseYrSec}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                    <td className="border border-gray-900 px-1 py-0.5">
                       UNKNOWN
                     </td>
                   </tr>
@@ -357,12 +367,16 @@ export const FacultyTeachingLoadPage = ({
               {Array.from({ length: Math.max(0, 15 - sessionRows.length) }).map(
                 (_, i) => (
                   <tr key={`blank-${i}`}>
-                    <td
-                      className="border border-gray-400 px-1 py-1"
-                      colSpan={10}
-                    >
-                      &nbsp;
-                    </td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
+                    <td className="border border-gray-300 px-1 py-1">&nbsp;</td>
                   </tr>
                 ),
               )}
