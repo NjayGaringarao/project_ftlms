@@ -22,7 +22,9 @@ type SessionRow = {
   courseYrSec: string;
 };
 
-const getSessionDurationHours = (session: CampusCollegeLoadSnapshotSession): number => {
+const getSessionDurationHours = (
+  session: CampusCollegeLoadSnapshotSession,
+): number => {
   const [sh, sm] = session.start_time.split(":").map(Number);
   const [eh, em] = session.end_time.split(":").map(Number);
   return (eh * 60 + em - (sh * 60 + sm)) / 60;
@@ -91,11 +93,20 @@ const buildSessionRows = (
   return rows;
 };
 
-const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex gap-1 text-[9px] leading-tight">
-    <span className="font-semibold whitespace-nowrap">{label}:</span>
-    <span>{value}</span>
-  </div>
+const InfoRow = ({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) => (
+  <tr>
+    <td className="text-[10px] leading-tight align-top whitespace-nowrap pr-1">
+      {label}
+    </td>
+    <td className="text-[10px] leading-tight align-top px-0.5">:</td>
+    <td className="text-[10px] leading-tight align-top">{value}</td>
+  </tr>
 );
 
 export const FacultyTeachingLoadPage = ({
@@ -115,12 +126,15 @@ export const FacultyTeachingLoadPage = ({
     faculty.classes.reduce((sum, c) => sum + Number(c.lecture_unit ?? 0), 0);
   const laboratoryHours =
     faculty.laboratory_hours ??
-    faculty.classes.reduce((sum, c) => sum + Number(c.laboratory_unit ?? 0) * 3, 0);
+    faculty.classes.reduce(
+      (sum, c) => sum + Number(c.laboratory_unit ?? 0) * 3,
+      0,
+    );
   const preparationCount = faculty.preparation_count ?? faculty.classes.length;
   const equivalentUnits = faculty.equivalent_units ?? 0;
   const etl = Number(faculty.equivalent_teaching_load ?? 0);
   const atl = Number(faculty.actual_teaching_load ?? 0);
-  const twl = Number(faculty.total_working_load ?? (etl + atl + equivalentUnits));
+  const twl = Number(faculty.total_working_load ?? etl + atl + equivalentUnits);
 
   return (
     <div className="bg-white p-4 text-black font-sans text-[10px]">
@@ -131,69 +145,169 @@ export const FacultyTeachingLoadPage = ({
         campusName={metadata.campus_name}
       />
 
-      <div className="flex gap-3">
+      <div className="flex">
         {/* Left sidebar */}
-        <div className="w-44 flex-shrink-0 border border-gray-400 p-2 flex flex-col gap-1">
-          <InfoRow label="Campus" value={metadata.campus_name ?? "—"} />
-          <InfoRow label="Address" value={metadata.campus_name ? `${metadata.campus_name}, Zambales` : "—"} />
-          <InfoRow label="College" value={metadata.college_code ?? "—"} />
-
-          <div className="my-1 border-t border-gray-300" />
-
-          <p className="font-bold text-sm leading-tight">{faculty.faculty_name}</p>
-          <p className="text-[9px] text-gray-500 mb-1">Name of Faculty</p>
-          <p className="text-[9px] italic">Note: Do not leave each item blank.</p>
-
-          <div className="mt-1 flex flex-col gap-0.5">
-            <InfoRow label="Employment Status" value={faculty.employment_status ?? "UNKNOWN"} />
-            <InfoRow label="VSL" value="UNKNOWN" />
-            <InfoRow label="Academic Rank" value={faculty.academic_rank ?? "UNKNOWN"} />
-            <InfoRow label="Bachelor's Degree" value="UNKNOWN" />
-            <InfoRow label="Master's Degree" value="UNKNOWN" />
-            <InfoRow label="Doctorate Degree" value="UNKNOWN" />
-            <InfoRow label="Post Doctorate Degree" value="UNKNOWN" />
-            <InfoRow label="Designation" value={faculty.designation_summary?.trim() || "—"} />
+        <div className="w-1/4 flex-shrink-0 border-2 border-gray-900 flex flex-col">
+          <div className="flex flex-col h-14 border-b-2 border-gray-900">
+            <table className="w-full border-collapse">
+              <tbody>
+                <InfoRow label="Campus" value={metadata.campus_name ?? "—"} />
+                <InfoRow
+                  label="Address"
+                  value={
+                    metadata.campus_name
+                      ? `${metadata.campus_name}, Zambales`
+                      : "—"
+                  }
+                />
+                <InfoRow label="College" value={metadata.college_code ?? "—"} />
+              </tbody>
+            </table>
+          </div>
+          <div className="flex flex-col h-14 border-b border-gray-600 items-center justify-center bg-neutral-100">
+            <p className="text-[18px] font-black leading-tight">
+              {faculty.faculty_name}
+            </p>
           </div>
 
-          <div className="mt-1 border-t border-gray-300" />
-
-          <div className="flex flex-col gap-0.5 mt-1">
-            <InfoRow label="Equiv. Teaching Load (ETL)" value={formatNumber(etl)} />
-            <InfoRow label="Total Lecture Hours" value={formatNumber(lectureHours)} />
-            <InfoRow label="Total Laboratory Hours" value={formatNumber(laboratoryHours)} />
-            <InfoRow label="Total Lab/RLE Hours (×0.75)" value={formatNumber(laboratoryHours * 0.75)} />
-            <InfoRow label="No. of Preparation" value={formatNumber(preparationCount)} />
-            <InfoRow label="Advisory Class" value="UNKNOWN" />
-            <InfoRow label="Equiv. Unit/s for No. of Prep." value={formatNumber(equivalentUnits)} />
-            <InfoRow label="Actual Teaching Loads (ATL)" value={formatNumber(atl)} />
-            <InfoRow label="Total Working Load (ETL+ATL)" value={formatNumber(twl)} />
-            <InfoRow label="Excess (24 Hours)" value="—" />
+          <div className="h-4 flex flex-col items-center bg-neutral-400 border-b-2 border-gray-900">
+            <p className="text-[10px] text-white font-bold">Name of Faculty</p>
           </div>
 
-          <div className="mt-2 border-t border-gray-300 pt-1">
-            <p className="text-[9px]">Received [Affix Faculty Signature]:</p>
+          <div className="border-b-2 border-gray-900">
+            <p className="text-[10px]">Note: Do not leave each item blank.</p>
           </div>
+
+          <table className="mt-1 w-full border-collapse">
+            <tbody>
+              <InfoRow
+                label="Employment Status"
+                value={faculty.employment_status ?? "UNKNOWN"}
+              />
+              <InfoRow label="VSL" value="UNKNOWN" />
+              <InfoRow
+                label="Academic Rank"
+                value={faculty.academic_rank ?? "UNKNOWN"}
+              />
+              <InfoRow label="Bachelor's Degree" value="UNKNOWN" />
+              <InfoRow label="Master's Degree" value="UNKNOWN" />
+              <InfoRow label="Doctorate Degree" value="UNKNOWN" />
+              <InfoRow label="Post Doctorate Degree" value="UNKNOWN" />
+              <InfoRow
+                label="Designation"
+                value={faculty.designation_summary?.trim() || "—"}
+              />
+              <InfoRow
+                label="Equiv. Teaching Load (ETL)"
+                value={formatNumber(etl)}
+              />
+              <InfoRow
+                label="Total Lecture Hours"
+                value={formatNumber(lectureHours)}
+              />
+              <InfoRow
+                label="Total Laboratory Hours"
+                value={formatNumber(laboratoryHours)}
+              />
+              <InfoRow
+                label="Total Lab/RLE Hours (×0.75)"
+                value={formatNumber(laboratoryHours * 0.75)}
+              />
+              <InfoRow
+                label="No. of Preparation"
+                value={formatNumber(preparationCount)}
+              />
+              <InfoRow label="Advisory Class" value="UNKNOWN" />
+              <InfoRow
+                label="Equiv. Unit/s for No. of Prep."
+                value={formatNumber(equivalentUnits)}
+              />
+              <InfoRow
+                label="Actual Teaching Loads (ATL)"
+                value={formatNumber(atl)}
+              />
+              <InfoRow
+                label="Total Working Load (ETL+ATL)"
+                value={formatNumber(twl)}
+              />
+              <InfoRow label="Excess (24 Hours)" value="—" />
+            </tbody>
+          </table>
         </div>
 
+        <div className="w-3 bg-neutral-400 border-y-2 border-gray-900" />
+
         {/* Right: class schedule table */}
-        <div className="flex-1 min-w-0">
-          <table className="w-full border-collapse border border-gray-400 text-[9px]">
+        <div className="flex-1 min-w-0 ">
+          <table className="w-full border-collapse border-2 border-gray-900 text-[10px]">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-400 px-1 py-0.5" rowSpan={2}>Time</th>
-                <th className="border border-gray-400 px-1 py-0.5" rowSpan={2}>Day/s</th>
-                <th className="border border-gray-400 px-1 py-0.5" rowSpan={2}>Course Code and Title</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center" colSpan={2}>Lec.</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center" colSpan={2}>Lab./RLE</th>
-                <th className="border border-gray-400 px-1 py-0.5" rowSpan={2}>Room</th>
-                <th className="border border-gray-400 px-1 py-0.5" rowSpan={2}>Course/<br />Yr./Sec.</th>
-                <th className="border border-gray-400 px-1 py-0.5" rowSpan={2}>No. of<br />Students</th>
+              <tr className="bg-neutral-100">
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5"
+                  rowSpan={2}
+                >
+                  Time
+                </th>
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5"
+                  rowSpan={2}
+                >
+                  Day/s
+                </th>
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5"
+                  rowSpan={2}
+                >
+                  Course Code and Title
+                </th>
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5 text-center"
+                  colSpan={2}
+                >
+                  Lec.
+                </th>
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5 text-center"
+                  colSpan={2}
+                >
+                  Lab./RLE
+                </th>
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5"
+                  rowSpan={2}
+                >
+                  Room
+                </th>
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5"
+                  rowSpan={2}
+                >
+                  Course/
+                  <br />
+                  Yr./Sec.
+                </th>
+                <th
+                  className="border-2 border-gray-900 px-1 py-0.5"
+                  rowSpan={2}
+                >
+                  No. of
+                  <br />
+                  Students
+                </th>
               </tr>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Units</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Hrs.</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Units</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Hrs.</th>
+              <tr className="bg-neutral-100">
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Units
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Hrs.
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Units
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Hrs.
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -206,9 +320,15 @@ export const FacultyTeachingLoadPage = ({
                   : "TBA";
                 return (
                   <tr key={i} className="border-t border-gray-300">
-                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">{timeStr}</td>
-                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">{dayStr}</td>
-                    <td className="border border-gray-400 px-1 py-0.5">{row.courseCode}: {row.courseTitle}</td>
+                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">
+                      {timeStr}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">
+                      {dayStr}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-0.5">
+                      {row.courseCode}: {row.courseTitle}
+                    </td>
                     <td className="border border-gray-400 px-1 py-0.5 text-center">
                       {row.lecUnits > 0 ? formatNumber(row.lecUnits) : ""}
                     </td>
@@ -221,28 +341,40 @@ export const FacultyTeachingLoadPage = ({
                     <td className="border border-gray-400 px-1 py-0.5 text-center">
                       {row.labHrs > 0 ? formatNumber(row.labHrs) : ""}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5">{row.room ?? "TBA"}</td>
-                    <td className="border border-gray-400 px-1 py-0.5">{row.courseYrSec}</td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">UNKNOWN</td>
+                    <td className="border border-gray-400 px-1 py-0.5">
+                      {row.room ?? "TBA"}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-0.5">
+                      {row.courseYrSec}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                      UNKNOWN
+                    </td>
                   </tr>
                 );
               })}
               {/* Blank rows for the official form look */}
-              {Array.from({ length: Math.max(0, 5 - sessionRows.length) }).map((_, i) => (
-                <tr key={`blank-${i}`}>
-                  <td className="border border-gray-400 px-1 py-1" colSpan={10}>&nbsp;</td>
-                </tr>
-              ))}
+              {Array.from({ length: Math.max(0, 15 - sessionRows.length) }).map(
+                (_, i) => (
+                  <tr key={`blank-${i}`}>
+                    <td
+                      className="border border-gray-400 px-1 py-1"
+                      colSpan={10}
+                    >
+                      &nbsp;
+                    </td>
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
-
-          <PrmsuSignatureBlock
-            preparedBy="UNKNOWN"
-            recommendingApproval="UNKNOWN"
-            approvedBy="UNKNOWN"
-          />
         </div>
       </div>
+      <PrmsuSignatureBlock
+        preparedBy="UNKNOWN"
+        recommendingApproval="UNKNOWN"
+        approvedBy="UNKNOWN"
+      />
     </div>
   );
 };

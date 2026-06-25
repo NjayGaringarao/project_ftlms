@@ -75,7 +75,7 @@ export const FacultyLoadTable = ({
 }) => {
   const groups = groupSnapshotFaculty(faculty);
   const pdfUrl = `/api/puppeteer/pdf/documents/campus_college_load/single/${academicTermId}/${revisionId}`;
-  const printUrl = `/print/documents/campus_college_load/single/${academicTermId}/${revisionId}?autoPrint=1`;
+  const printUrl = `/print/documents/campus_college_load/single/${academicTermId}/${revisionId}`;
 
   return (
     <div className="flex flex-col gap-4">

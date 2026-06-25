@@ -23,7 +23,7 @@ export const ClassScheduleTable = ({
   academicTermId: string;
 }) => {
   const pdfUrl = `/api/puppeteer/pdf/documents/class_schedule/single/${academicTermId}/${revisionId}`;
-  const printUrl = `/print/documents/class_schedule/single/${academicTermId}/${revisionId}?autoPrint=1`;
+  const printUrl = `/print/documents/class_schedule/single/${academicTermId}/${revisionId}`;
 
   if (legacy) {
     return (
