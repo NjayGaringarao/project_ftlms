@@ -22,6 +22,26 @@ type SessionRow = {
   courseYrSec: string;
 };
 
+const DAY_ABBREV: Record<string, string> = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thurs",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+};
+
+const abbreviateDay = (day: string): string =>
+  DAY_ABBREV[day.toLowerCase()] ?? day;
+
+const deriveDeliveryMode = (roomCode: string | null): "F2F" | "OL" | "TBA" => {
+  if (!roomCode || roomCode.trim() === "" || roomCode.toUpperCase() === "TBA")
+    return "TBA";
+  if (roomCode.toUpperCase().includes("OL")) return "OL";
+  return "F2F";
+};
+
 const getSessionDurationHours = (
   session: CampusCollegeLoadSnapshotSession,
 ): number => {
@@ -45,7 +65,7 @@ const buildSessionRows = (
     const labUnits = Number(fc.laboratory_unit ?? 0);
     const courseCode = fc.course_code;
     const courseTitle = fc.course_title;
-    const courseYrSec = fc.year_section;
+    const courseYrSec = fc.section_code;
 
     if (sessions.length === 0) {
       rows.push({
@@ -101,11 +121,11 @@ const InfoRow = ({
   value: React.ReactNode;
 }) => (
   <tr>
-    <td className="text-[10px] leading-tight align-top pr-1">
+    <td className="text-[9px] font-bold leading-tight align-top pr-1">
       {label}
     </td>
-    <td className="text-[10px] leading-tight align-top px-0.5">:</td>
-    <td className="text-[10px] leading-tight align-top">{value}</td>
+    <td className="text-[9px] leading-tight align-top px-0.5">:</td>
+    <td className="text-[9px] leading-tight align-top">{value}</td>
   </tr>
 );
 
@@ -137,7 +157,7 @@ export const FacultyTeachingLoadPage = ({
   const twl = Number(faculty.total_working_load ?? etl + atl + equivalentUnits);
 
   return (
-    <div className="bg-white p-4 text-black font-sans text-[10px]">
+    <div className="bg-white p-4 text-black font-sans text-[9px]">
       <PrmsuFormHeader
         documentTitle="FACULTY TEACHING LOAD"
         subtitle={semesterLabel}
@@ -176,11 +196,11 @@ export const FacultyTeachingLoadPage = ({
           </div>
 
           <div className="h-4 flex flex-col items-center bg-neutral-400 border-b-2 border-gray-900">
-            <p className="text-[10px] text-white font-bold">Name of Faculty</p>
+            <p className="text-[9px] text-white font-bold">Name of Faculty</p>
           </div>
 
           <div className="border-b-2 border-gray-900">
-            <p className="text-[10px]">Note: Do not leave each item blank.</p>
+            <p className="text-[9px]">Note: Do not leave each item blank.</p>
           </div>
 
           <table className="mt-1 w-full table-fixed border-collapse">
@@ -248,8 +268,23 @@ export const FacultyTeachingLoadPage = ({
         <div className="w-3 bg-neutral-400 border-y-2 border-gray-900" />
 
         {/* Right: class schedule table */}
-        <div className="flex-1 min-w-0 ">
-          <table className="w-full border-collapse border-2 border-gray-900 text-[10px]">
+        <div className="flex-1 min-w-0 border-2 border-gray-900 overflow-hidden">
+          <table
+            className="table-fixed border-collapse text-[9px]"
+            style={{ margin: "-2px", width: "calc(100% + 4px)" }}
+          >
+            <colgroup>
+              <col className="w-24" />
+              <col className="w-14" />
+              <col />
+              <col className="w-8" />
+              <col className="w-7" />
+              <col className="w-8" />
+              <col className="w-7" />
+              <col className="w-20" />
+              <col className="w-20" />
+              <col className="w-14" />
+            </colgroup>
             <thead>
               <tr className="bg-neutral-100">
                 <th
@@ -325,8 +360,9 @@ export const FacultyTeachingLoadPage = ({
                 const timeStr = row.session
                   ? `${formatTimeOfDay(row.session.start_time)}–${formatTimeOfDay(row.session.end_time)}`
                   : "TBA";
+                const deliveryMode = deriveDeliveryMode(row.room);
                 const dayStr = row.session
-                  ? `${row.session.day}(${row.session.type})`
+                  ? `${abbreviateDay(row.session.day)}(${deliveryMode})`
                   : "TBA";
                 return (
                   <tr key={i} className="border-t border-gray-300">
@@ -336,7 +372,7 @@ export const FacultyTeachingLoadPage = ({
                     <td className="border border-gray-900 px-1 py-0.5 whitespace-nowrap">
                       {dayStr}
                     </td>
-                    <td className="border border-gray-900  px-1 py-0.5">
+                    <td className="border border-gray-900 px-1 py-0.5 text-[8px] leading-tight wrap-break-word">
                       {row.courseCode}: {row.courseTitle}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5 text-center">
@@ -351,10 +387,10 @@ export const FacultyTeachingLoadPage = ({
                     <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.labHrs > 0 ? formatNumber(row.labHrs) : ""}
                     </td>
-                    <td className="border border-gray-900 px-1 py-0.5">
+                    <td className="border border-gray-900 px-1 py-0.5 text-[8px] leading-tight wrap-break-word">
                       {row.room ?? "TBA"}
                     </td>
-                    <td className="border border-gray-900 px-1 py-0.5">
+                    <td className="border border-gray-900 px-1 py-0.5 text-[8px] leading-tight wrap-break-word">
                       {row.courseYrSec}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5">

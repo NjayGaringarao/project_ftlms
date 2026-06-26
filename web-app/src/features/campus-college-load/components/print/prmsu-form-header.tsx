@@ -11,7 +11,7 @@ export const PrmsuFormHeader = ({
   collegeName: string | null;
   campusName: string | null;
 }) => (
-  <div className="flex items-start justify-between gap-4 border-b pb-3 mb-3">
+  <div className="flex items-start justify-between gap-4 mb-3">
     <div className="flex-shrink-0">
       <Image
         src="/logo/prmsu.png"
@@ -24,8 +24,12 @@ export const PrmsuFormHeader = ({
     </div>
     <div className="flex-1 text-center">
       <p className="text-[10px]">Republic of the Philippines</p>
-      <p className="font-bold text-sm leading-tight">PRESIDENT RAMON MAGSAYSAY STATE UNIVERSITY</p>
-      <p className="text-[10px]">(Formerly Ramon Magsaysay Technological University)</p>
+      <p className="font-bold text-sm leading-tight">
+        PRESIDENT RAMON MAGSAYSAY STATE UNIVERSITY
+      </p>
+      <p className="text-[10px]">
+        (Formerly Ramon Magsaysay Technological University)
+      </p>
       <p className="font-bold text-sm mt-1">{documentTitle}</p>
       <p className="text-[10px]">{subtitle}</p>
       {collegeName ? (
@@ -33,9 +37,7 @@ export const PrmsuFormHeader = ({
           COLLEGE OF {collegeName.toUpperCase().replace(/^COLLEGE OF /i, "")}
         </p>
       ) : null}
-      {campusName ? (
-        <p className="text-[10px]">{campusName} Campus</p>
-      ) : null}
+      {campusName ? <p className="text-[10px]">{campusName} Campus</p> : null}
     </div>
     <div className="flex-shrink-0">
       <Image

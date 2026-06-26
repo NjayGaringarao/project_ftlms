@@ -196,7 +196,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
           class_code: classRow.class_code,
           course_code: classRow.course_code,
           course_title: classRow.course_title,
-          year_section: classRow.year_section,
+          section_code: classRow.section_code,
           lecture_unit: toNumber(classRow.lecture_unit),
           laboratory_unit: toNumber(classRow.laboratory_unit),
           lecture_hours: lectureHours,

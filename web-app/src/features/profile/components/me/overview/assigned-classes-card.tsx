@@ -45,7 +45,7 @@ const AssignedClassesCard = ({ term, classes }: AssignedClassesCardProps) => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-foreground/70">
-                  <p>Section: {classItem.year_section}</p>
+                  <p>Section: {classItem.section_code}</p>
                   <p>Campus: {classItem.campus_name}</p>
                 </div>
               </div>

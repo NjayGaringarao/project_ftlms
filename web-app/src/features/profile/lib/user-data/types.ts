@@ -15,7 +15,7 @@ export type OverviewClassLoad = {
   course_title: string;
   lecture_unit: number;
   laboratory_unit: number;
-  year_section: string;
+  section_code: string;
   campus_name: string;
   load: number;
 };

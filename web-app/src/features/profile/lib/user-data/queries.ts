@@ -52,7 +52,7 @@ const mapClassRows = (value: unknown): OverviewClassLoad[] => {
       course_title: String(row.course_title ?? "Untitled Course"),
       lecture_unit: lectureUnit,
       laboratory_unit: laboratoryUnit,
-      year_section: String(row.year_section ?? "Not assigned"),
+      section_code: String(row.section_code ?? "Not assigned"),
       campus_name: String(row.campus_name ?? "Not assigned"),
       load: calculateAtl(lectureUnit, laboratoryUnit),
     };
