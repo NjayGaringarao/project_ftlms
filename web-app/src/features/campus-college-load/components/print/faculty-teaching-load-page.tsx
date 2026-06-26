@@ -20,6 +20,7 @@ type SessionRow = {
   courseTitle: string;
   room: string | null;
   courseYrSec: string;
+  studentCount: number;
 };
 
 const DAY_ABBREV: Record<string, string> = {
@@ -66,6 +67,7 @@ const buildSessionRows = (
     const courseCode = fc.course_code;
     const courseTitle = fc.course_title;
     const courseYrSec = fc.section_code;
+    const studentCount = fc.student_count;
 
     if (sessions.length === 0) {
       rows.push({
@@ -79,6 +81,7 @@ const buildSessionRows = (
         courseTitle,
         room: null,
         courseYrSec,
+        studentCount,
       });
       continue;
     }
@@ -106,6 +109,7 @@ const buildSessionRows = (
         courseTitle,
         room: session.room_code,
         courseYrSec,
+        studentCount,
       });
     }
   }
@@ -393,8 +397,8 @@ export const FacultyTeachingLoadPage = ({
                     <td className="border border-gray-900 px-1 py-0.5 text-[8px] leading-tight wrap-break-word">
                       {row.courseYrSec}
                     </td>
-                    <td className="border border-gray-900 px-1 py-0.5">
-                      UNKNOWN
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
+                      {row.studentCount > 0 ? row.studentCount : ""}
                     </td>
                   </tr>
                 );

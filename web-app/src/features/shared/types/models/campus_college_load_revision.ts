@@ -8,6 +8,7 @@ export type CampusCollegeLoadSnapshotFacultyClass = {
   course_code: string;
   course_title: string;
   section_code: string;
+  student_count: number;
   lecture_unit: number;
   laboratory_unit: number;
   lecture_hours?: number;

@@ -96,6 +96,7 @@ as $$
         ) filter (where b.id is not null),
         'Not assigned'
       ) as section_code,
+      coalesce(sum(b.student_count) filter (where b.id is not null), 0) as student_count,
       coalesce(
         string_agg(
           distinct campus.name,
@@ -135,6 +136,7 @@ as $$
             'lecture_unit', cr.lecture_unit,
             'laboratory_unit', cr.laboratory_unit,
             'section_code', cr.section_code,
+            'student_count', cr.student_count,
             'campus_name', cr.campus_name
           )
           order by cr.course_code asc
