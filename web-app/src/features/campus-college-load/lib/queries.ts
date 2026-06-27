@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserData } from "@/features/profile/lib/user-data/queries";
+import { formatFullName } from "@/features/shared/lib/format-name";
 import type {
   CampusCollegeLoad,
   CampusCollegeLoadEvaluation,
@@ -398,13 +399,13 @@ export const getCampusCollegeLoadDetail = async (
     submitterIds.length > 0
       ? await supabase
           .from("identity")
-          .select("user_id, name")
+          .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
           .in("user_id", submitterIds)
       : { data: [] };
   const submitterNames = new Map(
     (submitterIdentities ?? []).map((identity) => [
       identity.user_id as string,
-      (identity.name as string | null) ?? "Unnamed Faculty",
+      formatFullName(identity) ?? "Unnamed Faculty",
     ]),
   );
 
@@ -445,7 +446,7 @@ export const getCampusCollegeLoadDetail = async (
       evaluatorIds.length > 0
         ? supabase
             .from("identity")
-            .select("user_id, name")
+            .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
             .in("user_id", evaluatorIds)
         : Promise.resolve({ data: [] }),
       designationIds.length > 0
@@ -458,7 +459,7 @@ export const getCampusCollegeLoadDetail = async (
   const evaluatorNames = new Map(
     (evaluatorIdentities ?? []).map((identity) => [
       identity.user_id as string,
-      (identity.name as string | null) ?? "Unnamed Evaluator",
+      formatFullName(identity) ?? "Unnamed Evaluator",
     ]),
   );
   const designationTitles = new Map(

@@ -10,11 +10,11 @@ type CreateUserInput = {
   email: string;
   password: string;
   is_admin?: boolean;
-  name?: string;
-  first_name?: string;
+  first_name: string;
   middle_name?: string | null;
-  last_name?: string;
-  extension?: string | null;
+  last_name: string;
+  suffix?: string | null;
+  professional_extension?: string | null;
   birth_date: string;
   address?: string | null;
   zip_code?: string | null;
@@ -58,20 +58,6 @@ const getEmploymentStatusValidationError = (value?: string | null) => {
 const normalizeJobTitleKey = (value?: string | null) =>
   value?.trim().toLowerCase() ?? "";
 
-const composeFullName = (
-  firstName: string,
-  middleName?: string | null,
-  lastName?: string | null,
-  extension?: string | null,
-) =>
-  [firstName, middleName, lastName, extension]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ");
-
-const normalizeFullName = (name: string) =>
-  name.trim().split(/\s+/).filter(Boolean).join(" ");
-
 const isHigherUpsTitle = (value?: string | null) => {
   const normalized = normalizeJobTitleKey(value);
   return (
@@ -86,7 +72,8 @@ type UpdateUserInput = {
   first_name: string;
   middle_name?: string | null;
   last_name: string;
-  extension?: string | null;
+  suffix?: string | null;
+  professional_extension?: string | null;
   birth_date: string;
   address?: string | null;
   zip_code?: string | null;
@@ -100,17 +87,8 @@ export async function createUser(
   // Validate required fields
   if (!input.email?.trim()) return { error: "Email is required" };
   if (!input.password?.trim()) return { error: "Password is required" };
-
-  const resolvedName = input.name?.trim()
-    ? normalizeFullName(input.name)
-    : composeFullName(
-        input.first_name ?? "",
-        input.middle_name,
-        input.last_name,
-        input.extension,
-      );
-
-  if (!resolvedName) return { error: "Full name is required" };
+  if (!input.first_name?.trim()) return { error: "First name is required" };
+  if (!input.last_name?.trim()) return { error: "Last name is required" };
   if (!input.birth_date?.trim()) return { error: "Birth date is required" };
   if (!input.campus_id?.trim()) return { error: "Campus is required" };
   if (!input.college_id?.trim()) return { error: "College is required" };
@@ -161,7 +139,11 @@ export async function createUser(
   // Insert identity record
   const identityPayload: Identity = {
     user_id: userId,
-    name: resolvedName,
+    first_name: input.first_name.trim(),
+    middle_name: input.middle_name?.trim() || null,
+    last_name: input.last_name.trim(),
+    suffix: input.suffix?.trim() || null,
+    professional_extension: input.professional_extension?.trim() || null,
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
     contact_number: input.contact_number?.trim() || null,
@@ -219,11 +201,11 @@ export async function createUser(
 // PERSONAL INFORMATION ONLY
 type UpdateUserPersonalInfoInput = {
   user_id: string;
-  name?: string;
-  first_name?: string;
+  first_name: string;
   middle_name?: string | null;
-  last_name?: string;
-  extension?: string | null;
+  last_name: string;
+  suffix?: string | null;
+  professional_extension?: string | null;
   birth_date: string;
   address?: string | null;
   zip_code?: string | null;
@@ -235,17 +217,8 @@ export async function updateUserPersonalInfo(
 ): Promise<{ data?: boolean; error?: string }> {
   // Validate required fields
   if (!input.user_id?.trim()) return { error: "User ID is required" };
-
-  const resolvedName = input.name?.trim()
-    ? normalizeFullName(input.name)
-    : composeFullName(
-        input.first_name ?? "",
-        input.middle_name,
-        input.last_name,
-        input.extension,
-      );
-
-  if (!resolvedName) return { error: "Full name is required" };
+  if (!input.first_name?.trim()) return { error: "First name is required" };
+  if (!input.last_name?.trim()) return { error: "Last name is required" };
   if (!input.birth_date?.trim()) return { error: "Birth date is required" };
 
   const supabase = await createClient();
@@ -253,7 +226,11 @@ export async function updateUserPersonalInfo(
   // Update identity
   const identityPayload: Identity = {
     user_id: input.user_id,
-    name: resolvedName,
+    first_name: input.first_name.trim(),
+    middle_name: input.middle_name?.trim() || null,
+    last_name: input.last_name.trim(),
+    suffix: input.suffix?.trim() || null,
+    professional_extension: input.professional_extension?.trim() || null,
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
     contact_number: input.contact_number?.trim() || null,
@@ -287,12 +264,11 @@ export async function updateUserProfile(
   // Update identity
   const identityPayload: Identity = {
     user_id: input.user_id,
-    name: composeFullName(
-      input.first_name,
-      input.middle_name,
-      input.last_name,
-      input.extension,
-    ),
+    first_name: input.first_name.trim(),
+    middle_name: input.middle_name?.trim() || null,
+    last_name: input.last_name.trim(),
+    suffix: input.suffix?.trim() || null,
+    professional_extension: input.professional_extension?.trim() || null,
     birth_date: input.birth_date,
     address: input.address?.trim() || null,
     contact_number: input.contact_number?.trim() || null,

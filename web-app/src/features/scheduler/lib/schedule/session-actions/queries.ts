@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { first, normalizeDay, normalizeType, toMinutes } from "./utils";
+import { formatFullName } from "@/features/shared/lib/format-name";
 import type {
   RawClassDetailsRow,
   RawRoomRow,
@@ -29,7 +30,7 @@ export const getSessionSummaries = async (
       class:class_id(
         id,
         code,
-        user_class(user:user_id(id, identity:identity(name))),
+        user_class(user:user_id(id, identity:identity(first_name, middle_name, last_name, suffix, professional_extension))),
         course_utilization(
           course:course_id(code, title),
           section:section_id(
@@ -76,7 +77,7 @@ export const getSessionSummaries = async (
       id?: string;
       identity?: unknown;
     } | null;
-    const identity = first(user?.identity) as { name?: string } | null;
+    const identity = first(user?.identity) as { first_name?: string; middle_name?: string; last_name?: string; suffix?: string; professional_extension?: string } | null;
     const room = first(session?.room as unknown) as {
       code?: string | null;
       name?: string | null;
@@ -131,7 +132,7 @@ export const getSessionSummaries = async (
       course_code: course?.code ?? null,
       course_title: course?.title ?? null,
       faculty_id: user?.id ?? null,
-      faculty_name: identity?.name ?? null,
+      faculty_name: formatFullName(identity) ?? null,
       room_id: session?.room_id ?? null,
       room_code: room?.code ?? null,
       room_name: room?.name ?? null,
@@ -160,7 +161,7 @@ export const getSessionSummariesByClass = async (
       class:class_id(
         id,
         code,
-        user_class(user:user_id(id, identity:identity(name))),
+        user_class(user:user_id(id, identity:identity(first_name, middle_name, last_name, suffix, professional_extension))),
         course_utilization(
           course:course_id(code, title),
           section:section_id(
@@ -295,7 +296,7 @@ export const getClassSchedulerDetails = async (
       user_class(
         user:user_id(
           id,
-          identity:identity(name),
+          identity:identity(first_name, middle_name, last_name, suffix, professional_extension),
           rank:academic_rank_id(code, title),
           degree(title, academic_level, year_graduated)
         )
@@ -336,7 +337,7 @@ export const getClassSchedulerDetails = async (
     degree?: Array<{ title?: string | null }> | null;
   } | null;
 
-  const facultyIdentity = first(facultyRow?.identity) as { name?: string } | null;
+  const facultyIdentity = first(facultyRow?.identity) as { first_name?: string; middle_name?: string; last_name?: string; suffix?: string; professional_extension?: string } | null;
   const facultyRank = first(facultyRow?.rank) as { title?: string } | null;
   const facultyDegrees = (facultyRow?.degree ?? [])
     .map((item) => item.title)
@@ -465,7 +466,7 @@ export const getClassSchedulerDetails = async (
       class_code: classRow.code ?? "Unknown",
       academic_term_id: academicTermId,
       faculty_id: facultyRow?.id ?? "",
-      faculty_name: facultyIdentity?.name ?? "Unknown Faculty",
+      faculty_name: formatFullName(facultyIdentity) ?? "Unknown Faculty",
       faculty_rank: facultyRank?.title ?? null,
       faculty_degrees: facultyDegrees,
       course_code: course?.code ?? "Unknown",

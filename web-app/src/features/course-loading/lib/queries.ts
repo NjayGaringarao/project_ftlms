@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { formatFullName } from "@/features/shared/lib/format-name";
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
 import type {
   FacultyListItem,
@@ -35,7 +36,7 @@ export const getFacultyListByTerm = async (
         id,
         campus_id,
         college_id,
-        identity:identity (name),
+        identity:identity (first_name, middle_name, last_name, suffix, professional_extension),
         campus:campus_id (id, code, name),
         college:college_id (id, code, name)
       `,
@@ -59,7 +60,7 @@ export const getFacultyListByTerm = async (
 
         return {
           id: row.id,
-          name: identity?.name?.trim() || "Unnamed Faculty",
+          name: formatFullName(identity) || "Unnamed Faculty",
           latest_degree_title: null,
           total_working_load: 0,
           campus_id: row.campus_id ?? null,
@@ -210,7 +211,7 @@ export const getClassesBySectionAndTerm = async (
         user_class (
           user:user_id (
             id,
-            identity:identity (name)
+            identity:identity (first_name, middle_name, last_name, suffix, professional_extension)
           )
         ),
         session_class (

@@ -1,6 +1,7 @@
 "use server";
 
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
+import { formatFullName } from "@/features/shared/lib/format-name";
 import type {
   CampusCollegeLoadSnapshot,
   CampusCollegeLoadSnapshotClass,
@@ -175,7 +176,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
 
   const faculty = homeFacultyRows
     .map((row): CampusCollegeLoadSnapshotFaculty => {
-      const facultyName = row.identity?.name?.trim() || "Unnamed Faculty";
+      const facultyName = formatFullName(row.identity) || "Unnamed Faculty";
       const classes = row.classes.map((classRow) => {
         const scheduled = facultySessionMetrics.get(classRow.id);
         const fallbackLectureHours = toNumber(classRow.lecture_unit);

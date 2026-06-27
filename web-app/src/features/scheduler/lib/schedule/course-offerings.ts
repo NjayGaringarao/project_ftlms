@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import type { SessionType } from "@/features/shared/types/models";
+import { formatFullName } from "@/features/shared/lib/format-name";
 
 export type SchedulerCourseOfferingItem = {
   id: string;
@@ -69,7 +70,7 @@ type RawUtilizationRow = {
     id?: string | null;
     code?: string | null;
     user_class?: Array<{
-      user?: { id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null } | Array<{ id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null }>;
+      user?: { id?: string; identity?: { first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null } | Array<{ first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null }> | null } | Array<{ id?: string; identity?: { first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null } | Array<{ first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null }> | null }>;
     }> | null;
     course_utilization?: Array<{
       section?: { id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null } | Array<{ id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null }>;
@@ -89,7 +90,7 @@ type RawUtilizationRow = {
     id?: string | null;
     code?: string | null;
     user_class?: Array<{
-      user?: { id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null } | Array<{ id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null }>;
+      user?: { id?: string; identity?: { first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null } | Array<{ first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null }> | null } | Array<{ id?: string; identity?: { first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null } | Array<{ first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null }> | null }>;
     }> | null;
     course_utilization?: Array<{
       section?: { id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null } | Array<{ id?: string | null; code?: string | null; classification?: "regular" | "irregular" | null }>;
@@ -156,7 +157,7 @@ export const getSectionCourseOfferingsForScheduler = async (
         id,
         code,
         user_class(
-          user:user_id(id, identity:identity(name))
+          user:user_id(id, identity:identity(first_name, middle_name, last_name, suffix, professional_extension))
         ),
         course_utilization(
           section:section_id(id, code, classification)
@@ -190,7 +191,11 @@ export const getSectionCourseOfferingsForScheduler = async (
       | { id?: string; identity?: unknown }
       | null;
     const facultyIdentity = first(facultyRow?.identity) as {
-      name?: string | null;
+      first_name?: string | null;
+      middle_name?: string | null;
+      last_name?: string | null;
+      suffix?: string | null;
+      professional_extension?: string | null;
     } | null;
 
     const lectureTarget = Number(course?.lecture_unit ?? 0);
@@ -239,7 +244,7 @@ export const getSectionCourseOfferingsForScheduler = async (
       class_id: raw.class_id ?? null,
       class_code: cls?.code ?? null,
       faculty_id: facultyRow?.id ?? null,
-      faculty_name: facultyIdentity?.name ?? null,
+      faculty_name: formatFullName(facultyIdentity) ?? null,
       unscheduled_lecture_hours: Math.max(lectureTarget - lectureScheduled, 0),
       unscheduled_laboratory_hours: Math.max(
         laboratoryTarget - laboratoryScheduled,

@@ -8,6 +8,7 @@ import type {
 } from "./types";
 import type { Degree } from "@/features/shared/types/models/degree";
 import type { UserDataReadModel } from "@/features/profile/lib/user-data/types";
+import { formatFullName } from "@/features/shared/lib/format-name";
 import {
   calculateAtl,
   calculateLaboratoryContactHours,
@@ -92,7 +93,7 @@ export const mapFacultyListItem = (row: UserDataReadModel): FacultyListItem => {
 
   return {
     id: row.id,
-    name: row.identity?.name?.trim() || "Unnamed Faculty",
+    name: formatFullName(row.identity) || "Unnamed Faculty",
     latest_degree_title: latestDegreeTitle,
     total_working_load: row.totalWorkingLoad,
     campus_id: row.campus?.id ?? null,
@@ -238,7 +239,7 @@ export const mapSectionClassRow = (
     id?: string;
     identity?: unknown;
   } | null;
-  const identity = first(user?.identity) as { name?: string } | null;
+  const identity = first(user?.identity) as { first_name?: string; middle_name?: string; last_name?: string; suffix?: string; professional_extension?: string } | null;
 
   const mergedWith: SectionClassMergedWith[] = asArray(cls?.course_utilization)
     .filter((utilRow) => {
@@ -313,7 +314,7 @@ export const mapSectionClassRow = (
     lecture_unit: units.lectureUnit,
     laboratory_unit: units.laboratoryUnit,
     faculty_id: user?.id ?? null,
-    faculty_name: identity?.name?.trim() || null,
+    faculty_name: formatFullName(identity) || null,
     laboratory_hours: totalLabHours,
     lecture_hours: totalLectureHours,
     unit: calculateUnit(units.lectureUnit, units.laboratoryUnit),

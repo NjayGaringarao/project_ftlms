@@ -14,14 +14,22 @@ type PersonalInformationProps = {
 };
 
 type FormState = {
-  fullName: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffix: string;
+  professionalExtension: string;
   birthDate: string;
   address: string;
   contactNumber: string;
 };
 
 const identityToFormState = (identity: Identity | null): FormState => ({
-  fullName: identity?.name ?? "",
+  firstName: identity?.first_name ?? "",
+  middleName: identity?.middle_name ?? "",
+  lastName: identity?.last_name ?? "",
+  suffix: identity?.suffix ?? "",
+  professionalExtension: identity?.professional_extension ?? "",
   birthDate: identity?.birth_date ?? "",
   address: identity?.address ?? "",
   contactNumber: identity?.contact_number ?? "",
@@ -58,8 +66,12 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
   };
 
   const handleSave = async () => {
-    if (!formData.fullName.trim()) {
-      setError("Full name is required");
+    if (!formData.firstName.trim()) {
+      setError("First name is required");
+      return;
+    }
+    if (!formData.lastName.trim()) {
+      setError("Last name is required");
       return;
     }
 
@@ -68,7 +80,11 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
     setShowSuccess(false);
 
     const { data, error: saveError } = await upsertIdentityForCurrentUser({
-      name: formData.fullName.trim(),
+      first_name: formData.firstName.trim(),
+      middle_name: normalizeOptional(formData.middleName),
+      last_name: formData.lastName.trim(),
+      suffix: normalizeOptional(formData.suffix),
+      professional_extension: normalizeOptional(formData.professionalExtension),
       birth_date: normalizeOptional(formData.birthDate),
       address: normalizeOptional(formData.address),
       contact_number: normalizeOptional(formData.contactNumber),
@@ -100,14 +116,77 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
       <CardContent>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="fullName">Full Name</Label>
+            <div>
+              <Label htmlFor="firstName">First Name *</Label>
               <Input
-                id="fullName"
-                placeholder="Enter your full name"
-                value={formData.fullName}
+                id="firstName"
+                placeholder="Enter your first name"
+                value={formData.firstName}
+                onChange={(event) => handleChange("firstName", event.target.value)}
+                onBlur={(event) =>
+                  handleChange("firstName", event.target.value.trim().toUpperCase())
+                }
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="middleName">Middle Name</Label>
+              <Input
+                id="middleName"
+                placeholder="Enter your middle name"
+                value={formData.middleName}
+                onChange={(event) => handleChange("middleName", event.target.value)}
+                onBlur={(event) =>
+                  handleChange("middleName", event.target.value.trim().toUpperCase())
+                }
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="lastName">Last Name *</Label>
+              <Input
+                id="lastName"
+                placeholder="Enter your last name"
+                value={formData.lastName}
+                onChange={(event) => handleChange("lastName", event.target.value)}
+                onBlur={(event) =>
+                  handleChange("lastName", event.target.value.trim().toUpperCase())
+                }
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="suffix">Suffix</Label>
+              <Input
+                id="suffix"
+                placeholder="e.g. JR., SR., III"
+                value={formData.suffix}
+                onChange={(event) => handleChange("suffix", event.target.value)}
+                onBlur={(event) =>
+                  handleChange("suffix", event.target.value.trim().toUpperCase())
+                }
+                className="mt-1"
+                disabled={isSaving}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="professionalExtension">Professional Extension</Label>
+              <Input
+                id="professionalExtension"
+                placeholder="e.g. PhD, CPA, RN"
+                value={formData.professionalExtension}
                 onChange={(event) =>
-                  handleChange("fullName", event.target.value)
+                  handleChange("professionalExtension", event.target.value)
+                }
+                onBlur={(event) =>
+                  handleChange("professionalExtension", event.target.value.trim())
                 }
                 className="mt-1"
                 disabled={isSaving}
@@ -120,9 +199,7 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
                 id="birthDate"
                 type="date"
                 value={formData.birthDate}
-                onChange={(event) =>
-                  handleChange("birthDate", event.target.value)
-                }
+                onChange={(event) => handleChange("birthDate", event.target.value)}
                 className="mt-1"
                 disabled={isSaving}
               />
@@ -148,9 +225,7 @@ const PersonalInformation = ({ initialIdentity }: PersonalInformationProps) => {
                 id="address"
                 placeholder="Enter your address"
                 value={formData.address}
-                onChange={(event) =>
-                  handleChange("address", event.target.value)
-                }
+                onChange={(event) => handleChange("address", event.target.value)}
                 className="mt-1"
                 disabled={isSaving}
               />

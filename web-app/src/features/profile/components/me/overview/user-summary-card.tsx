@@ -4,6 +4,7 @@ import { AcademicRank } from "@/features/shared/types/models/academic_rank";
 import { Degree } from "@/features/shared/types/models/degree";
 import { EmploymentStatus } from "@/features/shared/types/models/user";
 import { Mail } from "lucide-react";
+import { formatFullName, nameInitials } from "@/features/shared/lib/format-name";
 import PersonalInformation from "@/features/shared/components/user/personal-information";
 import EducationInformation from "@/features/shared/components/user/education-information";
 import EmploymentInformation from "@/features/shared/components/user/employment-information";
@@ -12,18 +13,6 @@ import { UserOverviewReadModel } from "@/features/profile/lib/user-overview/type
 
 type UserSummaryCardProps = {
   userOverview: UserOverviewReadModel;
-};
-
-const toInitials = (name: string, email?: string) => {
-  const normalizedName = name.trim();
-
-  if (normalizedName) {
-    const parts = normalizedName.split(/\s+/).filter(Boolean);
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
-  }
-
-  return (email ?? "U").slice(0, 2).toUpperCase();
 };
 
 const UserSummaryCard = ({
@@ -42,8 +31,8 @@ const UserSummaryCard = ({
     college,
   },
 }: UserSummaryCardProps) => {
-  const displayName = identity?.name?.trim() || "No name set";
-  const initials = toInitials(identity?.name ?? "", email ?? undefined);
+  const displayName = formatFullName(identity) || "No name set";
+  const initials = nameInitials(identity, email ?? undefined);
   const displayEmail = email || "Not set";
   const emailStatus = emailConfirmedAt ? "Verified" : "Not verified";
 

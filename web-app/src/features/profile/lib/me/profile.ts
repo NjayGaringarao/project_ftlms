@@ -13,7 +13,11 @@ import { User } from "@/features/shared/types/models/user";
 import { ExtendedAcademicTerm } from "@/features/shared/types/models/academic_term";
 
 export type IdentityUpdateInput = {
-  name: string;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  suffix?: string | null;
+  professional_extension?: string | null;
   birth_date?: string | null;
   address?: string | null;
   contact_number?: string | null;
@@ -56,13 +60,18 @@ export async function upsertIdentityForCurrentUser(
 
   if (!user) return { error: "Not authenticated" };
 
-  if (!input.name?.trim()) return { error: "Full name is required" };
+  if (!input.first_name?.trim()) return { error: "First name is required" };
+  if (!input.last_name?.trim()) return { error: "Last name is required" };
 
   const supabase = await createClient();
 
   const payload: Identity = {
     user_id: user.id,
-    name: input.name.trim(),
+    first_name: input.first_name.trim(),
+    middle_name: input.middle_name?.trim() || null,
+    last_name: input.last_name.trim(),
+    suffix: input.suffix?.trim() || null,
+    professional_extension: input.professional_extension?.trim() || null,
     birth_date: input.birth_date?.trim() ? input.birth_date : null,
     address: input.address ?? null,
     contact_number: input.contact_number ?? null,

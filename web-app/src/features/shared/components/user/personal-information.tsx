@@ -1,13 +1,14 @@
 import FieldView from "@/components/ui/field-view";
 import { Identity } from "@/features/shared/types/models/identity";
 import { formatDate } from "@/utils/time";
+import { formatFullName } from "@/features/shared/lib/format-name";
 
 type PersonalInformationProps = {
   identity: Identity | null;
 };
 
 const PersonalInformation = ({ identity }: PersonalInformationProps) => {
-  const displayName = identity?.name?.trim() || "No name set";
+  const displayName = formatFullName(identity) || "No name set";
   const birthDate = identity?.birth_date
     ? formatDate(identity.birth_date)
     : "Not set";

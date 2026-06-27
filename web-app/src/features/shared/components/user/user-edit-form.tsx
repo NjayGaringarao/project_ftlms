@@ -34,7 +34,8 @@ type PersonalFormState = {
   firstName: string;
   middleName: string;
   lastName: string;
-  extension: string;
+  suffix: string;
+  professionalExtension: string;
   birthDate: string;
   address: string;
   zipCode: string;
@@ -70,49 +71,17 @@ type NewDesignationInput = {
   load: number;
 };
 
-const splitIdentityName = (name: string | null | undefined) => {
-  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) {
-    return {
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      extension: "",
-    };
-  }
-
-  if (parts.length === 1) {
-    return {
-      firstName: parts[0],
-      middleName: "",
-      lastName: "",
-      extension: "",
-    };
-  }
-
-  return {
-    firstName: parts[0],
-    middleName: parts.slice(1, -1).join(" "),
-    lastName: parts[parts.length - 1],
-    extension: "",
-  };
-};
-
-const userToPersonalFormState = (user: UserDetail): PersonalFormState => {
-  const name = splitIdentityName(user.identity?.name);
-
-  return {
-    firstName: name.firstName,
-    middleName: name.middleName,
-    lastName: name.lastName,
-    extension: name.extension,
-    birthDate: user.identity?.birth_date ?? "",
-    address: user.identity?.address ?? "",
-    zipCode: "",
-    contactNumber: user.identity?.contact_number ?? "",
-  };
-};
+const userToPersonalFormState = (user: UserDetail): PersonalFormState => ({
+  firstName: user.identity?.first_name ?? "",
+  middleName: user.identity?.middle_name ?? "",
+  lastName: user.identity?.last_name ?? "",
+  suffix: user.identity?.suffix ?? "",
+  professionalExtension: user.identity?.professional_extension ?? "",
+  birthDate: user.identity?.birth_date ?? "",
+  address: user.identity?.address ?? "",
+  zipCode: "",
+  contactNumber: user.identity?.contact_number ?? "",
+});
 
 const userToProfessionalFormState = (
   user: UserDetail,
@@ -243,7 +212,8 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
         first_name: personalData.firstName.trim(),
         middle_name: personalData.middleName.trim() || null,
         last_name: personalData.lastName.trim(),
-        extension: personalData.extension.trim() || null,
+        suffix: personalData.suffix.trim() || null,
+        professional_extension: personalData.professionalExtension.trim() || null,
         birth_date: personalData.birthDate,
         address: personalData.address.trim() || null,
         zip_code: personalData.zipCode.trim() || null,
@@ -468,22 +438,44 @@ export const UserEditForm = ({ user, ranks = [] }: UserEditFormProps) => {
             </div>
 
             <div>
-              <Label htmlFor="extension" className="text-xs">
-                Extension
+              <Label htmlFor="suffix" className="text-xs">
+                Suffix
               </Label>
               <Input
-                id="extension"
-                placeholder="e.g. JR., III"
-                value={personalData.extension}
+                id="suffix"
+                placeholder="e.g. JR., SR., III"
+                value={personalData.suffix}
                 onChange={(e) =>
-                  handlePersonalChange("extension", e.target.value)
+                  handlePersonalChange("suffix", e.target.value)
                 }
                 className="mt-1"
                 disabled={isPersonalSaving}
                 onBlur={(e) => {
                   handlePersonalChange(
-                    "extension",
+                    "suffix",
                     e.target.value.trim().toUpperCase(),
+                  );
+                }}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="professionalExtension" className="text-xs">
+                Professional Extension
+              </Label>
+              <Input
+                id="professionalExtension"
+                placeholder="e.g. PhD, CPA, RN"
+                value={personalData.professionalExtension}
+                onChange={(e) =>
+                  handlePersonalChange("professionalExtension", e.target.value)
+                }
+                className="mt-1"
+                disabled={isPersonalSaving}
+                onBlur={(e) => {
+                  handlePersonalChange(
+                    "professionalExtension",
+                    e.target.value.trim(),
                   );
                 }}
               />

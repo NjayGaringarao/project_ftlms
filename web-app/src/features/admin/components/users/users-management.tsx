@@ -14,6 +14,7 @@ import type { CollegeListItem } from "@/features/admin/lib/colleges";
 import type { ProgramCampusOffering } from "@/features/admin/lib/programs";
 import { UserCreate } from "./user-create";
 import { UserInformation } from "./user-information";
+import { formatFullName } from "@/features/shared/lib/format-name";
 
 type UsersManagementProps = {
   users: UsersListItem[];
@@ -162,7 +163,7 @@ export function UsersManagement({
       if (!q) return true;
 
       return [
-        user.identity?.name ?? "",
+        formatFullName(user.identity) ?? "",
         user.email ?? "",
         user.campus?.name ?? "",
         user.college?.code ?? "",
@@ -235,7 +236,7 @@ export function UsersManagement({
           onSelect={nav.openItem}
           items={filteredUsers.map((user) => ({
             id: user.id,
-            title: user.identity?.name ?? "Unknown User",
+            title: formatFullName(user.identity) ?? "Unknown User",
             subtitle: [
               `${
                 user.college?.code ?? "No Default College"
@@ -250,7 +251,7 @@ export function UsersManagement({
         open: isCreating || Boolean(selectedId),
         title: isCreating
           ? "Create User"
-          : selectedUser?.identity?.name ?? "User not found",
+          : formatFullName(selectedUser?.identity) ?? "User not found",
 
         content: isCreating ? (
           <UserCreate

@@ -30,6 +30,7 @@ import type { CampusListItem } from "@/features/admin/lib/campuses";
 import type { CollegeListItem } from "@/features/admin/lib/colleges";
 import type { ProgramCampusOffering } from "@/features/admin/lib/programs";
 import FormStatusBanner from "../form-status-banner";
+import { formatFullName } from "@/features/shared/lib/format-name";
 
 type UserInformationProps = {
   user: UserDetail;
@@ -48,14 +49,22 @@ type ProfessionalFormState = {
 };
 
 type PersonalFormValues = {
-  name: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffix: string;
+  professionalExtension: string;
   birthDate: string;
   address: string;
   contactNumber: string;
 };
 
 const userToPersonalFormValues = (user: UserDetail): PersonalFormValues => ({
-  name: user.identity?.name ?? "",
+  firstName: user.identity?.first_name ?? "",
+  middleName: user.identity?.middle_name ?? "",
+  lastName: user.identity?.last_name ?? "",
+  suffix: user.identity?.suffix ?? "",
+  professionalExtension: user.identity?.professional_extension ?? "",
   birthDate: user.identity?.birth_date ?? "",
   address: user.identity?.address ?? "",
   contactNumber: user.identity?.contact_number ?? "",
@@ -163,7 +172,11 @@ export const UserInformation = ({
     try {
       const { error } = await updateUserPersonalInfo({
         user_id: user.id,
-        name: values.name,
+        first_name: values.firstName,
+        middle_name: values.middleName || null,
+        last_name: values.lastName,
+        suffix: values.suffix || null,
+        professional_extension: values.professionalExtension || null,
         birth_date: values.birthDate,
         address: values.address || null,
         contact_number: values.contactNumber || null,
@@ -598,7 +611,7 @@ export const UserInformation = ({
           <FormStatusBanner variant="compact" error={deleteError} />
           <p className="text-sm text-foreground/70">
             Are you sure you want to delete{" "}
-            <strong>{user.identity?.name ?? "this user"}</strong>?
+            <strong>{formatFullName(user.identity) ?? "this user"}</strong>?
           </p>
           <div className="flex justify-end gap-2">
             <Button

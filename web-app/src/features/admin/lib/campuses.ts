@@ -3,6 +3,7 @@
 import { Campus } from "@/features/shared/types/models/campus";
 import { createClient } from "@/utils/supabase/server";
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
+import { formatFullName } from "@/features/shared/lib/format-name";
 
 export type CampusListItem = Pick<Campus, "id" | "code" | "name" | "address">;
 
@@ -56,7 +57,7 @@ export const getDirectorOptions = async (): Promise<DirectorOption[]> => {
     if (!uniqueUsers.has(row.id)) {
       uniqueUsers.set(row.id, {
         id: row.id,
-        name: row.identity?.name?.trim() || row.email || "Unknown User",
+        name: formatFullName(row.identity) || row.email || "Unknown User",
         email: row.email ?? null,
       });
     }

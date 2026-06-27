@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { createClient } from "@/utils/supabase/server";
 import { mergeClasses } from "@/features/course-loading/lib/actions";
+import { formatFullName } from "@/features/shared/lib/format-name";
 
 export type SchedulerMergeCandidate = {
   class_id: string;
@@ -214,12 +215,12 @@ type RawUtilizationMergeRow = {
   class?: {
     id?: string | null;
     user_class?: Array<{
-      user?: { id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null };
+      user?: { id?: string; identity?: { first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null } | Array<{ first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null }> | null };
     }> | null;
   } | Array<{
     id?: string | null;
     user_class?: Array<{
-      user?: { id?: string; identity?: { name?: string | null } | Array<{ name?: string | null }> | null };
+      user?: { id?: string; identity?: { first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null } | Array<{ first_name?: string | null; middle_name?: string | null; last_name?: string | null; suffix?: string | null; professional_extension?: string | null }> | null };
     }> | null;
   }> | null;
 };
@@ -293,7 +294,7 @@ export const getMergeCandidatesForCourseUtilization = async (
       class:class_id(
         id,
         user_class(
-          user:user_id(id, identity:identity(name))
+          user:user_id(id, identity:identity(first_name, middle_name, last_name, suffix, professional_extension))
         )
       )
       `,
@@ -327,7 +328,7 @@ export const getMergeCandidatesForCourseUtilization = async (
         student_count: Number(section?.student_count ?? 0),
         class_id: row.class_id ?? "",
         faculty_id: faculty?.id ?? null,
-        faculty_name: first(faculty?.identity)?.name ?? null,
+        faculty_name: formatFullName(first(faculty?.identity)) ?? null,
       };
     });
 };

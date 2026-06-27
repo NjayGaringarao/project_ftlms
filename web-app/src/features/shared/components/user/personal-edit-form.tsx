@@ -4,11 +4,14 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { normalizeName } from "@/features/profile/lib/user-edit/validators";
 import FormStatusBanner from "@/features/admin/components/form-status-banner";
 
 type PersonalEditValues = {
-  name: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffix: string;
+  professionalExtension: string;
   birthDate: string;
   address: string;
   contactNumber: string;
@@ -51,10 +54,12 @@ const PersonalEditForm = ({
   };
 
   const handleSave = async () => {
-    const normalizedName = normalizeName(formData.name);
-
-    if (!normalizedName) {
-      setError("Full name is required");
+    if (!formData.firstName.trim()) {
+      setError("First name is required");
+      return;
+    }
+    if (!formData.lastName.trim()) {
+      setError("Last name is required");
       return;
     }
     if (!formData.birthDate.trim()) {
@@ -63,7 +68,11 @@ const PersonalEditForm = ({
     }
 
     const payload: PersonalEditValues = {
-      name: normalizedName,
+      firstName: formData.firstName.trim(),
+      middleName: formData.middleName.trim(),
+      lastName: formData.lastName.trim(),
+      suffix: formData.suffix.trim(),
+      professionalExtension: formData.professionalExtension.trim(),
       birthDate: formData.birthDate,
       address: formData.address.trim(),
       contactNumber: formData.contactNumber.trim(),
@@ -95,17 +104,87 @@ const PersonalEditForm = ({
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2">
-          <Label htmlFor="fullName" className="text-xs">
-            Full Name *
+        <div>
+          <Label htmlFor="firstName" className="text-xs">
+            First Name *
           </Label>
           <Input
-            id="fullName"
-            placeholder="Enter full name"
-            value={formData.name}
-            onChange={(event) => handleChange("name", event.target.value)}
+            id="firstName"
+            placeholder="Enter first name"
+            value={formData.firstName}
+            onChange={(event) => handleChange("firstName", event.target.value)}
             onBlur={(event) =>
-              handleChange("name", normalizeName(event.target.value))
+              handleChange("firstName", event.target.value.trim().toUpperCase())
+            }
+            className="mt-1"
+            disabled={isSaving}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="middleName" className="text-xs">
+            Middle Name
+          </Label>
+          <Input
+            id="middleName"
+            placeholder="Enter middle name"
+            value={formData.middleName}
+            onChange={(event) => handleChange("middleName", event.target.value)}
+            onBlur={(event) =>
+              handleChange("middleName", event.target.value.trim().toUpperCase())
+            }
+            className="mt-1"
+            disabled={isSaving}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="lastName" className="text-xs">
+            Last Name *
+          </Label>
+          <Input
+            id="lastName"
+            placeholder="Enter last name"
+            value={formData.lastName}
+            onChange={(event) => handleChange("lastName", event.target.value)}
+            onBlur={(event) =>
+              handleChange("lastName", event.target.value.trim().toUpperCase())
+            }
+            className="mt-1"
+            disabled={isSaving}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="suffix" className="text-xs">
+            Suffix
+          </Label>
+          <Input
+            id="suffix"
+            placeholder="e.g. JR., SR., III"
+            value={formData.suffix}
+            onChange={(event) => handleChange("suffix", event.target.value)}
+            onBlur={(event) =>
+              handleChange("suffix", event.target.value.trim().toUpperCase())
+            }
+            className="mt-1"
+            disabled={isSaving}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label htmlFor="professionalExtension" className="text-xs">
+            Professional Extension
+          </Label>
+          <Input
+            id="professionalExtension"
+            placeholder="e.g. PhD, CPA, RN"
+            value={formData.professionalExtension}
+            onChange={(event) =>
+              handleChange("professionalExtension", event.target.value)
+            }
+            onBlur={(event) =>
+              handleChange("professionalExtension", event.target.value.trim())
             }
             className="mt-1"
             disabled={isSaving}
