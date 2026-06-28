@@ -34,10 +34,12 @@ export const FacultyLoadSummaryPage = ({
   metadata,
   faculty,
   programName,
+  collegeLogoUrl,
 }: {
   metadata: CampusCollegeLoadSnapshotMetadata;
   faculty: CampusCollegeLoadSnapshotFaculty[];
   programName?: string | null;
+  collegeLogoUrl?: string | null;
 }) => {
   const groups = groupFaculty(faculty);
   const semesterLabel = [metadata.academic_term_name, metadata.academic_year_code]
@@ -63,6 +65,7 @@ export const FacultyLoadSummaryPage = ({
         subtitle={semesterLabel}
         collegeName={metadata.college_name}
         campusName={metadata.campus_name}
+        collegeLogoUrl={collegeLogoUrl}
       />
 
       {programName ? (

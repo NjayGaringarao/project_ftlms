@@ -75,11 +75,13 @@ export const ClassScheduleSectionPage = ({
   section,
   classes,
   semesterLabel,
+  collegeLogoUrl,
 }: {
   metadata: CampusCollegeLoadSnapshotMetadata;
   section: CampusCollegeLoadSnapshotSection;
   classes: CampusCollegeLoadSnapshotClass[];
   semesterLabel: string;
+  collegeLogoUrl?: string | null;
 }) => {
   const scheduleRows = buildScheduleRows(classes);
   const totalLecHours = classes.reduce((sum, c) => sum + (c.lecture_hours ?? 0), 0);
@@ -92,6 +94,7 @@ export const ClassScheduleSectionPage = ({
         subtitle={semesterLabel}
         collegeName={metadata.college_name}
         campusName={metadata.campus_name}
+        collegeLogoUrl={collegeLogoUrl}
       />
 
       <div className="flex gap-3">

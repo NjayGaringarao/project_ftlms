@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Building2 } from "lucide-react";
+import { getCollegeLogoPublicUrl } from "@/features/admin/lib/college-logo-storage";
 import { ManagementContainer } from "@/components/layout/management-container";
 import { AdminManagementList } from "@/features/admin/components/management/admin-management-list";
 import { ManagementPlaceholder } from "@/features/admin/components/management/management-placeholder";
@@ -57,7 +58,15 @@ export function CollegesManagement({
             id: college.id,
             title: college.code,
             subtitle: [college.name],
-            icon: <Building2 className="h-5 w-5" />,
+            icon: college.logo_path ? (
+              <img
+                src={getCollegeLogoPublicUrl(college.logo_path)}
+                alt={college.name}
+                className="h-5 w-5 object-contain rounded-sm"
+              />
+            ) : (
+              <Building2 className="h-5 w-5" />
+            ),
           }))}
         />
       }

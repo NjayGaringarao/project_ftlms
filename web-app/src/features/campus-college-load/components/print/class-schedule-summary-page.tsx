@@ -39,11 +39,13 @@ export const ClassScheduleSummaryPage = ({
   sections,
   classes,
   programName,
+  collegeLogoUrl,
 }: {
   metadata: CampusCollegeLoadSnapshotMetadata;
   sections: CampusCollegeLoadSnapshotSection[];
   classes: CampusCollegeLoadSnapshotClass[];
   programName?: string | null;
+  collegeLogoUrl?: string | null;
 }) => {
   const semesterLabel = [metadata.academic_term_name, metadata.academic_year_code]
     .filter(Boolean)
@@ -57,6 +59,7 @@ export const ClassScheduleSummaryPage = ({
         subtitle={semesterLabel}
         collegeName={metadata.college_name}
         campusName={metadata.campus_name}
+        collegeLogoUrl={collegeLogoUrl}
       />
 
       {programName ? (

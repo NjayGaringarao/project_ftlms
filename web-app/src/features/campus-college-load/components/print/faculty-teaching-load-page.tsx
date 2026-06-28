@@ -138,11 +138,13 @@ export const FacultyTeachingLoadPage = ({
   faculty,
   classMap,
   semesterLabel,
+  collegeLogoUrl,
 }: {
   metadata: CampusCollegeLoadSnapshotMetadata;
   faculty: CampusCollegeLoadSnapshotFaculty;
   classMap: Map<string, CampusCollegeLoadSnapshotClass>;
   semesterLabel: string;
+  collegeLogoUrl?: string | null;
 }) => {
   const sessionRows = buildSessionRows(faculty, classMap);
   const lectureHours =
@@ -167,6 +169,7 @@ export const FacultyTeachingLoadPage = ({
         subtitle={semesterLabel}
         collegeName={metadata.college_name}
         campusName={metadata.campus_name}
+        collegeLogoUrl={collegeLogoUrl}
       />
 
       <div className="flex">

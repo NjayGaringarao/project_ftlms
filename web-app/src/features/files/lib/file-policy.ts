@@ -12,10 +12,16 @@ export const FILE_POLICIES = {
     allowedMimeTypes: [] as const,
     maxSizeBytes: 50 * 1024 * 1024,
   },
+  COLLEGE_LOGO: {
+    allowedExtensions: ["png", "jpg", "jpeg", "gif", "webp", "svg"] as const,
+    allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"] as const,
+    maxSizeBytes: 5 * 1024 * 1024,
+  },
 } satisfies Record<string, FilePolicy>;
 
 export const DEFAULT_FILE_POLICY: FilePolicy = FILE_POLICIES.RETURN_ATTACHMENT;
 export const RETURN_ATTACHMENT_FILE_POLICY: FilePolicy = FILE_POLICIES.RETURN_ATTACHMENT;
+export const COLLEGE_LOGO_FILE_POLICY: FilePolicy = FILE_POLICIES.COLLEGE_LOGO;
 
 export function normalizeAllowedExtensions(values: readonly string[]) {
   return values

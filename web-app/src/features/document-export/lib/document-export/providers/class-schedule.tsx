@@ -7,6 +7,7 @@ import type {
   CampusCollegeLoadSnapshotClass,
   CampusCollegeLoadSnapshotSection,
 } from "@/features/shared/types/models";
+import { getCollegeLogoPublicUrl } from "@/features/admin/lib/college-logo-storage";
 import { createClient } from "@/utils/supabase/server";
 
 export type ClassScheduleScope = {
@@ -23,6 +24,7 @@ export type ClassScheduleDocument = {
   academic_term_name: string | null;
   academic_term_code: string | null;
   academic_year_code: string | null;
+  college_logo_url: string | null;
   sections: CampusCollegeLoadSnapshotSection[];
   classes: CampusCollegeLoadSnapshotClass[];
 };
@@ -62,6 +64,19 @@ const loadSingleDocument = async ({
     throw new DocumentExportError(404, "Class schedule data is not available for this older revision.");
   }
 
+  let college_logo_url: string | null = null;
+  const collegeId = normalized.metadata.college_id;
+  if (collegeId) {
+    const { data: college } = await supabase
+      .from("college")
+      .select("logo_path")
+      .eq("id", collegeId)
+      .maybeSingle();
+    if (college?.logo_path) {
+      college_logo_url = getCollegeLogoPublicUrl(college.logo_path);
+    }
+  }
+
   return {
     revision_id: revisionId,
     campus_name: normalized.metadata.campus_name,
@@ -71,6 +86,7 @@ const loadSingleDocument = async ({
     academic_term_name: normalized.metadata.academic_term_name ?? null,
     academic_term_code: normalized.metadata.academic_term_code ?? null,
     academic_year_code: normalized.metadata.academic_year_code ?? null,
+    college_logo_url,
     sections: normalized.class_schedule.sections,
     classes: normalized.class_schedule.classes,
   };
@@ -171,6 +187,7 @@ const classScheduleProvider = {
           metadata={metadata}
           sections={doc.sections}
           classes={doc.classes}
+          collegeLogoUrl={doc.college_logo_url}
         />
         {sortedSections.map((section) => {
           const sectionClasses = doc.classes.filter(
@@ -187,6 +204,7 @@ const classScheduleProvider = {
                 section={section}
                 classes={sectionClasses}
                 semesterLabel={semesterLabel}
+                collegeLogoUrl={doc.college_logo_url}
               />
             </div>
           );

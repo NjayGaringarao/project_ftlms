@@ -236,6 +236,7 @@ const FacultyPickerDialogBody = ({
           code: college.code,
           name: college.name,
           description: null,
+          logo_path: null,
         }))}
         selectedCollegeId={collegeFilterId}
         query={collegeQuery}

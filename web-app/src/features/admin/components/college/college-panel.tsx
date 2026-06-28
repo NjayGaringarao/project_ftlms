@@ -17,6 +17,7 @@ import {
   InitialForm,
   type CollegeFormState,
 } from "./initial-form";
+import { CollegeLogoField } from "./college-logo-field";
 import { ProgramDialog } from "./program-dialog";
 import { ResourceSection } from "./resource-section";
 import FormStatusBanner from "../form-status-banner";
@@ -176,6 +177,11 @@ export function CollegePanel({
 
       {!isCreating && college ? (
         <>
+          <CollegeLogoField
+            collegeId={college.id}
+            currentLogoPath={college.logo_path ?? null}
+            disabled={isSaving}
+          />
           <ResourceSection
             title="Programs"
             count={programs.length}

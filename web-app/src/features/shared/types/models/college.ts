@@ -3,4 +3,5 @@ export type College = {
   code: string;
   name: string;
   description: string | null;
+  logo_path: string | null;
 };

@@ -7,6 +7,7 @@ import type {
   CampusCollegeLoadSnapshotClass,
   CampusCollegeLoadSnapshotFaculty,
 } from "@/features/shared/types/models";
+import { getCollegeLogoPublicUrl } from "@/features/admin/lib/college-logo-storage";
 import { createClient } from "@/utils/supabase/server";
 
 export type CampusCollegeLoadScope = {
@@ -23,6 +24,7 @@ export type CampusCollegeLoadDocument = {
   academic_term_name: string | null;
   academic_term_code: string | null;
   academic_year_code: string | null;
+  college_logo_url: string | null;
   faculty: CampusCollegeLoadSnapshotFaculty[];
   class_schedule_classes: CampusCollegeLoadSnapshotClass[];
 };
@@ -58,6 +60,19 @@ const loadSingleDocument = async ({
   const normalized = normalizeCampusCollegeLoadSnapshot(revision.snapshot);
   if (!normalized) throw new DocumentExportError(404, "Snapshot not available.");
 
+  let college_logo_url: string | null = null;
+  const collegeId = normalized.metadata.college_id;
+  if (collegeId) {
+    const { data: college } = await supabase
+      .from("college")
+      .select("logo_path")
+      .eq("id", collegeId)
+      .maybeSingle();
+    if (college?.logo_path) {
+      college_logo_url = getCollegeLogoPublicUrl(college.logo_path);
+    }
+  }
+
   return {
     revision_id: revisionId,
     campus_name: normalized.metadata.campus_name,
@@ -67,6 +82,7 @@ const loadSingleDocument = async ({
     academic_term_name: normalized.metadata.academic_term_name ?? null,
     academic_term_code: normalized.metadata.academic_term_code ?? null,
     academic_year_code: normalized.metadata.academic_year_code ?? null,
+    college_logo_url,
     faculty: normalized.faculty_load.faculty,
     class_schedule_classes: normalized.class_schedule.classes,
   };
@@ -160,6 +176,7 @@ const campusCollegeLoadProvider = {
         <FacultyLoadSummaryPage
           metadata={metadata}
           faculty={doc.faculty}
+          collegeLogoUrl={doc.college_logo_url}
         />
         {doc.faculty.map((faculty) => (
           <div
@@ -172,6 +189,7 @@ const campusCollegeLoadProvider = {
               faculty={faculty}
               classMap={classMap}
               semesterLabel={semesterLabel}
+              collegeLogoUrl={doc.college_logo_url}
             />
           </div>
         ))}

@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 
 export type CollegeListItem = Pick<
   College,
-  "id" | "code" | "name" | "description"
+  "id" | "code" | "name" | "description" | "logo_path"
 >;
 
 export const getCollegesList = async (): Promise<CollegeListItem[]> => {
@@ -13,7 +13,7 @@ export const getCollegesList = async (): Promise<CollegeListItem[]> => {
 
   const { data, error } = await supabase
     .from("college")
-    .select("id, code, name, description")
+    .select("id, code, name, description, logo_path")
     .order("name", { ascending: true });
 
   if (error) {
@@ -31,7 +31,7 @@ export const getCollegeById = async (
 
   const { data, error } = await supabase
     .from("college")
-    .select("id, code, name, description")
+    .select("id, code, name, description, logo_path")
     .eq("id", collegeId)
     .maybeSingle();
 

@@ -5,14 +5,16 @@ export const PrmsuFormHeader = ({
   subtitle,
   collegeName,
   campusName,
+  collegeLogoUrl,
 }: {
   documentTitle: string;
   subtitle: string;
   collegeName: string | null;
   campusName: string | null;
+  collegeLogoUrl?: string | null;
 }) => (
   <div className="flex items-start justify-between gap-4 mb-3">
-    <div className="flex-shrink-0">
+    <div className="shrink-0">
       <Image
         src="/logo/prmsu.png"
         alt="PRMSU Logo"
@@ -39,14 +41,13 @@ export const PrmsuFormHeader = ({
       ) : null}
       {campusName ? <p className="text-[10px]">{campusName} Campus</p> : null}
     </div>
-    <div className="flex-shrink-0">
-      <Image
-        src="/logo/icto.jpg"
-        alt="CCIT Logo"
+    <div className="shrink-0">
+      <img
+        src={collegeLogoUrl ?? "/logo/icto.jpg"}
+        alt="College Logo"
         width={64}
         height={64}
         className="h-16 w-16 object-contain"
-        unoptimized
       />
     </div>
   </div>

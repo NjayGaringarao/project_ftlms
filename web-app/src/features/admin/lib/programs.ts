@@ -26,7 +26,7 @@ export const getPrograms = async (): Promise<ExtendedProgram[]> => {
       name,
       description,
       college_id,
-      college:college_id (id, code, name, description)
+      college:college_id (id, code, name, description, logo_path)
       `,
     )
     .order("name", { ascending: true });
@@ -58,7 +58,7 @@ export const getProgramsByCollege = async (
       name,
       description,
       college_id,
-      college:college_id (id, code, name, description)
+      college:college_id (id, code, name, description, logo_path)
       `,
     )
     .eq("college_id", collegeId)
@@ -101,7 +101,7 @@ export const getProgramById = async (
       name,
       description,
       college_id,
-      college:college_id (id, code, name, description)
+      college:college_id (id, code, name, description, logo_path)
       `,
     )
     .eq("id", programId)
@@ -141,7 +141,7 @@ export const getProgramCampusOfferings = async (
         name,
         description,
         college_id,
-        college:college_id (id, code, name, description)
+        college:college_id (id, code, name, description, logo_path)
       )
       `,
     )
