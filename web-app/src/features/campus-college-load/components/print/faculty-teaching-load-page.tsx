@@ -36,9 +36,15 @@ const DAY_ABBREV: Record<string, string> = {
 const abbreviateDay = (day: string): string =>
   DAY_ABBREV[day.toLowerCase()] ?? day;
 
-const deriveDeliveryMode = (roomCode: string | null): "F2F" | "OL" | "TBA" => {
+// hasSession: whether the class has a scheduled session at all.
+// A session with room_code=null is "Online / No Room" (not unscheduled).
+const deriveDeliveryMode = (
+  roomCode: string | null,
+  hasSession: boolean,
+): "F2F" | "OL" | "TBA" => {
+  if (!hasSession) return "TBA";
   if (!roomCode || roomCode.trim() === "" || roomCode.toUpperCase() === "TBA")
-    return "TBA";
+    return "OL";
   if (roomCode.toUpperCase().includes("OL")) return "OL";
   return "F2F";
 };
@@ -59,7 +65,11 @@ const buildSessionRows = (
 
   for (const fc of faculty.classes) {
     const classData = classMap.get(fc.id);
-    const sessions = classData?.sessions ?? [];
+    // Prefer sessions embedded directly on the faculty class (populated for new
+    // snapshots, including cross-college classes). Fall back to classMap for
+    // snapshots frozen before this field was added.
+    const sessions: CampusCollegeLoadSnapshotSession[] =
+      fc.sessions !== undefined ? fc.sessions : (classData?.sessions ?? []);
     const lecHrsTotal = fc.lecture_hours ?? 0;
     const labHrsTotal = fc.laboratory_hours ?? 0;
     const lecUnits = Number(fc.lecture_unit ?? 0);
@@ -367,7 +377,7 @@ export const FacultyTeachingLoadPage = ({
                 const timeStr = row.session
                   ? `${formatTimeOfDay(row.session.start_time)}–${formatTimeOfDay(row.session.end_time)}`
                   : "TBA";
-                const deliveryMode = deriveDeliveryMode(row.room);
+                const deliveryMode = deriveDeliveryMode(row.room, row.session !== null);
                 const dayStr = row.session
                   ? `${abbreviateDay(row.session.day)}(${deliveryMode})`
                   : "TBA";
@@ -395,7 +405,7 @@ export const FacultyTeachingLoadPage = ({
                       {row.labHrs > 0 ? formatNumber(row.labHrs) : ""}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5 text-[8px] leading-tight wrap-break-word">
-                      {row.room ?? "TBA"}
+                      {row.session && !row.room ? "Online" : (row.room ?? "TBA")}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5 text-[8px] leading-tight wrap-break-word">
                       {row.courseYrSec}

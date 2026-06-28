@@ -14,6 +14,7 @@ export type CampusCollegeLoadSnapshotFacultyClass = {
   lecture_hours?: number;
   laboratory_hours?: number;
   load: number;
+  sessions?: CampusCollegeLoadSnapshotSession[];
 };
 
 export type CampusCollegeLoadSnapshotFaculty = {
@@ -209,6 +210,16 @@ export const normalizeCampusCollegeLoadSnapshot = (
   return {
     ...snapshot,
     legacy: false,
+    faculty_load: {
+      ...snapshot.faculty_load,
+      faculty: snapshot.faculty_load.faculty.map((f) => ({
+        ...f,
+        classes: f.classes.map((fc) => ({
+          ...fc,
+          sessions: Array.isArray(fc.sessions) ? fc.sessions : undefined,
+        })),
+      })),
+    },
     class_schedule: {
       ...snapshot.class_schedule,
       classes: snapshot.class_schedule.classes.map((classRow) => ({

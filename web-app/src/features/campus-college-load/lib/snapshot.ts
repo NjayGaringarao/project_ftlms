@@ -169,10 +169,10 @@ export const buildCampusCollegeLoadSnapshot = async ({
   const homeFacultyClassIds = Array.from(
     new Set(homeFacultyRows.flatMap((row) => row.classes.map((cls) => cls.id))),
   );
-  const facultySessionMetrics = await getSessionMetrics(
-    supabase,
-    homeFacultyClassIds,
-  );
+  const [facultySessionMetrics, facultySessionDetails] = await Promise.all([
+    getSessionMetrics(supabase, homeFacultyClassIds),
+    getSessionDetails(supabase, homeFacultyClassIds),
+  ]);
 
   const faculty = homeFacultyRows
     .map((row): CampusCollegeLoadSnapshotFaculty => {
@@ -204,6 +204,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
           lecture_hours: lectureHours,
           laboratory_hours: laboratoryHours,
           load: toNumber(classRow.load),
+          sessions: facultySessionDetails.get(classRow.id) ?? [],
         };
       });
       const lectureHours = classes.reduce(
