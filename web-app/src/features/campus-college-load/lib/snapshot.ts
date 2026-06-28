@@ -1,7 +1,7 @@
 "use server";
 
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
-import { formatFullName } from "@/features/shared/lib/format-name";
+import { formatFullName, formatName } from "@/utils/format-name";
 import type {
   CampusCollegeLoadSnapshot,
   CampusCollegeLoadSnapshotClass,
@@ -143,23 +143,75 @@ export const buildCampusCollegeLoadSnapshot = async ({
   collegeId: string;
 }): Promise<CampusCollegeLoadSnapshot> => {
   const supabase = await createClient();
-  const [{ data: campus }, { data: college }, { data: academicTerm }, rows] =
-    await Promise.all([
-      supabase.from("campus").select("code, name").eq("id", campusId).maybeSingle(),
-      supabase.from("college").select("code, name").eq("id", collegeId).maybeSingle(),
-      supabase
-        .from("academic_term")
-        .select("code, name, academic_year:academic_year_id(code)")
-        .eq("id", academicTermId)
-        .maybeSingle(),
-      getUserDataList({
-        academicTermId,
-        includeClasses: true,
-        includeDegrees: true,
-        includeDesignations: true,
-        includeLoads: true,
-      }),
-    ]);
+  const [
+    { data: campus },
+    { data: college },
+    { data: academicTerm },
+    rows,
+    { data: campusDirectorDesignations },
+    { data: higherUpsDesignations },
+  ] = await Promise.all([
+    supabase.from("campus").select("code, name").eq("id", campusId).maybeSingle(),
+    supabase.from("college").select("code, name").eq("id", collegeId).maybeSingle(),
+    supabase
+      .from("academic_term")
+      .select("code, name, academic_year:academic_year_id(code)")
+      .eq("id", academicTermId)
+      .maybeSingle(),
+    getUserDataList({
+      academicTermId,
+      includeClasses: true,
+      includeDegrees: true,
+      includeDesignations: true,
+      includeLoads: true,
+    }),
+    // Campus Director is campus-scoped — always stored with campus_id
+    supabase
+      .from("designation")
+      .select("job_title, user_id")
+      .eq("campus_id", campusId)
+      .eq("job_title", "Campus Director"),
+    // DI and VPAA are university-wide "higher ups" — stored without campus_id
+    supabase
+      .from("designation")
+      .select("job_title, user_id")
+      .in("job_title", ["Director for Instruction", "Vice President for Academic Affairs"]),
+  ]);
+
+  // Collect all signatory user_ids and fetch their identity in one query.
+  const signatoryRows = [...(campusDirectorDesignations ?? []), ...(higherUpsDesignations ?? [])];
+  const signatoryUserIds = [
+    ...new Set(signatoryRows.map((r) => r.user_id).filter(Boolean) as string[]),
+  ];
+
+  const { data: signatoryIdentities } = signatoryUserIds.length > 0
+    ? await supabase
+        .from("identity")
+        .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
+        .in("user_id", signatoryUserIds)
+    : { data: [] };
+
+  const identityByUserId = new Map(
+    (signatoryIdentities ?? []).map((row) => [row.user_id, row]),
+  );
+
+  const resolveSignatoryName = (jobTitle: string): string | null => {
+    const designation = signatoryRows.find((r) => r.job_title === jobTitle);
+    if (!designation?.user_id) return null;
+    const identity = identityByUserId.get(designation.user_id);
+    if (!identity) return null;
+    // Prefer structured name fields; fall back to legacy `name` text field
+    const formatted = formatName(identity, {
+      firstWord: "FIRST",
+      middleName: "INITIAL",
+      isProfexIncluded: true,
+    });
+    return formatted;
+  };
+
+  const preparedBy = resolveSignatoryName("Campus Director");
+  const recommendingApproval = resolveSignatoryName("Director for Instruction");
+  const approvedBy = resolveSignatoryName("Vice President for Academic Affairs");
 
   // --- faculty_load: scoped by the faculty's own home campus/college; keeps
   // every class they teach this term, even classes owned by other colleges.
@@ -448,6 +500,9 @@ export const buildCampusCollegeLoadSnapshot = async ({
       academic_term_name: academicTerm?.name ?? null,
       academic_year_code: academicYear?.code ?? null,
       generated_at: new Date().toISOString(),
+      prepared_by: preparedBy,
+      recommending_approval: recommendingApproval,
+      approved_by: approvedBy,
     },
     faculty_load: {
       faculty,

@@ -108,6 +108,12 @@ export type CampusCollegeLoadSnapshotMetadata = {
   academic_term_name?: string | null;
   academic_year_code?: string | null;
   generated_at: string;
+  /** Name of the Campus Director at submission time */
+  prepared_by?: string | null;
+  /** Name of the Director for Instruction at submission time */
+  recommending_approval?: string | null;
+  /** Name of the Vice President for Academic Affairs at submission time */
+  approved_by?: string | null;
 };
 
 export type CampusCollegeLoadSnapshot = {

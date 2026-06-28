@@ -25,6 +25,9 @@ export type CampusCollegeLoadDocument = {
   academic_term_code: string | null;
   academic_year_code: string | null;
   college_logo_url: string | null;
+  prepared_by: string | null;
+  recommending_approval: string | null;
+  approved_by: string | null;
   faculty: CampusCollegeLoadSnapshotFaculty[];
   class_schedule_classes: CampusCollegeLoadSnapshotClass[];
 };
@@ -83,6 +86,9 @@ const loadSingleDocument = async ({
     academic_term_code: normalized.metadata.academic_term_code ?? null,
     academic_year_code: normalized.metadata.academic_year_code ?? null,
     college_logo_url,
+    prepared_by: normalized.metadata.prepared_by ?? null,
+    recommending_approval: normalized.metadata.recommending_approval ?? null,
+    approved_by: normalized.metadata.approved_by ?? null,
     faculty: normalized.faculty_load.faculty,
     class_schedule_classes: normalized.class_schedule.classes,
   };
@@ -167,6 +173,9 @@ const campusCollegeLoadProvider = {
       academic_term_code: doc.academic_term_code,
       academic_year_code: doc.academic_year_code,
       generated_at: "",
+      prepared_by: doc.prepared_by,
+      recommending_approval: doc.recommending_approval,
+      approved_by: doc.approved_by,
     };
 
     const classMap = new Map(doc.class_schedule_classes.map((c) => [c.class_id, c]));

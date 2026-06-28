@@ -438,9 +438,9 @@ export const FacultyTeachingLoadPage = ({
         </div>
       </div>
       <PrmsuSignatureBlock
-        preparedBy="UNKNOWN"
-        recommendingApproval="UNKNOWN"
-        approvedBy="UNKNOWN"
+        preparedBy={metadata.prepared_by ?? ""}
+        recommendingApproval={metadata.recommending_approval ?? ""}
+        approvedBy={metadata.approved_by ?? ""}
       />
     </div>
   );
