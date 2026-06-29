@@ -3,6 +3,7 @@
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
 import { formatFullName, formatName } from "@/utils/format-name";
 import type {
+  AcademicLevelType,
   CampusCollegeLoadSnapshot,
   CampusCollegeLoadSnapshotClass,
   CampusCollegeLoadSnapshotClassTotals,
@@ -253,6 +254,9 @@ export const buildCampusCollegeLoadSnapshot = async ({
       );
       const equivalentUnits = 0;
 
+      const findDegree = (level: AcademicLevelType) =>
+        row.degrees.find((d) => d.academic_level === level)?.title ?? null;
+
       return {
         faculty_id: row.id,
         faculty_name: facultyName,
@@ -261,6 +265,12 @@ export const buildCampusCollegeLoadSnapshot = async ({
         college_code: row.college?.code ?? null,
         campus_code: row.campus?.code ?? null,
         designation_summary: getDesignationSummary(row.designations),
+        degrees: {
+          bachelors: findDegree("Bachelor's Degree"),
+          masters: findDegree("Master's Degree"),
+          doctorate: findDegree("Doctorate Degree"),
+          post_doctorate: findDegree("Post Doctorate Degree"),
+        },
         lecture_hours: lectureHours,
         laboratory_hours: laboratoryHours,
         preparation_count: preparationCount,

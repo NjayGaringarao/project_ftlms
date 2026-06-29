@@ -499,9 +499,9 @@ export type DegreeInput = {
   id?: string;
   academic_level: string;
   title: string;
-  institution: string;
-  country_code: string;
-  year_graduated: number | null;
+  institution?: string | null;
+  country_code?: string | null;
+  year_graduated?: number | null;
 };
 
 export const getDegreesByUserId = async (userId: string): Promise<Degree[]> => {
@@ -534,18 +534,6 @@ export async function saveDegreesForCurrentUser(
     }
     if (!degree.title?.trim()) {
       return { error: `Degree title is required (row ${index + 1})` };
-    }
-    if (!degree.institution?.trim()) {
-      return { error: `Institution is required (row ${index + 1})` };
-    }
-    if (!degree.country_code?.trim()) {
-      return { error: `Country code is required (row ${index + 1})` };
-    }
-    if (
-      degree.year_graduated !== null &&
-      !Number.isFinite(degree.year_graduated)
-    ) {
-      return { error: `Year graduated must be a number (row ${index + 1})` };
     }
   }
 
@@ -589,9 +577,9 @@ export async function saveDegreesForCurrentUser(
           user_id: user.id,
           academic_level: degree.academic_level.trim(),
           title: degree.title.trim(),
-          institution: degree.institution.trim(),
-          country_code: degree.country_code.trim().toUpperCase(),
-          year_graduated: degree.year_graduated,
+          institution: degree.institution?.trim() ?? null,
+          country_code: degree.country_code?.trim().toUpperCase() ?? null,
+          year_graduated: degree.year_graduated ?? null,
           updated_at: new Date().toISOString(),
         })),
       )
@@ -608,9 +596,9 @@ export async function saveDegreesForCurrentUser(
         user_id: user.id,
         academic_level: degree.academic_level.trim(),
         title: degree.title.trim(),
-        institution: degree.institution.trim(),
-        country_code: degree.country_code.trim().toUpperCase(),
-        year_graduated: degree.year_graduated,
+        institution: degree.institution?.trim() ?? null,
+        country_code: degree.country_code?.trim().toUpperCase() ?? null,
+        year_graduated: degree.year_graduated ?? null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })),

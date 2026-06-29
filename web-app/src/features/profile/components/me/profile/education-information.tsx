@@ -19,27 +19,18 @@ const toDegreeRows = (degrees: Degree[]): DegreeRow[] =>
     tempId: degree.id,
     academicLevel: degree.academic_level,
     title: degree.title,
-    institution: degree.institution,
-    countryCode: degree.country_code,
-    yearGraduated: degree.year_graduated?.toString() ?? "",
   }));
 
 const createEmptyRow = (): DegreeRow => ({
   tempId: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   academicLevel: "Master's Degree",
   title: "",
-  institution: "",
-  countryCode: "",
-  yearGraduated: "",
 });
 
 const normalizeRowForComparison = (row: DegreeRow) => ({
   id: row.id ?? null,
   academicLevel: row.academicLevel,
   title: row.title,
-  institution: row.institution,
-  countryCode: row.countryCode,
-  yearGraduated: row.yearGraduated,
 });
 
 const EducationInformation = ({
@@ -96,11 +87,6 @@ const EducationInformation = ({
       id: row.id,
       academic_level: row.academicLevel.trim(),
       title: row.title.trim(),
-      institution: row.institution.trim(),
-      country_code: row.countryCode.trim().toUpperCase(),
-      year_graduated: row.yearGraduated.trim()
-        ? Number(row.yearGraduated)
-        : null,
     }));
 
     for (const [index, row] of rows.entries()) {
@@ -110,18 +96,6 @@ const EducationInformation = ({
       }
       if (!row.title.trim()) {
         setError(`Degree title is required (degree #${index + 1})`);
-        return;
-      }
-      if (!row.institution.trim()) {
-        setError(`Institution is required (degree #${index + 1})`);
-        return;
-      }
-      if (!row.countryCode.trim()) {
-        setError(`Country code is required (degree #${index + 1})`);
-        return;
-      }
-      if (row.yearGraduated.trim() && Number.isNaN(Number(row.yearGraduated))) {
-        setError(`Year graduated must be a number (degree #${index + 1})`);
         return;
       }
     }
@@ -179,7 +153,7 @@ const EducationInformation = ({
             <AddTile
               title="Add Degree"
               onClick={handleAdd}
-              className="h-86"
+              className="h-50"
               titleClassName="text-lg"
               containerClassName="flex-col items-center justify-center"
               iconClassName="h-10 w-10"

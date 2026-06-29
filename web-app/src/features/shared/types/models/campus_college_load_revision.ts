@@ -25,6 +25,12 @@ export type CampusCollegeLoadSnapshotFaculty = {
   college_code: string | null;
   campus_code: string | null;
   designation_summary?: string | null;
+  degrees?: {
+    bachelors?: string | null;
+    masters?: string | null;
+    doctorate?: string | null;
+    post_doctorate?: string | null;
+  };
   lecture_hours?: number;
   laboratory_hours?: number;
   preparation_count?: number;

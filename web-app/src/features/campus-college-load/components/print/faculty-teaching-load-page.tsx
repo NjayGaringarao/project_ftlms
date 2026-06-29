@@ -236,10 +236,10 @@ export const FacultyTeachingLoadPage = ({
                 label="Academic Rank"
                 value={faculty.academic_rank ?? "UNKNOWN"}
               />
-              <InfoRow label="Bachelor's Degree" value="UNKNOWN" />
-              <InfoRow label="Master's Degree" value="UNKNOWN" />
-              <InfoRow label="Doctorate Degree" value="UNKNOWN" />
-              <InfoRow label="Post Doctorate Degree" value="UNKNOWN" />
+              <InfoRow label="Bachelor's Degree" value={faculty.degrees?.bachelors ?? "—"} />
+              <InfoRow label="Master's Degree" value={faculty.degrees?.masters ?? "—"} />
+              <InfoRow label="Doctorate Degree" value={faculty.degrees?.doctorate ?? "—"} />
+              <InfoRow label="Post Doctorate Degree" value={faculty.degrees?.post_doctorate ?? "—"} />
               <InfoRow
                 label="Designation"
                 value={faculty.designation_summary?.trim() || "—"}

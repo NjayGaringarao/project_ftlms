@@ -9,9 +9,6 @@ export type DegreeRow = {
   tempId: string;
   academicLevel: string;
   title: string;
-  institution: string;
-  countryCode: string;
-  yearGraduated: string;
 };
 
 type DegreeItemProps = {
@@ -29,8 +26,6 @@ const DegreeItem = ({
   onRemove,
   onChange,
 }: DegreeItemProps) => {
-  const currentYear = new Date().getFullYear();
-
   return (
     <div className="border border-border rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -58,9 +53,10 @@ const DegreeItem = ({
             className="mt-1"
             disabled={isSaving}
           >
-            <option value="Bachelor&apos;s Degree">Bachelor&apos;s Degree</option>
-            <option value="Master&apos;s Degree">Master&apos;s Degree</option>
+            <option value="Bachelor's Degree">Bachelor&apos;s Degree</option>
+            <option value="Master's Degree">Master&apos;s Degree</option>
             <option value="Doctorate Degree">Doctorate Degree</option>
+            <option value="Post Doctorate Degree">Post Doctorate Degree</option>
           </Select>
         </div>
 
@@ -68,62 +64,10 @@ const DegreeItem = ({
           <Label htmlFor={`degree-title-${row.tempId}`}>Title</Label>
           <Input
             id={`degree-title-${row.tempId}`}
-            placeholder="e.g. BS Computer Science"
+            placeholder="e.g. BSCS"
             value={row.title}
             onChange={(event) =>
               onChange(row.tempId, "title", event.target.value)
-            }
-            className="mt-1"
-            disabled={isSaving}
-          />
-        </div>
-
-        <div className="col-span-2">
-          <Label htmlFor={`degree-institution-${row.tempId}`}>
-            Institution
-          </Label>
-          <Input
-            id={`degree-institution-${row.tempId}`}
-            placeholder="e.g. President Ramon Magsaysay State University"
-            value={row.institution}
-            onChange={(event) =>
-              onChange(row.tempId, "institution", event.target.value)
-            }
-            className="mt-1"
-            disabled={isSaving}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor={`degree-country-${row.tempId}`}>Country Code</Label>
-          <Input
-            id={`degree-country-${row.tempId}`}
-            placeholder="e.g. PH"
-            value={row.countryCode}
-            onChange={(event) =>
-              onChange(
-                row.tempId,
-                "countryCode",
-                event.target.value.toUpperCase(),
-              )
-            }
-            className="mt-1"
-            maxLength={2}
-            disabled={isSaving}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor={`degree-year-${row.tempId}`}>Year Graduated</Label>
-          <Input
-            id={`degree-year-${row.tempId}`}
-            type="number"
-            min={1900}
-            max={currentYear}
-            placeholder="e.g. 2022"
-            value={row.yearGraduated}
-            onChange={(event) =>
-              onChange(row.tempId, "yearGraduated", event.target.value)
             }
             className="mt-1"
             disabled={isSaving}
