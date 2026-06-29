@@ -6,6 +6,7 @@ import { normalizeCampusCollegeLoadSnapshot } from "@/features/shared/types/mode
 import type {
   CampusCollegeLoadSnapshotClass,
   CampusCollegeLoadSnapshotFaculty,
+  CampusCollegeLoadSnapshotMetadata,
 } from "@/features/shared/types/models";
 import { getCollegeLogoPublicUrl } from "@/features/admin/lib/college-logo-storage";
 import { createClient } from "@/utils/supabase/server";
@@ -17,17 +18,8 @@ export type CampusCollegeLoadScope = {
 
 export type CampusCollegeLoadDocument = {
   revision_id: string;
-  campus_name: string | null;
-  campus_code: string | null;
-  college_name: string | null;
-  college_code: string | null;
-  academic_term_name: string | null;
-  academic_term_code: string | null;
-  academic_year_code: string | null;
+  metadata: CampusCollegeLoadSnapshotMetadata;
   college_logo_url: string | null;
-  prepared_by: string | null;
-  recommending_approval: string | null;
-  approved_by: string | null;
   faculty: CampusCollegeLoadSnapshotFaculty[];
   class_schedule_classes: CampusCollegeLoadSnapshotClass[];
 };
@@ -78,17 +70,8 @@ const loadSingleDocument = async ({
 
   return {
     revision_id: revisionId,
-    campus_name: normalized.metadata.campus_name,
-    campus_code: normalized.metadata.campus_code,
-    college_name: normalized.metadata.college_name,
-    college_code: normalized.metadata.college_code,
-    academic_term_name: normalized.metadata.academic_term_name ?? null,
-    academic_term_code: normalized.metadata.academic_term_code ?? null,
-    academic_year_code: normalized.metadata.academic_year_code ?? null,
+    metadata: normalized.metadata,
     college_logo_url,
-    prepared_by: normalized.metadata.prepared_by ?? null,
-    recommending_approval: normalized.metadata.recommending_approval ?? null,
-    approved_by: normalized.metadata.approved_by ?? null,
     faculty: normalized.faculty_load.faculty,
     class_schedule_classes: normalized.class_schedule.classes,
   };
@@ -157,26 +140,10 @@ const campusCollegeLoadProvider = {
 
   renderDocument: (document: unknown) => {
     const doc = document as CampusCollegeLoadDocument;
-    const semesterLabel = [doc.academic_term_name, doc.academic_year_code]
+    const { metadata } = doc;
+    const semesterLabel = [metadata.academic_term_name, metadata.academic_year_code]
       .filter(Boolean)
       .join(", ");
-
-    const metadata = {
-      campus_id: "",
-      campus_name: doc.campus_name,
-      campus_code: doc.campus_code,
-      college_id: "",
-      college_name: doc.college_name,
-      college_code: doc.college_code,
-      academic_term_id: "",
-      academic_term_name: doc.academic_term_name,
-      academic_term_code: doc.academic_term_code,
-      academic_year_code: doc.academic_year_code,
-      generated_at: "",
-      prepared_by: doc.prepared_by,
-      recommending_approval: doc.recommending_approval,
-      approved_by: doc.approved_by,
-    };
 
     const classMap = new Map(doc.class_schedule_classes.map((c) => [c.class_id, c]));
 
@@ -208,7 +175,7 @@ const campusCollegeLoadProvider = {
 
   buildSingleFileName: (document: unknown) => {
     const doc = document as CampusCollegeLoadDocument;
-    const parts = [doc.college_code, doc.campus_code, "faculty-teaching-load"]
+    const parts = [doc.metadata.college_code, doc.metadata.campus_code, "faculty-teaching-load"]
       .filter((p): p is string => Boolean(p))
       .join("-");
     return `${slugify(parts)}.pdf`;

@@ -57,43 +57,18 @@ const first = <T>(value: T | T[] | null | undefined): T | null => {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 };
 
-const getSessionMetrics = async (
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  classIds: string[],
-): Promise<Map<string, SessionMetric>> => {
-  const metrics = new Map<string, SessionMetric>();
-  if (classIds.length === 0) return metrics;
-
-  const { data: sessionRows } = await supabase
-    .from("session_class")
-    .select(
-      `
-      class_id,
-      session:session_id (type, start_time, end_time)
-      `,
-    )
-    .in("class_id", classIds);
-
-  (sessionRows ?? []).forEach((row) => {
-    const session = Array.isArray(row.session) ? row.session[0] : row.session;
-    const classId = row.class_id as string | null;
-    if (!classId || !session) return;
-
-    const current = metrics.get(classId) ?? {
-      lecture_hours: 0,
-      laboratory_hours: 0,
-    };
-    const duration = getDurationHours(session.start_time, session.end_time);
-    if (session.type === "Laboratory") {
-      current.laboratory_hours += duration;
-    } else {
-      current.lecture_hours += duration;
-    }
-    metrics.set(classId, current);
-  });
-
-  return metrics;
-};
+const deriveSessionMetrics = (
+  sessions: CampusCollegeLoadSnapshotSession[],
+): SessionMetric =>
+  sessions.reduce(
+    (acc, s) => {
+      const dur = getDurationHours(s.start_time, s.end_time);
+      if (s.type === "Laboratory") acc.laboratory_hours += dur;
+      else acc.lecture_hours += dur;
+      return acc;
+    },
+    { lecture_hours: 0, laboratory_hours: 0 },
+  );
 
 const getSessionDetails = async (
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -221,10 +196,13 @@ export const buildCampusCollegeLoadSnapshot = async ({
   const homeFacultyClassIds = Array.from(
     new Set(homeFacultyRows.flatMap((row) => row.classes.map((cls) => cls.id))),
   );
-  const [facultySessionMetrics, facultySessionDetails] = await Promise.all([
-    getSessionMetrics(supabase, homeFacultyClassIds),
-    getSessionDetails(supabase, homeFacultyClassIds),
-  ]);
+  const facultySessionDetails = await getSessionDetails(supabase, homeFacultyClassIds);
+  const facultySessionMetrics = new Map(
+    [...facultySessionDetails.entries()].map(([id, sessions]) => [
+      id,
+      deriveSessionMetrics(sessions),
+    ]),
+  );
 
   const faculty = homeFacultyRows
     .map((row): CampusCollegeLoadSnapshotFaculty => {
@@ -347,7 +325,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
               id,
               campus:campus_id (code),
               college:college_id (code),
-              identity:identity (name)
+              identity:identity (first_name, middle_name, last_name, suffix, professional_extension)
             )
           )
         )
@@ -430,7 +408,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
       lecture_hours: 0,
       laboratory_hours: 0,
       instructor_id: instructor?.id ?? null,
-      instructor_name: instructorIdentity?.name?.trim() || null,
+      instructor_name: instructorIdentity ? formatFullName(instructorIdentity) : null,
       instructor_college_code: instructorCollege?.code ?? null,
       instructor_campus_code: instructorCampus?.code ?? null,
       sessions: [],
@@ -438,11 +416,13 @@ export const buildCampusCollegeLoadSnapshot = async ({
   });
 
   const classScheduleClassIds = Array.from(classScheduleRows.keys());
-  const [classScheduleSessionMetrics, classScheduleSessionDetails] =
-    await Promise.all([
-      getSessionMetrics(supabase, classScheduleClassIds),
-      getSessionDetails(supabase, classScheduleClassIds),
-    ]);
+  const classScheduleSessionDetails = await getSessionDetails(supabase, classScheduleClassIds);
+  const classScheduleSessionMetrics = new Map(
+    [...classScheduleSessionDetails.entries()].map(([id, sessions]) => [
+      id,
+      deriveSessionMetrics(sessions),
+    ]),
+  );
 
   const classes = Array.from(classScheduleRows.values())
     .map((classRow) => {
