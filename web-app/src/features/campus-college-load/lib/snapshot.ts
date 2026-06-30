@@ -1,7 +1,7 @@
 "use server";
 
 import { getUserDataList } from "@/features/profile/lib/user-data/queries";
-import { formatFullName, formatName } from "@/utils/format-name";
+import { formatName } from "@/utils/format-name";
 import type {
   AcademicLevelType,
   CampusCollegeLoadSnapshot,
@@ -127,8 +127,16 @@ export const buildCampusCollegeLoadSnapshot = async ({
     { data: campusDirectorDesignations },
     { data: higherUpsDesignations },
   ] = await Promise.all([
-    supabase.from("campus").select("code, name").eq("id", campusId).maybeSingle(),
-    supabase.from("college").select("code, name").eq("id", collegeId).maybeSingle(),
+    supabase
+      .from("campus")
+      .select("code, name")
+      .eq("id", campusId)
+      .maybeSingle(),
+    supabase
+      .from("college")
+      .select("code, name")
+      .eq("id", collegeId)
+      .maybeSingle(),
     supabase
       .from("academic_term")
       .select("code, name, academic_year:academic_year_id(code)")
@@ -151,21 +159,30 @@ export const buildCampusCollegeLoadSnapshot = async ({
     supabase
       .from("designation")
       .select("job_title, user_id")
-      .in("job_title", ["Director for Instruction", "Vice President for Academic Affairs"]),
+      .in("job_title", [
+        "Director for Instruction",
+        "Vice President for Academic Affairs",
+      ]),
   ]);
 
   // Collect all signatory user_ids and fetch their identity in one query.
-  const signatoryRows = [...(campusDirectorDesignations ?? []), ...(higherUpsDesignations ?? [])];
+  const signatoryRows = [
+    ...(campusDirectorDesignations ?? []),
+    ...(higherUpsDesignations ?? []),
+  ];
   const signatoryUserIds = [
     ...new Set(signatoryRows.map((r) => r.user_id).filter(Boolean) as string[]),
   ];
 
-  const { data: signatoryIdentities } = signatoryUserIds.length > 0
-    ? await supabase
-        .from("identity")
-        .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
-        .in("user_id", signatoryUserIds)
-    : { data: [] };
+  const { data: signatoryIdentities } =
+    signatoryUserIds.length > 0
+      ? await supabase
+          .from("identity")
+          .select(
+            "user_id, first_name, middle_name, last_name, suffix, professional_extension",
+          )
+          .in("user_id", signatoryUserIds)
+      : { data: [] };
 
   const identityByUserId = new Map(
     (signatoryIdentities ?? []).map((row) => [row.user_id, row]),
@@ -187,7 +204,9 @@ export const buildCampusCollegeLoadSnapshot = async ({
 
   const preparedBy = resolveSignatoryName("Campus Director");
   const recommendingApproval = resolveSignatoryName("Director for Instruction");
-  const approvedBy = resolveSignatoryName("Vice President for Academic Affairs");
+  const approvedBy = resolveSignatoryName(
+    "Vice President for Academic Affairs",
+  );
 
   // --- faculty_load: scoped by the faculty's own home campus/college; keeps
   // every class they teach this term, even classes owned by other colleges.
@@ -230,7 +249,8 @@ export const buildCampusCollegeLoadSnapshot = async ({
     const programOffering = first(majorOffering?.program_offering);
     const program = first(programOffering?.program);
     return (
-      programOffering?.campus_id === campusId && program?.college_id === collegeId
+      programOffering?.campus_id === campusId &&
+      program?.college_id === collegeId
     );
   });
 
@@ -245,7 +265,12 @@ export const buildCampusCollegeLoadSnapshot = async ({
 
   const faculty = homeFacultyRows
     .map((row): CampusCollegeLoadSnapshotFaculty => {
-      const facultyName = formatFullName(row.identity) || "Unnamed Faculty";
+      const facultyName =
+        formatName(row.identity, {
+          firstWord: "LAST",
+          middleName: "INITIAL",
+          isProfexIncluded: false,
+        }) || "Unnamed Faculty";
       const classes = row.classes.map((classRow) => {
         const scheduled = facultySessionMetrics.get(classRow.id);
         const fallbackLectureHours = toNumber(classRow.lecture_unit);
@@ -284,7 +309,8 @@ export const buildCampusCollegeLoadSnapshot = async ({
         (sum, classRow) => sum + toNumber(classRow.laboratory_hours),
         0,
       );
-      const preparationCount = new Set(classes.map((classRow) => classRow.id)).size;
+      const preparationCount = new Set(classes.map((classRow) => classRow.id))
+        .size;
       const equivalentTeachingLoad = toNumber(row.designationLoad);
       const actualTeachingLoad = classes.reduce(
         (sum, classRow) => sum + toNumber(classRow.load),
@@ -317,7 +343,8 @@ export const buildCampusCollegeLoadSnapshot = async ({
         actual_teaching_load: actualTeachingLoad,
         total_working_load:
           equivalentTeachingLoad + actualTeachingLoad + equivalentUnits,
-        advisory_class: advisoryClassByFacultyId.get(row.id)?.join(", ") ?? null,
+        advisory_class:
+          advisoryClassByFacultyId.get(row.id)?.join(", ") ?? null,
         classes,
       };
     })
@@ -329,7 +356,8 @@ export const buildCampusCollegeLoadSnapshot = async ({
         sum.equivalent_teaching_load + row.equivalent_teaching_load,
       lecture_hours: sum.lecture_hours + toNumber(row.lecture_hours),
       laboratory_hours: sum.laboratory_hours + toNumber(row.laboratory_hours),
-      preparation_count: sum.preparation_count + toNumber(row.preparation_count),
+      preparation_count:
+        sum.preparation_count + toNumber(row.preparation_count),
       equivalent_units: sum.equivalent_units + toNumber(row.equivalent_units),
       actual_teaching_load: sum.actual_teaching_load + row.actual_teaching_load,
       total_working_load: sum.total_working_load + row.total_working_load,
@@ -428,7 +456,13 @@ export const buildCampusCollegeLoadSnapshot = async ({
       lecture_hours: 0,
       laboratory_hours: 0,
       instructor_id: instructor?.id ?? null,
-      instructor_name: instructorIdentity ? formatFullName(instructorIdentity) : null,
+      instructor_name: instructorIdentity
+        ? formatName(instructorIdentity, {
+            firstWord: "LAST",
+            middleName: "INITIAL",
+            isProfexIncluded: false,
+          })
+        : null,
       instructor_college_code: instructorCollege?.code ?? null,
       instructor_campus_code: instructorCampus?.code ?? null,
       sessions: [],
@@ -436,7 +470,10 @@ export const buildCampusCollegeLoadSnapshot = async ({
   });
 
   const classScheduleClassIds = Array.from(classScheduleRows.keys());
-  const classScheduleSessionDetails = await getSessionDetails(supabase, classScheduleClassIds);
+  const classScheduleSessionDetails = await getSessionDetails(
+    supabase,
+    classScheduleClassIds,
+  );
   const classScheduleSessionMetrics = new Map(
     [...classScheduleSessionDetails.entries()].map(([id, sessions]) => [
       id,
