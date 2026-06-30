@@ -1,5 +1,4 @@
 import { PrmsuFormHeader } from "@/features/campus-college-load/components/print/prmsu-form-header";
-import { PrmsuSignatureBlock } from "@/features/campus-college-load/components/print/prmsu-signature-block";
 import { formatNumber } from "@/features/campus-college-load/utils/format-number";
 import type {
   CampusCollegeLoadSnapshotFaculty,
@@ -42,7 +41,10 @@ export const FacultyLoadSummaryPage = ({
   collegeLogoUrl?: string | null;
 }) => {
   const groups = groupFaculty(faculty);
-  const semesterLabel = [metadata.academic_term_name, metadata.academic_year_code]
+  const semesterLabel = [
+    metadata.academic_term_name,
+    metadata.academic_year_code,
+  ]
     .filter(Boolean)
     .join(", ");
 
@@ -54,7 +56,9 @@ export const FacultyLoadSummaryPage = ({
       globalIdx:
         groups
           .slice(0, groups.indexOf(group))
-          .reduce((sum, g) => sum + g.faculty.length, 0) + groupIdx + 1,
+          .reduce((sum, g) => sum + g.faculty.length, 0) +
+        groupIdx +
+        1,
     })),
   );
 
@@ -76,16 +80,36 @@ export const FacultyLoadSummaryPage = ({
         <table className="w-full text-[10px] border-collapse border border-gray-400">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-400 px-1.5 py-1 text-center w-8">NO</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-left">NAME OF FACULTY (REGULAR)</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-left">DESIGNATION</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">EQUIVALENT TEACHING LOAD</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">LECTURE HOURS</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">LAB HOURS (×.75)</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">NO. OF PREPARATION</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">EQUIVALENT UNITS</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">ACTUAL TEACHING LOAD</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">TOTAL WORKING LOAD</th>
+              <th className="border border-gray-400 px-1.5 py-1 text-center w-8">
+                NO
+              </th>
+              <th className="w-44 border border-gray-400 px-1.5 py-1 text-left">
+                NAME OF FACULTY (REGULAR)
+              </th>
+              <th className="border border-gray-400 px-1.5 py-1 text-left">
+                DESIGNATION
+              </th>
+              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                EQUIVALENT TEACHING LOAD
+              </th>
+              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                LECTURE HOURS
+              </th>
+              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                LAB HOURS (×.75)
+              </th>
+              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                NO. OF PREPARATION
+              </th>
+              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                EQUIVALENT UNITS
+              </th>
+              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                ACTUAL TEACHING LOAD
+              </th>
+              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                TOTAL WORKING LOAD
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -98,16 +122,25 @@ export const FacultyLoadSummaryPage = ({
                   )) * 0.75;
               return (
                 <tr key={f.faculty_id} className="border-t border-gray-300">
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">{globalIdx}</td>
-                  <td className="border border-gray-400 px-1.5 py-1 font-medium">{f.faculty_name}</td>
-                  <td className="border border-gray-400 px-1.5 py-1">{f.designation_summary?.trim() || "—"}</td>
+                  <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    {globalIdx}
+                  </td>
+                  <td className="border border-gray-400 px-1.5 py-1 font-medium">
+                    {f.faculty_name}
+                  </td>
+                  <td className="border border-gray-400 px-1.5 py-1">
+                    {f.designation_summary?.trim() || "—"}
+                  </td>
                   <td className="border border-gray-400 px-1.5 py-1 text-center">
                     {formatNumber(Number(f.equivalent_teaching_load ?? 0))}
                   </td>
                   <td className="border border-gray-400 px-1.5 py-1 text-center">
                     {formatNumber(
                       f.lecture_hours ??
-                        f.classes.reduce((sum, c) => sum + Number(c.lecture_unit ?? 0), 0),
+                        f.classes.reduce(
+                          (sum, c) => sum + Number(c.lecture_unit ?? 0),
+                          0,
+                        ),
                     )}
                   </td>
                   <td className="border border-gray-400 px-1.5 py-1 text-center">
@@ -132,11 +165,39 @@ export const FacultyLoadSummaryPage = ({
         </table>
       </div>
 
-      <PrmsuSignatureBlock
-        preparedBy={metadata.prepared_by ?? ""}
-        recommendingApproval={metadata.recommending_approval ?? ""}
-        approvedBy={metadata.approved_by ?? ""}
-      />
+      <table className="w-full border-collapse mt-4">
+        <tbody>
+          <tr className="text-[9px] text-start">
+            <td className="w-1/3">Prepared:</td>
+            <td className="w-1/3">Recommending Approval:</td>
+            <td className="w-1/3">Approved:</td>
+          </tr>
+          <tr className="text-xs text-center">
+            <td className="w-1/3">
+              <p className="font-bold mt-4">{metadata.prepared_by ?? ""}</p>
+              <p className="text-[10px]">Campus Director</p>
+            </td>
+            <td className="w-1/3">
+              <p className="font-bold mt-4">
+                {metadata.recommending_approval ?? ""}
+              </p>
+              <p className="text-[10px]">Director for Instruction</p>
+            </td>
+            <td className="w-1/3">
+              <p className="font-bold mt-4">{metadata.approved_by ?? ""}</p>
+              <p className="text-[10px]">Vice President for Academic Affairs</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="self-end mt-2 w-full flex flex-col items-end pr-15 pt-4">
+        <div className="text-[8.5px]">
+          <p>Reference no.: PRMSU-ASA-COMSP18 (1a)</p>
+          <p>Effectivity date: May 04, 2021</p>
+          <p>Revision no.: 00</p>
+        </div>
+      </div>
     </div>
   );
 };

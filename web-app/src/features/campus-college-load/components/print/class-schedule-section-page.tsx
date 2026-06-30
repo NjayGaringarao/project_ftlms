@@ -1,5 +1,4 @@
 import { PrmsuFormHeader } from "@/features/campus-college-load/components/print/prmsu-form-header";
-import { PrmsuSignatureBlock } from "@/features/campus-college-load/components/print/prmsu-signature-block";
 import { formatNumber } from "@/features/campus-college-load/utils/format-number";
 import { formatTimeOfDay } from "@/utils/time";
 import type {
@@ -169,14 +168,19 @@ export const ClassScheduleSectionPage = ({
             </tbody>
           </table>
 
-          <PrmsuSignatureBlock
-            preparedBy="UNKNOWN"
-            recommendingApproval="UNKNOWN"
-            approvedBy="UNKNOWN"
-            preparedByTitle="Program Chairperson"
-            recommendingApprovalTitle=""
-            approvedByTitle=""
-          />
+          <table className="w-full border-collapse border-b-2 border-x-2 border-gray-900 mt-2">
+            <tbody>
+              <tr className="text-[9px] text-start border-t border-gray-900">
+                <td className="w-1/3">Prepared by:</td>
+              </tr>
+              <tr className="text-xs text-center border-t border-gray-900">
+                <td className="w-1/3">
+                  <p className="font-bold mt-4"></p>
+                  <p className="text-[10px]">Program Chairperson</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
