@@ -49,6 +49,7 @@ export const getSectionsList = async (): Promise<SectionListItem[]> => {
       name,
       classification,
       student_count,
+      advisory_faculty_id,
       academic_term:academic_term_id (
         id,
         code,
@@ -135,6 +136,7 @@ export const getSectionById = async (
       name,
       classification,
       student_count,
+      advisory_faculty_id,
       academic_term:academic_term_id (
         id,
         code,

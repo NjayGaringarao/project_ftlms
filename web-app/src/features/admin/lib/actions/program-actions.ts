@@ -504,6 +504,7 @@ type SectionInput = {
   name: string;
   classification: "regular" | "irregular";
   student_count?: number | null;
+  advisory_faculty_id?: string | null;
 };
 
 type UpdateSectionInput = SectionInput & {
@@ -517,6 +518,7 @@ const normalizeSectionInput = (input: SectionInput) => ({
   name: normalizeCode(input.name),
   classification: input.classification,
   student_count: input.student_count ?? null,
+  advisory_faculty_id: input.advisory_faculty_id ?? null,
 });
 
 export async function createSection(

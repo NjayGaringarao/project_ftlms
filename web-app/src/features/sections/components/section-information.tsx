@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import CampusPickerDialog from "@/features/shared/components/pickers/campus-picker-dialog";
 import ProgramOfferingPickerDialog from "@/features/shared/components/pickers/program-offering-picker-dialog";
+import FacultyPickerDialog from "@/features/shared/components/pickers/faculty-picker-dialog";
 import DangerZone from "@/features/admin/components/danger-zone";
 import DeleteConfirmModal from "@/features/admin/components/delete-confirm-modal";
 import FormStatusBanner from "@/features/admin/components/form-status-banner";
@@ -19,6 +20,7 @@ import {
 } from "@/features/admin/lib/major-offerings";
 import type { ProgramOfferingListItem } from "@/features/admin/lib/program-offerings";
 import type { TermListItem } from "@/features/admin/lib/terms";
+import type { FacultyListItem } from "@/features/course-loading/lib/types";
 import SectionCoursePlanner from "@/features/sections/components/section-course-planner";
 import { formatAcademicTermLabel } from "@/utils/string";
 import { cn } from "@/utils/style";
@@ -28,6 +30,7 @@ type SectionInformationProps = {
   academicTerm: TermListItem;
   campuses: CampusListItem[];
   programOfferings: ProgramOfferingListItem[];
+  faculty: FacultyListItem[];
   isCreating: boolean;
   fixedCampusId?: string;
   onCreated: (id: string) => void;
@@ -43,6 +46,7 @@ type SectionFormState = {
   name: string;
   classification: "regular" | "irregular";
   studentCount: string;
+  advisoryFacultyId: string | null;
 };
 
 const emptyForm: SectionFormState = {
@@ -53,6 +57,7 @@ const emptyForm: SectionFormState = {
   name: "",
   classification: "regular",
   studentCount: "",
+  advisoryFacultyId: null,
 };
 
 const toForm = (
@@ -74,6 +79,7 @@ const toForm = (
         classification: section.classification,
         studentCount:
           section.student_count !== null ? section.student_count.toString() : "",
+        advisoryFacultyId: section.advisory_faculty_id ?? null,
       }
     : {
         ...emptyForm,
@@ -85,6 +91,7 @@ export function SectionInformation({
   academicTerm,
   campuses,
   programOfferings,
+  faculty,
   isCreating,
   fixedCampusId,
   onCreated,
@@ -107,6 +114,7 @@ export function SectionInformation({
   const [programOfferingDialogOpen, setProgramOfferingDialogOpen] =
     useState(false);
   const [programOfferingQuery, setProgramOfferingQuery] = useState("");
+  const [facultyDialogOpen, setFacultyDialogOpen] = useState(false);
 
   useEffect(() => {
     const loadMajorOfferings = async () => {
@@ -149,6 +157,10 @@ export function SectionInformation({
         (offering) => offering.id === formData.majorOfferingId,
       ) ?? null,
     [formData.majorOfferingId, majorOfferings],
+  );
+  const selectedAdvisoryFaculty = useMemo(
+    () => faculty.find((f) => f.id === formData.advisoryFacultyId) ?? null,
+    [faculty, formData.advisoryFacultyId],
   );
   const programOfferingOptions = useMemo(
     () =>
@@ -204,6 +216,7 @@ export function SectionInformation({
     student_count: formData.studentCount.trim()
       ? Number(formData.studentCount)
       : null,
+    advisory_faculty_id: formData.advisoryFacultyId || null,
   });
 
   const handleSave = async () => {
@@ -443,6 +456,51 @@ export function SectionInformation({
               disabled={isSaving}
             />
           </div>
+
+          <div>
+            <Label className="text-xs" htmlFor="section-advisory-faculty">
+              Advisory Class Faculty
+            </Label>
+            <div className="mt-1 flex gap-1">
+              <Button
+                id="section-advisory-faculty"
+                type="button"
+                variant="outline"
+                className={cn(
+                  "flex-1 justify-between text-sm font-normal",
+                  !selectedAdvisoryFaculty && "text-foreground/60",
+                )}
+                onClick={() => setFacultyDialogOpen(true)}
+                disabled={isSaving || !formData.programOfferingId}
+              >
+                <span className="truncate">
+                  {selectedAdvisoryFaculty
+                    ? selectedAdvisoryFaculty.name
+                    : "Select faculty..."}
+                </span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-foreground/60" />
+              </Button>
+              {formData.advisoryFacultyId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setFormData((current) => ({
+                      ...current,
+                      advisoryFacultyId: null,
+                    }));
+                    setError("");
+                    setSuccess("");
+                  }}
+                  disabled={isSaving}
+                  aria-label="Clear advisory faculty"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         {isCreating || hasChanges ? (
@@ -516,6 +574,7 @@ export function SectionInformation({
             campusId: nextCampusId,
             programOfferingId: "",
             majorOfferingId: "",
+            advisoryFacultyId: null,
           }));
           setError("");
           setSuccess("");
@@ -535,10 +594,29 @@ export function SectionInformation({
             ...current,
             programOfferingId: offeringId,
             majorOfferingId: "",
+            advisoryFacultyId: null,
           }));
           setError("");
           setSuccess("");
           setProgramOfferingDialogOpen(false);
+        }}
+      />
+
+      <FacultyPickerDialog
+        open={facultyDialogOpen}
+        onOpenChange={setFacultyDialogOpen}
+        items={faculty}
+        selectedId={formData.advisoryFacultyId}
+        defaultCampusId={selectedProgramOffering?.campus_id ?? null}
+        defaultCollegeId={selectedProgramOffering?.program?.college_id ?? null}
+        onSelect={(facultyId) => {
+          setFormData((current) => ({
+            ...current,
+            advisoryFacultyId: facultyId,
+          }));
+          setError("");
+          setSuccess("");
+          setFacultyDialogOpen(false);
         }}
       />
     </div>

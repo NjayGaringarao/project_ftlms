@@ -264,7 +264,7 @@ export const FacultyTeachingLoadPage = ({
                 label="No. of Preparation"
                 value={formatNumber(preparationCount)}
               />
-              <InfoRow label="Advisory Class" value="UNKNOWN" />
+              <InfoRow label="Advisory Class" value={faculty.advisory_class ?? "—"} />
               <InfoRow
                 label="Equiv. Unit/s for No. of Prep."
                 value={formatNumber(equivalentUnits)}

@@ -38,6 +38,7 @@ export type CampusCollegeLoadSnapshotFaculty = {
   equivalent_teaching_load: number;
   actual_teaching_load: number;
   total_working_load: number;
+  advisory_class?: string | null;
   classes: CampusCollegeLoadSnapshotFacultyClass[];
 };
 

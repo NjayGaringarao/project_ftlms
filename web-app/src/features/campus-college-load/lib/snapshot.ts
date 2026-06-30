@@ -197,13 +197,51 @@ export const buildCampusCollegeLoadSnapshot = async ({
   const homeFacultyClassIds = Array.from(
     new Set(homeFacultyRows.flatMap((row) => row.classes.map((cls) => cls.id))),
   );
-  const facultySessionDetails = await getSessionDetails(supabase, homeFacultyClassIds);
+  const [facultySessionDetails, { data: allSectionRows }] = await Promise.all([
+    getSessionDetails(supabase, homeFacultyClassIds),
+    supabase
+      .from("section")
+      .select(
+        `
+        id,
+        code,
+        year_level,
+        classification,
+        advisory_faculty_id,
+        major_offering:major_offering_id (
+          program_offering:program_offering_id (
+            campus_id,
+            program:program_id (college_id)
+          )
+        )
+        `,
+      )
+      .eq("academic_term_id", academicTermId),
+  ]);
   const facultySessionMetrics = new Map(
     [...facultySessionDetails.entries()].map(([id, sessions]) => [
       id,
       deriveSessionMetrics(sessions),
     ]),
   );
+
+  const scopedSectionRows = (allSectionRows ?? []).filter((row) => {
+    const majorOffering = first(row.major_offering);
+    const programOffering = first(majorOffering?.program_offering);
+    const program = first(programOffering?.program);
+    return (
+      programOffering?.campus_id === campusId && program?.college_id === collegeId
+    );
+  });
+
+  const advisoryClassByFacultyId = new Map<string, string[]>();
+  scopedSectionRows.forEach((row) => {
+    const facultyId = row.advisory_faculty_id as string | null | undefined;
+    if (!facultyId) return;
+    const existing = advisoryClassByFacultyId.get(facultyId) ?? [];
+    existing.push(row.code);
+    advisoryClassByFacultyId.set(facultyId, existing);
+  });
 
   const faculty = homeFacultyRows
     .map((row): CampusCollegeLoadSnapshotFaculty => {
@@ -279,6 +317,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
         actual_teaching_load: actualTeachingLoad,
         total_working_load:
           equivalentTeachingLoad + actualTeachingLoad + equivalentUnits,
+        advisory_class: advisoryClassByFacultyId.get(row.id)?.join(", ") ?? null,
         classes,
       };
     })
@@ -306,72 +345,7 @@ export const buildCampusCollegeLoadSnapshot = async ({
     },
   );
 
-  // --- class_schedule: scoped by the class/section's owning campus/college,
-  // regardless of which college the assigned instructor belongs to.
-  const [{ data: scopedRows }, { data: allSectionRows }] = await Promise.all([
-    supabase
-      .from("course_utilization")
-      .select(
-        `
-        class_id,
-        course:course_id (code, title, lecture_unit, laboratory_unit),
-        section:section_id (
-          id,
-          code,
-          year_level,
-          classification,
-          academic_term_id,
-          major_offering:major_offering_id (
-            program_offering:program_offering_id (
-              campus_id,
-              program:program_id (college_id)
-            )
-          )
-        ),
-        class:class_id (
-          code,
-          user_class (
-            user:user_id (
-              id,
-              campus:campus_id (code),
-              college:college_id (code),
-              identity:identity (first_name, middle_name, last_name, suffix, professional_extension)
-            )
-          )
-        )
-        `,
-      )
-      .eq("section.academic_term_id", academicTermId),
-    // Every section in scope, independent of whether it has any classes
-    // assigned, so sections with zero subjects still appear in the snapshot.
-    supabase
-      .from("section")
-      .select(
-        `
-        id,
-        code,
-        year_level,
-        classification,
-        major_offering:major_offering_id (
-          program_offering:program_offering_id (
-            campus_id,
-            program:program_id (college_id)
-          )
-        )
-        `,
-      )
-      .eq("academic_term_id", academicTermId),
-  ]);
-
-  const sections: CampusCollegeLoadSnapshotSection[] = (allSectionRows ?? [])
-    .filter((row) => {
-      const majorOffering = first(row.major_offering);
-      const programOffering = first(majorOffering?.program_offering);
-      const program = first(programOffering?.program);
-      return (
-        programOffering?.campus_id === campusId && program?.college_id === collegeId
-      );
-    })
+  const sections: CampusCollegeLoadSnapshotSection[] = scopedSectionRows
     .map((row) => ({
       section_id: row.id,
       section_code: row.code,
@@ -379,6 +353,42 @@ export const buildCampusCollegeLoadSnapshot = async ({
       classification: row.classification ?? null,
     }))
     .sort((left, right) => left.section_code.localeCompare(right.section_code));
+
+  // --- class_schedule: scoped by the class/section's owning campus/college,
+  // regardless of which college the assigned instructor belongs to.
+  const { data: scopedRows } = await supabase
+    .from("course_utilization")
+    .select(
+      `
+      class_id,
+      course:course_id (code, title, lecture_unit, laboratory_unit),
+      section:section_id (
+        id,
+        code,
+        year_level,
+        classification,
+        academic_term_id,
+        major_offering:major_offering_id (
+          program_offering:program_offering_id (
+            campus_id,
+            program:program_id (college_id)
+          )
+        )
+      ),
+      class:class_id (
+        code,
+        user_class (
+          user:user_id (
+            id,
+            campus:campus_id (code),
+            college:college_id (code),
+            identity:identity (first_name, middle_name, last_name, suffix, professional_extension)
+          )
+        )
+      )
+      `,
+    )
+    .eq("section.academic_term_id", academicTermId);
 
   const classScheduleRows = new Map<string, CampusCollegeLoadSnapshotClass>();
   (scopedRows ?? []).forEach((row) => {

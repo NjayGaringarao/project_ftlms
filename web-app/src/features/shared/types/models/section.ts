@@ -9,6 +9,7 @@ export type Section = {
   name: string;
   classification: "regular" | "irregular";
   student_count: number | null;
+  advisory_faculty_id: string | null;
 };
 
 export type ExtendedSection = Section & {

@@ -13,6 +13,7 @@ import type { SectionListItem } from "@/features/admin/lib/sections";
 import type { CampusListItem } from "@/features/admin/lib/campuses";
 import type { ProgramOfferingListItem } from "@/features/admin/lib/program-offerings";
 import type { TermListItem } from "@/features/admin/lib/terms";
+import type { FacultyListItem } from "@/features/course-loading/lib/types";
 import { cn } from "@/utils/style";
 import { SectionInformation } from "./section-information";
 
@@ -20,6 +21,7 @@ type SectionsManagementProps = {
   sections: SectionListItem[];
   campuses: CampusListItem[];
   programOfferings: ProgramOfferingListItem[];
+  faculty: FacultyListItem[];
   academicTerm: TermListItem;
   selectedSection: SectionListItem | null;
   selectedId: string | null;
@@ -30,6 +32,7 @@ export function SectionsManagement({
   sections,
   campuses,
   programOfferings,
+  faculty,
   academicTerm,
   selectedSection,
   selectedId,
@@ -294,6 +297,7 @@ export function SectionsManagement({
               academicTerm={academicTerm}
               campuses={campuses}
               programOfferings={programOfferings}
+              faculty={faculty}
               isCreating={isCreating}
               fixedCampusId={campusId || undefined}
               onCreated={replaceWithItem}

@@ -8,6 +8,7 @@ import {
   getTermById,
   getTermsList,
 } from "@/features/admin/lib/terms";
+import { getFacultyListByTerm } from "@/features/course-loading/lib/queries";
 import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
 
 type SectionsPageProps = {
@@ -38,6 +39,9 @@ const SectionsPage = async ({ searchParams }: SectionsPageProps) => {
     ]);
 
   const academicTerm = queriedTerm ?? defaultTerm ?? terms[0] ?? null;
+  const faculty = academicTerm
+    ? await getFacultyListByTerm(academicTerm.id, { includeEmpty: true })
+    : [];
   const selectedSection = selectedId ? await getSectionById(selectedId) : null;
   const scopedSelectedSection =
     selectedSection?.academic_term_id === academicTerm?.id ? selectedSection : null;
@@ -66,6 +70,7 @@ const SectionsPage = async ({ searchParams }: SectionsPageProps) => {
           sections={sections}
           campuses={campuses}
           programOfferings={programOfferings}
+          faculty={faculty}
           academicTerm={academicTerm}
           selectedSection={scopedSelectedSection}
           selectedId={selectedId}
