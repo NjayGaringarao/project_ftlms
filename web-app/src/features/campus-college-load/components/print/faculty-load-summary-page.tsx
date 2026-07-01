@@ -48,20 +48,6 @@ export const FacultyLoadSummaryPage = ({
     .filter(Boolean)
     .join(", ");
 
-  // Flatten with stable global indices before render
-  const indexedFaculty = groups.flatMap((group) =>
-    group.faculty.map((f, groupIdx) => ({
-      faculty: f,
-      group: group.status,
-      globalIdx:
-        groups
-          .slice(0, groups.indexOf(group))
-          .reduce((sum, g) => sum + g.faculty.length, 0) +
-        groupIdx +
-        1,
-    })),
-  );
-
   return (
     <div className="bg-white p-6 text-black min-h-screen font-sans">
       <PrmsuFormHeader
@@ -76,94 +62,96 @@ export const FacultyLoadSummaryPage = ({
         <p className="text-center text-xs font-semibold mb-2">{programName}</p>
       ) : null}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-[10px] border-collapse border border-gray-400">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-400 px-1.5 py-1 text-center w-8">
-                NO
-              </th>
-              <th className="w-44 border border-gray-400 px-1.5 py-1 text-left">
-                NAME OF FACULTY (REGULAR)
-              </th>
-              <th className="border border-gray-400 px-1.5 py-1 text-left">
-                DESIGNATION
-              </th>
-              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
-                EQUIVALENT TEACHING LOAD
-              </th>
-              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
-                LECTURE HOURS
-              </th>
-              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
-                LAB HOURS (×.75)
-              </th>
-              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
-                NO. OF PREPARATION
-              </th>
-              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
-                EQUIVALENT UNITS
-              </th>
-              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
-                ACTUAL TEACHING LOAD
-              </th>
-              <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
-                TOTAL WORKING LOAD
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {indexedFaculty.map(({ faculty: f, globalIdx }) => {
-              const labHoursWeighted =
-                (f.laboratory_hours ??
-                  f.classes.reduce(
-                    (sum, c) => sum + Number(c.laboratory_unit ?? 0) * 3,
-                    0,
-                  )) * 0.75;
-              return (
-                <tr key={f.faculty_id} className="border-t border-gray-300">
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {globalIdx}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 font-medium">
-                    {f.faculty_name}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1">
-                    {f.designation_summary?.trim() || "—"}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {formatNumber(Number(f.equivalent_teaching_load ?? 0))}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {formatNumber(
-                      f.lecture_hours ??
-                        f.classes.reduce(
-                          (sum, c) => sum + Number(c.lecture_unit ?? 0),
-                          0,
-                        ),
-                    )}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {formatNumber(labHoursWeighted)}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {formatNumber(f.preparation_count ?? f.classes.length)}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {formatNumber(f.equivalent_units ?? 0)}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {formatNumber(Number(f.actual_teaching_load ?? 0))}
-                  </td>
-                  <td className="border border-gray-400 px-1.5 py-1 text-center">
-                    {formatNumber(Number(f.total_working_load ?? 0))}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {groups.map((group) => (
+        <div key={group.status} className="overflow-x-auto mt-4">
+          <table className="w-full text-[10px] border-collapse border border-gray-400">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-400 px-1.5 py-1 text-center w-8">
+                  NO
+                </th>
+                <th className="w-44 border border-gray-400 px-1.5 py-1 text-left">
+                  NAME OF FACULTY ({group.status.toUpperCase()})
+                </th>
+                <th className="border border-gray-400 px-1.5 py-1 text-left">
+                  DESIGNATION
+                </th>
+                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                  EQUIVALENT TEACHING LOAD
+                </th>
+                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                  LECTURE HOURS
+                </th>
+                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                  LAB HOURS (×.75)
+                </th>
+                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                  NO. OF PREPARATION
+                </th>
+                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                  EQUIVALENT UNITS
+                </th>
+                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                  ACTUAL TEACHING LOAD
+                </th>
+                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                  TOTAL WORKING LOAD
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {group.faculty.map((f, i) => {
+                const labHoursWeighted =
+                  (f.laboratory_hours ??
+                    f.classes.reduce(
+                      (sum, c) => sum + Number(c.laboratory_unit ?? 0) * 3,
+                      0,
+                    )) * 0.75;
+                return (
+                  <tr key={f.faculty_id} className="border-t border-gray-300">
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {i + 1}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 font-medium">
+                      {f.faculty_name}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1">
+                      {f.designation_summary?.trim() || "—"}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {formatNumber(Number(f.equivalent_teaching_load ?? 0))}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {formatNumber(
+                        f.lecture_hours ??
+                          f.classes.reduce(
+                            (sum, c) => sum + Number(c.lecture_unit ?? 0),
+                            0,
+                          ),
+                      )}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {formatNumber(labHoursWeighted)}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {formatNumber(f.preparation_count ?? f.classes.length)}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {formatNumber(f.equivalent_units ?? 0)}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {formatNumber(Number(f.actual_teaching_load ?? 0))}
+                    </td>
+                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                      {formatNumber(Number(f.total_working_load ?? 0))}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
 
       <table className="w-full border-collapse mt-4">
         <tbody>
