@@ -101,6 +101,9 @@ export type CampusCollegeLoadSnapshotSection = {
   section_code: string;
   year_level: number | null;
   classification: string | null;
+  student_count?: number | null;
+  adviser_name?: string | null;
+  program_chair_name?: string | null;
 };
 
 export type CampusCollegeLoadSnapshotMetadata = {

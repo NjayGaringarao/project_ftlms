@@ -9,6 +9,40 @@ import type {
 } from "@/features/shared/types/models";
 import InfoRow from "./info-row";
 
+const DAY_ABBREV: Record<string, string> = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thurs",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+};
+
+const DAY_ORDER: Record<string, number> = {
+  monday: 0,
+  tuesday: 1,
+  wednesday: 2,
+  thursday: 3,
+  friday: 4,
+  saturday: 5,
+  sunday: 6,
+};
+
+const abbreviateDay = (day: string): string =>
+  DAY_ABBREV[day.toLowerCase()] ?? day;
+
+const deriveDeliveryMode = (
+  roomCode: string | null,
+  hasSession: boolean,
+): "F2F" | "OL" | "TBA" => {
+  if (!hasSession) return "TBA";
+  if (!roomCode || roomCode.trim() === "" || roomCode.toUpperCase() === "TBA")
+    return "OL";
+  if (roomCode.toUpperCase().includes("OL")) return "OL";
+  return "F2F";
+};
+
 type ScheduleRow = {
   session: CampusCollegeLoadSnapshotSession | null;
   classRow: CampusCollegeLoadSnapshotClass;
@@ -62,7 +96,16 @@ const buildScheduleRows = (
     }
   }
 
-  return rows;
+  return rows.sort((a, b) => {
+    if (!a.session && !b.session) return 0;
+    if (!a.session) return 1;
+    if (!b.session) return -1;
+    const dayDiff =
+      (DAY_ORDER[a.session.day.toLowerCase()] ?? 99) -
+      (DAY_ORDER[b.session.day.toLowerCase()] ?? 99);
+    if (dayDiff !== 0) return dayDiff;
+    return a.session.start_time.localeCompare(b.session.start_time);
+  });
 };
 
 export const ClassScheduleSectionPage = ({
@@ -142,8 +185,15 @@ export const ClassScheduleSectionPage = ({
               <col />
             </colgroup>
             <tbody>
-              <InfoRow label="Number of Student" value="UNKNOWN" />
-              <InfoRow label="Adviser" value="UNKNOWN" />
+              <InfoRow
+                label="Number of Student"
+                value={
+                  section.student_count != null
+                    ? String(section.student_count)
+                    : "—"
+                }
+              />
+              <InfoRow label="Adviser" value={section.adviser_name ?? "—"} />
               <InfoRow
                 label="Total Lecture Class Hours"
                 value={formatNumber(totalLecHours)}
@@ -175,6 +225,7 @@ export const ClassScheduleSectionPage = ({
               <col className="w-16" />
               <col className="w-8" />
               <col className="w-16" />
+              <col className="w-32" />
             </colgroup>
             <thead>
               <tr className="bg-neutral-100">
@@ -205,8 +256,12 @@ export const ClassScheduleSectionPage = ({
                 const timeStr = row.session
                   ? `${formatTimeOfDay(row.session.start_time)}–${formatTimeOfDay(row.session.end_time)}`
                   : "TBA";
+                const deliveryMode = deriveDeliveryMode(
+                  row.session?.room_code ?? null,
+                  row.session !== null,
+                );
                 const dayStr = row.session
-                  ? `${row.session.day}(${row.session.type})`
+                  ? `${abbreviateDay(row.session.day)}(${deliveryMode})`
                   : "TBA";
                 return (
                   <tr key={i}>
@@ -223,18 +278,24 @@ export const ClassScheduleSectionPage = ({
                       {row.lecHours > 0 ? formatNumber(row.lecHours) : ""}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5 text-center">
-                      {row.lecRoom ?? ""}
+                      {row.lecHours > 0
+                        ? row.session === null
+                          ? "TBA"
+                          : (row.lecRoom ?? "Online")
+                        : ""}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.labHours > 0 ? formatNumber(row.labHours) : ""}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5 text-center">
-                      {row.labRoom ?? ""}
+                      {row.labHours > 0
+                        ? row.session === null
+                          ? "TBA"
+                          : (row.labRoom ?? "Online")
+                        : ""}
                     </td>
                     <td className="border border-gray-900 px-1 py-0.5">
-                      {row.classRow.instructor_name ?? (
-                        <span className="text-gray-400">Unassigned</span>
-                      )}
+                      {row.classRow.instructor_name ?? "TBA"}
                     </td>
                   </tr>
                 );
@@ -253,19 +314,24 @@ export const ClassScheduleSectionPage = ({
           </table>
         </div>
       </div>
-      <table className="w-full border-collapse mt-2">
-        <tbody>
-          <tr className="text-[9px] text-start">
-            <td className="w-1/3">Prepared by:</td>
-          </tr>
-          <tr className="text-xs text-center">
-            <td className="w-1/3">
-              <p className="font-bold mt-4"></p>
-              <p className="text-[10px]">Program Chairperson</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+
+      <div className="mt-4 flex flex-col items-center">
+        <table className="w-96 mt-2">
+          <tbody>
+            <tr className="text-[9px] text-start">
+              <td className="w-1/3">Prepared by:</td>
+            </tr>
+            <tr className="text-xs text-center">
+              <td className="w-1/3">
+                <p className="font-bold mt-4">
+                  {section.program_chair_name ?? ""}
+                </p>
+                <p className="text-[10px]">Program Chairperson</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

@@ -226,9 +226,11 @@ export const buildCampusCollegeLoadSnapshot = async ({
         code,
         year_level,
         classification,
+        student_count,
         advisory_faculty_id,
         major_offering:major_offering_id (
           program_offering:program_offering_id (
+            id,
             campus_id,
             program:program_id (college_id)
           )
@@ -262,6 +264,77 @@ export const buildCampusCollegeLoadSnapshot = async ({
     existing.push(row.code);
     advisoryClassByFacultyId.set(facultyId, existing);
   });
+
+  const advisoryFacultyIds = [
+    ...new Set(
+      scopedSectionRows
+        .map((r) => r.advisory_faculty_id as string | null)
+        .filter(Boolean) as string[],
+    ),
+  ];
+  const sectionProgramOfferingIds = [
+    ...new Set(
+      scopedSectionRows
+        .map((r) => {
+          const mo = first(r.major_offering);
+          const po = first(mo?.program_offering);
+          return (po as { id?: string } | null)?.id ?? null;
+        })
+        .filter(Boolean) as string[],
+    ),
+  ];
+
+  const [{ data: advisoryIdentities }, { data: programChairDesignations }] =
+    await Promise.all([
+      advisoryFacultyIds.length > 0
+        ? supabase
+            .from("identity")
+            .select(
+              "user_id, first_name, middle_name, last_name, suffix, professional_extension",
+            )
+            .in("user_id", advisoryFacultyIds)
+        : Promise.resolve({ data: [] }),
+      sectionProgramOfferingIds.length > 0
+        ? supabase
+            .from("designation")
+            .select("user_id, program_offering_id")
+            .eq("job_title", "Program Chairperson")
+            .in("program_offering_id", sectionProgramOfferingIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+  const programChairUserIds = [
+    ...new Set(
+      (programChairDesignations ?? [])
+        .map((r) => r.user_id)
+        .filter(Boolean) as string[],
+    ),
+  ];
+  const { data: programChairIdentities } =
+    programChairUserIds.length > 0
+      ? await supabase
+          .from("identity")
+          .select(
+            "user_id, first_name, middle_name, last_name, suffix, professional_extension",
+          )
+          .in("user_id", programChairUserIds)
+      : { data: [] };
+
+  const advisoryIdentityByUserId = new Map(
+    (advisoryIdentities ?? []).map((r) => [r.user_id, r]),
+  );
+  const programChairUserIdByOfferingId = new Map(
+    (programChairDesignations ?? []).map((r) => [r.program_offering_id, r.user_id]),
+  );
+  const programChairIdentityByUserId = new Map(
+    (programChairIdentities ?? []).map((r) => [r.user_id, r]),
+  );
+
+  const sectionNameOptions = {
+    firstWord: "FIRST" as const,
+    middleName: "INITIAL" as const,
+    isProfexIncluded: true,
+  };
 
   const faculty = homeFacultyRows
     .map((row): CampusCollegeLoadSnapshotFaculty => {
@@ -374,12 +447,37 @@ export const buildCampusCollegeLoadSnapshot = async ({
   );
 
   const sections: CampusCollegeLoadSnapshotSection[] = scopedSectionRows
-    .map((row) => ({
-      section_id: row.id,
-      section_code: row.code,
-      year_level: row.year_level ?? null,
-      classification: row.classification ?? null,
-    }))
+    .map((row) => {
+      const majorOffering = first(row.major_offering);
+      const programOffering = first(majorOffering?.program_offering);
+      const programOfferingId = (programOffering as { id?: string } | null)?.id ?? null;
+
+      const advisoryFacultyId = row.advisory_faculty_id as string | null | undefined;
+      const advisoryIdentity = advisoryFacultyId
+        ? (advisoryIdentityByUserId.get(advisoryFacultyId) ?? null)
+        : null;
+
+      const programChairUserId = programOfferingId
+        ? (programChairUserIdByOfferingId.get(programOfferingId) ?? null)
+        : null;
+      const programChairIdentity = programChairUserId
+        ? (programChairIdentityByUserId.get(programChairUserId) ?? null)
+        : null;
+
+      return {
+        section_id: row.id,
+        section_code: row.code,
+        year_level: row.year_level ?? null,
+        classification: row.classification ?? null,
+        student_count: (row.student_count as number | null) ?? null,
+        adviser_name: advisoryIdentity
+          ? formatName(advisoryIdentity, sectionNameOptions)
+          : null,
+        program_chair_name: programChairIdentity
+          ? formatName(programChairIdentity, sectionNameOptions)
+          : null,
+      };
+    })
     .sort((left, right) => left.section_code.localeCompare(right.section_code));
 
   // --- class_schedule: scoped by the class/section's owning campus/college,
