@@ -7,6 +7,7 @@ import type {
   CampusCollegeLoadSnapshotMetadata,
   CampusCollegeLoadSnapshotSession,
 } from "@/features/shared/types/models";
+import InfoRow from "./info-row";
 
 type SessionRow = {
   session: CampusCollegeLoadSnapshotSession | null;
@@ -125,22 +126,6 @@ const buildSessionRows = (
 
   return rows;
 };
-
-const InfoRow = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) => (
-  <tr>
-    <td className="text-[9px] font-bold leading-tight align-top pr-1">
-      {label}
-    </td>
-    <td className="text-[9px] leading-tight align-top px-0.5">:</td>
-    <td className="text-[9px] leading-tight align-top">{value}</td>
-  </tr>
-);
 
 export const FacultyTeachingLoadPage = ({
   metadata,
@@ -477,7 +462,9 @@ export const FacultyTeachingLoadPage = ({
               <p className="text-[10px]">Campus Director</p>
             </td>
             <td className="border-r border-gray-900">
-              <p className="font-bold mt-4">{metadata.recommending_approval ?? ""}</p>
+              <p className="font-bold mt-4">
+                {metadata.recommending_approval ?? ""}
+              </p>
               <p className="text-[10px]">Director for Instruction</p>
             </td>
             <td>

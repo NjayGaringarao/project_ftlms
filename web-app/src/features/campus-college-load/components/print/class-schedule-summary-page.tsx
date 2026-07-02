@@ -26,9 +26,17 @@ const buildSectionSummary = (
       return a.section_code.localeCompare(b.section_code);
     })
     .map((section) => {
-      const sectionClasses = classes.filter((c) => c.section_id === section.section_id);
-      const lecHours = sectionClasses.reduce((sum, c) => sum + (c.lecture_hours ?? 0), 0);
-      const labHours = sectionClasses.reduce((sum, c) => sum + (c.laboratory_hours ?? 0), 0);
+      const sectionClasses = classes.filter(
+        (c) => c.section_id === section.section_id,
+      );
+      const lecHours = sectionClasses.reduce(
+        (sum, c) => sum + (c.lecture_hours ?? 0),
+        0,
+      );
+      const labHours = sectionClasses.reduce(
+        (sum, c) => sum + (c.laboratory_hours ?? 0),
+        0,
+      );
       return { section, lecHours, labHours, totalHours: lecHours + labHours };
     });
 };
@@ -46,7 +54,10 @@ export const ClassScheduleSummaryPage = ({
   programName?: string | null;
   collegeLogoUrl?: string | null;
 }) => {
-  const semesterLabel = [metadata.academic_term_name, metadata.academic_year_code]
+  const semesterLabel = [
+    metadata.academic_term_name,
+    metadata.academic_year_code,
+  ]
     .filter(Boolean)
     .join(", ");
   const rows = buildSectionSummary(sections, classes);
@@ -66,40 +77,62 @@ export const ClassScheduleSummaryPage = ({
       ) : null}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[10px] border-collapse border border-gray-400">
+        <table className="w-full text-[10px] border-collapse">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-400 px-1.5 py-1 text-center w-8">NO</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-left">SECTION</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">YEAR LEVEL</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">TOTAL LECTURE CLASS HOURS</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">TOTAL LABORATORY CLASS HOURS</th>
-              <th className="border border-gray-400 px-1.5 py-1 text-center">TOTAL CLASS HOURS/WEEK</th>
+            <tr className="bg-neutral-100">
+              <th className="border-2 border-gray-900 px-1.5 py-1 text-center w-8">
+                NO
+              </th>
+              <th className="border-2 border-gray-900 px-1.5 py-1 text-left">
+                SECTION
+              </th>
+              <th className="border-2 border-gray-900 px-1.5 py-1 text-center">
+                YEAR LEVEL
+              </th>
+              <th className="border-2 border-gray-900 px-1.5 py-1 text-center">
+                TOTAL LECTURE CLASS HOURS
+              </th>
+              <th className="border-2 border-gray-900 px-1.5 py-1 text-center">
+                TOTAL LABORATORY CLASS HOURS
+              </th>
+              <th className="border-2 border-gray-900 px-1.5 py-1 text-center">
+                TOTAL CLASS HOURS/WEEK
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={row.section.section_id} className="border-t border-gray-300">
-                <td className="border border-gray-400 px-1.5 py-1 text-center">{i + 1}</td>
-                <td className="border border-gray-400 px-1.5 py-1 font-medium">{row.section.section_code}</td>
-                <td className="border border-gray-400 px-1.5 py-1 text-center">
+              <tr key={row.section.section_id}>
+                <td className="border border-gray-900 px-1.5 py-1 text-center">
+                  {i + 1}
+                </td>
+                <td className="border border-gray-900 px-1.5 py-1 font-medium">
+                  {row.section.section_code}
+                </td>
+                <td className="border border-gray-900 px-1.5 py-1 text-center">
                   {formatOrdinalYearLevel(row.section.year_level)}
                 </td>
-                <td className="border border-gray-400 px-1.5 py-1 text-center">{formatNumber(row.lecHours)}</td>
-                <td className="border border-gray-400 px-1.5 py-1 text-center">{formatNumber(row.labHours)}</td>
-                <td className="border border-gray-400 px-1.5 py-1 text-center">{formatNumber(row.totalHours)}</td>
+                <td className="border border-gray-900 px-1.5 py-1 text-center">
+                  {formatNumber(row.lecHours)}
+                </td>
+                <td className="border border-gray-900 px-1.5 py-1 text-center">
+                  {formatNumber(row.labHours)}
+                </td>
+                <td className="border border-gray-900 px-1.5 py-1 text-center">
+                  {formatNumber(row.totalHours)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <table className="w-full border-collapse border-b-2 border-x-2 border-gray-900 mt-2">
+      <table className="w-full border-collapse mt-2">
         <tbody>
-          <tr className="text-[9px] text-start border-t border-gray-900">
+          <tr className="text-[9px] text-start">
             <td className="w-1/3">Prepared by:</td>
           </tr>
-          <tr className="text-xs text-center border-t border-gray-900">
+          <tr className="text-xs text-center">
             <td className="w-1/3">
               <p className="font-bold mt-4"></p>
               <p className="text-[10px]">Program Chairperson</p>

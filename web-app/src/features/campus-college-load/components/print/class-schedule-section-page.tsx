@@ -7,6 +7,7 @@ import type {
   CampusCollegeLoadSnapshotSection,
   CampusCollegeLoadSnapshotSession,
 } from "@/features/shared/types/models";
+import InfoRow from "./info-row";
 
 type ScheduleRow = {
   session: CampusCollegeLoadSnapshotSession | null;
@@ -17,7 +18,9 @@ type ScheduleRow = {
   labRoom: string | null;
 };
 
-const buildScheduleRows = (classes: CampusCollegeLoadSnapshotClass[]): ScheduleRow[] => {
+const buildScheduleRows = (
+  classes: CampusCollegeLoadSnapshotClass[],
+): ScheduleRow[] => {
   const rows: ScheduleRow[] = [];
 
   for (const classRow of classes) {
@@ -62,13 +65,6 @@ const buildScheduleRows = (classes: CampusCollegeLoadSnapshotClass[]): ScheduleR
   return rows;
 };
 
-const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex gap-1 text-[9px] leading-tight">
-    <span className="font-semibold whitespace-nowrap">{label}:</span>
-    <span>{value}</span>
-  </div>
-);
-
 export const ClassScheduleSectionPage = ({
   metadata,
   section,
@@ -83,8 +79,14 @@ export const ClassScheduleSectionPage = ({
   collegeLogoUrl?: string | null;
 }) => {
   const scheduleRows = buildScheduleRows(classes);
-  const totalLecHours = classes.reduce((sum, c) => sum + (c.lecture_hours ?? 0), 0);
-  const totalLabHours = classes.reduce((sum, c) => sum + (c.laboratory_hours ?? 0), 0);
+  const totalLecHours = classes.reduce(
+    (sum, c) => sum + (c.lecture_hours ?? 0),
+    0,
+  );
+  const totalLabHours = classes.reduce(
+    (sum, c) => sum + (c.laboratory_hours ?? 0),
+    0,
+  );
 
   return (
     <div className="bg-white p-4 text-black font-sans text-[10px]">
@@ -96,40 +98,106 @@ export const ClassScheduleSectionPage = ({
         collegeLogoUrl={collegeLogoUrl}
       />
 
-      <div className="flex gap-3">
+      <div className="flex">
         {/* Left sidebar */}
-        <div className="w-44 flex-shrink-0 border border-gray-400 p-2 flex flex-col gap-1">
-          <InfoRow label="Campus" value={metadata.campus_name ?? "—"} />
-          <InfoRow label="Address" value={metadata.campus_name ? `${metadata.campus_name}, Zambales` : "—"} />
-          <InfoRow label="College" value={metadata.college_code ?? "—"} />
 
-          <div className="my-2 border-t border-gray-300" />
-
-          <p className="font-bold text-xl leading-tight text-center">{section.section_code}</p>
-          <p className="text-[8px] text-gray-500 text-center mb-1">CLASS: [COURSE/YEAR/SECTION]</p>
-
-          <div className="mt-1 flex flex-col gap-0.5">
-            <InfoRow label="Number of Student" value="UNKNOWN" />
-            <InfoRow label="Adviser" value="UNKNOWN" />
-            <InfoRow label="Total Lecture Class Hours" value={formatNumber(totalLecHours)} />
-            <InfoRow label="Total Laboratory Class Hours" value={formatNumber(totalLabHours)} />
-            <InfoRow label="Total Class Hours/Week" value={formatNumber(totalLecHours + totalLabHours)} />
+        <div className="w-1/4 shrink-0 border-2 border-gray-900 flex flex-col">
+          <div className="flex flex-col h-14 border-b-2 border-gray-900">
+            <table className="w-full table-fixed border-collapse">
+              <colgroup>
+                <col style={{ width: "55%" }} />
+                <col style={{ width: "8%" }} />
+                <col />
+              </colgroup>
+              <tbody>
+                <InfoRow label="Campus" value={metadata.campus_name ?? "—"} />
+                <InfoRow
+                  label="Address"
+                  value={
+                    metadata.campus_name
+                      ? `${metadata.campus_name}, Zambales`
+                      : "—"
+                  }
+                />
+                <InfoRow label="College" value={metadata.college_code ?? "—"} />
+              </tbody>
+            </table>
           </div>
+          <div className="flex flex-col h-14 border-b border-gray-600 items-center justify-center bg-neutral-100">
+            <p className="text-[18px] font-black leading-tight">
+              {section.section_code}
+            </p>
+          </div>
+
+          <div className="h-4 flex flex-col items-center bg-neutral-400 border-b-2 border-gray-900">
+            <p className="text-[9px] text-white font-bold">
+              CLASS [COURSE/YEAR/SECTION]
+            </p>
+          </div>
+
+          <table className="mt-4 w-full table-fixed border-collapse">
+            <colgroup>
+              <col style={{ width: "55%" }} />
+              <col style={{ width: "8%" }} />
+              <col />
+            </colgroup>
+            <tbody>
+              <InfoRow label="Number of Student" value="UNKNOWN" />
+              <InfoRow label="Adviser" value="UNKNOWN" />
+              <InfoRow
+                label="Total Lecture Class Hours"
+                value={formatNumber(totalLecHours)}
+              />
+              <InfoRow
+                label="Total Laboratory Class Hours"
+                value={formatNumber(totalLabHours)}
+              />
+              <InfoRow
+                label="Total Class Hours/Week"
+                value={formatNumber(totalLecHours + totalLabHours)}
+              />
+            </tbody>
+          </table>
         </div>
+        <div className="w-3 bg-neutral-400 border-y-2 border-gray-900" />
 
         {/* Right: schedule table */}
-        <div className="flex-1 min-w-0">
-          <table className="w-full border-collapse border border-gray-400 text-[9px]">
+        <div className="flex-1 min-w-0 border-2 border-gray-900 overflow-hidden">
+          <table
+            className="w-full border-collapse text-[9px]"
+            style={{ margin: "-2px", width: "calc(100% + 4px)" }}
+          >
+            <colgroup>
+              <col className="w-24" />
+              <col className="w-14" />
+              <col />
+              <col className="w-8" />
+              <col className="w-16" />
+              <col className="w-8" />
+              <col className="w-16" />
+            </colgroup>
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-400 px-1 py-0.5">Time</th>
-                <th className="border border-gray-400 px-1 py-0.5">Day/s</th>
-                <th className="border border-gray-400 px-1 py-0.5">Course Code and Title</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Lec. Hours</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Lec. Room</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Lab. Hours</th>
-                <th className="border border-gray-400 px-1 py-0.5 text-center">Lab. Room</th>
-                <th className="border border-gray-400 px-1 py-0.5">Instructor</th>
+              <tr className="bg-neutral-100">
+                <th className="border-2 border-gray-900 px-1 py-0.5">Time</th>
+                <th className="border-2 border-gray-900 px-1 py-0.5">Day/s</th>
+                <th className="border-2 border-gray-900 px-1 py-0.5">
+                  Course Code and Title
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Lec. Hours
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Lec. Room
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Lab. Hours
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5 text-center">
+                  Lab. Room
+                </th>
+                <th className="border-2 border-gray-900 px-1 py-0.5">
+                  Instructor
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -141,48 +209,63 @@ export const ClassScheduleSectionPage = ({
                   ? `${row.session.day}(${row.session.type})`
                   : "TBA";
                 return (
-                  <tr key={i} className="border-t border-gray-300">
-                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">{timeStr}</td>
-                    <td className="border border-gray-400 px-1 py-0.5 whitespace-nowrap">{dayStr}</td>
-                    <td className="border border-gray-400 px-1 py-0.5">{row.classRow.course_code}: {row.classRow.course_title}</td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                  <tr key={i}>
+                    <td className="border border-gray-900 px-1 py-0.5 whitespace-nowrap">
+                      {timeStr}
+                    </td>
+                    <td className="border border-gray-900 px-1 py-0.5 whitespace-nowrap">
+                      {dayStr}
+                    </td>
+                    <td className="border border-gray-900 px-1 py-0.5">
+                      {row.classRow.course_code}: {row.classRow.course_title}
+                    </td>
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.lecHours > 0 ? formatNumber(row.lecHours) : ""}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">{row.lecRoom ?? ""}</td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
+                      {row.lecRoom ?? ""}
+                    </td>
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
                       {row.labHours > 0 ? formatNumber(row.labHours) : ""}
                     </td>
-                    <td className="border border-gray-400 px-1 py-0.5 text-center">{row.labRoom ?? ""}</td>
-                    <td className="border border-gray-400 px-1 py-0.5">
-                      {row.classRow.instructor_name ?? <span className="text-gray-400">Unassigned</span>}
+                    <td className="border border-gray-900 px-1 py-0.5 text-center">
+                      {row.labRoom ?? ""}
+                    </td>
+                    <td className="border border-gray-900 px-1 py-0.5">
+                      {row.classRow.instructor_name ?? (
+                        <span className="text-gray-400">Unassigned</span>
+                      )}
                     </td>
                   </tr>
                 );
               })}
               {/* Blank rows */}
-              {Array.from({ length: Math.max(0, 5 - scheduleRows.length) }).map((_, i) => (
+              {Array.from({
+                length: Math.max(0, 10 - scheduleRows.length),
+              }).map((_, i) => (
                 <tr key={`blank-${i}`}>
-                  <td className="border border-gray-400 px-1 py-1" colSpan={8}>&nbsp;</td>
+                  <td className="border border-gray-300 px-1 py-1" colSpan={8}>
+                    &nbsp;
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-
-          <table className="w-full border-collapse border-b-2 border-x-2 border-gray-900 mt-2">
-            <tbody>
-              <tr className="text-[9px] text-start border-t border-gray-900">
-                <td className="w-1/3">Prepared by:</td>
-              </tr>
-              <tr className="text-xs text-center border-t border-gray-900">
-                <td className="w-1/3">
-                  <p className="font-bold mt-4"></p>
-                  <p className="text-[10px]">Program Chairperson</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
+      <table className="w-full border-collapse mt-2">
+        <tbody>
+          <tr className="text-[9px] text-start">
+            <td className="w-1/3">Prepared by:</td>
+          </tr>
+          <tr className="text-xs text-center">
+            <td className="w-1/3">
+              <p className="font-bold mt-4"></p>
+              <p className="text-[10px]">Program Chairperson</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 };
