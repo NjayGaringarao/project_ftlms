@@ -41,11 +41,11 @@ export function SidebarNav() {
       )}
     >
       <Image
-        src="/logo_light.png"
+        src="/prmsu.png"
         alt="Logo"
         width={128}
         height={128}
-        className="w-full p-3 hidden md:block"
+        className="w-full p-4 hidden md:block"
       />
 
       <div

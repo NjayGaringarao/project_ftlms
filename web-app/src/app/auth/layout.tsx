@@ -19,15 +19,12 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
           "bg-background/85 backdrop-blur-sm p-6",
         )}
       >
-        <div className="flex flex-row gap-4 items-end">
-          <Logo className="w-40 md:w-40" />
-          <div className="text-3xl text-foreground">
-            <h1>FACULTY TEACHING LOAD MANAGEMENT SYSTEM</h1>
-          </div>
+        <div className="text-3xl text-foreground/70 px-6 border-y border-foreground/20">
+          <p>SCHEDULER AND</p>
+          <p>FACULTY TEACHING LOAD</p>
+          <p>MANAGEMENT SYSTEM</p>
         </div>
-        <div className="border-y border-foreground/20 mt-6 overflow-auto">
-          {children}
-        </div>
+        <div className="overflow-auto">{children}</div>
       </div>
       <div className="relative flex-1 flex-col justify-between md:flex hidden ">
         <div className="absolute z-10 w-full h-screen bg-background/50 backdrop-blur-xs"></div>

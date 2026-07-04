@@ -60,7 +60,8 @@ function ErrorPageContent() {
             />
           </div>
           <p className="flex-1 text-xs text-textBody text-start">
-            FTLMS: Faculty Teaching Load Management System &copy; 2026 - ICTO
+            Scheduler and Faculty Teaching Load Management System &copy; 2026 -
+            ICTO
           </p>
         </div>
       </div>

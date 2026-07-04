@@ -5,7 +5,9 @@ const HomePage = () => {
     <div className="h-full">
       <div className="w-full bg-foreground p-11 flex flex-row justify-between items-center">
         <div>
-          <h1 className="text-3xl text-background">Welcome to Project FTLMS</h1>
+          <h1 className="text-3xl text-background">
+            Welcome to Project S+FTLMS
+          </h1>
           <h2 className="text-background">
             President Ramon Magsaysay State University
           </h2>
