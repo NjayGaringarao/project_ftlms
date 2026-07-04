@@ -64,37 +64,37 @@ export const FacultyLoadSummaryPage = ({
 
       {groups.map((group) => (
         <div key={group.status} className="overflow-x-auto mt-4">
-          <table className="w-full text-[10px] border-collapse border border-gray-400">
+          <table className="w-full text-[9px] border-collapse border border-gray-900">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-400 px-1.5 py-1 text-center w-8">
+              <tr className="bg-neutral-400">
+                <th className="border border-gray-900 px-1.5 py-1 text-center w-8">
                   NO
                 </th>
-                <th className="w-44 border border-gray-400 px-1.5 py-1 text-left">
+                <th className="w-44 border border-gray-900 px-1.5 py-1 text-left">
                   NAME OF FACULTY ({group.status.toUpperCase()})
                 </th>
-                <th className="border border-gray-400 px-1.5 py-1 text-left">
+                <th className="border border-gray-900 px-1.5 py-1 text-left">
                   DESIGNATION
                 </th>
-                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                <th className="w-20 border border-gray-900 px-1.5 py-1 text-center">
                   EQUIVALENT TEACHING LOAD
                 </th>
-                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                <th className="w-20 border border-gray-900 px-1.5 py-1 text-center">
                   LECTURE HOURS
                 </th>
-                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                <th className="w-20 border border-gray-900 px-1.5 py-1 text-center">
                   LAB HOURS (×.75)
                 </th>
-                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                <th className="w-20 border border-gray-900 px-1.5 py-1 text-center">
                   NO. OF PREPARATION
                 </th>
-                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                <th className="w-20 border border-gray-900 px-1.5 py-1 text-center">
                   EQUIVALENT UNITS
                 </th>
-                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                <th className="w-20 border border-gray-900 px-1.5 py-1 text-center">
                   ACTUAL TEACHING LOAD
                 </th>
-                <th className="w-24 border border-gray-400 px-1.5 py-1 text-center">
+                <th className="w-20 border border-gray-900 px-1.5 py-1 text-center">
                   TOTAL WORKING LOAD
                 </th>
               </tr>
@@ -108,20 +108,20 @@ export const FacultyLoadSummaryPage = ({
                       0,
                     )) * 0.75;
                 return (
-                  <tr key={f.faculty_id} className="border-t border-gray-300">
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                  <tr key={f.faculty_id} className="border-t border-gray-900">
+                    <td className="border border-gray-900 px-1.5 py-1 text-center">
                       {i + 1}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 font-medium">
+                    <td className="border border-gray-900 px-1.5 py-1 font-medium">
                       {f.faculty_name}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1">
+                    <td className="border border-gray-900 px-1.5 py-1">
                       {f.designation_summary?.trim() || "—"}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    <td className="border border-gray-900 px-1.5 py-1 text-center">
                       {formatNumber(Number(f.equivalent_teaching_load ?? 0))}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    <td className="border border-gray-900 px-1.5 py-1 text-center">
                       {formatNumber(
                         f.lecture_hours ??
                           f.classes.reduce(
@@ -130,19 +130,19 @@ export const FacultyLoadSummaryPage = ({
                           ),
                       )}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    <td className="border border-gray-900 px-1.5 py-1 text-center">
                       {formatNumber(labHoursWeighted)}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    <td className="border border-gray-900 px-1.5 py-1 text-center">
                       {formatNumber(f.preparation_count ?? f.classes.length)}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    <td className="border border-gray-900 px-1.5 py-1 text-center">
                       {formatNumber(f.equivalent_units ?? 0)}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    <td className="border border-gray-900 px-1.5 py-1 text-center">
                       {formatNumber(Number(f.actual_teaching_load ?? 0))}
                     </td>
-                    <td className="border border-gray-400 px-1.5 py-1 text-center">
+                    <td className="borderf border-gray-900 px-1.5 py-1 text-center">
                       {formatNumber(Number(f.total_working_load ?? 0))}
                     </td>
                   </tr>

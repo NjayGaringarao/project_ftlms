@@ -458,17 +458,17 @@ export const FacultyTeachingLoadPage = ({
           </tr>
           <tr className="text-xs text-center border-t border-gray-900">
             <td className="border-r border-gray-900">
-              <p className="font-bold mt-4">{metadata.prepared_by ?? ""}</p>
+              <p className="font-bold mt-6">{metadata.prepared_by ?? ""}</p>
               <p className="text-[10px]">Campus Director</p>
             </td>
             <td className="border-r border-gray-900">
-              <p className="font-bold mt-4">
+              <p className="font-bold mt-6">
                 {metadata.recommending_approval ?? ""}
               </p>
               <p className="text-[10px]">Director for Instruction</p>
             </td>
             <td>
-              <p className="font-bold mt-4">{metadata.approved_by ?? ""}</p>
+              <p className="font-bold mt-6">{metadata.approved_by ?? ""}</p>
               <p className="text-[10px]">Vice President for Academic Affairs</p>
             </td>
           </tr>
