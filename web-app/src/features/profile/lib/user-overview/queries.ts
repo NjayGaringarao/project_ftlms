@@ -13,6 +13,7 @@ const fullOverviewOptions: UserDataOptions = {
   includeDesignations: true,
   includeClasses: true,
   includeLoads: true,
+  useSnapshotClasses: true,
 };
 
 export const getUserOverviewById = async (

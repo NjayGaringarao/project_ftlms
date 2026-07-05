@@ -54,6 +54,7 @@ export type FacultySchedulePageData = {
   teaching_load_rows: FacultyTeachingLoadRow[];
   schedule_rows: FacultyScheduleRow[];
   total_teaching_load: number;
+  ftl_available: boolean;
 };
 
 export type FacultyScheduleTermSnapshot = Pick<

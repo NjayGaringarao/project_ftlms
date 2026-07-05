@@ -5,15 +5,23 @@ import { AcademicTerm } from "@/features/shared/types/models/academic_term";
 type AssignedClassesCardProps = {
   term: AcademicTerm | null;
   classes: OverviewClassLoad[];
+  isSnapshotBased?: boolean;
 };
 
 const toFixedLoad = (value: number) => value.toFixed(2);
 
-const AssignedClassesCard = ({ term, classes }: AssignedClassesCardProps) => {
+const AssignedClassesCard = ({ term, classes, isSnapshotBased }: AssignedClassesCardProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Currently Assigned Classes</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base">Currently Assigned Classes</CardTitle>
+          {isSnapshotBased && (
+            <span className="text-xs text-foreground/50 border rounded px-1.5 py-0.5">
+              From approved FTL
+            </span>
+          )}
+        </div>
         {term && (
           <p className="text-sm text-foreground/60">
             {term.name} ({term.code})

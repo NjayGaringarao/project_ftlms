@@ -32,22 +32,20 @@ const DesignationListItem = ({
 
         {designation.college && (
           <p className="font-medium text-foreground/60 wrap-break-word">
-            {designation.college.name}
+            {designation.college.code}
           </p>
         )}
 
         {designation.program && !designation.program_offering && (
           <p className="font-medium text-foreground/60 wrap-break-word">
-            {designation.program.name}
+            {designation.program.code}
           </p>
         )}
 
         {designation.program_offering && (
           <>
             <p className="font-medium text-foreground/60 wrap-break-word">
-              {designation.program_offering.program.name}
-            </p>
-            <p className="font-medium text-foreground/60 wrap-break-word">
+              {designation.program_offering.program.code} -{" "}
               {designation.program_offering.campus.name} Campus
             </p>
           </>

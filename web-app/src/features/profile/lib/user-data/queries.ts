@@ -1,7 +1,7 @@
 "use server";
 
 import { getCurrentUser } from "@/features/auth/lib/utils";
-import { AcademicRank, Degree, ExtendedDesignation, Identity } from "@/features/shared/types/models";
+import { AcademicRank, Degree, ExtendedDesignation, Identity, normalizeCampusCollegeLoadSnapshot } from "@/features/shared/types/models";
 import { createClient } from "@/utils/supabase/server";
 import { calculateAtl } from "@/features/course-loading/lib/calculations";
 import {
@@ -60,6 +60,57 @@ const mapClassRows = (value: unknown): OverviewClassLoad[] => {
   });
 };
 
+const getSnapshotClassesForUser = async (
+  userId: string,
+  academicTermId: string,
+): Promise<OverviewClassLoad[] | null> => {
+  const supabase = await createClient();
+
+  const { data: loads } = await supabase
+    .from("campus_college_load")
+    .select("id")
+    .eq("academic_term_id", academicTermId);
+
+  if (!loads?.length) return null;
+
+  const revisionResults = await Promise.all(
+    loads.map((load) =>
+      supabase
+        .from("campus_college_load_revision")
+        .select("id, snapshot")
+        .eq("campus_college_load_id", load.id)
+        .order("revision_number", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ),
+  );
+
+  for (const { data: revision } of revisionResults) {
+    if (!revision) continue;
+    const normalized = normalizeCampusCollegeLoadSnapshot(revision.snapshot);
+    if (!normalized) continue;
+    const faculty = normalized.faculty_load.faculty.find(
+      (f) => f.faculty_id === userId,
+    );
+    if (faculty) {
+      return faculty.classes.map((cls) => ({
+        id: cls.id,
+        class_code: cls.class_code,
+        course_code: cls.course_code,
+        course_title: cls.course_title,
+        lecture_unit: cls.lecture_unit,
+        laboratory_unit: cls.laboratory_unit,
+        section_code: cls.section_code,
+        student_count: cls.student_count,
+        campus_name: faculty.campus_code ?? "Not assigned",
+        load: cls.load,
+      }));
+    }
+  }
+
+  return null;
+};
+
 const mapRowToUserData = (row: UserDataRpcRow): UserDataReadModel => {
   const rank: AcademicRank | null = row.academic_rank_id
     ? {
@@ -110,6 +161,7 @@ const mapRowToUserData = (row: UserDataRpcRow): UserDataReadModel => {
     designations,
     term: row.current_term,
     classes,
+    isSnapshotBased: false,
     actualTeachingLoad,
     designationLoad,
     totalWorkingLoad,
@@ -186,7 +238,19 @@ export const getUserDataById = async (
 
   const rows = (data ?? []) as UserDataRpcRow[];
   if (rows.length === 0) return null;
-  return mapRowToUserData(rows[0]);
+  const result = mapRowToUserData(rows[0]);
+
+  if (options?.useSnapshotClasses && result.term?.id) {
+    const snapshotClasses = await getSnapshotClassesForUser(userId, result.term.id);
+    if (snapshotClasses) {
+      result.classes = snapshotClasses;
+      result.isSnapshotBased = true;
+      result.actualTeachingLoad = snapshotClasses.reduce((sum, c) => sum + c.load, 0);
+      result.totalWorkingLoad = result.actualTeachingLoad + result.designationLoad;
+    }
+  }
+
+  return result;
 };
 
 export const getCurrentUserData = async (

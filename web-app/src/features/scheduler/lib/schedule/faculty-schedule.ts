@@ -1,7 +1,16 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { SessionDay, SessionType } from "@/features/shared/types/models";
+import {
+  SessionDay,
+  SessionType,
+  normalizeCampusCollegeLoadSnapshot,
+} from "@/features/shared/types/models";
+import type {
+  CampusCollegeLoadSnapshotClass,
+  CampusCollegeLoadSnapshotFaculty,
+  CampusCollegeLoadSnapshotSession,
+} from "@/features/shared/types/models";
 import {
   FacultySchedulePageData,
   FacultyScheduleRow,
@@ -164,13 +173,13 @@ const getClassRowsByFacultyAndTerm = async (
     .from("user_class")
     .select(
       `
-      class:class_id(
+      class:class_id!inner(
         id,
         code,
-        course_utilization(
+        course_utilization!inner(
           id,
           course:course_id(code, title, lecture_unit, laboratory_unit),
-          section:section_id(
+          section:section_id!inner(
             id,
             code,
             classification,
@@ -443,6 +452,165 @@ const mapScheduleRows = (classRows: ClassRow[]): FacultyScheduleRow[] => {
   return sortScheduleRows(rows);
 };
 
+const toSessionDay = (day: string): SessionDay =>
+  (day.slice(0, 1).toUpperCase() + day.slice(1).toLowerCase()) as SessionDay;
+
+type FacultySnapshotResult = {
+  faculty: CampusCollegeLoadSnapshotFaculty;
+  classMap: Map<string, CampusCollegeLoadSnapshotClass>;
+};
+
+const getFacultySnapshotData = async (
+  userId: string,
+  academicTermId: string,
+): Promise<FacultySnapshotResult | null> => {
+  const supabase = await createClient();
+
+  const { data: loads } = await supabase
+    .from("campus_college_load")
+    .select("id")
+    .eq("academic_term_id", academicTermId);
+
+  if (!loads?.length) return null;
+
+  const revisionResults = await Promise.all(
+    loads.map((load) =>
+      supabase
+        .from("campus_college_load_revision")
+        .select("id, snapshot")
+        .eq("campus_college_load_id", load.id)
+        .order("revision_number", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ),
+  );
+
+  for (const { data: revision } of revisionResults) {
+    if (!revision) continue;
+    const normalized = normalizeCampusCollegeLoadSnapshot(revision.snapshot);
+    if (!normalized) continue;
+    const faculty = normalized.faculty_load.faculty.find(
+      (f) => f.faculty_id === userId,
+    );
+    if (faculty) {
+      const classMap = new Map(
+        normalized.class_schedule.classes.map((c) => [c.class_id, c]),
+      );
+      return { faculty, classMap };
+    }
+  }
+
+  return null;
+};
+
+const mapSnapshotToScheduleRows = (
+  faculty: CampusCollegeLoadSnapshotFaculty,
+  classMap: Map<string, CampusCollegeLoadSnapshotClass>,
+): FacultyScheduleRow[] => {
+  const rows: FacultyScheduleRow[] = [];
+
+  for (const cls of faculty.classes) {
+    // Older snapshots don't embed sessions on the faculty class; fall back to
+    // the class_schedule classMap (same pattern as FacultyTeachingLoadPage).
+    const sessions: CampusCollegeLoadSnapshotSession[] =
+      cls.sessions !== undefined ? cls.sessions : (classMap.get(cls.id)?.sessions ?? []);
+
+    if (sessions.length === 0) {
+      rows.push({
+        row_id: `${cls.id}:no-session`,
+        class_id: cls.id,
+        primary_section_id: null,
+        primary_course_utilization_id: null,
+        course_code: cls.course_code,
+        course_title: cls.course_title,
+        section_codes_label: cls.section_code,
+        student_count: cls.student_count > 0 ? cls.student_count : null,
+        lecture_hours: null,
+        lecture_room: null,
+        laboratory_hours: null,
+        laboratory_room: null,
+        session_days: [],
+        session: null,
+      });
+      continue;
+    }
+
+    const groups = new Map<
+      string,
+      { representative: CampusCollegeLoadSnapshotSession; days: Set<SessionDay> }
+    >();
+
+    for (const session of sessions) {
+      const groupKey = `${session.type}|${session.start_time}|${session.end_time}|${session.room_code ?? ""}`;
+      const existing = groups.get(groupKey);
+      const day = toSessionDay(session.day);
+      if (!existing) {
+        groups.set(groupKey, { representative: session, days: new Set([day]) });
+      } else {
+        existing.days.add(day);
+      }
+    }
+
+    for (const group of groups.values()) {
+      const { representative } = group;
+      const sessionDays = Array.from(group.days).sort(
+        (a, b) => (SESSION_DAY_ORDER[a] ?? 999) - (SESSION_DAY_ORDER[b] ?? 999),
+      );
+      const durationMinutes =
+        toMinutes(representative.end_time) - toMinutes(representative.start_time);
+      const durationHours = durationMinutes > 0 ? durationMinutes / 60 : 0;
+      const totalHours = Number((durationHours * sessionDays.length).toFixed(2));
+      const isLecture = representative.type?.toLowerCase() !== "laboratory";
+      const representativeDay = toSessionDay(representative.day);
+
+      const representativeSession: FacultyScheduleSessionInfo = {
+        id: `snap:${cls.id}:${representative.type}:${representative.start_time}`,
+        day: representativeDay,
+        start_time: representative.start_time,
+        end_time: representative.end_time,
+        type: representative.type as SessionType,
+        room_id: null,
+        room_code: representative.room_code,
+        room_name: representative.room_name,
+      };
+
+      rows.push({
+        row_id: `${cls.id}:${representative.type}:${representative.start_time}:${representative.end_time}:${sessionDays.join(",")}`,
+        class_id: cls.id,
+        primary_section_id: null,
+        primary_course_utilization_id: null,
+        course_code: cls.course_code,
+        course_title: cls.course_title,
+        section_codes_label: cls.section_code,
+        student_count: cls.student_count > 0 ? cls.student_count : null,
+        lecture_hours: isLecture ? totalHours : null,
+        lecture_room: isLecture ? representative.room_code : null,
+        laboratory_hours: !isLecture ? totalHours : null,
+        laboratory_room: !isLecture ? representative.room_code : null,
+        session_days: sessionDays,
+        session: representativeSession,
+      });
+    }
+  }
+
+  return sortScheduleRows(rows);
+};
+
+const mapSnapshotToTeachingLoadRows = (
+  faculty: CampusCollegeLoadSnapshotFaculty,
+): FacultyTeachingLoadRow[] =>
+  faculty.classes.map((cls) => ({
+    class_id: cls.id,
+    course_code: cls.course_code,
+    course_title: cls.course_title,
+    lecture_hour: cls.lecture_unit,
+    laboratory_hour: cls.laboratory_unit,
+    load: computeTeachingLoad(cls.lecture_unit, cls.laboratory_unit),
+    sections: [cls.section_code],
+    merged_section_label: cls.section_code,
+    campus_label: faculty.campus_code ?? "Not assigned",
+  }));
+
 const emptyPageData = (
   terms: ScheduleAcademicTermOption[],
   selectedTerm: ScheduleAcademicTermOption | null,
@@ -454,6 +622,7 @@ const emptyPageData = (
   teaching_load_rows: [],
   schedule_rows: [],
   total_teaching_load: 0,
+  ftl_available: false,
 });
 
 export const getFacultyScheduleTermSnapshot = async (
@@ -497,6 +666,29 @@ export const getFacultySchedulePageData = async (
     return emptyPageData(terms, null);
   }
 
+  // Prefer snapshot data so the UI reflects exactly what will be exported.
+  const snapshotFaculty = await getFacultySnapshotData(userId, selectedTerm.id);
+
+  if (snapshotFaculty) {
+    const { faculty, classMap } = snapshotFaculty;
+    const teachingLoadRows = mapSnapshotToTeachingLoadRows(faculty);
+    const scheduleRows = mapSnapshotToScheduleRows(faculty, classMap);
+    const totalTeachingLoad = teachingLoadRows.reduce(
+      (sum, row) => sum + row.load,
+      0,
+    );
+    return {
+      terms,
+      selected_term_id: selectedTerm.id,
+      selected_term: selectedTerm,
+      has_schedule: faculty.classes.length > 0,
+      teaching_load_rows: teachingLoadRows,
+      schedule_rows: scheduleRows,
+      total_teaching_load: totalTeachingLoad,
+      ftl_available: true,
+    };
+  }
+
   const termSnapshot = await getFacultyScheduleTermSnapshot(
     userId,
     selectedTerm.id,
@@ -507,5 +699,6 @@ export const getFacultySchedulePageData = async (
     selected_term_id: selectedTerm.id,
     selected_term: selectedTerm,
     ...termSnapshot,
+    ftl_available: false,
   };
 };

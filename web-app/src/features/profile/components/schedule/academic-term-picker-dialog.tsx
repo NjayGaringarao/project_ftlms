@@ -41,10 +41,10 @@ export const AcademicTermPickerDialog = ({
       open={open}
       onOpenChange={onOpenChange}
       title="Select Academic Term"
-      description="Search and select one term"
-      contentClassName="flex flex-col flex-1 max-h-11/12 w-full max-w-3xl overflow-hidden"
+      contentClassName="flex flex-col flex-1 max-h-11/12 w-full"
+      variant="floating-large"
     >
-      <div className="h-full flex flex-col gap-3 overflow-hidden">
+      <div className="h-full flex flex-col gap-3 overflow-hidden p-4">
         <Input
           placeholder="Search term"
           value={query}

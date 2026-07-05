@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExtendedDesignation } from "@/features/shared/types/models/designation";
 import DesignationInformationContent from "@/features/shared/components/user/designation-information-content";
+import { DivideSquare } from "lucide-react";
 
 type DesignationListCardProps = {
   designations: Omit<ExtendedDesignation, "user">[];
@@ -8,14 +9,11 @@ type DesignationListCardProps = {
 
 const DesignationListCard = ({ designations }: DesignationListCardProps) => {
   return (
-    <Card className="gap-1">
-      <CardHeader>
-        <CardTitle className="text-base">Designation</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <DesignationInformationContent designations={designations} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-2">
+      <p className="text-base font-semibold">Designation</p>
+
+      <DesignationInformationContent designations={designations} />
+    </div>
   );
 };
 

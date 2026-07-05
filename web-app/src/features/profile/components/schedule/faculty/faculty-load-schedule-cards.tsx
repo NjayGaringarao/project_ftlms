@@ -4,10 +4,15 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ClipboardClock, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { FacultyScheduleRow, FacultyTeachingLoadRow } from "@/features/scheduler/lib/schedule/types";
-import { dayLabel, toDisplayTime } from "@/features/scheduler/lib/schedule/utils";
+import type {
+  FacultyScheduleRow,
+  FacultyTeachingLoadRow,
+} from "@/features/scheduler/lib/schedule/types";
+import {
+  dayLabel,
+  toDisplayTime,
+} from "@/features/scheduler/lib/schedule/utils";
 import { cn } from "@/utils/style";
-import { numberToHourDuration } from "@/utils/time";
 import { Popover } from "radix-ui";
 
 type FacultyTeachingLoadCardProps = {
@@ -15,22 +20,22 @@ type FacultyTeachingLoadCardProps = {
   totalTeachingLoad: number;
   title?: string;
   className?: string;
+  headerAction?: ReactNode;
 };
 
 export const FacultyTeachingLoadCard = ({
   teachingLoadRows,
-  totalTeachingLoad,
+  totalTeachingLoad: _totalTeachingLoad,
   title = "Teaching Load",
   className,
+  headerAction,
 }: FacultyTeachingLoadCardProps) => {
   return (
     <Card className={cn("gap-2 overflow-hidden flex flex-col", className)}>
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">{title}</CardTitle>
-          <span className="inline-flex items-center rounded-full border bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
-            Total Load: {totalTeachingLoad.toFixed(2)}
-          </span>
+          {headerAction}
         </div>
       </CardHeader>
       <CardContent className="min-h-0 overflow-auto">
@@ -44,24 +49,28 @@ export const FacultyTeachingLoadCard = ({
               <thead>
                 <tr className="border-b text-left text-foreground/70">
                   <th className="px-2 py-1.5 min-w-24">Course</th>
-                  <th className="px-2 py-1.5 min-w-48">Title</th>
-                  <th className="px-2 py-1.5 min-w-40">Section(s)</th>
-                  <th className="px-2 py-1.5 min-w-28">Campus</th>
-                  <th className="px-2 py-1.5 ">Load</th>
+
+                  <th className="px-2 py-1.5 tabular-nums">Lec</th>
+                  <th className="px-2 py-1.5 tabular-nums">Lab</th>
+                  <th className="px-2 py-1.5 tabular-nums">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {teachingLoadRows.map((row) => (
                   <tr key={row.class_id} className="border-b">
-                    <td className="px-2 py-1.5 font-medium">{row.course_code}</td>
-                    <td className="px-2 py-1.5">{row.course_title}</td>
-                    <td className="px-2 py-1.5 text-xs text-foreground/80">
-                      {row.merged_section_label}
+                    <td className="px-2 py-1.5 font-medium">
+                      {row.course_code}
                     </td>
-                    <td className="px-2 py-1.5 text-xs text-foreground/80">
-                      {row.campus_label}
+
+                    <td className="px-2 py-1.5 tabular-nums">
+                      {row.lecture_hour > 0 ? row.lecture_hour.toFixed(2) : "-"}
                     </td>
-                    <td className="px-2 py-1.5  tabular-nums">
+                    <td className="px-2 py-1.5 tabular-nums">
+                      {row.laboratory_hour > 0
+                        ? (row.laboratory_hour * 0.75).toFixed(2)
+                        : "-"}
+                    </td>
+                    <td className="px-2 py-1.5 tabular-nums">
                       {row.load.toFixed(2)}
                     </td>
                   </tr>
@@ -98,7 +107,9 @@ export const FacultyScheduleCard = ({
     <Card className={cn("gap-2 overflow-hidden flex flex-col pb-0", className)}>
       <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-base">{title}</CardTitle>
-        {headerActions ? <div className="flex gap-2">{headerActions}</div> : null}
+        {headerActions ? (
+          <div className="flex gap-2">{headerActions}</div>
+        ) : null}
       </CardHeader>
       <CardContent className="flex-1 min-h-0 overflow-auto">
         {!hasSchedule ? (
@@ -111,24 +122,34 @@ export const FacultyScheduleCard = ({
           </p>
         ) : (
           <div className="space-y-2 overflow-x-auto h-full">
-            <table className="w-full text-xs pb-4">
+            <table className="w-full text-sm pb-4">
+              <colgroup>
+                <col className="w-24" />
+                <col className="w-16" />
+                <col />
+                <col className="w-20" />
+                <col className="w-20" />
+                <col className="w-32" />
+              </colgroup>
               <thead>
                 <tr className="border-b text-left text-foreground/70">
                   <th className="px-1.5 py-1.5 min-w-20">Time</th>
                   <th className="px-1.5 py-1.5 min-w-14">Day</th>
-                  <th className="px-1.5 py-1.5 min-w-56">Course Code and Title</th>
-                  <th className="px-1.5 py-1.5 min-w-16">Lec Hr(s)</th>
+                  <th className="px-1.5 py-1.5 min-w-56">
+                    Course Code and Title
+                  </th>
                   <th className="px-1.5 py-1.5 min-w-32">Lec. Rm</th>
-                  <th className="px-1.5 py-1.5 min-w-16">Lab. Hr(s)</th>
                   <th className="px-1.5 py-1.5 min-w-32">Lab. Rm</th>
                   <th className="px-1.5 py-1.5 min-w-20">Section(s) (Code)</th>
-                  <th className="px-1.5 py-1.5 min-w-14">No of Students</th>
-                  {hasManageActions ? <th className="px-1.5 py-1.5 w-10" /> : null}
+                  {hasManageActions ? (
+                    <th className="px-1.5 py-1.5 w-10" />
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
                 {scheduleRows.map((row) => {
-                  const manageScheduleHref = manageScheduleLinksByClassId?.[row.class_id];
+                  const manageScheduleHref =
+                    manageScheduleLinksByClassId?.[row.class_id];
 
                   return (
                     <tr key={row.row_id} className="border-b">
@@ -139,34 +160,23 @@ export const FacultyScheduleCard = ({
                       </td>
                       <td className="px-1.5 py-1.5">
                         {row.session_days.length > 0
-                          ? row.session_days.map((day) => dayLabel(day)).join(" / ")
+                          ? row.session_days
+                              .map((day) => dayLabel(day))
+                              .join(" / ")
                           : "-"}
                       </td>
                       <td className="px-1.5 py-1.5">
                         <span className="font-medium">{row.course_code}</span>
                         {` : ${row.course_title}`}
                       </td>
-                      <td className="px-1.5 py-1.5  tabular-nums">
-                        {row.lecture_hours !== null
-                          ? numberToHourDuration(row.lecture_hours)
-                          : "-"}
-                      </td>
                       <td className="px-1.5 py-1.5 text-xs">
                         {row.lecture_room ?? "-"}
-                      </td>
-                      <td className="px-1.5 py-1.5  tabular-nums">
-                        {row.laboratory_hours !== null
-                          ? numberToHourDuration(row.laboratory_hours)
-                          : "-"}
                       </td>
                       <td className="px-1.5 py-1.5 text-xs">
                         {row.laboratory_room ?? "-"}
                       </td>
                       <td className="px-1.5 py-1.5 text-xs text-foreground/80">
                         {row.section_codes_label}
-                      </td>
-                      <td className="px-1.5 py-1.5  tabular-nums">
-                        {row.student_count ?? "-"}
                       </td>
                       {hasManageActions ? (
                         <td className="px-1.5 py-1.5 align-top">

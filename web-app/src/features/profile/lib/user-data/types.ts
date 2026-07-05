@@ -39,6 +39,7 @@ export type UserDataReadModel = {
   designations: Omit<ExtendedDesignation, "user">[];
   term: AcademicTerm | null;
   classes: OverviewClassLoad[];
+  isSnapshotBased: boolean;
   actualTeachingLoad: number;
   designationLoad: number;
   totalWorkingLoad: number;
@@ -55,6 +56,7 @@ export type UserDataOptions = {
   includeDesignations?: boolean;
   includeClasses?: boolean;
   includeLoads?: boolean;
+  useSnapshotClasses?: boolean;
 };
 
 export type UserDataRpcRow = {

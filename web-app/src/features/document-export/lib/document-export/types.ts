@@ -1,4 +1,4 @@
-export type DocumentType = "campus_college_load" | "class_schedule" | "section_schedule";
+export type DocumentType = "campus_college_load" | "class_schedule" | "section_schedule" | "faculty_teaching_load";
 
 export type DocumentExportJobStatus =
   | "QUEUED"
@@ -10,6 +10,7 @@ export const DOCUMENT_TYPES: DocumentType[] = [
   "campus_college_load",
   "class_schedule",
   "section_schedule",
+  "faculty_teaching_load",
 ];
 
 export const isDocumentType = (value: string): value is DocumentType => {

@@ -47,15 +47,8 @@ const SchedulePage = async ({ searchParams }: SchedulePageProps) => {
   const accessLabel = getAccessLabel(userRole);
 
   return (
-    <div className="bg-background h-full w-full overflow-y-auto">
-      <PageHeader
-        title="Schedule"
-        iconName="calendar-days"
-        accessLabel={accessLabel}
-      />
-      <div className="p-6">
-        <FacultyScheduleView data={data} />
-      </div>
+    <div className="bg-background h-full w-full overflow-y-auto p-6">
+      <FacultyScheduleView data={data} userId={user.id} />
     </div>
   );
 };
