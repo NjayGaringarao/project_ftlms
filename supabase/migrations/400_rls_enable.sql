@@ -147,5 +147,88 @@ begin
       to authenticated
       with check (bucket_id = 'ftl-evaluation-return-attachment');
   end if;
+
+  -- Update/delete needed for staged (staging/ prefix) upload move/remove.
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'ftl_return_attachment_auth_update'
+  ) then
+    create policy ftl_return_attachment_auth_update
+      on storage.objects
+      for update
+      to authenticated
+      using (bucket_id = 'ftl-evaluation-return-attachment')
+      with check (bucket_id = 'ftl-evaluation-return-attachment');
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'ftl_return_attachment_auth_delete'
+  ) then
+    create policy ftl_return_attachment_auth_delete
+      on storage.objects
+      for delete
+      to authenticated
+      using (bucket_id = 'ftl-evaluation-return-attachment');
+  end if;
+end
+$$;
+
+-- College logos (public bucket) for branding on printed/exported documents.
+insert into storage.buckets (id, name, public)
+values ('ftl-college-logos', 'ftl-college-logos', true)
+on conflict (id) do update
+set public = excluded.public;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'ftl_college_logos_insert'
+  ) then
+    create policy ftl_college_logos_insert
+      on storage.objects
+      for insert
+      to authenticated
+      with check (bucket_id = 'ftl-college-logos');
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'ftl_college_logos_update'
+  ) then
+    create policy ftl_college_logos_update
+      on storage.objects
+      for update
+      to authenticated
+      using (bucket_id = 'ftl-college-logos')
+      with check (bucket_id = 'ftl-college-logos');
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'ftl_college_logos_delete'
+  ) then
+    create policy ftl_college_logos_delete
+      on storage.objects
+      for delete
+      to authenticated
+      using (bucket_id = 'ftl-college-logos');
+  end if;
 end
 $$;

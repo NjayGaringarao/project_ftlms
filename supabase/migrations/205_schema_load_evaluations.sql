@@ -42,6 +42,20 @@ create table if not exists public.campus_college_load_evaluation (
   attachment_path text,
   attachment_file_name text,
   attachment_mime_type text,
+  system_generated boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+-- Multiple attachments per evaluation. The legacy singular attachment_* columns
+-- on campus_college_load_evaluation remain for old rows; new evaluations leave
+-- them null and use this table instead.
+create table if not exists public.campus_college_load_evaluation_attachment (
+  id uuid primary key default gen_random_uuid(),
+  campus_college_load_evaluation_id uuid not null references public.campus_college_load_evaluation(id) on delete cascade,
+  attachment_bucket text not null,
+  attachment_path text not null,
+  attachment_file_name text not null,
+  attachment_mime_type text,
   created_at timestamptz not null default now()
 );
 

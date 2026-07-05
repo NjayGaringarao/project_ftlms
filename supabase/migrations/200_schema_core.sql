@@ -26,7 +26,8 @@ create table if not exists public.college (
   id uuid primary key default gen_random_uuid(),
   code text not null,
   name text not null,
-  description text
+  description text,
+  logo_path text
 );
 
 create table if not exists public.academic_rank (
@@ -59,3 +60,16 @@ create table if not exists public.academic_term (
   "start" date not null,
   "end" date not null
 );
+
+-- Application-level settings (e.g. the default academic term used across the app).
+create table if not exists public.app_setting (
+  key text primary key,
+  academic_term_id uuid references public.academic_term(id) on delete set null,
+  updated_at timestamptz not null default now(),
+  constraint app_setting_known_key_check
+    check (key in ('default_academic_term_id'))
+);
+
+insert into public.app_setting (key, academic_term_id)
+values ('default_academic_term_id', null)
+on conflict (key) do nothing;

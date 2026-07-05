@@ -1,3 +1,10 @@
+-- =========================================================
+-- RPC: get_user_data
+-- Comprehensive user profile aggregation: identity (structured name fields),
+-- campus/college, academic rank, designations, degrees, current/selected term,
+-- classes (with trigger-generated section.code), and teaching/designation loads.
+-- =========================================================
+
 create or replace function public.get_user_data(
   filter_user_id uuid default null,
   academic_term_id uuid default null,
@@ -85,11 +92,12 @@ as $$
       coalesce(co.laboratory_unit, 0) as laboratory_unit,
       coalesce(
         string_agg(
-          distinct concat_ws(' - ', b.year_level::text, b.name),
+          distinct b.code,
           ', '
         ) filter (where b.id is not null),
         'Not assigned'
-      ) as year_section,
+      ) as section_code,
+      coalesce(sum(b.student_count) filter (where b.id is not null), 0) as student_count,
       coalesce(
         string_agg(
           distinct campus.name,
@@ -128,7 +136,8 @@ as $$
             'course_title', cr.course_title,
             'lecture_unit', cr.lecture_unit,
             'laboratory_unit', cr.laboratory_unit,
-            'year_section', cr.year_section,
+            'section_code', cr.section_code,
+            'student_count', cr.student_count,
             'campus_name', cr.campus_name
           )
           order by cr.course_code asc
@@ -302,7 +311,11 @@ as $$
       when i.user_id is null then null
       else jsonb_build_object(
         'user_id', i.user_id,
-        'name', i.name,
+        'first_name', i.first_name,
+        'middle_name', i.middle_name,
+        'last_name', i.last_name,
+        'suffix', i.suffix,
+        'professional_extension', i.professional_extension,
         'birth_date', i.birth_date,
         'address', i.address,
         'contact_number', i.contact_number
@@ -361,5 +374,6 @@ as $$
   where filter_user_id is null or u.id = filter_user_id
   order by
     u.employment_status asc nulls last,
-    i.name asc nulls last;
+    i.last_name asc nulls last,
+    i.first_name asc nulls last;
 $$;

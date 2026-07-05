@@ -55,6 +55,18 @@ begin
       unique (class_id, session_id);
   end if;
 
+  -- Advisory faculty FK (column defined in 202; user domain defined in 203).
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'section_advisory_faculty_fk'
+      and conrelid = 'public.section'::regclass
+  ) then
+    alter table public.section
+      add constraint section_advisory_faculty_fk
+      foreign key (advisory_faculty_id)
+      references public."user"(id) on delete set null;
+  end if;
+
   -- session_time_range_valid remains owned by 301_constraints_check.sql.
 end;
 $$;

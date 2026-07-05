@@ -52,18 +52,25 @@ begin
 
   if not exists (
     select 1 from pg_constraint
-    where conname = 'campus_college_load_attachment_pdf_check'
+    where conname = 'campus_college_load_attachment_bucket_check'
       and conrelid = 'public.campus_college_load_evaluation'::regclass
   ) then
     alter table public.campus_college_load_evaluation
-      add constraint campus_college_load_attachment_pdf_check
+      add constraint campus_college_load_attachment_bucket_check
       check (
         attachment_path is null
-        or (
-          attachment_bucket = 'ftl-evaluation-return-attachment'
-          and attachment_mime_type = 'application/pdf'
-        )
+        or attachment_bucket = 'ftl-evaluation-return-attachment'
       );
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'campus_college_load_evaluation_attachment_bucket_check'
+      and conrelid = 'public.campus_college_load_evaluation_attachment'::regclass
+  ) then
+    alter table public.campus_college_load_evaluation_attachment
+      add constraint campus_college_load_evaluation_attachment_bucket_check
+      check (attachment_bucket = 'ftl-evaluation-return-attachment');
   end if;
 
   if not exists (
@@ -123,6 +130,9 @@ create index if not exists idx_campus_college_load_revision_load_submitted
 
 create index if not exists idx_campus_college_load_evaluation_revision_created
   on public.campus_college_load_evaluation (campus_college_load_revision_id, created_at);
+
+create index if not exists idx_campus_college_load_evaluation_attachment_evaluation
+  on public.campus_college_load_evaluation_attachment (campus_college_load_evaluation_id);
 
 create index if not exists idx_document_export_job_requester_created_at
   on public.document_export_job (requester_user_id, created_at desc);

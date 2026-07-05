@@ -16,7 +16,11 @@ create table if not exists public."user" (
 
 create table if not exists public.identity (
   user_id uuid primary key references public."user"(id) on delete cascade,
-  name text,
+  first_name text,
+  middle_name text,
+  last_name text,
+  suffix text,
+  professional_extension text,
   birth_date date,
   address text,
   contact_number text

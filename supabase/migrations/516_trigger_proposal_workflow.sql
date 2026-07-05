@@ -137,6 +137,20 @@ begin
     raise exception 'Evaluation step does not match the current load step.';
   end if;
 
+  -- System-generated evaluations (from return-on-source-change invalidation)
+  -- must return the load with a comment and skip evaluator/designation checks.
+  if new.system_generated then
+    if new.status <> 'RETURNED' then
+      raise exception 'System-generated evaluations must return the load.';
+    end if;
+
+    if length(btrim(coalesce(new.comment, ''))) = 0 then
+      raise exception 'System-generated returns require a comment.';
+    end if;
+
+    return new;
+  end if;
+
   if new.evaluator_user_id is null then
     raise exception 'Evaluator user is required.';
   end if;

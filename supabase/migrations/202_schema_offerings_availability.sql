@@ -27,5 +27,7 @@ create table if not exists public.section (
   year_level integer not null,
   name text not null,
   classification text not null default 'regular',
-  student_count integer
+  student_count integer,
+  -- FK to public."user" added in 304 (user domain is defined later, in 203).
+  advisory_faculty_id uuid
 );

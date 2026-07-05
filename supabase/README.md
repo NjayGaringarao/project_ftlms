@@ -104,6 +104,7 @@ migrations/
 - 605_get_scheduler_matrices.sql
 - 607_rpc_get_user_data.sql
 - 608_rpc_proposal_transactions.sql
+- 609_rpc_storage_attachment_maintenance.sql
 ```
 
 ### Core Schema Ownership (2xx)
@@ -142,10 +143,12 @@ migrations/
 
 - `302_constraints_academic_term.sql`
   - Academic-term constraints (exclusion and check rules).
+  - Canonical owner of: `academic_term_reasonable_dates_check`, `academic_term_no_global_date_overlap`.
 
 - `304_constraints_scheduling.sql`
   - Scheduling uniqueness constraints and performance indexes.
-  - Canonical owner of: `schedule_user_term_unique`, `section_major_term_year_name_unique`, `class_schedule_course_code_unique`, `class_section_unique`.
+  - Canonical owner of: `schedule_user_term_unique`, `section_major_term_year_name_unique`, `class_schedule_course_code_unique`, `class_section_unique`, `section_advisory_faculty_fk`.
+  - Owns the `section.advisory_faculty_id` FK (column defined in `202`; `public."user"` defined later in `203`).
 
 - `305_constraints_designation.sql`
   - Designation check constraints only.
@@ -153,7 +156,7 @@ migrations/
 
 - `306_constraints_evaluation.sql`
   - Campus-college load workflow constraints.
-  - Canonical owner of: `campus_college_load_scope_unique`, `campus_college_load_revision_number_unique`, `campus_college_load_evaluation_step_unique`.
+  - Canonical owner of: `campus_college_load_scope_unique`, `campus_college_load_revision_number_unique`, `campus_college_load_evaluation_step_unique`, `campus_college_load_attachment_bucket_check`, `campus_college_load_evaluation_attachment_bucket_check`.
 
 - `503_triggers_designation_uniqueness.sql`
   - Designation uniqueness enforcement logic (trigger/function), complementary to `305` checks.
@@ -167,15 +170,20 @@ migrations/
   - Scope: prevents deleting `course_utilization` rows when linked classes still have sessions.
 
 - `515_trigger_proposal_invalidation.sql`
-  - Placeholder documenting that invalidation was retired.
-  - Scope: campus-college load revisions are immutable snapshots and refresh only on resubmit.
+  - Canonical owner of the return-on-source-change invalidation logic:
+    - `invalidate_submitted_campus_college_loads_for_scope/_section/_class/_course/_session`
+    - `trg_invalidate_campus_college_load_from_*` trigger functions and their triggers on
+      `course_utilization`, `user_class`, `session_class`, `session`, `section`, `class`, `course`.
+  - Scope: submitted revisions are immutable snapshots; when source schedule data changes
+    afterward, the affected load is auto-returned to Program Chair via a `system_generated`
+    evaluation row.
 
 - `516_trigger_proposal_workflow.sql`
   - Canonical owner of:
     - `designation_program_offering_scope`
     - `trg_validate_campus_college_load_revision`
     - `trg_apply_campus_college_load_revision`
-    - `trg_validate_campus_college_load_evaluation`
+    - `trg_validate_campus_college_load_evaluation` (also handles `system_generated` returns emitted by `515` invalidation)
     - `trg_apply_campus_college_load_evaluation`
   - Scope: campus-college load submission and evaluation transitions.
 
@@ -183,6 +191,12 @@ migrations/
   - Canonical owner of:
     - `claim_document_export_job`
   - Scope: async export job claim locking.
+
+- `609_rpc_storage_attachment_maintenance.sql`
+  - Canonical owner of:
+    - `storage_scope_from_path`
+    - `purge_stale_campus_college_load_staged_attachments`
+  - Scope: staged return-attachment upload helpers and stale-staging cleanup.
 
 
 ## Regression Harness (Development)

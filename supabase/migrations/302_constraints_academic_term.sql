@@ -26,5 +26,16 @@ begin
       );
   end if;
 
+  -- No two academic terms may have overlapping date ranges (global calendar).
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'academic_term_no_global_date_overlap'
+      and conrelid = 'public.academic_term'::regclass
+  ) then
+    alter table public.academic_term
+      add constraint academic_term_no_global_date_overlap
+      exclude using gist (daterange("start", "end", '[]') with &&);
+  end if;
+
 end;
 $$;

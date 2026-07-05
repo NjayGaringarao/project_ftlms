@@ -116,10 +116,13 @@ Migrations live in `supabase/migrations/` and are **strictly ordered** by numeri
 
 | Range | Purpose |
 |-------|---------|
+| 000 | Extensions |
 | 100–108 | Enum types |
 | 200–205 | Core schema (dependency-ordered) |
-| 300–516 | Constraints, triggers, RLS |
-| 700+ | Feature-specific additions |
+| 300–306 | Constraints |
+| 400 | Row Level Security |
+| 500–516 | Triggers |
+| 600–609 | RPC / stored functions |
 | 1000–1011 | Seed data |
 
 Seed data must load in the order declared in `supabase/config.toml` because of FK dependencies. Always run `npx supabase db reset` to verify a new migration doesn't break the seed sequence.
