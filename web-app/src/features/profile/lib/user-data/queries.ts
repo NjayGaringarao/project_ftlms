@@ -1,7 +1,8 @@
 "use server";
 
 import { getCurrentUser } from "@/features/auth/lib/utils";
-import { AcademicRank, Degree, ExtendedDesignation, Identity, normalizeCampusCollegeLoadSnapshot } from "@/features/shared/types/models";
+import { AcademicRank, AcademicTerm, Degree, ExtendedDesignation, Identity, normalizeCampusCollegeLoadSnapshot } from "@/features/shared/types/models";
+import type { CampusCollegeLoadStatus, CampusCollegeLoadStep } from "@/features/shared/types/models/campus_college_load";
 import { createClient } from "@/utils/supabase/server";
 import { calculateAtl } from "@/features/course-loading/lib/calculations";
 import {
@@ -60,15 +61,21 @@ const mapClassRows = (value: unknown): OverviewClassLoad[] => {
   });
 };
 
+type SnapshotResult = {
+  classes: OverviewClassLoad[];
+  status: CampusCollegeLoadStatus;
+  step: CampusCollegeLoadStep;
+};
+
 const getSnapshotClassesForUser = async (
   userId: string,
   academicTermId: string,
-): Promise<OverviewClassLoad[] | null> => {
+): Promise<SnapshotResult | null> => {
   const supabase = await createClient();
 
   const { data: loads } = await supabase
     .from("campus_college_load")
-    .select("id")
+    .select("id, status, current_step")
     .eq("academic_term_id", academicTermId);
 
   if (!loads?.length) return null;
@@ -77,15 +84,16 @@ const getSnapshotClassesForUser = async (
     loads.map((load) =>
       supabase
         .from("campus_college_load_revision")
-        .select("id, snapshot")
+        .select("id, snapshot, campus_college_load_id")
         .eq("campus_college_load_id", load.id)
         .order("revision_number", { ascending: false })
         .limit(1)
-        .maybeSingle(),
+        .maybeSingle()
+        .then((res) => ({ ...res, load })),
     ),
   );
 
-  for (const { data: revision } of revisionResults) {
+  for (const { data: revision, load } of revisionResults) {
     if (!revision) continue;
     const normalized = normalizeCampusCollegeLoadSnapshot(revision.snapshot);
     if (!normalized) continue;
@@ -93,18 +101,22 @@ const getSnapshotClassesForUser = async (
       (f) => f.faculty_id === userId,
     );
     if (faculty) {
-      return faculty.classes.map((cls) => ({
-        id: cls.id,
-        class_code: cls.class_code,
-        course_code: cls.course_code,
-        course_title: cls.course_title,
-        lecture_unit: cls.lecture_unit,
-        laboratory_unit: cls.laboratory_unit,
-        section_code: cls.section_code,
-        student_count: cls.student_count,
-        campus_name: faculty.campus_code ?? "Not assigned",
-        load: cls.load,
-      }));
+      return {
+        classes: faculty.classes.map((cls) => ({
+          id: cls.id,
+          class_code: cls.class_code,
+          course_code: cls.course_code,
+          course_title: cls.course_title,
+          lecture_unit: cls.lecture_unit,
+          laboratory_unit: cls.laboratory_unit,
+          section_code: cls.section_code,
+          student_count: cls.student_count,
+          campus_name: faculty.campus_code ?? "Not assigned",
+          load: cls.load,
+        })),
+        status: load.status as CampusCollegeLoadStatus,
+        step: load.current_step as CampusCollegeLoadStep,
+      };
     }
   }
 
@@ -161,7 +173,8 @@ const mapRowToUserData = (row: UserDataRpcRow): UserDataReadModel => {
     designations,
     term: row.current_term,
     classes,
-    isSnapshotBased: false,
+    ftlStatus: null,
+    ftlStep: null,
     actualTeachingLoad,
     designationLoad,
     totalWorkingLoad,
@@ -240,13 +253,34 @@ export const getUserDataById = async (
   if (rows.length === 0) return null;
   const result = mapRowToUserData(rows[0]);
 
-  if (options?.useSnapshotClasses && result.term?.id) {
-    const snapshotClasses = await getSnapshotClassesForUser(userId, result.term.id);
-    if (snapshotClasses) {
-      result.classes = snapshotClasses;
-      result.isSnapshotBased = true;
-      result.actualTeachingLoad = snapshotClasses.reduce((sum, c) => sum + c.load, 0);
-      result.totalWorkingLoad = result.actualTeachingLoad + result.designationLoad;
+  if (options?.useSnapshotClasses) {
+    let termId = result.term?.id;
+
+    if (!termId) {
+      // No active term (gap between semesters) — fall back to the most recently
+      // started term so snapshot data is still surfaced for the faculty.
+      const { data: latestTerm } = await supabase
+        .from("academic_term")
+        .select("id, code, academic_year_id, name, start, end")
+        .order("start", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestTerm) {
+        termId = latestTerm.id;
+        result.term = latestTerm as AcademicTerm;
+      }
+    }
+
+    if (termId) {
+      const snapshot = await getSnapshotClassesForUser(userId, termId);
+      if (snapshot) {
+        result.classes = snapshot.classes;
+        result.ftlStatus = snapshot.status;
+        result.ftlStep = snapshot.step;
+        result.actualTeachingLoad = snapshot.classes.reduce((sum, c) => sum + c.load, 0);
+        result.totalWorkingLoad = result.actualTeachingLoad + result.designationLoad;
+      }
     }
   }
 

@@ -36,7 +36,8 @@ const MePage = async () => {
         <AssignedClassesCard
           term={userOverview.term}
           classes={userOverview.classes}
-          isSnapshotBased={userOverview.isSnapshotBased}
+          ftlStatus={userOverview.ftlStatus}
+          ftlStep={userOverview.ftlStep}
         />
       </div>
     </div>

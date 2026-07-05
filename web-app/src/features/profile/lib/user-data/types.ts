@@ -7,6 +7,10 @@ import {
   ExtendedDesignation,
   Identity,
 } from "@/features/shared/types/models";
+import type {
+  CampusCollegeLoadStatus,
+  CampusCollegeLoadStep,
+} from "@/features/shared/types/models/campus_college_load";
 
 export type OverviewClassLoad = {
   id: string;
@@ -39,7 +43,8 @@ export type UserDataReadModel = {
   designations: Omit<ExtendedDesignation, "user">[];
   term: AcademicTerm | null;
   classes: OverviewClassLoad[];
-  isSnapshotBased: boolean;
+  ftlStatus: CampusCollegeLoadStatus | null;
+  ftlStep: CampusCollegeLoadStep | null;
   actualTeachingLoad: number;
   designationLoad: number;
   totalWorkingLoad: number;
