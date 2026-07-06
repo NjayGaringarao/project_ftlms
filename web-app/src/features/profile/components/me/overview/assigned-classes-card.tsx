@@ -1,4 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ftlStatusVariantClass,
+  getFtlStatusLabel,
+} from "@/features/home/lib/ftl-status";
 import { OverviewClassLoad } from "@/features/profile/lib/user-overview";
 import { AcademicTerm } from "@/features/shared/types/models/academic_term";
 import type {
@@ -11,32 +15,6 @@ type AssignedClassesCardProps = {
   classes: OverviewClassLoad[];
   ftlStatus: CampusCollegeLoadStatus | null;
   ftlStep: CampusCollegeLoadStep | null;
-};
-
-const getFtlStatusLabel = (
-  status: CampusCollegeLoadStatus | null,
-  step: CampusCollegeLoadStep | null,
-): { label: string; variant: "pending" | "approved" | "returned" } | null => {
-  if (!status) return null;
-  if (status === "SUBMITTED") {
-    if (step === "CAMPUS_DIRECTOR")
-      return { label: "For Approval by Campus Director", variant: "pending" };
-    if (step === "DIRECTOR_FOR_INSTRUCTION")
-      return { label: "For Approval by DI", variant: "pending" };
-    if (step === "VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS")
-      return { label: "For Approval by VPAA", variant: "pending" };
-  }
-  if (status === "APPROVED") return { label: "Approved", variant: "approved" };
-  if (status === "RETURNED")
-    return { label: "Returned for Revision", variant: "returned" };
-  if (status === "DRAFT") return { label: "Draft", variant: "pending" };
-  return null;
-};
-
-const variantClass: Record<"pending" | "approved" | "returned", string> = {
-  pending: "border text-foreground/60",
-  approved: "border border-emerald-600 text-emerald-700",
-  returned: "border border-amber-500 text-amber-700",
 };
 
 const toFixedLoad = (value: number) => value.toFixed(2);
@@ -58,7 +36,7 @@ const AssignedClassesCard = ({
           </CardTitle>
           {statusInfo && (
             <span
-              className={`text-xs rounded px-1.5 py-0.5 ${variantClass[statusInfo.variant]}`}
+              className={`text-xs rounded px-1.5 py-0.5 ${ftlStatusVariantClass[statusInfo.variant]}`}
             >
               {statusInfo.label}
             </span>

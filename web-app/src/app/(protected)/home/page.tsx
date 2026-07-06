@@ -1,36 +1,71 @@
-import UnderConstruction from "@/components/ui/under-construction";
-import Image from "next/image";
-const HomePage = () => {
-  return (
-    <div className="h-full">
-      <div className="w-full bg-foreground p-11 flex flex-row justify-between items-center">
-        <div>
-          <h1 className="text-3xl text-background">
-            Welcome to Project S+FTLMS
-          </h1>
-          <h2 className="text-background">
-            President Ramon Magsaysay State University
-          </h2>
-        </div>
-        <div className="flex flex-row items-center gap-4">
-          <Image
-            src="/prmsu.png"
-            alt="Logo"
-            width={50}
-            height={50}
-            className="w-16 h-16"
-          />
-          <Image
-            src="/icto.jpg"
-            alt="Logo"
-            width={50}
-            height={50}
-            className="w-13 h-13"
-          />
-        </div>
+import AdminDashboard from "@/features/home/components/dashboards/admin-dashboard";
+import CampusDirectorDashboard from "@/features/home/components/dashboards/campus-director-dashboard";
+import CollegeDeanDashboard from "@/features/home/components/dashboards/college-dean-dashboard";
+import ExecutiveDashboard from "@/features/home/components/dashboards/executive-dashboard";
+import FacultyDashboard from "@/features/home/components/dashboards/faculty-dashboard";
+import ProgramChairDashboard from "@/features/home/components/dashboards/program-chair-dashboard";
+import WelcomeBanner from "@/features/home/components/welcome-banner";
+import { getDashboardContext } from "@/features/home/lib/context";
+import { DashboardContext } from "@/features/home/lib/types";
+import { redirect } from "next/navigation";
+
+const TERM_DEPENDENT_ROLES = [
+  "Vice President for Academic Affairs",
+  "Director for Instruction",
+  "Campus Director",
+  "College Dean",
+  "Program Chairperson",
+];
+
+const renderDashboard = (context: DashboardContext) => {
+  if (TERM_DEPENDENT_ROLES.includes(context.role) && !context.term) {
+    return (
+      <div className="p-6">
+        <p className="text-sm text-foreground/60">
+          No active academic term is configured. Insights will appear once a
+          default academic term is set in the academic calendar.
+        </p>
       </div>
-      <UnderConstruction />
-    </div>
+    );
+  }
+
+  switch (context.role) {
+    case "Admin":
+      return <AdminDashboard />;
+    case "Vice President for Academic Affairs":
+      return (
+        <ExecutiveDashboard
+          context={context}
+          step="VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS"
+        />
+      );
+    case "Director for Instruction":
+      return (
+        <ExecutiveDashboard context={context} step="DIRECTOR_FOR_INSTRUCTION" />
+      );
+    case "Campus Director":
+      return <CampusDirectorDashboard context={context} />;
+    case "College Dean":
+      return <CollegeDeanDashboard context={context} />;
+    case "Program Chairperson":
+      return <ProgramChairDashboard context={context} />;
+    default:
+      return <FacultyDashboard />;
+  }
+};
+
+const HomePage = async () => {
+  const context = await getDashboardContext();
+
+  if (!context) {
+    redirect("/auth/login");
+  }
+
+  return (
+    <>
+      <WelcomeBanner firstName={context.firstName} />
+      {renderDashboard(context)}
+    </>
   );
 };
 
