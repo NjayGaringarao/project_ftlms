@@ -1,11 +1,11 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
   LabelList,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -40,6 +40,7 @@ type TooltipEntry = {
   name?: string;
   value?: number | string;
   color?: string;
+  payload?: Record<string, unknown>;
 };
 
 const ChartTooltip = ({
@@ -54,9 +55,13 @@ const ChartTooltip = ({
   decimals: number;
 }) => {
   if (!active || !payload?.length) return null;
+  // Prefer the row's full label — the axis may be showing the abbreviation.
+  const fullLabel = payload[0]?.payload?.label;
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm px-3 py-2 text-sm">
-      <p className="font-medium">{label}</p>
+      <p className="font-medium">
+        {typeof fullLabel === "string" ? fullLabel : label}
+      </p>
       {payload.map((entry, index) => (
         <p
           key={index}
@@ -72,6 +77,19 @@ const ChartTooltip = ({
       ))}
     </div>
   );
+};
+
+// Measure rendered label width with a shared canvas so the category axis can
+// hug the text instead of reserving a guessed fixed width.
+let measureContext: CanvasRenderingContext2D | null = null;
+const measureLabel = (text: string, font: string): number => {
+  if (typeof document === "undefined") return text.length * 7.5;
+  if (!measureContext) {
+    measureContext = document.createElement("canvas").getContext("2d");
+  }
+  if (!measureContext) return text.length * 7.5;
+  measureContext.font = font;
+  return measureContext.measureText(text).width;
 };
 
 const InsightBarChart = ({
@@ -90,12 +108,65 @@ const InsightBarChart = ({
   const labelFormatter = (label: React.ReactNode) =>
     formatChartValue(Number(label ?? 0), decimals);
 
+  // The container is measured so the category axis can adapt: long labels
+  // must not swallow the plot on phones, and short labels must not leave a
+  // wide dead gutter on any screen.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [tickFont, setTickFont] = useState(
+    '12px ui-sans-serif, system-ui, sans-serif',
+  );
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+    setTickFont(`12px ${getComputedStyle(element).fontFamily}`);
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) setContainerWidth(width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // Below this width, rows that provide a shortLabel switch to it —
+  // full titles otherwise eat the plot on phones.
+  const useShortLabels =
+    containerWidth !== null &&
+    containerWidth < 480 &&
+    data.length > 0 &&
+    data.every((row) => typeof row.shortLabel === "string");
+  const categoryKey = useShortLabels ? "shortLabel" : labelKey;
+
+  // Size the axis to the widest active label (measured, not guessed) so it
+  // hugs the text; yAxisWidth acts only as an upper bound. Labels wider than
+  // the container clamp wrap on spaces via recharts.
+  const widestLabel = horizontal
+    ? Math.max(
+        0,
+        ...data.map((row) => measureLabel(String(row[categoryKey] ?? ""), tickFont)),
+      )
+    : 0;
+  const effectiveYAxisWidth = Math.max(
+    40,
+    Math.min(
+      Math.ceil(widestLabel) + 12,
+      yAxisWidth,
+      containerWidth ? Math.round(containerWidth * 0.45) : yAxisWidth,
+    ),
+  );
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart
+    <div className="min-w-0" ref={containerRef}>
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart
         data={data}
         layout={horizontal ? "vertical" : "horizontal"}
-        margin={{ top: 8, right: singleSeries ? 40 : 16, bottom: 0, left: 0 }}
+        margin={{
+          top: horizontal ? 8 : 20,
+          right: singleSeries ? 40 : 16,
+          bottom: 0,
+          left: 0,
+        }}
         barGap={2}
       >
         <CartesianGrid
@@ -115,22 +186,21 @@ const InsightBarChart = ({
             />
             <YAxis
               type="category"
-              dataKey={labelKey}
+              dataKey={categoryKey}
               tick={CHART_AXIS_TICK}
               axisLine={false}
               tickLine={false}
-              width={yAxisWidth}
+              width={effectiveYAxisWidth}
               interval={0}
             />
           </>
         ) : (
           <>
             <XAxis
-              dataKey={labelKey}
+              dataKey={categoryKey}
               tick={CHART_AXIS_TICK}
               axisLine={false}
               tickLine={false}
-              interval={0}
             />
             <YAxis
               tick={CHART_AXIS_TICK}
@@ -145,15 +215,6 @@ const InsightBarChart = ({
           cursor={{ fill: "var(--muted)", opacity: 0.5 }}
           content={<ChartTooltip decimals={decimals} />}
         />
-        {!singleSeries && (
-          <Legend
-            iconType="circle"
-            iconSize={8}
-            formatter={(value: string) => (
-              <span className="text-xs text-foreground">{value}</span>
-            )}
-          />
-        )}
         {series.map((entry, index) => (
           <Bar
             key={entry.key}
@@ -162,6 +223,7 @@ const InsightBarChart = ({
             fill={CHART_SERIES[index % CHART_SERIES.length]}
             maxBarSize={24}
             radius={horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
+            isAnimationActive={false}
           >
             {singleSeries && (
               <LabelList
@@ -174,8 +236,30 @@ const InsightBarChart = ({
             )}
           </Bar>
         ))}
-      </BarChart>
-    </ResponsiveContainer>
+        </BarChart>
+      </ResponsiveContainer>
+
+      {/* HTML legend instead of recharts <Legend/> — the latter breaks
+          ResponsiveContainer's width measurement (chart collapses to 8px). */}
+      {!singleSeries && (
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2">
+          {series.map((entry, index) => (
+            <span
+              key={entry.key}
+              className="flex items-center gap-1.5 text-xs text-foreground"
+            >
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: CHART_SERIES[index % CHART_SERIES.length],
+                }}
+              />
+              {entry.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 

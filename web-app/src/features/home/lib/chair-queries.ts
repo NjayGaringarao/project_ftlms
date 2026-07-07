@@ -26,6 +26,7 @@ type NormalizedClassRow = {
   laboratoryUnit: number;
   facultyId: string | null;
   facultyName: string | null;
+  facultyShortName: string | null;
   sessionTypes: string[];
 };
 
@@ -77,6 +78,13 @@ const normalizeUtilizationRow = (
           middleName: "INITIAL",
           isProfexIncluded: false,
         })
+      : null,
+    facultyShortName: identity?.last_name
+      ? `${identity.last_name}${
+          identity.first_name
+            ? `, ${identity.first_name.charAt(0).toUpperCase()}.`
+            : ""
+        }`
       : null,
     sessionTypes,
   };
@@ -185,6 +193,7 @@ export const getChairInsights = async (
     .sort(([left], [right]) => left - right)
     .map(([yearLevel, value]) => ({
       label: `Year ${yearLevel}`,
+      shortLabel: `Y${yearLevel}`,
       value,
     }));
 
@@ -193,6 +202,7 @@ export const getChairInsights = async (
     .map((row) => ({
       facultyId: row.facultyId!,
       facultyName: row.facultyName ?? "Unnamed faculty",
+      facultyShortName: row.facultyShortName ?? undefined,
       lectureUnit: row.lectureUnit,
       laboratoryUnit: row.laboratoryUnit,
     }));

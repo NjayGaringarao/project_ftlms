@@ -4,6 +4,7 @@ import { LabelValue } from "./types";
 export type FacultyClassRow = {
   facultyId: string;
   facultyName: string;
+  facultyShortName?: string;
   lectureUnit: number;
   laboratoryUnit: number;
 };
@@ -16,7 +17,11 @@ export const sumFacultyLoads = (rows: FacultyClassRow[]): LabelValue[] => {
     if (existing) {
       existing.value += load;
     } else {
-      totals.set(row.facultyId, { label: row.facultyName, value: load });
+      totals.set(row.facultyId, {
+        label: row.facultyName,
+        shortLabel: row.facultyShortName ?? row.facultyName,
+        value: load,
+      });
     }
   });
   return Array.from(totals.values())

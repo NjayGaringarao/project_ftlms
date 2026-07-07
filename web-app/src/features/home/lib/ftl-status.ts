@@ -55,6 +55,14 @@ export const FTL_STEP_LABEL: Record<CampusCollegeLoadStep, string> = {
   COMPLETED: "Completed",
 };
 
+export const FTL_STEP_SHORT_LABEL: Record<CampusCollegeLoadStep, string> = {
+  PROGRAM_CHAIR: "PC",
+  CAMPUS_DIRECTOR: "CD",
+  DIRECTOR_FOR_INSTRUCTION: "DI",
+  VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS: "VPAA",
+  COMPLETED: "Done",
+};
+
 export const accessLabelForRole = (role: UserRole): string => {
   if (role === "Admin") return "Administrator Access";
   if (role === "Vice President for Academic Affairs") return "VPAA Access";

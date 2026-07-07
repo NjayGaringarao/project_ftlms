@@ -5,7 +5,7 @@ import type {
   CampusCollegeLoadStep,
 } from "@/features/shared/types/models/campus_college_load";
 import { createClient } from "@/utils/supabase/server";
-import { FTL_STEP_LABEL } from "./ftl-status";
+import { FTL_STEP_LABEL, FTL_STEP_SHORT_LABEL } from "./ftl-status";
 import { getEmploymentMix, getSectionRollup } from "./shared-queries";
 import { ExecutiveInsights } from "./types";
 
@@ -86,6 +86,7 @@ export const getExecutiveInsights = async (
 
   const stepCounts = PIPELINE_STEPS.map((step) => ({
     label: FTL_STEP_LABEL[step],
+    shortLabel: FTL_STEP_SHORT_LABEL[step],
     value: loads.filter((row) => row.current_step === step).length,
   }));
 

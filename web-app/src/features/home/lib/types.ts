@@ -7,6 +7,8 @@ import type {
 
 export type LabelValue = {
   label: string;
+  /** Compact alternative shown on narrow screens (e.g. "VPAA"). */
+  shortLabel?: string;
   value: number;
 };
 

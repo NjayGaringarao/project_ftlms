@@ -61,6 +61,7 @@ export const getDeanInsights = async (
     .map((row) => ({
       facultyId: row.facultyId!,
       facultyName: row.facultyName ?? "Unnamed faculty",
+      facultyShortName: row.facultyShortName ?? undefined,
       lectureUnit: row.lectureUnit,
       laboratoryUnit: row.laboratoryUnit,
     }));

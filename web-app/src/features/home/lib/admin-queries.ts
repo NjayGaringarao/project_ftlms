@@ -6,13 +6,23 @@ import { sortByValueDesc } from "./load-math";
 import { countUsers, getEmploymentMix } from "./shared-queries";
 import { AdminInsights, LabelValue } from "./types";
 
-const LEADERSHIP_TITLES = [
-  "Vice President for Academic Affairs",
-  "Director for Instruction",
-  "Campus Director",
-  "College Dean",
-  "Program Chairperson",
-] as const;
+const LEADERSHIP_TITLES: Array<{ title: string; short: string }> = [
+  { title: "Vice President for Academic Affairs", short: "VPAA" },
+  { title: "Director for Instruction", short: "DI" },
+  { title: "Campus Director", short: "CD" },
+  { title: "College Dean", short: "Dean" },
+  { title: "Program Chairperson", short: "PC" },
+];
+
+// Compact rank titles for narrow screens — words (not codes) so the
+// category axis can wrap them cleanly.
+const shortenRankTitle = (title: string): string =>
+  title
+    .replace("Assistant Professor", "Asst Prof")
+    .replace("Associate Professor", "Assoc Prof")
+    .replace("University Professor", "Univ Prof")
+    .replace("College Professor", "Col Prof")
+    .replace("Instructor", "Inst");
 
 const emptyInsights: AdminInsights = {
   employmentMix: [],
@@ -84,6 +94,7 @@ export const getAdminInsights = async (): Promise<AdminInsights> => {
       ranks
         .map((rank, index) => ({
           label: rank.title,
+          shortLabel: shortenRankTitle(rank.title),
           value: rankCounts[index],
         }))
         .filter((entry) => entry.value > 0),
@@ -99,12 +110,14 @@ export const getAdminInsights = async (): Promise<AdminInsights> => {
       );
     });
     const leadershipBreakdown: LabelValue[] = [
-      ...LEADERSHIP_TITLES.map((title) => ({
+      ...LEADERSHIP_TITLES.map(({ title, short }) => ({
         label: title,
+        shortLabel: short,
         value: leadershipCounts.get(title) ?? 0,
       })).filter((entry) => entry.value > 0),
       {
         label: "Faculty (no designation)",
+        shortLabel: "Faculty",
         value: Math.max(totalUsers - designatedUserIds.size, 0),
       },
     ];
