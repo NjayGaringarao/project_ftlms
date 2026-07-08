@@ -128,7 +128,9 @@ export const UserInformation = ({
     () =>
       new Set(
         programOfferings
-          .filter((offering) => offering.campus_id === professionalData.campusId)
+          .filter(
+            (offering) => offering.campus_id === professionalData.campusId,
+          )
           .map((offering) => offering.program.college_id),
       ),
     [professionalData.campusId, programOfferings],
@@ -159,9 +161,10 @@ export const UserInformation = ({
     setProfessionalData((prev) => ({
       ...prev,
       campusId: nextCampusId,
-      collegeId: prev.collegeId && nextAvailableCollegeIds.has(prev.collegeId)
-        ? prev.collegeId
-        : null,
+      collegeId:
+        prev.collegeId && nextAvailableCollegeIds.has(prev.collegeId)
+          ? prev.collegeId
+          : null,
     }));
     setProfessionalError("");
   };
@@ -337,6 +340,7 @@ export const UserInformation = ({
         designationLoad={designationLoad}
         actualTeachingLoad={actualTeachingLoad}
         totalWorkingLoad={totalWorkingLoad}
+        size="Large"
       />
 
       <section className="space-y-4">
@@ -434,8 +438,9 @@ export const UserInformation = ({
               >
                 <span className="truncate">
                   {professionalData.campusId
-                    ? campuses.find((campus) => campus.id === professionalData.campusId)
-                        ?.name ?? "Select campus..."
+                    ? (campuses.find(
+                        (campus) => campus.id === professionalData.campusId,
+                      )?.name ?? "Select campus...")
                     : "Select campus..."}
                 </span>
                 <ChevronDown className="h-4 w-4 text-foreground/60" />
@@ -456,10 +461,11 @@ export const UserInformation = ({
                   {!professionalData.campusId
                     ? "Select campus first"
                     : professionalData.collegeId
-                      ? availableColleges.find(
-                          (college) => college.id === professionalData.collegeId,
-                        )?.name ?? "Select college..."
-                    : "Select college..."}
+                      ? (availableColleges.find(
+                          (college) =>
+                            college.id === professionalData.collegeId,
+                        )?.name ?? "Select college...")
+                      : "Select college..."}
                 </span>
                 <ChevronDown className="h-4 w-4 text-foreground/60" />
               </Button>
