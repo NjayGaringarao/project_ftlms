@@ -49,17 +49,24 @@ export type AdminInsights = {
   };
 };
 
+export type AttentionIssue = "NO_FACULTY" | "NO_SCHEDULE";
+
+export type AttentionSection = {
+  sectionId: string;
+  sectionLabel: string;
+  items: Array<{
+    courseCode: string;
+    issues: AttentionIssue[];
+  }>;
+};
+
 export type ChairInsights = {
   ftl: FtlStatusItem[];
   sectionsByYearLevel: LabelValue[];
   totalSections: number;
   totalStudents: number;
   facultyLoads: LabelValue[];
-  unassigned: {
-    withoutFaculty: number;
-    withoutSchedule: number;
-    sampleCourseCodes: string[];
-  };
+  attentionSections: AttentionSection[];
   sessionMix: { lecture: number; laboratory: number };
 };
 

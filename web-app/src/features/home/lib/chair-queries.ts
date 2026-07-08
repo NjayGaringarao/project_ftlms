@@ -4,8 +4,14 @@ import { getCampusCollegeLoadList } from "@/features/campus-college-load/lib/que
 import { formatName } from "@/features/shared/lib/format-name";
 import { createClient } from "@/utils/supabase/server";
 import { FacultyClassRow, sumFacultyLoads } from "./load-math";
-import { getSectionRollup } from "./shared-queries";
-import { ChairInsights, DashboardContext, FtlStatusItem } from "./types";
+import { getSectionRollup, SectionRollupRow } from "./shared-queries";
+import {
+  AttentionIssue,
+  AttentionSection,
+  ChairInsights,
+  DashboardContext,
+  FtlStatusItem,
+} from "./types";
 
 const first = <T>(value: T | T[] | null | undefined): T | null => {
   if (!value) return null;
@@ -21,6 +27,7 @@ type RawUtilizationRow = {
 
 type NormalizedClassRow = {
   classId: string;
+  sectionId: string;
   courseCode: string;
   lectureUnit: number;
   laboratoryUnit: number;
@@ -68,6 +75,7 @@ const normalizeUtilizationRow = (
 
   return {
     classId: classRow.id,
+    sectionId: row.section_id,
     courseCode: course?.code ?? "Unknown",
     lectureUnit: Number(course?.lecture_unit ?? 0),
     laboratoryUnit: Number(course?.laboratory_unit ?? 0),
@@ -207,11 +215,6 @@ export const getChairInsights = async (
       laboratoryUnit: row.laboratoryUnit,
     }));
 
-  const withoutFaculty = classes.filter((row) => !row.facultyId);
-  const withoutSchedule = classes.filter(
-    (row) => row.sessionTypes.length === 0,
-  );
-
   const sessionMix = classes.reduce(
     (mix, row) => {
       row.sessionTypes.forEach((type) => {
@@ -232,15 +235,47 @@ export const getChairInsights = async (
       0,
     ),
     facultyLoads: sumFacultyLoads(facultyRows),
-    unassigned: {
-      withoutFaculty: withoutFaculty.length,
-      withoutSchedule: withoutSchedule.length,
-      sampleCourseCodes: [
-        ...new Set(
-          [...withoutFaculty, ...withoutSchedule].map((row) => row.courseCode),
-        ),
-      ].slice(0, 6),
-    },
+    attentionSections: buildAttentionSections(sections, classes),
     sessionMix,
   };
+};
+
+// Group incomplete classes (missing faculty and/or schedule) under their
+// section, worst-affected sections first.
+const buildAttentionSections = (
+  sections: SectionRollupRow[],
+  classes: NormalizedClassRow[],
+): AttentionSection[] => {
+  const labelsBySectionId = new Map(
+    sections.map((section) => [section.sectionId, section.sectionLabel]),
+  );
+
+  const grouped = new Map<string, AttentionSection>();
+  classes.forEach((row) => {
+    const issues: AttentionIssue[] = [];
+    if (!row.facultyId) issues.push("NO_FACULTY");
+    if (row.sessionTypes.length === 0) issues.push("NO_SCHEDULE");
+    if (issues.length === 0) return;
+
+    const existing = grouped.get(row.sectionId) ?? {
+      sectionId: row.sectionId,
+      sectionLabel: labelsBySectionId.get(row.sectionId) ?? "Unnamed section",
+      items: [],
+    };
+    existing.items.push({ courseCode: row.courseCode, issues });
+    grouped.set(row.sectionId, existing);
+  });
+
+  return Array.from(grouped.values())
+    .map((section) => ({
+      ...section,
+      items: [...section.items].sort((left, right) =>
+        left.courseCode.localeCompare(right.courseCode),
+      ),
+    }))
+    .sort(
+      (left, right) =>
+        right.items.length - left.items.length ||
+        left.sectionLabel.localeCompare(right.sectionLabel),
+    );
 };

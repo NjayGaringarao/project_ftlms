@@ -14,6 +14,7 @@ const first = <T>(value: T | T[] | null | undefined): T | null => {
 
 export type SectionRollupRow = {
   sectionId: string;
+  sectionLabel: string;
   yearLevel: number;
   studentCount: number;
   programOfferingId: string | null;
@@ -31,6 +32,8 @@ type SectionRollupFilters = {
 
 type RawSectionRow = {
   id: string;
+  code: string | null;
+  name: string | null;
   year_level: number | null;
   student_count: number | null;
   major_offering:
@@ -82,6 +85,8 @@ export const getSectionRollup = async (
     .select(
       `
       id,
+      code,
+      name,
       year_level,
       student_count,
       major_offering:major_offering_id!inner(
@@ -144,6 +149,7 @@ export const getSectionRollup = async (
 
     return {
       sectionId: row.id,
+      sectionLabel: row.code || row.name || "Unnamed section",
       yearLevel: Number(row.year_level ?? 0),
       studentCount: Number(row.student_count ?? 0),
       programOfferingId: offering?.id ?? null,

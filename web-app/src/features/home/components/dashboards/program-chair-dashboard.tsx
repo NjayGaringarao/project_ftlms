@@ -1,12 +1,7 @@
 import { getChairInsights } from "@/features/home/lib/chair-queries";
 import { DashboardContext } from "@/features/home/lib/types";
-import {
-  CalendarX2,
-  FlaskConical,
-  Presentation,
-  UserX,
-  Users,
-} from "lucide-react";
+import { BookOpen, FlaskConical, Presentation, Users } from "lucide-react";
+import AttentionSectionsCard from "../attention-sections-card";
 import InsightBarChart from "../charts/bar-chart";
 import ChartCard from "../charts/chart-card";
 import StatTile from "../charts/stat-tile";
@@ -39,16 +34,16 @@ const ProgramChairDashboard = async ({
           icon={Users}
         />
         <StatTile
-          label="Classes Without Faculty"
-          value={insights.unassigned.withoutFaculty}
-          caption="Awaiting faculty assignment"
-          icon={UserX}
+          label="Lecture Sessions"
+          value={insights.sessionMix.lecture}
+          caption="Scheduled this term"
+          icon={BookOpen}
         />
         <StatTile
-          label="Unscheduled Classes"
-          value={insights.unassigned.withoutSchedule}
-          caption="No sessions plotted yet"
-          icon={CalendarX2}
+          label="Laboratory Sessions"
+          value={insights.sessionMix.laboratory}
+          caption="Scheduled this term"
+          icon={FlaskConical}
         />
       </div>
 
@@ -56,6 +51,11 @@ const ProgramChairDashboard = async ({
         title="Faculty Teaching Load Status"
         description="Your campus-college load submissions this term"
         items={insights.ftl}
+      />
+
+      <AttentionSectionsCard
+        sections={insights.attentionSections}
+        academicTermId={context.term!.id}
       />
 
       <ChartCard
@@ -86,26 +86,6 @@ const ProgramChairDashboard = async ({
           series={[{ key: "value", name: "ATL" }]}
         />
       </ChartCard>
-
-      <div className="grid gap-4 grid-cols-2 min-w-0">
-        <StatTile
-          label="Lecture Sessions"
-          value={insights.sessionMix.lecture}
-          caption="Scheduled this term"
-          icon={Presentation}
-        />
-        <StatTile
-          label="Laboratory Sessions"
-          value={insights.sessionMix.laboratory}
-          caption="Scheduled this term"
-          icon={FlaskConical}
-        />
-        {insights.unassigned.sampleCourseCodes.length > 0 && (
-          <p className="text-xs text-foreground/60 sm:col-span-2">
-            Needs attention: {insights.unassigned.sampleCourseCodes.join(", ")}
-          </p>
-        )}
-      </div>
     </div>
   );
 };
