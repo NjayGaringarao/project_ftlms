@@ -30,6 +30,7 @@ const FacultyDashboard = async () => {
         designationLoad={overview.designationLoad}
         actualTeachingLoad={overview.actualTeachingLoad}
         totalWorkingLoad={overview.totalWorkingLoad}
+        size="Large"
       />
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -25,7 +25,7 @@ const ProgramChairDashboard = async ({
 
   return (
     <div className="p-6 flex flex-col gap-4 xl:grid xl:grid-cols-2 2xl:grid-cols-3">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:col-span-full">
+      <div className="grid gap-4 grid-cols-2 xl:grid-cols-4 xl:col-span-full">
         <StatTile
           label="Sections"
           value={insights.totalSections}
@@ -87,7 +87,7 @@ const ProgramChairDashboard = async ({
         />
       </ChartCard>
 
-      <div className="grid gap-4 sm:grid-cols-2 min-w-0">
+      <div className="grid gap-4 grid-cols-2 min-w-0">
         <StatTile
           label="Lecture Sessions"
           value={insights.sessionMix.lecture}
@@ -102,8 +102,7 @@ const ProgramChairDashboard = async ({
         />
         {insights.unassigned.sampleCourseCodes.length > 0 && (
           <p className="text-xs text-foreground/60 sm:col-span-2">
-            Needs attention:{" "}
-            {insights.unassigned.sampleCourseCodes.join(", ")}
+            Needs attention: {insights.unassigned.sampleCourseCodes.join(", ")}
           </p>
         )}
       </div>

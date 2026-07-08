@@ -11,7 +11,7 @@ type WorkingLoadMetricsProps = {
   designationLoad?: number;
   actualTeachingLoad?: number;
   totalWorkingLoad?: number;
-  size?: "Default" | "Compact";
+  size?: "Default" | "Compact" | "Large";
 };
 
 const toFixedLoad = (value: number) => value.toFixed(2);
@@ -26,6 +26,7 @@ const WorkingLoadMetrics = ({
     <div
       className={cn(
         "grid gap-4",
+        size === "Large" && "grid-cols-2 2xl:grid-cols-3",
         size === "Default" && "md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3",
         size === "Compact" && "grid-cols-1",
       )}

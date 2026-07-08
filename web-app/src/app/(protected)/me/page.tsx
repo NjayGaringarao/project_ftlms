@@ -29,6 +29,7 @@ const MePage = async () => {
           designationLoad={userOverview.designationLoad}
           actualTeachingLoad={userOverview.actualTeachingLoad}
           totalWorkingLoad={userOverview.totalWorkingLoad}
+          size="Large"
         />
 
         <DesignationListCard designations={userOverview.designations} />
