@@ -1,12 +1,7 @@
 import { getExecutiveInsights } from "@/features/home/lib/executive-queries";
 import { DashboardContext } from "@/features/home/lib/types";
 import type { CampusCollegeLoadStep } from "@/features/shared/types/models/campus_college_load";
-import {
-  CheckCircle2,
-  FileClock,
-  FilePen,
-  Undo2,
-} from "lucide-react";
+import { CheckCircle2, FileClock, FilePen, Undo2 } from "lucide-react";
 import ActionListCard from "../action-list-card";
 import InsightBarChart from "../charts/bar-chart";
 import ChartCard from "../charts/chart-card";
@@ -21,14 +16,17 @@ type ExecutiveDashboardProps = {
   >;
 };
 
-const ExecutiveDashboard = async ({ context, step }: ExecutiveDashboardProps) => {
+const ExecutiveDashboard = async ({
+  context,
+  step,
+}: ExecutiveDashboardProps) => {
   const insights = await getExecutiveInsights(context.term!.id, step);
   const termLabel = `${context.term!.name} (${context.term!.code})`;
   const hasPipeline = insights.stepCounts.some((entry) => entry.value > 0);
 
   return (
     <div className="p-6 flex flex-col gap-4 xl:grid xl:grid-cols-2 2xl:grid-cols-3">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:col-span-full">
+      <div className="grid gap-4 grid-cols-2 xl:grid-cols-4 xl:col-span-full">
         <StatTile
           label="Draft Loads"
           value={insights.statusCounts.draft}

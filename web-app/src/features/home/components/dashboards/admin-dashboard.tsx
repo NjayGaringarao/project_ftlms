@@ -13,7 +13,7 @@ const AdminDashboard = async () => {
 
   return (
     <div className="p-6 flex flex-col gap-4 xl:grid xl:grid-cols-2 2xl:grid-cols-3">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:col-span-full">
+      <div className="grid gap-4 grid-cols-2 xl:grid-cols-4 xl:col-span-full">
         <StatTile
           label="Total Users"
           value={insights.accountHealth.totalUsers}
@@ -46,7 +46,10 @@ const AdminDashboard = async () => {
         empty={insights.employmentMix.length === 0}
         emptyLabel="No users recorded yet."
       >
-        <InsightDonutChart data={insights.employmentMix} centerCaption="Users" />
+        <InsightDonutChart
+          data={insights.employmentMix}
+          centerCaption="Users"
+        />
       </ChartCard>
 
       <ChartCard

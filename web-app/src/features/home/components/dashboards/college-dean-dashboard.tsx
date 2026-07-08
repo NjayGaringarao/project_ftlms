@@ -17,7 +17,7 @@ const CollegeDeanDashboard = async ({ context }: CollegeDeanDashboardProps) => {
 
   return (
     <div className="p-6 flex flex-col gap-4 xl:grid xl:grid-cols-2 2xl:grid-cols-3">
-      <div className="grid gap-4 sm:grid-cols-2 xl:col-span-full xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 xl:col-span-full xl:grid-cols-4">
         <StatTile
           label="Sections"
           value={insights.totalSections}
