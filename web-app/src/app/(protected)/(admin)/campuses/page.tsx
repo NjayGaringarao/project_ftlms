@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { CampusesManagement } from "@/features/admin/components/campus/campuses-management";
+import { ListDetailSkeleton } from "@/features/shared/components/skeletons/list-detail-skeleton";
 import { getCampusById, getCampusesList } from "@/features/admin/lib/campuses";
 import { getMajorOfferingsByCampus } from "@/features/admin/lib/major-offerings";
 import { getMajorsList } from "@/features/admin/lib/majors";
@@ -14,7 +16,7 @@ type CampusesPageProps = {
   }>;
 };
 
-const CampusesPage = async ({ searchParams }: CampusesPageProps) => {
+const CampusesContent = async ({ searchParams }: CampusesPageProps) => {
   const queryState = getAdminPanelQueryState(await searchParams);
   const [campuses, selectedCampus, rooms, offerings, programs, majors, majorOfferings] =
     await Promise.all([
@@ -43,5 +45,11 @@ const CampusesPage = async ({ searchParams }: CampusesPageProps) => {
     />
   );
 };
+
+const CampusesPage = ({ searchParams }: CampusesPageProps) => (
+  <Suspense fallback={<ListDetailSkeleton />}>
+    <CampusesContent searchParams={searchParams} />
+  </Suspense>
+);
 
 export default CampusesPage;

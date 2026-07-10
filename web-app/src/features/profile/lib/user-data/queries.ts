@@ -80,21 +80,42 @@ const getSnapshotClassesForUser = async (
 
   if (!loads?.length) return null;
 
-  const revisionResults = await Promise.all(
-    loads.map((load) =>
-      supabase
-        .from("campus_college_load_revision")
-        .select("id, snapshot, campus_college_load_id")
-        .eq("campus_college_load_id", load.id)
-        .order("revision_number", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-        .then((res) => ({ ...res, load })),
-    ),
-  );
+  // Two batched queries instead of one latest-revision query per load.
+  // Stage A: light metadata only (no snapshot JSON); loads-per-term is small,
+  // so the PostgREST row cap is not a concern.
+  const { data: revisionMeta } = await supabase
+    .from("campus_college_load_revision")
+    .select("id, campus_college_load_id, revision_number")
+    .in(
+      "campus_college_load_id",
+      loads.map((load) => load.id),
+    );
 
-  for (const { data: revision, load } of revisionResults) {
-    if (!revision) continue;
+  const latestByLoad = new Map<string, { id: string; revisionNumber: number }>();
+  for (const meta of revisionMeta ?? []) {
+    const loadId = String(meta.campus_college_load_id);
+    const revisionNumber = Number(meta.revision_number ?? 0);
+    const current = latestByLoad.get(loadId);
+    if (!current || revisionNumber > current.revisionNumber) {
+      latestByLoad.set(loadId, { id: String(meta.id), revisionNumber });
+    }
+  }
+
+  if (latestByLoad.size === 0) return null;
+
+  // Stage B: snapshots for the latest revisions only.
+  const { data: revisions } = await supabase
+    .from("campus_college_load_revision")
+    .select("id, snapshot, campus_college_load_id")
+    .in(
+      "id",
+      Array.from(latestByLoad.values()).map((revision) => revision.id),
+    );
+
+  const loadById = new Map(loads.map((load) => [String(load.id), load]));
+  for (const revision of revisions ?? []) {
+    const load = loadById.get(String(revision.campus_college_load_id));
+    if (!load) continue;
     const normalized = normalizeCampusCollegeLoadSnapshot(revision.snapshot);
     if (!normalized) continue;
     const faculty = normalized.faculty_load.faculty.find(

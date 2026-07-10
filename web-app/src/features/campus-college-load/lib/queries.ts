@@ -1,8 +1,9 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { getCurrentUserData } from "@/features/profile/lib/user-data/queries";
+import { getCurrentUserDataCached } from "@/features/profile/lib/user-data/cached";
 import { formatFullName } from "@/features/shared/lib/format-name";
+import { getProgramChairCampusCollegeScopesCached } from "./cached";
 import type {
   CampusCollegeLoad,
   CampusCollegeLoadEvaluation,
@@ -31,9 +32,16 @@ export type CampusCollegeLoadEvaluationAttachment = {
   signed_url: string | null;
 };
 
+// List rows deliberately omit the revision `snapshot` JSONB — it is large and
+// only the detail view needs it.
+export type CampusCollegeLoadRevisionSummary = Omit<
+  CampusCollegeLoadRevision,
+  "snapshot"
+>;
+
 export type CampusCollegeLoadListItem = CampusCollegeLoadScope & {
   load: CampusCollegeLoad | null;
-  latest_revision: CampusCollegeLoadRevision | null;
+  latest_revision: CampusCollegeLoadRevisionSummary | null;
   actionable: boolean;
   evaluator_bucket: CampusCollegeLoadEvaluatorBucket | null;
 };
@@ -132,6 +140,22 @@ const normalizeRevision = (
   };
 };
 
+const normalizeRevisionSummary = (
+  row: Record<string, unknown> | null | undefined,
+): CampusCollegeLoadRevisionSummary | null => {
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    campus_college_load_id: String(row.campus_college_load_id),
+    revision_number: Number(row.revision_number ?? 0),
+    submitted_by_user_id: String(row.submitted_by_user_id),
+    submitted_by_designation_id:
+      (row.submitted_by_designation_id as string | null) ?? null,
+    submitted_by_name: null,
+    submitted_at: (row.submitted_at as string | null) ?? null,
+  };
+};
+
 const normalizeEvaluation = (
   row: Record<string, unknown>,
 ): CampusCollegeLoadEvaluation => ({
@@ -176,7 +200,9 @@ export const getProgramChairCampusCollegeScopes = async (): Promise<
     return [];
   }
 
-  const currentUserData = await getCurrentUserData({ includeDesignations: true });
+  const currentUserData = await getCurrentUserDataCached({
+    includeDesignations: true,
+  });
   const ownDesignationIds = new Set(
     (currentUserData?.designations ?? []).map((designation) => designation.id),
   );
@@ -215,11 +241,23 @@ export const getProgramChairCampusCollegeScopes = async (): Promise<
 export const getCampusCollegeLoadList = async (
   academicTermId: string,
 ): Promise<CampusCollegeLoadListItem[]> => {
-  const [chairScopes, currentUserData] = await Promise.all([
-    getProgramChairCampusCollegeScopes(),
-    getCurrentUserData({ includeDesignations: true }),
-  ]);
   const supabase = await createClient();
+  const [chairScopes, currentUserData, { data, error }] = await Promise.all([
+    getProgramChairCampusCollegeScopesCached(),
+    getCurrentUserDataCached({ includeDesignations: true }),
+    supabase
+      .from("campus_college_load")
+      .select(
+        `
+        *,
+        campus:campus_id(code, name),
+        college:college_id(code, name),
+        campus_college_load_revision(id, campus_college_load_id, revision_number, submitted_by_user_id, submitted_by_designation_id, submitted_at)
+        `,
+      )
+      .eq("academic_term_id", academicTermId)
+      .order("updated_at", { ascending: false }),
+  ]);
 
   const roles = new Set(
     (currentUserData?.designations ?? []).map((designation) => designation.job_title),
@@ -230,19 +268,6 @@ export const getCampusCollegeLoadList = async (
       .map((designation) => designation.campus_id)
       .filter((value): value is string => Boolean(value)),
   );
-
-  const { data, error } = await supabase
-    .from("campus_college_load")
-    .select(
-      `
-      *,
-      campus:campus_id(code, name),
-      college:college_id(code, name),
-      campus_college_load_revision(*)
-      `,
-    )
-    .eq("academic_term_id", academicTermId)
-    .order("updated_at", { ascending: false });
 
   if (error) {
     console.error("campusCollegeLoad.getList ::", error);
@@ -258,7 +283,7 @@ export const getCampusCollegeLoadList = async (
     )[0];
     return {
       load: normalizeLoad(row),
-      latest_revision: normalizeRevision(latestRevision),
+      latest_revision: normalizeRevisionSummary(latestRevision),
       campus: first(row.campus as { code?: string; name?: string } | null),
       college: first(row.college as { code?: string; name?: string } | null),
     };
@@ -370,22 +395,32 @@ export const getCampusCollegeLoadDetail = async (
   options?: { revisionId?: string | null },
 ): Promise<CampusCollegeLoadDetail | null> => {
   const supabase = await createClient();
-  const { data: rawLoad, error: loadError } = await supabase
-    .from("campus_college_load")
-    .select("*, campus:campus_id(code, name), college:college_id(code, name)")
-    .eq("id", loadId)
-    .maybeSingle();
+
+  // Stage 1 — all independent of one another.
+  const [
+    { data: rawLoad, error: loadError },
+    { data: rawRevisions },
+    currentUserData,
+    chairScopes,
+  ] = await Promise.all([
+    supabase
+      .from("campus_college_load")
+      .select("*, campus:campus_id(code, name), college:college_id(code, name)")
+      .eq("id", loadId)
+      .maybeSingle(),
+    supabase
+      .from("campus_college_load_revision")
+      .select("*")
+      .eq("campus_college_load_id", loadId)
+      .order("revision_number", { ascending: false }),
+    getCurrentUserDataCached({ includeDesignations: true }),
+    getProgramChairCampusCollegeScopesCached(),
+  ]);
 
   if (loadError || !rawLoad) {
     if (loadError) console.error("campusCollegeLoad.getDetail.load ::", loadError);
     return null;
   }
-
-  const { data: rawRevisions } = await supabase
-    .from("campus_college_load_revision")
-    .select("*")
-    .eq("campus_college_load_id", loadId)
-    .order("revision_number", { ascending: false });
 
   const rawRevisionRows = (rawRevisions ?? []) as Array<Record<string, unknown>>;
   const submitterIds = Array.from(
@@ -395,13 +430,36 @@ export const getCampusCollegeLoadDetail = async (
         .filter((value): value is string => typeof value === "string"),
     ),
   );
-  const { data: submitterIdentities } =
-    submitterIds.length > 0
-      ? await supabase
-          .from("identity")
-          .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
-          .in("user_id", submitterIds)
-      : { data: [] };
+
+  // The viewed revision is decidable from the raw rows (already ordered by
+  // revision_number desc), so the evaluations fetch doesn't have to wait for
+  // the submitter-name lookup.
+  const requestedRawRevision = options?.revisionId
+    ? (rawRevisionRows.find((row) => String(row.id) === options.revisionId) ?? null)
+    : null;
+  const viewedRevisionId = requestedRawRevision
+    ? String(requestedRawRevision.id)
+    : rawRevisionRows[0]
+      ? String(rawRevisionRows[0].id)
+      : null;
+
+  // Stage 2 — needs only the revision rows.
+  const [{ data: submitterIdentities }, { data: rawEvaluations }] =
+    await Promise.all([
+      submitterIds.length > 0
+        ? supabase
+            .from("identity")
+            .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
+            .in("user_id", submitterIds)
+        : Promise.resolve({ data: [] }),
+      viewedRevisionId
+        ? supabase
+            .from("campus_college_load_evaluation")
+            .select("*")
+            .eq("campus_college_load_revision_id", viewedRevisionId)
+            .order("created_at", { ascending: true })
+        : Promise.resolve({ data: [] }),
+    ]);
   const submitterNames = new Map(
     (submitterIdentities ?? []).map((identity) => [
       identity.user_id as string,
@@ -413,18 +471,10 @@ export const getCampusCollegeLoadDetail = async (
     .map((row) => normalizeRevision(row, submitterNames))
     .filter((row): row is CampusCollegeLoadRevision => Boolean(row));
   const latestRevision = revisions[0] ?? null;
-  const requestedRevision = options?.revisionId
-    ? (revisions.find((revision) => revision.id === options.revisionId) ?? null)
-    : null;
-  const viewedRevision = requestedRevision ?? latestRevision;
-
-  const { data: rawEvaluations } = viewedRevision
-    ? await supabase
-        .from("campus_college_load_evaluation")
-        .select("*")
-        .eq("campus_college_load_revision_id", viewedRevision.id)
-        .order("created_at", { ascending: true })
-    : { data: [] };
+  const viewedRevision =
+    (viewedRevisionId
+      ? (revisions.find((revision) => revision.id === viewedRevisionId) ?? null)
+      : null) ?? latestRevision;
 
   const evaluationRows = (rawEvaluations ?? []) as Array<Record<string, unknown>>;
   const evaluatorIds = Array.from(
@@ -441,21 +491,36 @@ export const getCampusCollegeLoadDetail = async (
         .filter((value): value is string => typeof value === "string"),
     ),
   );
-  const [{ data: evaluatorIdentities }, { data: evaluatorDesignations }] =
-    await Promise.all([
-      evaluatorIds.length > 0
-        ? supabase
-            .from("identity")
-            .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
-            .in("user_id", evaluatorIds)
-        : Promise.resolve({ data: [] }),
-      designationIds.length > 0
-        ? supabase
-            .from("designation")
-            .select("id, job_title")
-            .in("id", designationIds)
-        : Promise.resolve({ data: [] }),
-    ]);
+  const evaluationIds = evaluationRows
+    .map((row) => row.id)
+    .filter((value): value is string => typeof value === "string");
+
+  // Stage 3 — needs only the evaluation rows.
+  const [
+    { data: evaluatorIdentities },
+    { data: evaluatorDesignations },
+    { data: rawAttachmentRows },
+  ] = await Promise.all([
+    evaluatorIds.length > 0
+      ? supabase
+          .from("identity")
+          .select("user_id, first_name, middle_name, last_name, suffix, professional_extension")
+          .in("user_id", evaluatorIds)
+      : Promise.resolve({ data: [] }),
+    designationIds.length > 0
+      ? supabase
+          .from("designation")
+          .select("id, job_title")
+          .in("id", designationIds)
+      : Promise.resolve({ data: [] }),
+    evaluationIds.length > 0
+      ? supabase
+          .from("campus_college_load_evaluation_attachment")
+          .select("*")
+          .in("campus_college_load_evaluation_id", evaluationIds)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({ data: [] }),
+  ]);
   const evaluatorNames = new Map(
     (evaluatorIdentities ?? []).map((identity) => [
       identity.user_id as string,
@@ -468,18 +533,6 @@ export const getCampusCollegeLoadDetail = async (
       designation.job_title as string,
     ]),
   );
-
-  const evaluationIds = evaluationRows
-    .map((row) => row.id)
-    .filter((value): value is string => typeof value === "string");
-  const { data: rawAttachmentRows } =
-    evaluationIds.length > 0
-      ? await supabase
-          .from("campus_college_load_evaluation_attachment")
-          .select("*")
-          .in("campus_college_load_evaluation_id", evaluationIds)
-          .order("created_at", { ascending: true })
-      : { data: [] };
   const attachmentRowsByEvaluationId = new Map<
     string,
     Array<Record<string, unknown>>
@@ -491,60 +544,93 @@ export const getCampusCollegeLoadDetail = async (
     attachmentRowsByEvaluationId.set(evaluationId, list);
   });
 
-  const evaluations = await Promise.all(
-    evaluationRows.map(
-      async (row) => {
-        const evaluation = normalizeEvaluation(row);
-        const enrichedEvaluation = {
-          ...evaluation,
-          evaluator_name: evaluation.evaluator_user_id
-            ? (evaluatorNames.get(evaluation.evaluator_user_id) ?? null)
-            : null,
-          designation_title: evaluation.designation_id
-            ? (designationTitles.get(evaluation.designation_id) ?? null)
-            : null,
-        };
+  const normalizedEvaluations = evaluationRows.map((row) => normalizeEvaluation(row));
 
-        const attachments: CampusCollegeLoadEvaluationAttachment[] = [];
-
-        if (evaluation.attachment_path && evaluation.attachment_bucket) {
-          const { data } = await supabase.storage
-            .from(evaluation.attachment_bucket)
-            .createSignedUrl(evaluation.attachment_path, 60 * 60);
-          attachments.push({
-            id: evaluation.id,
-            file_name: evaluation.attachment_file_name ?? "Attachment",
-            mime_type: evaluation.attachment_mime_type,
-            signed_url: data?.signedUrl ?? null,
-          });
-        }
-
-        const additionalRows = attachmentRowsByEvaluationId.get(evaluation.id) ?? [];
-        for (const attachmentRow of additionalRows) {
-          const bucket = String(attachmentRow.attachment_bucket ?? "");
-          const path = String(attachmentRow.attachment_path ?? "");
-          if (!bucket || !path) continue;
-
-          const { data } = await supabase.storage
-            .from(bucket)
-            .createSignedUrl(path, 60 * 60);
-          attachments.push({
-            id: String(attachmentRow.id),
-            file_name:
-              (attachmentRow.attachment_file_name as string | null) ?? "Attachment",
-            mime_type: (attachmentRow.attachment_mime_type as string | null) ?? null,
-            signed_url: data?.signedUrl ?? null,
-          });
-        }
-
-        return {
-          ...enrichedEvaluation,
-          attachment_signed_url: attachments[0]?.signed_url ?? null,
-          attachments,
-        };
-      },
+  // Stage 4 — sign all attachment URLs in one batched call per bucket instead
+  // of one round trip per attachment.
+  const pathsByBucket = new Map<string, string[]>();
+  const collectRef = (bucket: string | null, path: string | null) => {
+    if (!bucket || !path) return;
+    const paths = pathsByBucket.get(bucket) ?? [];
+    paths.push(path);
+    pathsByBucket.set(bucket, paths);
+  };
+  normalizedEvaluations.forEach((evaluation) =>
+    collectRef(evaluation.attachment_bucket, evaluation.attachment_path),
+  );
+  attachmentRowsByEvaluationId.forEach((rows) =>
+    rows.forEach((row) =>
+      collectRef(
+        (row.attachment_bucket as string | null) ?? null,
+        (row.attachment_path as string | null) ?? null,
+      ),
     ),
   );
+
+  const signedUrlByRef = new Map<string, string | null>();
+  await Promise.all(
+    Array.from(pathsByBucket.entries()).map(async ([bucket, paths]) => {
+      const { data } = await supabase.storage
+        .from(bucket)
+        .createSignedUrls(paths, 60 * 60);
+      (data ?? []).forEach((item, index) => {
+        // Per-item failures keep today's behavior: signed_url stays null.
+        signedUrlByRef.set(
+          `${bucket}:${item.path ?? paths[index]}`,
+          item.error ? null : (item.signedUrl ?? null),
+        );
+      });
+    }),
+  );
+  const getSignedUrl = (bucket: string | null, path: string | null) =>
+    bucket && path ? (signedUrlByRef.get(`${bucket}:${path}`) ?? null) : null;
+
+  const evaluations = normalizedEvaluations.map((evaluation) => {
+    const enrichedEvaluation = {
+      ...evaluation,
+      evaluator_name: evaluation.evaluator_user_id
+        ? (evaluatorNames.get(evaluation.evaluator_user_id) ?? null)
+        : null,
+      designation_title: evaluation.designation_id
+        ? (designationTitles.get(evaluation.designation_id) ?? null)
+        : null,
+    };
+
+    const attachments: CampusCollegeLoadEvaluationAttachment[] = [];
+
+    if (evaluation.attachment_path && evaluation.attachment_bucket) {
+      attachments.push({
+        id: evaluation.id,
+        file_name: evaluation.attachment_file_name ?? "Attachment",
+        mime_type: evaluation.attachment_mime_type,
+        signed_url: getSignedUrl(
+          evaluation.attachment_bucket,
+          evaluation.attachment_path,
+        ),
+      });
+    }
+
+    const additionalRows = attachmentRowsByEvaluationId.get(evaluation.id) ?? [];
+    for (const attachmentRow of additionalRows) {
+      const bucket = String(attachmentRow.attachment_bucket ?? "");
+      const path = String(attachmentRow.attachment_path ?? "");
+      if (!bucket || !path) continue;
+
+      attachments.push({
+        id: String(attachmentRow.id),
+        file_name:
+          (attachmentRow.attachment_file_name as string | null) ?? "Attachment",
+        mime_type: (attachmentRow.attachment_mime_type as string | null) ?? null,
+        signed_url: getSignedUrl(bucket, path),
+      });
+    }
+
+    return {
+      ...enrichedEvaluation,
+      attachment_signed_url: attachments[0]?.signed_url ?? null,
+      attachments,
+    };
+  });
   const getSignature = (
     step: CampusCollegeLoadEvaluationStep,
     label: string,
@@ -562,9 +648,8 @@ export const getCampusCollegeLoadDetail = async (
     };
   };
 
-  const currentUserData = await getCurrentUserData({ includeDesignations: true });
   const load = normalizeLoad(rawLoad as Record<string, unknown>);
-  const canSubmitRevision = (await getProgramChairCampusCollegeScopes()).some(
+  const canSubmitRevision = chairScopes.some(
     (scope) =>
       scope.campus_id === load.campus_id &&
       scope.college_id === load.college_id &&

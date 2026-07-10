@@ -1,15 +1,16 @@
 "use server";
 
-import { getDefaultAcademicTerm, TermListItem } from "@/features/admin/lib/terms";
+import { TermListItem } from "@/features/admin/lib/terms";
+import { getDefaultAcademicTermCached } from "@/features/admin/lib/terms-cached";
 import { getCurrentUser, getUserRole } from "@/features/auth/lib/utils";
-import { getCurrentUserData } from "@/features/profile/lib/user-data/queries";
+import { getCurrentUserDataCached } from "@/features/profile/lib/user-data/cached";
 import { UserRole } from "@/features/shared/types/models";
 import { createClient } from "@/utils/supabase/server";
 import { resolveHighestRole } from "./ftl-status";
 import { DashboardContext, DashboardScope } from "./types";
 
 const resolveDashboardTerm = async (): Promise<TermListItem | null> => {
-  const defaultTerm = await getDefaultAcademicTerm();
+  const defaultTerm = await getDefaultAcademicTermCached();
   if (defaultTerm) return defaultTerm;
 
   // No default configured — fall back to the term containing today,
@@ -121,7 +122,7 @@ export const getDashboardContext = async (): Promise<DashboardContext | null> =>
 
   const [roles, userData, term] = await Promise.all([
     getUserRole(),
-    getCurrentUserData({ includeDesignations: true }),
+    getCurrentUserDataCached({ includeDesignations: true }),
     resolveDashboardTerm(),
   ]);
 

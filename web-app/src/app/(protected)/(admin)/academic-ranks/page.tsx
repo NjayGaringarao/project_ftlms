@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { RanksManagement } from "@/features/admin/components/academic-rank/ranks-management";
+import { ListDetailSkeleton } from "@/features/shared/components/skeletons/list-detail-skeleton";
 import { getAdminPanelQueryState } from "@/features/admin/lib/management-query";
 import { getRankById, getUniversityRanksList } from "@/features/admin/lib/ranks";
 
@@ -9,7 +11,7 @@ type AcademicRanksPageProps = {
   }>;
 };
 
-const AcademicRanksPage = async ({ searchParams }: AcademicRanksPageProps) => {
+const AcademicRanksContent = async ({ searchParams }: AcademicRanksPageProps) => {
   const queryState = getAdminPanelQueryState(await searchParams);
   const [ranks, selectedRank] = await Promise.all([
     getUniversityRanksList(),
@@ -25,5 +27,11 @@ const AcademicRanksPage = async ({ searchParams }: AcademicRanksPageProps) => {
     />
   );
 };
+
+const AcademicRanksPage = ({ searchParams }: AcademicRanksPageProps) => (
+  <Suspense fallback={<ListDetailSkeleton />}>
+    <AcademicRanksContent searchParams={searchParams} />
+  </Suspense>
+);
 
 export default AcademicRanksPage;

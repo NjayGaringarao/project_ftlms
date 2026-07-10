@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import AdminDashboard from "@/features/home/components/dashboards/admin-dashboard";
 import CampusDirectorDashboard from "@/features/home/components/dashboards/campus-director-dashboard";
 import CollegeDeanDashboard from "@/features/home/components/dashboards/college-dean-dashboard";
 import ExecutiveDashboard from "@/features/home/components/dashboards/executive-dashboard";
 import FacultyDashboard from "@/features/home/components/dashboards/faculty-dashboard";
 import ProgramChairDashboard from "@/features/home/components/dashboards/program-chair-dashboard";
+import DashboardSkeleton from "@/features/home/components/dashboard-skeleton";
 import WelcomeBanner from "@/features/home/components/welcome-banner";
 import { getDashboardContext } from "@/features/home/lib/context";
 import { DashboardContext } from "@/features/home/lib/types";
@@ -64,7 +66,11 @@ const HomePage = async () => {
   return (
     <>
       <WelcomeBanner firstName={context.firstName} />
-      {renderDashboard(context)}
+      {/* Dashboards are async server components — stream them in behind the
+          banner instead of blocking first paint on their insight queries. */}
+      <Suspense fallback={<DashboardSkeleton />}>
+        {renderDashboard(context)}
+      </Suspense>
     </>
   );
 };

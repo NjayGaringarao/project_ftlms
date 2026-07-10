@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { UserRole } from "@/features/shared/types/models";
 import { createClient } from "@/utils/supabase/server";
 import { User } from "@supabase/supabase-js";
@@ -15,7 +16,9 @@ export const isAdminExists = async (): Promise<boolean> => {
   return data ?? false;
 };
 
-export const getCurrentUser = async (): Promise<User | undefined> => {
+// cache() dedupes within a single request render pass (layout + page + nested
+// components); per-request semantics are preserved.
+export const getCurrentUser = cache(async (): Promise<User | undefined> => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 
@@ -29,9 +32,9 @@ export const getCurrentUser = async (): Promise<User | undefined> => {
   } else {
     return data.user;
   }
-};
+});
 
-export const getUserRole = async (): Promise<UserRole[]> => {
+export const getUserRole = cache(async (): Promise<UserRole[]> => {
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("get_user_roles");
@@ -42,4 +45,4 @@ export const getUserRole = async (): Promise<UserRole[]> => {
   }
 
   return (data as UserRole[]) ?? [];
-};
+});

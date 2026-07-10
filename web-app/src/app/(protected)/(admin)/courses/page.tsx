@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { CoursesManagement } from "@/features/admin/components/course/courses-management";
+import { ListDetailSkeleton } from "@/features/shared/components/skeletons/list-detail-skeleton";
 import { getCoursesList, getCourseById } from "@/features/admin/lib/courses";
 import { getAdminPanelQueryState } from "@/features/admin/lib/management-query";
 
@@ -9,7 +11,7 @@ type CoursesPageProps = {
   }>;
 };
 
-const CoursesPage = async ({ searchParams }: CoursesPageProps) => {
+const CoursesContent = async ({ searchParams }: CoursesPageProps) => {
   const queryState = getAdminPanelQueryState(await searchParams);
   const [courses, selectedCourse] = await Promise.all([
     getCoursesList(),
@@ -25,5 +27,11 @@ const CoursesPage = async ({ searchParams }: CoursesPageProps) => {
     />
   );
 };
+
+const CoursesPage = ({ searchParams }: CoursesPageProps) => (
+  <Suspense fallback={<ListDetailSkeleton />}>
+    <CoursesContent searchParams={searchParams} />
+  </Suspense>
+);
 
 export default CoursesPage;

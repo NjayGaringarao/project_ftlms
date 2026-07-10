@@ -4,7 +4,11 @@ import { getCampusCollegeLoadList } from "@/features/campus-college-load/lib/que
 import { formatName } from "@/features/shared/lib/format-name";
 import { createClient } from "@/utils/supabase/server";
 import { FacultyClassRow, sumFacultyLoads } from "./load-math";
-import { getSectionRollup, SectionRollupRow } from "./shared-queries";
+import {
+  getRevisionIdsWithReturnComments,
+  getSectionRollup,
+  SectionRollupRow,
+} from "./shared-queries";
 import {
   AttentionIssue,
   AttentionSection,
@@ -148,30 +152,27 @@ export const getClassRollupForSections = async (
 export const getFtlStatusItems = async (
   academicTermId: string,
 ): Promise<FtlStatusItem[]> => {
-  const supabase = await createClient();
   const items = await getCampusCollegeLoadList(academicTermId);
 
-  return Promise.all(
-    items.map(async (item) => {
-      let hasReturnComments = false;
-      if (item.load?.status === "RETURNED" && item.latest_revision?.id) {
-        const { count } = await supabase
-          .from("campus_college_load_evaluation")
-          .select("id", { count: "exact", head: true })
-          .eq("campus_college_load_revision_id", item.latest_revision.id)
-          .eq("status", "RETURNED");
-        hasReturnComments = (count ?? 0) > 0;
-      }
-      return {
-        id: item.load?.id ?? null,
-        scopeLabel: `${item.campus_code ?? item.campus_name ?? "?"} — ${item.college_code ?? item.college_name ?? "?"}`,
-        status: item.load?.status ?? null,
-        step: item.load?.current_step ?? null,
-        latestSubmittedAt: item.latest_revision?.submitted_at ?? null,
-        hasReturnComments,
-      };
-    }),
+  const revisionsWithReturns = await getRevisionIdsWithReturnComments(
+    items.flatMap((item) =>
+      item.load?.status === "RETURNED" && item.latest_revision?.id
+        ? [item.latest_revision.id]
+        : [],
+    ),
   );
+
+  return items.map((item) => ({
+    id: item.load?.id ?? null,
+    scopeLabel: `${item.campus_code ?? item.campus_name ?? "?"} — ${item.college_code ?? item.college_name ?? "?"}`,
+    status: item.load?.status ?? null,
+    step: item.load?.current_step ?? null,
+    latestSubmittedAt: item.latest_revision?.submitted_at ?? null,
+    hasReturnComments:
+      item.load?.status === "RETURNED" && item.latest_revision?.id
+        ? revisionsWithReturns.has(item.latest_revision.id)
+        : false,
+  }));
 };
 
 export const getChairInsights = async (

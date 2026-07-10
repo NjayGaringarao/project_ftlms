@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { AcademicCalendarManagement } from "@/features/admin/components/academic-calendar/academic-calendar-management";
+import { ListDetailSkeleton } from "@/features/shared/components/skeletons/list-detail-skeleton";
 import {
   getAcademicYearById,
   getAcademicYearsList,
@@ -16,7 +18,7 @@ type AcademicCalendarPageProps = {
   }>;
 };
 
-const AcademicCalendarPage = async ({
+const AcademicCalendarContent = async ({
   searchParams,
 }: AcademicCalendarPageProps) => {
   const queryState = getAdminPanelQueryState(await searchParams);
@@ -38,5 +40,11 @@ const AcademicCalendarPage = async ({
     />
   );
 };
+
+const AcademicCalendarPage = ({ searchParams }: AcademicCalendarPageProps) => (
+  <Suspense fallback={<ListDetailSkeleton />}>
+    <AcademicCalendarContent searchParams={searchParams} />
+  </Suspense>
+);
 
 export default AcademicCalendarPage;

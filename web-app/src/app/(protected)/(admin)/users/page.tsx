@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { UsersManagement } from "@/features/admin/components/users/users-management";
+import { ListDetailSkeleton } from "@/features/shared/components/skeletons/list-detail-skeleton";
 import { getCampusesList } from "@/features/admin/lib/campuses";
 import { getCollegesList } from "@/features/admin/lib/colleges";
 import { getAdminPanelQueryState } from "@/features/admin/lib/management-query";
@@ -13,7 +15,7 @@ type UsersPageProps = {
   }>;
 };
 
-const UsersPage = async ({ searchParams }: UsersPageProps) => {
+const UsersContent = async ({ searchParams }: UsersPageProps) => {
   const queryState = getAdminPanelQueryState(await searchParams);
   const supabase = await createClient();
   const [
@@ -48,5 +50,11 @@ const UsersPage = async ({ searchParams }: UsersPageProps) => {
     />
   );
 };
+
+const UsersPage = ({ searchParams }: UsersPageProps) => (
+  <Suspense fallback={<ListDetailSkeleton />}>
+    <UsersContent searchParams={searchParams} />
+  </Suspense>
+);
 
 export default UsersPage;

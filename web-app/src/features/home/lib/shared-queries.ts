@@ -200,6 +200,34 @@ type RawScopedLoadRow = {
   }> | null;
 };
 
+// One existence query for all revisions instead of a count query per load.
+// Only ever called with the handful of loads in a term, so the PostgREST row
+// cap is not a concern.
+export const getRevisionIdsWithReturnComments = async (
+  revisionIds: string[],
+): Promise<Set<string>> => {
+  if (revisionIds.length === 0) return new Set();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("campus_college_load_evaluation")
+    .select("campus_college_load_revision_id")
+    .in("campus_college_load_revision_id", revisionIds)
+    .eq("status", "RETURNED");
+
+  if (error) {
+    console.error(
+      "lib.home.shared-queries.getRevisionIdsWithReturnComments ::",
+      error,
+    );
+    return new Set();
+  }
+
+  return new Set(
+    (data ?? []).map((row) => String(row.campus_college_load_revision_id)),
+  );
+};
+
 // FTL status rows for a campus- or college-scoped viewer (Dean / Campus
 // Director). The Program Chair path uses getCampusCollegeLoadList instead,
 // which also surfaces scopes with no load created yet.
@@ -238,36 +266,36 @@ export const getFtlStatusItemsByScope = async (
 
   const rows = (data ?? []) as unknown as RawScopedLoadRow[];
 
-  return Promise.all(
-    rows.map(async (row) => {
-      const campus = first(row.campus);
-      const college = first(row.college);
-      const latest = [...(row.campus_college_load_revision ?? [])].sort(
-        (left, right) =>
-          Number(right.revision_number ?? 0) -
-          Number(left.revision_number ?? 0),
-      )[0];
+  const rowsWithLatest = rows.map((row) => ({
+    row,
+    latest: [...(row.campus_college_load_revision ?? [])].sort(
+      (left, right) =>
+        Number(right.revision_number ?? 0) - Number(left.revision_number ?? 0),
+    )[0],
+  }));
 
-      let hasReturnComments = false;
-      if (row.status === "RETURNED" && latest?.id) {
-        const { count } = await supabase
-          .from("campus_college_load_evaluation")
-          .select("id", { count: "exact", head: true })
-          .eq("campus_college_load_revision_id", latest.id)
-          .eq("status", "RETURNED");
-        hasReturnComments = (count ?? 0) > 0;
-      }
-
-      return {
-        id: row.id,
-        scopeLabel: `${campus?.code ?? campus?.name ?? "?"} — ${college?.code ?? college?.name ?? "?"}`,
-        status: row.status,
-        step: row.current_step,
-        latestSubmittedAt: latest?.submitted_at ?? null,
-        hasReturnComments,
-      };
-    }),
+  const revisionsWithReturns = await getRevisionIdsWithReturnComments(
+    rowsWithLatest.flatMap(({ row, latest }) =>
+      row.status === "RETURNED" && latest?.id ? [latest.id] : [],
+    ),
   );
+
+  return rowsWithLatest.map(({ row, latest }) => {
+    const campus = first(row.campus);
+    const college = first(row.college);
+
+    return {
+      id: row.id,
+      scopeLabel: `${campus?.code ?? campus?.name ?? "?"} — ${college?.code ?? college?.name ?? "?"}`,
+      status: row.status,
+      step: row.current_step,
+      latestSubmittedAt: latest?.submitted_at ?? null,
+      hasReturnComments:
+        row.status === "RETURNED" && latest?.id
+          ? revisionsWithReturns.has(latest.id)
+          : false,
+    };
+  });
 };
 
 // Employment mix via per-status head-counts — immune to the PostgREST row cap.
