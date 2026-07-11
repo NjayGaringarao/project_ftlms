@@ -6,11 +6,15 @@ VALUES
 	),
 	(
 		(SELECT id FROM campus WHERE code = 'CST'),
-		(SELECT id FROM program WHERE code = 'BSIT')
+		(SELECT id FROM program WHERE code = 'BSED')
 	),
 	(
 		(SELECT id FROM campus WHERE code = 'CST'),
-		(SELECT id FROM program WHERE code = 'BSIS')
+		(SELECT id FROM program WHERE code = 'BEED')
+	),
+	(
+		(SELECT id FROM campus WHERE code = 'CST'),
+		(SELECT id FROM program WHERE code = 'BSBA')
 	)
 ON CONFLICT (campus_id, program_id)
 DO NOTHING;

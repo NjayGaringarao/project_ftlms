@@ -14,6 +14,7 @@ begin
     'Campus Cultural and Arts Affairs Coordinator',
     'Campus Document Control Officer',
     'Campus Extension Coordinator',
+    'Campus Faculty President',
     'Campus NSTP Coordinator',
     'Campus Gender and Development Coordinator',
     'Campus Guidance Counselor',
