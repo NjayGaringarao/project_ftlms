@@ -1163,6 +1163,10 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         <div className="flex-1 flex flex-row h-full overflow-hidden">
           <div className="flex-1 overflow-auto">
             <div
+              data-testid="schedule-mapper-grid"
+              data-loading={
+                sectionLoading || facultyLoading || roomLoading ? "true" : "false"
+              }
               className="grid auto-rows-[2.5rem] grid-cols-[minmax(5rem,8rem)_repeat(21,minmax(3rem,1fr))] min-w-max border border-foreground/10 text-xs"
               onMouseLeave={() => {
                 setHoveredRow(null);

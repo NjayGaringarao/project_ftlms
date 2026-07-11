@@ -1,0 +1,34 @@
+{
+  "name": "ftlms-load-tests",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "k6 load testing for the FTLMS scheduler and campus-college-load flows, plus the Node scripts that seed/reset local test data.",
+  "scripts": {
+    "seed": "tsx scripts/seed-test-users.ts",
+    "seed:eval-batch": "tsx scripts/seed-evaluation-batch.ts",
+    "mint-cookies": "tsx scripts/mint-session-cookies.ts",
+    "reset": "tsx scripts/reset-test-data.ts",
+    "loadtest:scheduler:browser": "dotenv -e .env -- k6 run k6/scheduler.browser.js",
+    "loadtest:scheduler:rest": "npm run mint-cookies && dotenv -e .env -- k6 run k6/scheduler.rest.js",
+    "ensure-results-dir": "node -e \"require('fs').mkdirSync('results',{recursive:true})\"",
+    "loadtest:scheduler:rest:ramp": "npm run ensure-results-dir && npm run mint-cookies && dotenv -e .env -- k6 run --out json=results/scheduler-ramp.json k6/scheduler.rest.ramp.js",
+    "loadtest:ccl:browser": "dotenv -e .env -- k6 run k6/campus-college-load.browser.js",
+    "loadtest:ccl:rest": "npm run reset && npm run seed:eval-batch && npm run mint-cookies && dotenv -e .env -- k6 run k6/campus-college-load.rest.js",
+    "loadtest:ccl:rest:ramp": "npm run ensure-results-dir && npm run mint-cookies && dotenv -e .env -- k6 run --out json=results/ccl-ramp.json k6/campus-college-load.rest.ramp.js",
+    "analyze:scheduler:ramp": "dotenv -e .env -- tsx scripts/analyze-ramp-results.ts results/scheduler-ramp.json",
+    "analyze:ccl:ramp": "dotenv -e .env -- tsx scripts/analyze-ramp-results.ts results/ccl-ramp.json"
+  },
+  "devDependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.93.2",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.5",
+    "dotenv-cli": "^7.4.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "csv-parse": "^7.0.1"
+  }
+}
