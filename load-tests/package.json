@@ -13,6 +13,8 @@
     "loadtest:scheduler:rest": "npm run mint-cookies && dotenv -e .env -- k6 run k6/scheduler.rest.js",
     "ensure-results-dir": "node -e \"require('fs').mkdirSync('results',{recursive:true})\"",
     "loadtest:scheduler:rest:ramp": "npm run ensure-results-dir && npm run mint-cookies && dotenv -e .env -- k6 run --out json=results/scheduler-ramp.json k6/scheduler.rest.ramp.js",
+    "seed:schedule-race": "tsx scripts/seed-schedule-race.ts",
+    "loadtest:scheduler:sessions:rest": "npm run seed:schedule-race && npm run mint-cookies && dotenv -e .env -- k6 run k6/scheduler-sessions.rest.js",
     "loadtest:ccl:browser": "dotenv -e .env -- k6 run k6/campus-college-load.browser.js",
     "loadtest:ccl:rest": "npm run reset && npm run seed:eval-batch && npm run mint-cookies && dotenv -e .env -- k6 run k6/campus-college-load.rest.js",
     "loadtest:ccl:rest:ramp": "npm run ensure-results-dir && npm run mint-cookies && dotenv -e .env -- k6 run --out json=results/ccl-ramp.json k6/campus-college-load.rest.ramp.js",

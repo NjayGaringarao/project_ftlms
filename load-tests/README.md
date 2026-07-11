@@ -2,13 +2,17 @@
 
 k6 load tests for two flows:
 
-- **Scheduler** (`/scheduler`) — DB-read-heavy page backed by the `get_scheduler_matrices()` RPC.
+- **Scheduler** (`/scheduler`) — DB-read-heavy page backed by the `get_scheduler_matrices()` RPC, plus a write-path race scenario for session creation.
 - **Campus-college load submit/evaluate** (`/campus-college-load`) — DB-write / trigger-contention-heavy proposal workflow.
 
 Each flow has two variants:
 
 - **`.browser.js`** — drives a real headless Chrome through the actual login form and app UI. Highest fidelity, lower scale.
-- **`.rest.js`** — cookie/token-injected plain HTTP. No browser, scales much higher. Writes go straight to Supabase PostgREST with the impersonated user's JWT rather than replaying Next.js Server Actions (their wire format is build-specific and not safely rerunnable — see comments in `campus-college-load.browser.js`).
+- **`.rest.js`** — cookie/token-injected plain HTTP. No browser, scales much higher. Reads and writes go straight to Supabase PostgREST with the impersonated user's JWT rather than replaying Next.js Server Actions (their wire format is build-specific and not safely rerunnable — see comments in `campus-college-load.browser.js`). Because the app's server actions are themselves thin wrappers around the same PostgREST calls, this exercises the identical DB path.
+
+### What the scheduler REST test actually replays
+
+Opening `/scheduler` with a section selected does almost no data work in the Server Component (it only fetches terms). The real load — the `get_scheduler_matrices()` RPC, the online-session selects, the course-offerings query — fires *after hydration*, from client-side `useEffect`s calling server actions. A plain page GET never triggers any of it. So `scheduler.rest.js` (via `k6/scheduler-replay.js`) replays the full page-open: the SSR page GET **plus** each PostgREST query those server actions issue, tagged per endpoint (`page`, `rpc_matrices`, `online_sessions`, `course_offerings`) with per-endpoint thresholds, so the heavy RPC is measured separately from the cheap page shell. Each replayed query names the app function it mirrors — if that function's select changes, update the constant in `scheduler-replay.js`.
 
 ## Prerequisites
 
@@ -74,6 +78,7 @@ This is idempotent — safe to rerun. It:
 ```sh
 npm run loadtest:scheduler:browser
 npm run loadtest:scheduler:rest
+npm run loadtest:scheduler:sessions:rest
 npm run loadtest:ccl:browser
 npm run loadtest:ccl:rest
 ```
@@ -87,8 +92,16 @@ batch_size ≈ VUS * DURATION_SECONDS / expected_seconds_per_iteration
 ```
 
 `loadtest:ccl:rest` has two parts:
-- A **submit race test**: many VUs simultaneously try to submit the same fresh load. A DB uniqueness constraint guarantees exactly one wins — the test checks nobody gets a 5xx and losers fail cleanly (4xx).
-- An **evaluate load test**: VUs consume distinct pre-seeded revisions at each evaluation step (Campus Director / Director for Instruction / VPAA), exercising the workflow's step-validation triggers at volume.
+- A **submit race test**: many VUs simultaneously try to submit the same fresh load. A DB uniqueness constraint guarantees exactly one wins — the test asserts exactly one 201 across the run (`submit_race_wins: count==1` threshold), that losers fail cleanly (4xx), and that nobody gets a 5xx.
+- An **evaluate load test**: VUs consume distinct pre-seeded revisions at each evaluation step (Campus Director / Director for Instruction / VPAA), exercising the workflow's step-validation triggers at volume. Every 5th Campus Director evaluation posts `RETURNED` (with a comment) instead of `APPROVED`, so the return branch of the workflow trigger is exercised too.
+
+**Snapshot payloads are realistic**, not empty: `seed:eval-batch` builds a snapshot fixture from the scope's real data (`scripts/lib/snapshot-fixture.ts` → `.state/snapshot-fixture.json`, size logged at seed time) and both the seeded revisions and the k6 submit race use it — so submit latency includes the real JSONB write cost a `buildCampusCollegeLoadSnapshot()` payload incurs. The local seeds ship no class/session rows, so when the scope has no class data the builder synthesizes a plausible baseline with the same shape; set `LOAD_TEST_SNAPSHOT_MULTIPLIER` (default 1) to duplicate faculty/class entries further toward production-scale sizes.
+
+### Scheduler write-path race (`loadtest:scheduler:sessions:rest`)
+
+The scheduler's session-creation conflict detection is **app-side only** (`session-actions/conflicts.ts` — there is no DB exclusion constraint on overlapping sessions), i.e. a check-then-insert sequence. This scenario seeds an isolated synthetic class/course on the real scope section (`seed:schedule-race`), then has every VU replay the app's `createClassSession()` flow — conflict-window reads, the same in-JS overlap check, then the `session` + `session_class` inserts — against the same room/day/time window.
+
+**It measures the race; it does not fail on it.** With an airtight guard, exactly one VU would win; in practice several VUs can pass the check before any insert is visible and double-book the slot. The run reports `session_insert_wins` / `session_conflict_skips`, and teardown logs how many sessions ended up occupying the window. A count > 1 documents the race — the fix, if ever wanted, is a DB exclusion constraint, not a test change. Race rows are cleaned up by `npm run reset` (and re-seeding cleans the previous run's rows first).
 
 ## Finding the breaking point (ramp tests)
 
@@ -113,13 +126,15 @@ npm run analyze:ccl:ramp         # reads results/ccl-ramp.json
 Prints a table like:
 
 ```
-┌─────────┬─────┬──────────┬──────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
-│ (index) │ VUs │ Requests │ Errors % │ Avg ms │ P50 ms │ P90 ms │ P95 ms │ P99 ms │ Min ms │ Max ms │ ~Req/s │
-├─────────┼─────┼──────────┼──────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┤
-│ 0       │ 10  │ ...      │ 0        │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
-│ 1       │ 25  │ ...      │ ...      │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
-└─────────┴─────┴──────────┴──────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+┌─────────┬─────┬──────────────────┬──────────┬──────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
+│ (index) │ VUs │ Endpoint         │ Requests │ Errors % │ Avg ms │ P50 ms │ P90 ms │ P95 ms │ P99 ms │ Min ms │ Max ms │ ~Req/s │
+├─────────┼─────┼──────────────────┼──────────┼──────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0       │ 10  │ page             │ ...      │ 0        │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
+│ 1       │ 10  │ rpc_matrices     │ ...      │ ...      │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
+└─────────┴─────┴──────────────────┴──────────┴──────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘
 ```
+
+The scheduler ramp replays several distinct requests per iteration, so its rows are broken out per `(VU level, endpoint)` — averaging the cheap page GET with the heavy matrices RPC would hide where the RPC's ceiling is. The CCL ramp has a single request type and collapses to one `(all)` row per level.
 
 and also writes a `.csv` next to the `.json` (same name) if you want to chart it in a spreadsheet. Only rows matching your `LOAD_TEST_RAMP_TARGETS` levels are included — the brief in-between VU counts seen while ramping between steps are excluded so the table only shows the stable "hold" periods.
 
@@ -131,12 +146,12 @@ Default target of 100 is sized for a local dev machine — `next dev` is single-
 npm run reset
 ```
 
-Deletes every `campus_college_load` row (and cascaded revisions/evaluations) created for the load tests, plus the synthetic academic terms used to work around the one-load-per-scope-per-term constraint. Seeded users/designations are left alone (they're reusable). `loadtest:ccl:rest` calls this automatically before each run.
+Deletes every `campus_college_load` row (and cascaded revisions/evaluations) created for the load tests, the synthetic academic terms used to work around the one-load-per-scope-per-term constraint, and the schedule-race scenario's synthetic course/class/sessions. Seeded users/designations are left alone (they're reusable). `loadtest:ccl:rest` calls this automatically before each run.
 
 ## Where things live
 
 - `base_users.csv` (gitignored) — your real base user roster; the single source of truth for who gets seeded.
-- `.state/` (gitignored) — `seed-scope.json`, `personas.json`, `users.json`, `session.<persona>.json`, `eval-batch.json`. Regenerated by the scripts; safe to delete if you want a clean slate (rerun `npm run seed` afterward).
+- `.state/` (gitignored) — `seed-scope.json`, `personas.json`, `users.json`, `session.<persona>.json`, `eval-batch.json`, `snapshot-fixture.json`, `schedule-race.json`. Regenerated by the scripts; safe to delete if you want a clean slate (rerun `npm run seed` afterward).
 - `results/` (gitignored) — raw per-request JSON from the `:ramp` scripts (`scheduler-ramp.json`, `ccl-ramp.json`) plus the `.csv` the analyzer writes next to each. The non-ramp scripts don't write anywhere by default; pass k6's own `--out`/`--summary-export` flags if you want to persist those too.
 
 ## Safety notes

@@ -3,6 +3,7 @@ import { loadEnv } from "./lib/env";
 import { createSupabaseAdmin } from "./lib/supabase-admin";
 import { loadScopeOrThrow, saveScope, type SeedScope } from "./lib/scope";
 import { readState, writeState } from "./lib/state";
+import { buildSnapshotFixture } from "./lib/snapshot-fixture";
 
 type PersonaSeedResult = { userId: string; designationId: string; email: string };
 type Personas = Record<"chair" | "campusDirector" | "dfi" | "vpaa", PersonaSeedResult>;
@@ -81,6 +82,7 @@ const createLoadAtStep = async (
   academicTermId: string,
   personas: Personas,
   targetStep: EvaluationStep,
+  snapshot: Record<string, unknown>,
 ): Promise<{ loadId: string; revisionId: string; termId: string }> => {
   const { data: load, error: loadError } = await admin
     .from("campus_college_load")
@@ -98,7 +100,7 @@ const createLoadAtStep = async (
     .insert({
       campus_college_load_id: load.id,
       revision_number: 1,
-      snapshot: {},
+      snapshot,
       submitted_by_user_id: personas.chair.userId,
       submitted_by_designation_id: personas.chair.designationId,
     })
@@ -146,6 +148,17 @@ const main = async () => {
 
   const batchSize = env.evalBatchSize;
 
+  // Real submits store a full snapshot JSONB (built by the app's
+  // buildCampusCollegeLoadSnapshot) — seed revisions and the k6 submit race
+  // use a realistic fixture so write latency includes that payload cost.
+  const snapshot = await buildSnapshotFixture(admin, scope);
+  writeState("snapshot-fixture.json", snapshot);
+  const snapshotKb = Buffer.byteLength(JSON.stringify(snapshot), "utf-8") / 1024;
+  console.log(
+    `Built snapshot fixture: ${snapshotKb.toFixed(1)} KB ` +
+      `(.state/snapshot-fixture.json, LOAD_TEST_SNAPSHOT_MULTIPLIER=${process.env.LOAD_TEST_SNAPSHOT_MULTIPLIER ?? "1"})`,
+  );
+
   const batches: Record<EvaluationStep, { loadId: string; revisionId: string; termId: string }[]> = {
     CAMPUS_DIRECTOR: [],
     DIRECTOR_FOR_INSTRUCTION: [],
@@ -167,7 +180,7 @@ const main = async () => {
   for (const step of STEPS) {
     for (let i = 0; i < batchSize; i += 1) {
       const termId = await nextSyntheticTerm();
-      const entry = await createLoadAtStep(admin, scope, termId, personas, step);
+      const entry = await createLoadAtStep(admin, scope, termId, personas, step, snapshot);
       batches[step].push(entry);
     }
     console.log(`[${step}] seeded ${batches[step].length} revision(s)`);
