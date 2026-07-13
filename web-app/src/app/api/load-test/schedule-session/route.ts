@@ -10,10 +10,13 @@ import type { SessionDay, SessionType } from "@/features/shared/types/models";
 // (load-tests/scripts/seed-schedule-race-pool.ts seeds these in the same
 // "TMP-" placeholder-class state a real fresh offering would be in).
 //
-// Inert outside local development: 404s whenever NODE_ENV is "production",
-// regardless of what else ships.
+// Inert unless explicitly enabled: 404s whenever NODE_ENV is "production",
+// UNLESS LOAD_TEST_ROUTES_ENABLED=1 is also set — see scheduler-matrices/route.ts
+// for why (load-testing a `next build`/`next start` production build locally).
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
+  const loadTestRoutesEnabled =
+    process.env.NODE_ENV !== "production" || process.env.LOAD_TEST_ROUTES_ENABLED === "1";
+  if (!loadTestRoutesEnabled) {
     return new Response(null, { status: 404 });
   }
 

@@ -11,10 +11,17 @@ import { getSchedulerMapperMatrices } from "@/features/scheduler/lib/schedule/ma
 // real concurrency through the actual app layer (auth, this function, RLS)
 // without going through Supabase PostgREST directly. See load-tests/README.md.
 //
-// Inert outside local development: 404s whenever NODE_ENV is "production",
-// regardless of what else ships.
+// Inert unless explicitly enabled: 404s whenever NODE_ENV is "production",
+// UNLESS LOAD_TEST_ROUTES_ENABLED=1 is also set. That flag is only ever set
+// in a local .env used to load-test a `next build`/`next start` production
+// build against local Supabase — a real deployment would need someone to
+// deliberately set it in that environment's config, which .gitignore'd local
+// .env files never do by accident. Dev mode (`next dev`) is unaffected either
+// way, same as before.
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
+  const loadTestRoutesEnabled =
+    process.env.NODE_ENV !== "production" || process.env.LOAD_TEST_ROUTES_ENABLED === "1";
+  if (!loadTestRoutesEnabled) {
     return new Response(null, { status: 404 });
   }
 
