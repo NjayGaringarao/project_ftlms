@@ -75,6 +75,20 @@ This is idempotent — safe to rerun. It:
 
 ## Running the tests
 
+**One command per flow** (runs every ramp/repeat script for that flow plus its analyzer, so you end up with all of that flow's CSVs in `results/`):
+
+```sh
+npm run scheduler-load-test   # both scheduler ramps + both browser-repeat scripts, analyzed
+npm run ccl-load-test         # campus-college-load ramp, analyzed
+npm run load-tests            # both of the above, in sequence
+```
+
+These assume `npm run seed` (and, for the scheduler ones, `npm run seed:schedule-race-pool` — handled automatically by the underlying scripts) has already been run at least once; see "First-time setup" above. A full `load-tests` run climbs each ramp through every `LOAD_TEST_RAMP_TARGETS` level and repeats each browser script `LOAD_TEST_BROWSER_REPEAT_ITERATIONS` times, so expect it to take several minutes end-to-end — override those env vars for a quicker pass.
+
+**A crossed threshold doesn't stop the suite.** k6 exits non-zero when a `:ramp`/`:browser:repeat` script's threshold is crossed (e.g. `p(95)<3000` at the top VU levels) — but finding that breaking point is the whole point of these scripts (see "Finding the breaking point" below), not a bug to abort on. `scheduler-load-test` / `ccl-load-test` / `load-tests` swallow that per-step and keep going, so one flow crossing its threshold still lets every other flow run and every `analyze:*` CSV get written. Watch the console for `ERRO[...] thresholds ... have been crossed` to know which flow/level actually crossed it — the run still "succeeds" (exit code 0) either way.
+
+**Individual scripts**, for smoke-testing one thing at a time or debugging a specific flow:
+
 ```sh
 npm run loadtest:scheduler:matrix:browser
 npm run loadtest:scheduler:matrix:rest
