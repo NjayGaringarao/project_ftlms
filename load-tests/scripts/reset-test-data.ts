@@ -50,7 +50,24 @@ const main = async () => {
 
   saveScope({ ...scope, batchTermIds: [], batchAcademicYearIds: [] });
 
-  for (const stateFile of ["eval-batch.json", "schedule-race.json"]) {
+  // Scheduler write-race POOL rows (see seed-schedule-race-pool.ts) — tracked
+  // separately from the single-target race above, since either can be
+  // reseeded independently.
+  const poolIds = readState<{
+    raceClassIds: string[];
+    raceCourseIds: string[];
+    raceCourseUtilizationIds: string[];
+  }>("schedule-race-pool-scope.json");
+  if (poolIds) {
+    await cleanupScheduleRace(admin, { ...scope, ...poolIds });
+  }
+
+  for (const stateFile of [
+    "eval-batch.json",
+    "schedule-race.json",
+    "schedule-race-pool.json",
+    "schedule-race-pool-scope.json",
+  ]) {
     const path = statePath(stateFile);
     if (existsSync(path)) unlinkSync(path);
   }

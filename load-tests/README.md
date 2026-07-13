@@ -106,39 +106,47 @@ The scheduler's session-creation conflict detection is **app-side only** (`sessi
 ## Finding the breaking point (ramp tests)
 
 ```sh
-npm run loadtest:scheduler:rest:ramp
-npm run loadtest:ccl:rest:ramp
+npm run loadtest:scheduler:rest:ramp           # get_scheduler_matrices() RPC only
+npm run loadtest:scheduler:sessions:rest:ramp  # write-path: createClassSession() race, pooled
+npm run loadtest:ccl:rest:ramp                 # GET /campus-college-load
 ```
 
-Instead of manually rerunning `loadtest:scheduler:rest` at increasing `LOAD_TEST_VUS` values, these climb through a staircase of VU levels *in one run* — `LOAD_TEST_RAMP_TARGETS` (default `10,25,50,75,100`), holding at each level for `LOAD_TEST_RAMP_STAGE_DURATION` (default `30s`) with `LOAD_TEST_RAMP_STEP_DURATION` (default `5s`) to ramp between levels. Watch k6's live output for which level `http_req_duration` (p95) or `http_req_failed` starts climbing — that's your capacity ceiling against a local `next dev` server + local Supabase (not representative of a production build/deploy).
+Instead of manually rerunning a script at increasing `LOAD_TEST_VUS` values, these climb through a staircase of VU levels *in one run* — `LOAD_TEST_RAMP_TARGETS` (default `10,25,50,75,100`), holding at each level for `LOAD_TEST_RAMP_STAGE_DURATION` (default `30s`) with `LOAD_TEST_RAMP_STEP_DURATION` (default `5s`) to ramp between levels. Watch k6's live output for which level `http_req_duration` (p95) or `http_req_failed` starts climbing — that's your capacity ceiling against a local `next dev` server + local Supabase (not representative of a production build/deploy).
 
-`loadtest:ccl:rest:ramp` only ramps the **read** path (`GET /campus-college-load`) — the submit-race and evaluate scenarios in `loadtest:ccl:rest` are deliberately one-shot/bounded by a fixed pre-seeded batch and can't sustain a climbing, indefinite VU count the way an idempotent GET can.
+Each of the three ramp scripts measures exactly **one** thing, deliberately uniform with each other: the scheduler read ramp hits only `get_scheduler_matrices()` (the single heaviest read in that flow — not the full page-open replay `scheduler.rest.js`/`scheduler-replay.js` do; see "What the scheduler REST test actually replays" above if you want that per-endpoint breakdown instead), the scheduler write ramp only the session-creation race, and the CCL ramp only `GET /campus-college-load`. That's also why the CCL and scheduler-sessions write scenarios in `loadtest:ccl:rest` / `loadtest:scheduler:sessions:rest` aren't ramped directly — they're one-shot/bounded by a fixed pre-seeded batch or target and can't sustain a climbing, indefinite VU count the way an idempotent read (or a large *pool* of write targets — see below) can.
+
+### Scheduler write-path ramp (`loadtest:scheduler:sessions:rest:ramp`)
+
+A single race target (what `loadtest:scheduler:sessions:rest` uses) only has one meaningful "winner" for an entire run — after that, every later iteration is a guaranteed conflict-skip and there's nothing left to measure. So the ramp variant round-robins across a **pool** of N pre-seeded targets (`npm run seed:schedule-race-pool`, size `LOAD_TEST_SCHEDULE_RACE_POOL_SIZE`, default `8`) instead of racing one fixed target. Keep the pool well below your VU ceiling — a pool much smaller than the VU count is what produces real multi-VU contention on the same target as concurrency climbs; a 1:1 VU:target ratio would just be N independent single-writer inserts, not a race. Each pool entry gets its own dedicated time slot (see `seed-schedule-race-pool.ts` for why — all entries share the same synthetic faculty, so entries sharing a time slot would incorrectly reject each other as a faculty double-booking) — that puts a practical ceiling on pool size within one evening window; the seed script tells you if you've set it too high. Teardown logs a per-target double-booking summary the same way the single-target test does.
 
 ### Per-VU-level table
 
-The ramp scripts write raw per-request results to `results/*.json` (tagged with the actual concurrent VU count at the moment each request fired) and gitignored. Turn that into a table — VU level as rows, latency/error metrics as columns:
+The ramp scripts write raw per-request results to `results/*.json` (tagged with the actual concurrent VU count at the moment each request fired), gitignored. Turn that into a table — VU level as rows, latency/error metrics as columns:
 
 ```sh
-npm run analyze:scheduler:ramp   # reads results/scheduler-ramp.json
-npm run analyze:ccl:ramp         # reads results/ccl-ramp.json
+npm run analyze:scheduler:ramp            # reads results/scheduler-ramp.json
+npm run analyze:scheduler:sessions:ramp   # reads results/scheduler-sessions-ramp.json
+npm run analyze:ccl:ramp                  # reads results/ccl-ramp.json
 ```
 
 Prints a table like:
 
 ```
-┌─────────┬─────┬──────────────────┬──────────┬──────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
-│ (index) │ VUs │ Endpoint         │ Requests │ Errors % │ Avg ms │ P50 ms │ P90 ms │ P95 ms │ P99 ms │ Min ms │ Max ms │ ~Req/s │
-├─────────┼─────┼──────────────────┼──────────┼──────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┤
-│ 0       │ 10  │ page             │ ...      │ 0        │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
-│ 1       │ 10  │ rpc_matrices     │ ...      │ ...      │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
-└─────────┴─────┴──────────────────┴──────────┴──────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+┌─────────┬─────┬──────────┬──────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
+│ (index) │ VUs │ Requests │ Errors % │ Avg ms │ P50 ms │ P90 ms │ P95 ms │ P99 ms │ Min ms │ Max ms │ ~Req/s │
+├─────────┼─────┼──────────┼──────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┼────────┤
+│ 0       │ 10  │ ...      │ 0        │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
+│ 1       │ 25  │ ...      │ ...      │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │ ...    │
+└─────────┴─────┴──────────┴──────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘
 ```
-
-The scheduler ramp replays several distinct requests per iteration, so its rows are broken out per `(VU level, endpoint)` — averaging the cheap page GET with the heavy matrices RPC would hide where the RPC's ceiling is. The CCL ramp has a single request type and collapses to one `(all)` row per level.
 
 and also writes a `.csv` next to the `.json` (same name) if you want to chart it in a spreadsheet. Only rows matching your `LOAD_TEST_RAMP_TARGETS` levels are included — the brief in-between VU counts seen while ramping between steps are excluded so the table only shows the stable "hold" periods.
 
+If a script is tagged with more than one distinct `endpoint` (none of the three `.rest.ramp.js` scripts are, by design — see above), the analyzer instead prints **one table per endpoint** and writes one CSV per endpoint (`<name>.<endpoint>.csv`), since averaging a cheap request with a heavy one in the same row would hide where the heavy one's ceiling actually is.
+
 Default target of 100 is sized for a local dev machine — `next dev` is single-process/unoptimized and local Supabase's Postgres/PostgREST have a fairly small default connection pool, so failures well before 100 usually mean you've hit local dev-tooling limits, not a real capacity ceiling. Raise `LOAD_TEST_RAMP_TARGETS` only if you're specifically trying to find where *that* breaks.
+
+**If a ramp run gets interrupted (Ctrl+C, killed process, crashed dev server) partway through**, don't reuse its `results/*.json` — k6 appends to an existing output file rather than truncating it, so a partial run followed by a fresh run can concatenate mid-write and corrupt the file (the analyzer will fail with a cryptic `RangeError`/`Invalid string length`, or the file will be implausibly large for how long the run actually took). The `loadtest:*:ramp` npm scripts already delete their target file before each run for exactly this reason; if you invoke `k6 run --out json=...` directly, delete the old file yourself first.
 
 ## Resetting test data
 
@@ -146,13 +154,13 @@ Default target of 100 is sized for a local dev machine — `next dev` is single-
 npm run reset
 ```
 
-Deletes every `campus_college_load` row (and cascaded revisions/evaluations) created for the load tests, the synthetic academic terms used to work around the one-load-per-scope-per-term constraint, and the schedule-race scenario's synthetic course/class/sessions. Seeded users/designations are left alone (they're reusable). `loadtest:ccl:rest` calls this automatically before each run.
+Deletes every `campus_college_load` row (and cascaded revisions/evaluations) created for the load tests, the synthetic academic terms used to work around the one-load-per-scope-per-term constraint, and both schedule-race scenarios' synthetic course/class/sessions (the single target from `seed:schedule-race` and the pool from `seed:schedule-race-pool`, tracked and cleaned up independently). Seeded users/designations are left alone (they're reusable). `loadtest:ccl:rest` calls this automatically before each run; the schedule-race scripts also clean up their own previous run automatically when reseeded.
 
 ## Where things live
 
 - `base_users.csv` (gitignored) — your real base user roster; the single source of truth for who gets seeded.
-- `.state/` (gitignored) — `seed-scope.json`, `personas.json`, `users.json`, `session.<persona>.json`, `eval-batch.json`, `snapshot-fixture.json`, `schedule-race.json`. Regenerated by the scripts; safe to delete if you want a clean slate (rerun `npm run seed` afterward).
-- `results/` (gitignored) — raw per-request JSON from the `:ramp` scripts (`scheduler-ramp.json`, `ccl-ramp.json`) plus the `.csv` the analyzer writes next to each. The non-ramp scripts don't write anywhere by default; pass k6's own `--out`/`--summary-export` flags if you want to persist those too.
+- `.state/` (gitignored) — `seed-scope.json`, `personas.json`, `users.json`, `session.<persona>.json`, `eval-batch.json`, `snapshot-fixture.json`, `schedule-race.json`, `schedule-race-pool.json`, `schedule-race-pool-scope.json`. Regenerated by the scripts; safe to delete if you want a clean slate (rerun `npm run seed` afterward).
+- `results/` (gitignored) — raw per-request JSON from the `:ramp` scripts (`scheduler-ramp.json`, `scheduler-sessions-ramp.json`, `ccl-ramp.json`) plus the `.csv`/`.<endpoint>.csv` the analyzer writes next to each. The non-ramp scripts don't write anywhere by default; pass k6's own `--out`/`--summary-export` flags if you want to persist those too.
 
 ## Safety notes
 

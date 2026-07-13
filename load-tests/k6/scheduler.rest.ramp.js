@@ -1,21 +1,27 @@
+import http from "k6/http";
+import { check } from "k6";
 import exec from "k6/execution";
 import {
+  SUPABASE_URL,
   loadJson,
-  thresholds,
+  postgrestHeaders,
   RAMP_TARGETS,
   RAMP_STEP_DURATION,
   RAMP_STAGE_DURATION,
   buildStepStages,
 } from "./config.js";
-import { runSchedulerPageOpen } from "./scheduler-replay.js";
 
 const scope = loadJson("../.state/seed-scope.json");
 const session = loadJson("../.state/session.chair.json");
 
-// Step/staircase ramp: climbs through RAMP_TARGETS (default 10,25,50,75,100),
-// holding at each level for RAMP_STAGE_DURATION so you can see exactly which
-// VU level error rate or p95 latency starts climbing at, in one run instead
-// of manually rerunning scheduler.rest.js at each level.
+// Step/staircase ramp against just get_scheduler_matrices() — the single
+// heaviest read in the scheduler flow, and the one the original brief for
+// this test named ("DB-read-heavy page backed by the get_scheduler_matrices()
+// RPC"). One request per iteration, one table out — deliberately uniform with
+// campus-college-load.rest.ramp.js's single GET, instead of the 4-endpoint
+// breakdown scheduler.rest.js produces. That full page-open replay (page
+// shell + RPC + online-sessions + course-offerings) still exists in
+// k6/scheduler-replay.js / scheduler.rest.js if you want it back.
 export const options = {
   scenarios: {
     scheduler_ramp: {
@@ -25,18 +31,36 @@ export const options = {
       gracefulRampDown: "5s",
     },
   },
-  thresholds: thresholds.scheduler,
+  thresholds: {
+    http_req_failed: ["rate<0.01"],
+    http_req_duration: ["p(95)<3000"],
+  },
 };
 
-// Each iteration replays a full page-open (see scheduler-replay.js). Every
-// request is tagged with the actual concurrent VU count at the moment it
-// fired plus its endpoint, so --out json=... output can be grouped into a
-// per-VU-level, per-endpoint table afterward (scripts/analyze-ramp-results.ts)
-// instead of one aggregate number for the whole climbing run.
 export default function () {
-  runSchedulerPageOpen({
-    scope,
-    session,
-    extraTags: { vu_level: String(exec.instance.vusActive) },
+  const res = http.post(
+    `${SUPABASE_URL}/rest/v1/rpc/get_scheduler_matrices`,
+    JSON.stringify({
+      academic_term_id: scope.academicTermId,
+      section_id: scope.sectionId,
+      faculty_id: null,
+      room_id: null,
+    }),
+    {
+      headers: postgrestHeaders(session.accessToken),
+      tags: { vu_level: String(exec.instance.vusActive) },
+    },
+  );
+
+  check(res, {
+    "matrices rpc 200": (r) => r.status === 200,
+    "matrices rpc has section matrix": (r) => {
+      try {
+        const payload = JSON.parse(r.body);
+        return payload && Array.isArray(payload.section);
+      } catch {
+        return false;
+      }
+    },
   });
 }
