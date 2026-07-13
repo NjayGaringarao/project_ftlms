@@ -130,6 +130,20 @@ The scheduler read and write ramps don't call Supabase directly. Both `get_sched
 
 A single race target (what `loadtest:scheduler:session:rest` uses) only has one meaningful "winner" for an entire run — after that, every later iteration is a guaranteed conflict and there's nothing left to measure. So the ramp variant round-robins across a **pool** of N pre-seeded targets (`npm run seed:schedule-race-pool`, size `LOAD_TEST_SCHEDULE_RACE_POOL_SIZE`, default `8`) instead of racing one fixed target. Keep the pool well below your VU ceiling — a pool much smaller than the VU count is what produces real multi-VU contention on the same target as concurrency climbs; a 1:1 VU:target ratio would just be N independent single-writer inserts, not a race. Each pool entry gets its own dedicated time slot (see `seed-schedule-race-pool.ts` for why — all entries share the same synthetic faculty, so entries sharing a time slot would incorrectly reject each other as a faculty double-booking) — that puts a practical ceiling on pool size within one evening window; the seed script tells you if you've set it too high. `createSessionFromOffering()` needs a pre-existing `course_utilization` row to attach the session to (the "offering"); the pool seed script creates one per target in the same placeholder state a real fresh offering would be in, so this works unmodified. Teardown logs a per-target double-booking summary the same way the single-target test does.
 
+### Stable single-user baseline (browser, VU=1, repeated)
+
+```sh
+npm run loadtest:scheduler:matrix:browser:repeat   # matrix query, real page navigation
+npm run loadtest:scheduler:session:browser:repeat  # session write, via a real browser's fetch()
+```
+
+The `/api/load-test/*` ramps above give you real-app timing at high concurrency, but they still bypass actual page rendering/hydration. These two run a single VU through `LOAD_TEST_BROWSER_REPEAT_ITERATIONS` (default `20`) repeats to get a stable average with real browser overhead included:
+
+- **Matrix query**: logs in and navigates `/scheduler` for real, waiting for the RPC-backed grid to render — the real Server Action fires exactly as it does for an actual user, not through the `/api/load-test/` route. Login time is excluded from the timed window (a fixed cost that would otherwise skew the average); only the navigate-to-grid-loaded portion is measured (`matrix_load_ms`).
+- **Session write**: logs in, then repeatedly calls `/api/load-test/schedule-session` via `fetch()` **from inside the real browser page** (`page.evaluate(...)`) — real cookies, real network stack, but not a literal drag-and-drop simulation on the schedule grid (that would require automating three picker dialogs plus a grid gesture; out of scope for now). Metric: `session_write_ms`.
+
+Compare these against the VU=10 row of the corresponding `/api/load-test/*` ramp — if they disagree wildly, the dedicated route may not be representative of real page timing.
+
 ### Per-VU-level table
 
 The ramp scripts write raw per-request results to `results/*.json` (tagged with the actual concurrent VU count at the moment each request fired), gitignored. Turn that into a table — VU level as rows, latency/error metrics as columns:
@@ -157,7 +171,16 @@ If a script is tagged with more than one distinct `endpoint` (none of the three 
 
 Default target of 100 is sized for a local dev machine — `next dev` is single-process/unoptimized and local Supabase's Postgres/PostgREST have a fairly small default connection pool, so failures well before 100 usually mean you've hit local dev-tooling limits, not a real capacity ceiling. Raise `LOAD_TEST_RAMP_TARGETS` only if you're specifically trying to find where *that* breaks.
 
-**If a ramp run gets interrupted (Ctrl+C, killed process, crashed dev server) partway through**, don't reuse its `results/*.json` — k6 appends to an existing output file rather than truncating it, so a partial run followed by a fresh run can concatenate mid-write and corrupt the file (the analyzer will fail with a cryptic `RangeError`/`Invalid string length`, or the file will be implausibly large for how long the run actually took). The `loadtest:*:ramp` npm scripts already delete their target file before each run for exactly this reason; if you invoke `k6 run --out json=...` directly, delete the old file yourself first.
+**If a ramp run gets interrupted (Ctrl+C, killed process, crashed dev server) partway through**, don't reuse its `results/*.json` — k6 appends to an existing output file rather than truncating it, so a partial run followed by a fresh run can concatenate mid-write and corrupt the file (the analyzer will fail with a cryptic `RangeError`/`Invalid string length`, or the file will be implausibly large for how long the run actually took). The `loadtest:*:ramp` (and `*:browser:repeat`) npm scripts already delete their target file before each run for exactly this reason; if you invoke `k6 run --out json=...` directly, delete the old file yourself first.
+
+### Single-row stable-average table (browser repeat)
+
+```sh
+npm run analyze:scheduler:matrix:browser:repeat    # reads results/scheduler-matrix-browser-repeat.json
+npm run analyze:scheduler:session:browser:repeat   # reads results/scheduler-session-browser-repeat.json
+```
+
+Same idea as the per-VU-level table, but there's only one VU level (always 1), so this prints (and writes a `.csv` for) a single summary row — request count, success rate, and the avg/p50/p90/p95/p99/min/max of that script's timed window (`matrix_load_ms` / `session_write_ms`), not `http_req_duration` (browser scripts don't populate that — no plain `k6/http` calls).
 
 ## Resetting test data
 
@@ -171,7 +194,7 @@ Deletes every `campus_college_load` row (and cascaded revisions/evaluations) cre
 
 - `base_users.csv` (gitignored) — your real base user roster; the single source of truth for who gets seeded.
 - `.state/` (gitignored) — `seed-scope.json`, `personas.json`, `users.json`, `session.<persona>.json`, `eval-batch.json`, `snapshot-fixture.json`, `schedule-race.json`, `schedule-race-pool.json`, `schedule-race-pool-scope.json`. Regenerated by the scripts; safe to delete if you want a clean slate (rerun `npm run seed` afterward).
-- `results/` (gitignored) — raw per-request JSON from the `:ramp` scripts (`scheduler-matrix-ramp.json`, `scheduler-session-ramp.json`, `ccl-ramp.json`) plus the `.csv`/`.<endpoint>.csv` the analyzer writes next to each. The non-ramp scripts don't write anywhere by default; pass k6's own `--out`/`--summary-export` flags if you want to persist those too.
+- `results/` (gitignored) — raw per-request JSON from the `:ramp` and `:browser:repeat` scripts (`scheduler-matrix-ramp.json`, `scheduler-session-ramp.json`, `ccl-ramp.json`, `scheduler-matrix-browser-repeat.json`, `scheduler-session-browser-repeat.json`) plus the `.csv`/`.<endpoint>.csv` the analyzers write next to each. The non-ramp/non-repeat scripts don't write anywhere by default; pass k6's own `--out`/`--summary-export` flags if you want to persist those too.
 - `web-app/src/app/api/load-test/` — the two dedicated routes `scheduler-matrix.rest.ramp.js`/`scheduler-session.rest.ramp.js` hit (see "Going through the real app" above). Real application source, not test tooling — 404 outside local dev.
 
 ## Safety notes
