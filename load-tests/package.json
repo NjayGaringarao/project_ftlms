@@ -27,13 +27,16 @@
     "loadtest:ccl:rest": "npm run reset && npm run seed:eval-batch && npm run mint-cookies && dotenv -e .env -- k6 run k6/campus-college-load.rest.js",
     "clean-ccl-ramp-output": "node -e \"require('fs').rmSync('results/ccl-ramp.json',{force:true})\"",
     "loadtest:ccl:rest:ramp": "npm run ensure-results-dir && npm run clean-ccl-ramp-output && npm run mint-cookies && dotenv -e .env -- k6 run --out json=results/ccl-ramp.json k6/campus-college-load.rest.ramp.js || exit 0",
+    "clean-ccl-browser-repeat-output": "node -e \"require('fs').rmSync('results/ccl-browser-repeat.json',{force:true})\"",
+    "loadtest:ccl:browser:repeat": "npm run ensure-results-dir && npm run clean-ccl-browser-repeat-output && dotenv -e .env -- k6 run --out json=results/ccl-browser-repeat.json k6/campus-college-load.browser.repeat.js || exit 0",
     "analyze:scheduler:matrix:ramp": "dotenv -e .env -- tsx scripts/analyze-ramp-results.ts results/scheduler-matrix-ramp.json || exit 0",
     "analyze:scheduler:session:ramp": "dotenv -e .env -- tsx scripts/analyze-ramp-results.ts results/scheduler-session-ramp.json || exit 0",
     "analyze:scheduler:matrix:browser:repeat": "dotenv -e .env -- tsx scripts/analyze-repeat-results.ts results/scheduler-matrix-browser-repeat.json matrix_load_ms matrix_load_success || exit 0",
     "analyze:scheduler:session:browser:repeat": "dotenv -e .env -- tsx scripts/analyze-repeat-results.ts results/scheduler-session-browser-repeat.json session_write_ms session_write_success || exit 0",
     "analyze:ccl:ramp": "dotenv -e .env -- tsx scripts/analyze-ramp-results.ts results/ccl-ramp.json || exit 0",
+    "analyze:ccl:browser:repeat": "dotenv -e .env -- tsx scripts/analyze-repeat-results.ts results/ccl-browser-repeat.json ccl_load_ms ccl_load_success || exit 0",
     "scheduler-load-test": "npm run loadtest:scheduler:matrix:rest:ramp && npm run analyze:scheduler:matrix:ramp && npm run loadtest:scheduler:session:rest:ramp && npm run analyze:scheduler:session:ramp && npm run loadtest:scheduler:matrix:browser:repeat && npm run analyze:scheduler:matrix:browser:repeat && npm run loadtest:scheduler:session:browser:repeat && npm run analyze:scheduler:session:browser:repeat",
-    "ccl-load-test": "npm run loadtest:ccl:rest:ramp && npm run analyze:ccl:ramp",
+    "ccl-load-test": "npm run loadtest:ccl:rest:ramp && npm run analyze:ccl:ramp && npm run loadtest:ccl:browser:repeat && npm run analyze:ccl:browser:repeat",
     "load-tests": "npm run scheduler-load-test && npm run ccl-load-test"
   },
   "devDependencies": {
