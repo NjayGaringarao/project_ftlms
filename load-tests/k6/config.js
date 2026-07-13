@@ -40,7 +40,7 @@ export const thresholds = {
   scheduler: {
     http_req_failed: ["rate<0.01"],
     http_req_duration: ["p(95)<3000"],
-    // Per-endpoint breakdown of the page-open replay (see scheduler-replay.js)
+    // Per-endpoint breakdown of the page-open replay (see lib/matrix-replay.js)
     // so a regression in the heavy RPC isn't hidden by the cheap page GET.
     "http_req_duration{endpoint:page}": ["p(95)<3000"],
     "http_req_duration{endpoint:rpc_matrices}": ["p(95)<3000"],

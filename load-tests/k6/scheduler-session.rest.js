@@ -1,12 +1,12 @@
 import { loadJson, VUS } from "./config.js";
-import { attemptSessionCreate, reportDoubleBookings } from "./scheduler-race-replay.js";
+import { attemptSessionCreate, reportDoubleBookings } from "./lib/session-race-replay.js";
 
 // Scheduler WRITE-path race: every VU simultaneously replays the app's
 // createClassSession() flow for the SAME class/room/day/time window — see
-// scheduler-race-replay.js for the full mechanics and why this is a genuine
+// lib/session-race-replay.js for the full mechanics and why this is a genuine
 // race (no DB-level guard on session overlap). This scenario measures that
 // race window at a single, fixed concurrency level; for a VU-climbing
-// version see scheduler-sessions.rest.ramp.js.
+// version see scheduler-session.rest.ramp.js.
 
 const race = loadJson("../.state/schedule-race.json");
 const session = loadJson("../.state/session.chair.json");

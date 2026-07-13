@@ -1,10 +1,10 @@
 import http from "k6/http";
 import { check } from "k6";
 import { Counter } from "k6/metrics";
-import { SUPABASE_URL, postgrestHeaders, postgrestUrl } from "./config.js";
+import { SUPABASE_URL, postgrestHeaders, postgrestUrl } from "../config.js";
 
-// Shared by scheduler-sessions.rest.js (one fixed target, shared-iterations)
-// and scheduler-sessions.rest.ramp.js (a pool of targets, ramping-vus) — the
+// Shared by scheduler-session.rest.js (one fixed target, shared-iterations)
+// and scheduler-session.rest.ramp.js (a pool of targets, ramping-vus) — the
 // app's createClassSession() flow (web-app/src/features/scheduler/lib/
 // schedule/session-actions/mutations.ts):
 //

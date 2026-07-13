@@ -6,7 +6,7 @@ import {
   applyCookies,
   postgrestHeaders,
   postgrestUrl,
-} from "./config.js";
+} from "../config.js";
 
 // Replays every request a real "/scheduler with a section selected" page-open
 // causes. The page's Server Component only fetches terms; the actual data

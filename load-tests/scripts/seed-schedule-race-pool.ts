@@ -13,7 +13,7 @@ type PoolIds = {
   raceCourseUtilizationIds: string[];
 };
 
-// Seeds a POOL of isolated race targets for k6/scheduler-sessions.rest.ramp.js
+// Seeds a POOL of isolated race targets for k6/scheduler-session.rest.ramp.js
 // — same synthetic-course/class pattern as seed-schedule-race.ts, but N of
 // them (LOAD_TEST_SCHEDULE_RACE_POOL_SIZE, default 8). Ramping VUs round-robin
 // through the pool per iteration (see the k6 script) — a pool much smaller

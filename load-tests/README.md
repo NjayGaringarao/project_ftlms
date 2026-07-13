@@ -12,7 +12,7 @@ Each flow has two variants:
 
 ### What the scheduler REST test actually replays
 
-Opening `/scheduler` with a section selected does almost no data work in the Server Component (it only fetches terms). The real load — the `get_scheduler_matrices()` RPC, the online-session selects, the course-offerings query — fires *after hydration*, from client-side `useEffect`s calling server actions. A plain page GET never triggers any of it. So `scheduler.rest.js` (via `k6/scheduler-replay.js`) replays the full page-open: the SSR page GET **plus** each PostgREST query those server actions issue, tagged per endpoint (`page`, `rpc_matrices`, `online_sessions`, `course_offerings`) with per-endpoint thresholds, so the heavy RPC is measured separately from the cheap page shell. Each replayed query names the app function it mirrors — if that function's select changes, update the constant in `scheduler-replay.js`.
+Opening `/scheduler` with a section selected does almost no data work in the Server Component (it only fetches terms). The real load — the `get_scheduler_matrices()` RPC, the online-session selects, the course-offerings query — fires *after hydration*, from client-side `useEffect`s calling server actions. A plain page GET never triggers any of it. So `scheduler-matrix.rest.js` (via `k6/lib/matrix-replay.js`) replays the full page-open: the SSR page GET **plus** each PostgREST query those server actions issue, tagged per endpoint (`page`, `rpc_matrices`, `online_sessions`, `course_offerings`) with per-endpoint thresholds, so the heavy RPC is measured separately from the cheap page shell. Each replayed query names the app function it mirrors — if that function's select changes, update the constant in `lib/matrix-replay.js`.
 
 ## Prerequisites
 
@@ -76,9 +76,9 @@ This is idempotent — safe to rerun. It:
 ## Running the tests
 
 ```sh
-npm run loadtest:scheduler:browser
-npm run loadtest:scheduler:rest
-npm run loadtest:scheduler:sessions:rest
+npm run loadtest:scheduler:matrix:browser
+npm run loadtest:scheduler:matrix:rest
+npm run loadtest:scheduler:session:rest
 npm run loadtest:ccl:browser
 npm run loadtest:ccl:rest
 ```
@@ -97,7 +97,7 @@ batch_size ≈ VUS * DURATION_SECONDS / expected_seconds_per_iteration
 
 **Snapshot payloads are realistic**, not empty: `seed:eval-batch` builds a snapshot fixture from the scope's real data (`scripts/lib/snapshot-fixture.ts` → `.state/snapshot-fixture.json`, size logged at seed time) and both the seeded revisions and the k6 submit race use it — so submit latency includes the real JSONB write cost a `buildCampusCollegeLoadSnapshot()` payload incurs. The local seeds ship no class/session rows, so when the scope has no class data the builder synthesizes a plausible baseline with the same shape; set `LOAD_TEST_SNAPSHOT_MULTIPLIER` (default 1) to duplicate faculty/class entries further toward production-scale sizes.
 
-### Scheduler write-path race (`loadtest:scheduler:sessions:rest`)
+### Scheduler write-path race (`loadtest:scheduler:session:rest`)
 
 The scheduler's session-creation conflict detection is **app-side only** (`session-actions/conflicts.ts` — there is no DB exclusion constraint on overlapping sessions), i.e. a check-then-insert sequence. This scenario seeds an isolated synthetic class/course on the real scope section (`seed:schedule-race`), then has every VU replay the app's `createClassSession()` flow — conflict-window reads, the same in-JS overlap check, then the `session` + `session_class` inserts — against the same room/day/time window.
 
@@ -106,26 +106,37 @@ The scheduler's session-creation conflict detection is **app-side only** (`sessi
 ## Finding the breaking point (ramp tests)
 
 ```sh
-npm run loadtest:scheduler:rest:ramp           # get_scheduler_matrices() RPC only
-npm run loadtest:scheduler:sessions:rest:ramp  # write-path: createClassSession() race, pooled
+npm run loadtest:scheduler:matrix:rest:ramp    # matrix query, via the app, up to 150+ VUs
+npm run loadtest:scheduler:session:rest:ramp   # session write, via the app, up to 150+ VUs, pooled
 npm run loadtest:ccl:rest:ramp                 # GET /campus-college-load
 ```
 
 Instead of manually rerunning a script at increasing `LOAD_TEST_VUS` values, these climb through a staircase of VU levels *in one run* — `LOAD_TEST_RAMP_TARGETS` (default `10,25,50,75,100`), holding at each level for `LOAD_TEST_RAMP_STAGE_DURATION` (default `30s`) with `LOAD_TEST_RAMP_STEP_DURATION` (default `5s`) to ramp between levels. Watch k6's live output for which level `http_req_duration` (p95) or `http_req_failed` starts climbing — that's your capacity ceiling against a local `next dev` server + local Supabase (not representative of a production build/deploy).
 
-Each of the three ramp scripts measures exactly **one** thing, deliberately uniform with each other: the scheduler read ramp hits only `get_scheduler_matrices()` (the single heaviest read in that flow — not the full page-open replay `scheduler.rest.js`/`scheduler-replay.js` do; see "What the scheduler REST test actually replays" above if you want that per-endpoint breakdown instead), the scheduler write ramp only the session-creation race, and the CCL ramp only `GET /campus-college-load`. That's also why the CCL and scheduler-sessions write scenarios in `loadtest:ccl:rest` / `loadtest:scheduler:sessions:rest` aren't ramped directly — they're one-shot/bounded by a fixed pre-seeded batch or target and can't sustain a climbing, indefinite VU count the way an idempotent read (or a large *pool* of write targets — see below) can.
+Each of the three ramp scripts measures exactly **one** thing, deliberately uniform with each other. That's also why the CCL and scheduler-session write scenarios in `loadtest:ccl:rest` / `loadtest:scheduler:session:rest` aren't ramped directly — they're one-shot/bounded by a fixed pre-seeded batch or target and can't sustain a climbing, indefinite VU count the way an idempotent read (or a large *pool* of write targets — see below) can.
 
-### Scheduler write-path ramp (`loadtest:scheduler:sessions:rest:ramp`)
+### Going through the real app, not just Supabase — `/api/load-test/*`
 
-A single race target (what `loadtest:scheduler:sessions:rest` uses) only has one meaningful "winner" for an entire run — after that, every later iteration is a guaranteed conflict-skip and there's nothing left to measure. So the ramp variant round-robins across a **pool** of N pre-seeded targets (`npm run seed:schedule-race-pool`, size `LOAD_TEST_SCHEDULE_RACE_POOL_SIZE`, default `8`) instead of racing one fixed target. Keep the pool well below your VU ceiling — a pool much smaller than the VU count is what produces real multi-VU contention on the same target as concurrency climbs; a 1:1 VU:target ratio would just be N independent single-writer inserts, not a race. Each pool entry gets its own dedicated time slot (see `seed-schedule-race-pool.ts` for why — all entries share the same synthetic faculty, so entries sharing a time slot would incorrectly reject each other as a faculty double-booking) — that puts a practical ceiling on pool size within one evening window; the seed script tells you if you've set it too high. Teardown logs a per-target double-booking summary the same way the single-target test does.
+The scheduler read and write ramps don't call Supabase directly. Both `get_scheduler_matrices()` and `createSessionFromOffering()`/`createClassSession()` are normally invoked from the client via Next.js **Server Actions**, and Server Actions can't be safely replayed as raw HTTP for a load test — their wire format (the `Next-Action` header + a React Flight-encoded body) is build-specific and changes on every `next build`/dev-server restart. So instead of bypassing the app and replaying the equivalent Supabase calls directly (which is what `campus-college-load.rest.js`/`.rest.ramp.js` still do — see their comments), two small dedicated routes wrap the exact same server-side functions behind stable plain HTTP:
+
+- `web-app/src/app/api/load-test/scheduler-matrices/route.ts` → calls `getSchedulerMapperMatrices()`, exactly as `schedule-mapper.tsx`'s `useEffect` does.
+- `web-app/src/app/api/load-test/schedule-session/route.ts` → calls `createSessionFromOffering()`, exactly as `handleConfirmSchedule()` does.
+
+`scheduler-matrix.rest.ramp.js` and `scheduler-session.rest.ramp.js` hit these routes (cookie-authenticated, same as a real browser session) instead of Supabase, so the ramp exercises real Next.js request handling + auth + the real function + RLS, at up to 150+ concurrent VUs — something a real browser can't do cheaply.
+
+**Both routes are inert outside local development** — they 404 whenever `NODE_ENV === "production"`, regardless of what else ships. `next dev` sets `NODE_ENV=development` automatically, so this needs no extra config locally; just don't be tempted to relax the check.
+
+### Scheduler write-path ramp (`loadtest:scheduler:session:rest:ramp`)
+
+A single race target (what `loadtest:scheduler:session:rest` uses) only has one meaningful "winner" for an entire run — after that, every later iteration is a guaranteed conflict and there's nothing left to measure. So the ramp variant round-robins across a **pool** of N pre-seeded targets (`npm run seed:schedule-race-pool`, size `LOAD_TEST_SCHEDULE_RACE_POOL_SIZE`, default `8`) instead of racing one fixed target. Keep the pool well below your VU ceiling — a pool much smaller than the VU count is what produces real multi-VU contention on the same target as concurrency climbs; a 1:1 VU:target ratio would just be N independent single-writer inserts, not a race. Each pool entry gets its own dedicated time slot (see `seed-schedule-race-pool.ts` for why — all entries share the same synthetic faculty, so entries sharing a time slot would incorrectly reject each other as a faculty double-booking) — that puts a practical ceiling on pool size within one evening window; the seed script tells you if you've set it too high. `createSessionFromOffering()` needs a pre-existing `course_utilization` row to attach the session to (the "offering"); the pool seed script creates one per target in the same placeholder state a real fresh offering would be in, so this works unmodified. Teardown logs a per-target double-booking summary the same way the single-target test does.
 
 ### Per-VU-level table
 
 The ramp scripts write raw per-request results to `results/*.json` (tagged with the actual concurrent VU count at the moment each request fired), gitignored. Turn that into a table — VU level as rows, latency/error metrics as columns:
 
 ```sh
-npm run analyze:scheduler:ramp            # reads results/scheduler-ramp.json
-npm run analyze:scheduler:sessions:ramp   # reads results/scheduler-sessions-ramp.json
+npm run analyze:scheduler:matrix:ramp     # reads results/scheduler-matrix-ramp.json
+npm run analyze:scheduler:session:ramp    # reads results/scheduler-session-ramp.json
 npm run analyze:ccl:ramp                  # reads results/ccl-ramp.json
 ```
 
@@ -160,9 +171,11 @@ Deletes every `campus_college_load` row (and cascaded revisions/evaluations) cre
 
 - `base_users.csv` (gitignored) — your real base user roster; the single source of truth for who gets seeded.
 - `.state/` (gitignored) — `seed-scope.json`, `personas.json`, `users.json`, `session.<persona>.json`, `eval-batch.json`, `snapshot-fixture.json`, `schedule-race.json`, `schedule-race-pool.json`, `schedule-race-pool-scope.json`. Regenerated by the scripts; safe to delete if you want a clean slate (rerun `npm run seed` afterward).
-- `results/` (gitignored) — raw per-request JSON from the `:ramp` scripts (`scheduler-ramp.json`, `scheduler-sessions-ramp.json`, `ccl-ramp.json`) plus the `.csv`/`.<endpoint>.csv` the analyzer writes next to each. The non-ramp scripts don't write anywhere by default; pass k6's own `--out`/`--summary-export` flags if you want to persist those too.
+- `results/` (gitignored) — raw per-request JSON from the `:ramp` scripts (`scheduler-matrix-ramp.json`, `scheduler-session-ramp.json`, `ccl-ramp.json`) plus the `.csv`/`.<endpoint>.csv` the analyzer writes next to each. The non-ramp scripts don't write anywhere by default; pass k6's own `--out`/`--summary-export` flags if you want to persist those too.
+- `web-app/src/app/api/load-test/` — the two dedicated routes `scheduler-matrix.rest.ramp.js`/`scheduler-session.rest.ramp.js` hit (see "Going through the real app" above). Real application source, not test tooling — 404 outside local dev.
 
 ## Safety notes
 
 - Scripts refuse to run unless the Supabase URL is `localhost`/`127.0.0.1`, unless you explicitly set `LOAD_TEST_ALLOW_REMOTE=1`. Don't set that against a shared or production database — these scripts create and delete real rows.
 - `.env` and `base_users.csv` are both gitignored. Real credentials never get committed.
+- `web-app/src/app/api/load-test/*` routes 404 unless `NODE_ENV !== "production"`. They still require a valid authenticated session (same `getCurrentUser()` check the rest of the app uses) even in development — they're not an open door, just a dev-only convenience.

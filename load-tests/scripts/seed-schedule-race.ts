@@ -7,7 +7,7 @@ import { cleanupScheduleRace, type ScheduleRaceScope } from "./lib/schedule-race
 type PersonaSeedResult = { userId: string; designationId: string; email: string };
 type Personas = Record<"chair" | "campusDirector" | "dfi" | "vpaa", PersonaSeedResult>;
 
-// Seeds an isolated target for k6/scheduler-sessions.rest.js: a synthetic
+// Seeds an isolated target for k6/scheduler-session.rest.js: a synthetic
 // course + class linked to the real scope section, with the chair as the
 // assigned faculty and a real room, so concurrent VUs can race the app's
 // check-then-insert session-creation flow without touching real seed data.
