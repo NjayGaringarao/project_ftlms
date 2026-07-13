@@ -113,7 +113,7 @@ const CampusCollegeLoadContent = async ({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div data-testid="campus-college-load-content" className="flex h-full flex-col overflow-hidden">
       <TopBarNav title="Campus College Load" icon="book-copy" items={[]}>
         <div className="flex flex-wrap items-center gap-2">
           {isChair && isEvaluator ? (
