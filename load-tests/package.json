@@ -37,6 +37,7 @@
     "analyze:ccl:browser:repeat": "dotenv -e .env -- tsx scripts/analyze-repeat-results.ts results/ccl-browser-repeat.json ccl_load_ms ccl_load_success || exit 0",
     "scheduler-load-test": "npm run loadtest:scheduler:matrix:rest:ramp && npm run analyze:scheduler:matrix:ramp && npm run loadtest:scheduler:session:rest:ramp && npm run analyze:scheduler:session:ramp && npm run loadtest:scheduler:matrix:browser:repeat && npm run analyze:scheduler:matrix:browser:repeat && npm run loadtest:scheduler:session:browser:repeat && npm run analyze:scheduler:session:browser:repeat",
     "ccl-load-test": "npm run loadtest:ccl:rest:ramp && npm run analyze:ccl:ramp && npm run loadtest:ccl:browser:repeat && npm run analyze:ccl:browser:repeat",
+    "browser-test": "npm run seed && npm run loadtest:scheduler:matrix:browser:repeat && npm run analyze:scheduler:matrix:browser:repeat && npm run loadtest:scheduler:session:browser:repeat && npm run analyze:scheduler:session:browser:repeat && npm run loadtest:ccl:browser:repeat && npm run analyze:ccl:browser:repeat",
     "load-tests": "npm run scheduler-load-test && npm run ccl-load-test"
   },
   "devDependencies": {

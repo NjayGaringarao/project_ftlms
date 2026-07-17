@@ -109,7 +109,12 @@ const ConfirmScheduleDialog = ({
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={onConfirm} disabled={isSaving}>
+          <Button
+            size="sm"
+            data-testid="confirm-schedule-button"
+            onClick={onConfirm}
+            disabled={isSaving}
+          >
             {isSaving
               ? "Saving..."
               : pendingRange?.mode === "move"

@@ -99,6 +99,9 @@ const MatrixRenderer = ({
           return (
             <div
               key={`${title}-${day}-${slot}`}
+              data-matrix={title}
+              data-day={day}
+              data-row={rowIndex}
               className={cn(
                 "select-none border-b border-r border-foreground/10 text-xs leading-tight",
                 dayIndex === 6 && "border-r-4",

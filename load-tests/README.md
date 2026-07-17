@@ -83,9 +83,17 @@ npm run ccl-load-test         # campus-college-load ramp + browser-repeat, analy
 npm run load-tests            # both of the above, in sequence
 ```
 
-These assume `npm run seed` (and, for the scheduler ones, `npm run seed:schedule-race-pool` — handled automatically by the underlying scripts) has already been run at least once; see "First-time setup" above. A full `load-tests` run climbs each ramp through every `LOAD_TEST_RAMP_TARGETS` level and repeats each browser script `LOAD_TEST_BROWSER_REPEAT_ITERATIONS` times, so expect it to take several minutes end-to-end — override those env vars for a quicker pass.
+**Browser tests only, self-contained** — runs `npm run seed` first (user initialization), then all three browser-repeat scripts with their analyzers:
 
-**A crossed threshold doesn't stop the suite.** k6 exits non-zero when a `:ramp`/`:browser:repeat` script's threshold is crossed (e.g. `p(95)<3000` at the top VU levels) — but finding that breaking point is the whole point of these scripts (see "Finding the breaking point" below), not a bug to abort on. `scheduler-load-test` / `ccl-load-test` / `load-tests` swallow that per-step and keep going, so one flow crossing its threshold still lets every other flow run and every `analyze:*` CSV get written. Watch the console for `ERRO[...] thresholds ... have been crossed` to know which flow/level actually crossed it — the run still "succeeds" (exit code 0) either way.
+```sh
+npm run browser-test          # seed users → all 3 browser-repeat tests, analyzed
+```
+
+Use this when you only need the Browser Test numbers (the three single-user, real-UI page-timing baselines) and want the run to bootstrap its own personas/scope rather than assuming a prior `npm run seed`. The session-write browser test also reseeds the schedule-race pool automatically (its underlying script does), so the whole thing is standalone.
+
+These composite runners otherwise assume `npm run seed` (and, for the scheduler ramps, `npm run seed:schedule-race-pool` — handled automatically by the underlying scripts) has already been run at least once; see "First-time setup" above. A full `load-tests` run climbs each ramp through every `LOAD_TEST_RAMP_TARGETS` level and repeats each browser script `LOAD_TEST_BROWSER_REPEAT_ITERATIONS` times, so expect it to take several minutes end-to-end — override those env vars for a quicker pass.
+
+**A crossed threshold doesn't stop the suite.** k6 exits non-zero when a `:ramp`/`:browser:repeat` script's threshold is crossed (e.g. `p(95)<3000` at the top VU levels) — but finding that breaking point is the whole point of these scripts (see "Finding the breaking point" below), not a bug to abort on. `scheduler-load-test` / `ccl-load-test` / `browser-test` / `load-tests` swallow that per-step and keep going, so one flow crossing its threshold still lets every other flow run and every `analyze:*` CSV get written. Watch the console for `ERRO[...] thresholds ... have been crossed` to know which flow/level actually crossed it — the run still "succeeds" (exit code 0) either way. (The one exception is `browser-test`'s leading `npm run seed` — if user initialization itself fails, the run stops, since the tests can't log in without personas.)
 
 **Individual scripts**, for smoke-testing one thing at a time or debugging a specific flow:
 
