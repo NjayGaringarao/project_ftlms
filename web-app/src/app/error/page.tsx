@@ -51,17 +51,9 @@ function ErrorPageContent() {
               height={64}
               className="w-16 object-contain"
             />
-            <Image
-              src="/icto.jpg"
-              alt="ICTO Logo"
-              width={64}
-              height={64}
-              className="w-16 object-contain"
-            />
           </div>
           <p className="flex-1 text-xs text-textBody text-start">
-            Scheduler and Faculty Teaching Load Management System &copy; 2026 -
-            ICTO
+            Scheduler and Faculty Teaching Load Management System &copy; 2026
           </p>
         </div>
       </div>

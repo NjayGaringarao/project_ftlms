@@ -50,15 +50,17 @@ export const PrmsuFormHeader = ({
         ) : null}
         {campusName ? <p className="text-[11px]">{campusName} Campus</p> : null}
       </div>
-      <div className="shrink-0">
-        <img
-          src={collegeLogoUrl ?? "/logo/icto.jpg"}
-          alt="College Logo"
-          width={64}
-          height={64}
-          className="h-16 w-16 object-contain"
-        />
-      </div>
+      {collegeLogoUrl ? (
+        <div className="shrink-0">
+          <img
+            src={collegeLogoUrl}
+            alt="College Logo"
+            width={64}
+            height={64}
+            className="h-16 w-16 object-contain"
+          />
+        </div>
+      ) : null}
     </div>
   </div>
 );

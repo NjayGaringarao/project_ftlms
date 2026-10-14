@@ -59,13 +59,6 @@ export function PageHeader({
           height={50}
           className="w-11 h-11"
         />
-        <Image
-          src="/icto.jpg"
-          alt="Logo"
-          width={50}
-          height={50}
-          className="w-9 h-9"
-        />
       </div>
     </div>
   );
