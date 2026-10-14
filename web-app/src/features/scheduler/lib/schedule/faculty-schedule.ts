@@ -1,5 +1,6 @@
 "use server";
 
+import { getDefaultAcademicTermCached } from "@/features/admin/lib/terms-cached";
 import { createClient } from "@/utils/supabase/server";
 import {
   SessionDay,
@@ -149,6 +150,7 @@ const getAcademicTerms = async (): Promise<ScheduleAcademicTermOption[]> => {
 const resolveSelectedTerm = (
   terms: ScheduleAcademicTermOption[],
   requestedTermId: string | null,
+  defaultTermId: string | null,
 ): ScheduleAcademicTermOption | null => {
   if (terms.length === 0) return null;
 
@@ -156,6 +158,11 @@ const resolveSelectedTerm = (
     const matched = terms.find((term) => term.id === requestedTermId);
     if (matched) return matched;
   }
+
+  const configuredDefaultTerm = terms.find(
+    (term) => term.id === defaultTermId,
+  );
+  if (configuredDefaultTerm) return configuredDefaultTerm;
 
   const activeTerm = terms.find((term) => term.is_active);
   if (activeTerm) return activeTerm;
@@ -684,8 +691,15 @@ export const getFacultySchedulePageData = async (
   const speculativeSnapshotPromise = requestedTermId
     ? getFacultySnapshotData(userId, requestedTermId)
     : null;
-  const terms = await getAcademicTerms();
-  const selectedTerm = resolveSelectedTerm(terms, requestedTermId);
+  const [terms, defaultTerm] = await Promise.all([
+    getAcademicTerms(),
+    getDefaultAcademicTermCached(),
+  ]);
+  const selectedTerm = resolveSelectedTerm(
+    terms,
+    requestedTermId,
+    defaultTerm?.id ?? null,
+  );
 
   if (!selectedTerm) {
     return emptyPageData(terms, null);
