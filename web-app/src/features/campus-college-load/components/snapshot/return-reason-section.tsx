@@ -15,14 +15,20 @@ export const ReturnReasonSection = ({
   return (
     <div className="flex flex-col gap-2">
       <h3 className="font-semibold text-foreground">Approval Status</h3>
-      <div className="rounded-md border p-3">
+      <div
+        className={`rounded-md border p-3 ${
+          returned.system_generated
+            ? "border-red-200 bg-red-100 text-red-800"
+            : "border-amber-200 bg-amber-100 text-amber-900"
+        }`}
+      >
         {returned.system_generated ? (
           <>
             <p className="font-medium">Automatically Invalidated</p>
             {returned.comment ? (
-              <p className="mt-1 text-foreground/70">{returned.comment}</p>
+              <p className="mt-1 opacity-80">{returned.comment}</p>
             ) : null}
-            <p className="mt-1 text-xs text-foreground/50">
+            <p className="mt-1 text-xs opacity-60">
               {formatDateTime(returned.created_at ?? undefined)}
             </p>
           </>
@@ -32,13 +38,13 @@ export const ReturnReasonSection = ({
               <p>
                 Returned by {returned.evaluator_name ?? "Unknown evaluator"}
               </p>
-              <p className="text-foreground/70">
+              <p className="opacity-80">
                 ({evaluationStepLabel[returned.step]})
               </p>
             </div>
 
             {returned.comment ? (
-              <p className="mt-2 pt-2 text-foreground/70 italic border-t">
+              <p className="mt-2 border-t pt-2 italic opacity-80">
                 {returned.comment}
               </p>
             ) : null}
@@ -59,7 +65,7 @@ export const ReturnReasonSection = ({
                 ))}
               </div>
             ) : null}
-            <p className="mt-2 text-xs text-foreground/50">
+            <p className="mt-2 text-xs opacity-60">
               {formatDateTime(returned.created_at ?? undefined)}
             </p>
           </>

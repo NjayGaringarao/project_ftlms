@@ -12,7 +12,13 @@ export const RevisionSupersessionNotice = ({
   return (
     <div className="flex flex-col gap-2">
       <h3 className="font-semibold text-foreground">Approval Status</h3>
-      <div className="rounded-md border p-3 text-sm">
+      <div
+        className={`rounded-md border p-3 text-sm ${
+          returned?.system_generated
+            ? "border-red-200 bg-red-100 text-red-800"
+            : "border-border"
+        }`}
+      >
         {!returned ? (
           <p className="text-foreground/70">
             This revision was superseded by a newer submission.
@@ -20,8 +26,8 @@ export const RevisionSupersessionNotice = ({
         ) : returned.system_generated ? (
           <>
             <p className="font-medium">Automatically Invalidated</p>
-            <p className="mt-1 text-foreground/70">{returned.comment}</p>
-            <p className="mt-1 text-xs text-foreground/50">
+            <p className="mt-1 opacity-80">{returned.comment}</p>
+            <p className="mt-1 text-xs opacity-60">
               {formatDateTime(returned.created_at ?? undefined)}
             </p>
           </>
