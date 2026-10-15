@@ -94,8 +94,27 @@ const buildMatrix = (
       if (!overlaps) return;
 
       const daySlots = matrix[day];
-      if (!daySlots[index]) daySlots[index] = [];
-      daySlots[index].push(session);
+      const existingItems = daySlots[index] ?? [];
+
+      // A merged section can contribute the same timeframe as the selected
+      // class. The selected class is the authoritative cell for this view;
+      // keep the conflict only when no scheduled class occupies the slot.
+      if (
+        session.visual_source === "merged_conflict" &&
+        existingItems.some((item) => item.visual_source !== "merged_conflict")
+      ) {
+        return;
+      }
+
+      daySlots[index] = [
+        ...existingItems.filter(
+          (item) =>
+            session.visual_source === "merged_conflict"
+              ? item.visual_source === "merged_conflict"
+              : item.visual_source !== "merged_conflict",
+        ),
+        session,
+      ];
     });
   });
 
