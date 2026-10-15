@@ -99,6 +99,8 @@ migrations/
 - 514_trigger_academic_year_code.sql
 - 515_trigger_proposal_invalidation.sql
 - 516_trigger_proposal_workflow.sql
+- 517_trigger_approved_proposal_invalidation.sql
+- 516_trigger_proposal_workflow.sql
 - 600_rpc_is_admin_exists.sql
 - 602_rpc_get_user_roles.sql
 - 605_get_scheduler_matrices.sql
@@ -302,5 +304,4 @@ npx supabase start
 # Stop local development
 npx supabase stop
 ```
-
 

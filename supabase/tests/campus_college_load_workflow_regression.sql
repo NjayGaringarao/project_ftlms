@@ -397,6 +397,31 @@ begin
   if v_status <> 'APPROVED' or v_step <> 'COMPLETED' then
     raise exception 'VPAA approval did not finalize the load.';
   end if;
+
+  update public.session
+  set start_time = '08:30'
+  where id = v_session_id;
+
+  select status, current_step
+  into v_status, v_step
+  from public.campus_college_load
+  where id = v_load_id;
+
+  if v_status <> 'RETURNED' or v_step <> 'PROGRAM_CHAIR' then
+    raise exception 'Schedule edit did not invalidate approved load.';
+  end if;
+
+  select count(*)
+  into v_auto_return_count
+  from public.campus_college_load_evaluation
+  where campus_college_load_revision_id = v_revision_3_id
+    and step = 'VICE_PRESIDENT_FOR_ACADEMIC_AFFAIRS'
+    and status = 'RETURNED'
+    and system_generated = true;
+
+  if v_auto_return_count <> 1 then
+    raise exception 'Approved load invalidation was not recorded in ladder history.';
+  end if;
 end;
 $$;
 

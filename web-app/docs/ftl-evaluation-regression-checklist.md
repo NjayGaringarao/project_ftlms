@@ -34,5 +34,6 @@ Use this checklist after changes in:
 
 ## Freshness
 - [ ] Editing schedules after submission does not change the frozen snapshot.
+- [ ] Editing schedules after VPAA approval invalidates the approved load and returns it to the Program Chair.
 - [ ] Resubmitting after return creates a new revision with updated snapshot contents.
 - [ ] Ladder history shows decisions for the current revision in order.
