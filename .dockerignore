@@ -1,0 +1,6 @@
+.git
+web-app/node_modules
+web-app/.next
+web-app/public/chromium-pack
+load-tests/node_modules
+**/.DS_Store

@@ -39,6 +39,10 @@ The repository-root configuration supports Railway services whose root
 directory is the repository root; the copy in this directory supports services
 whose root directory is `web-app`.
 
+For the most deterministic Railway deployment, the repository also includes a
+root `Dockerfile`. It installs Chromium's native libraries in the final runtime
+image, including `libnspr4`, and builds the app from `web-app`.
+
 ### API Route
 
 Use the screenshot route:
