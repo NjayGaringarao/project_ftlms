@@ -95,6 +95,23 @@ function getChromiumPackSource(): string {
   return "node_modules/@sparticuz/chromium/bin";
 }
 
+function hasLocalChromiumPack(): boolean {
+  const sources = [
+    path.join(process.cwd(), "public", CHROMIUM_PACK_DIR),
+    path.join(process.cwd(), "node_modules", "@sparticuz", "chromium", "bin"),
+    path.join(
+      process.cwd(),
+      "..",
+      "node_modules",
+      "@sparticuz",
+      "chromium",
+      "bin",
+    ),
+  ];
+
+  return sources.some((source) => existsSync(source));
+}
+
 async function getChromiumExecutablePath(): Promise<string> {
   if (!cachedExecutablePath) {
     cachedExecutablePath = chromium.executablePath(getChromiumPackSource());
@@ -104,13 +121,25 @@ async function getChromiumExecutablePath(): Promise<string> {
 }
 
 export async function createPuppeteerBrowser() {
-  const isVercelRuntime = process.env.VERCEL === "1";
+  const explicitExecutablePath =
+    process.env.PUPPETEER_EXECUTABLE_PATH?.trim() ??
+    process.env.CHROME_EXECUTABLE_PATH?.trim();
 
-  if (!isVercelRuntime) {
+  if (explicitExecutablePath) {
+    return puppeteer.launch({
+      executablePath: explicitExecutablePath,
+      headless: true,
+    });
+  }
+
+  const useBundledChromium =
+    process.env.VERCEL === "1" || hasLocalChromiumPack();
+
+  if (!useBundledChromium) {
     const executablePath = getLocalBrowserExecutablePath();
     if (!executablePath) {
       throw new Error(
-        "No local Chrome/Edge executable found. Set PUPPETEER_EXECUTABLE_PATH to your browser binary.",
+        "No bundled or local Chrome/Edge executable found. Set PUPPETEER_EXECUTABLE_PATH to your browser binary.",
       );
     }
 
