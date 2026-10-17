@@ -35,6 +35,9 @@ Chrome or Chromium binary.
 
 Railway/Nixpacks deployments also use `nixpacks.toml` to install the Linux
 shared libraries required by Chromium, including `libnspr4` and `libnss3`.
+The repository-root configuration supports Railway services whose root
+directory is the repository root; the copy in this directory supports services
+whose root directory is `web-app`.
 
 ### API Route
 
