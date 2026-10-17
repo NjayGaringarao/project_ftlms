@@ -12,7 +12,11 @@ import {
   resolveStorageBucket,
   toRawDocumentExportJobRow,
 } from "@/features/document-export/lib/document-export/jobs";
-import { mergePdfBuffers, renderPdfFromPrintRoute } from "@/features/document-export/lib/document-export/pdf";
+import {
+  getDocumentExportOrigin,
+  mergePdfBuffers,
+  renderPdfFromPrintRoute,
+} from "@/features/document-export/lib/document-export/pdf";
 import { getDocumentExportProvider } from "@/features/document-export/lib/document-export/provider";
 import { createClient } from "@/utils/supabase/server";
 
@@ -168,7 +172,7 @@ export async function POST(
 
     const printRouteUrl = new URL(
       `/print/documents/${claimedJob.documentType}/scope/${claimedJob.academicTermId}`,
-      request.nextUrl.origin,
+      getDocumentExportOrigin(),
     );
 
     const parsedScope = provider.parseScopeFromBody(claimedJob.scopePayload);

@@ -4,6 +4,16 @@ import { createPuppeteerBrowser } from "@/features/document-export/lib/puppeteer
 
 export const DOCUMENT_EXPORT_PAGE_TIMEOUT_MS = 30_000;
 
+export const getDocumentExportOrigin = (): string => {
+  const configuredOrigin = process.env.PDF_INTERNAL_ORIGIN?.trim();
+  if (configuredOrigin) {
+    return configuredOrigin.replace(/\/+$/, "");
+  }
+
+  const port = process.env.PORT?.trim() || "3000";
+  return `http://127.0.0.1:${port}`;
+};
+
 export const renderPdfFromPrintRoute = async ({
   request,
   printRouteUrl,

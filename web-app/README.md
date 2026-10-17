@@ -33,6 +33,10 @@ pack is present, including on Railway. `PUPPETEER_EXECUTABLE_PATH` or
 `CHROME_EXECUTABLE_PATH` may be set only when the deployment provides its own
 Chrome or Chromium binary.
 
+PDF rendering calls the app through its internal HTTP listener by default,
+using `http://127.0.0.1:${PORT}`. Set `PDF_INTERNAL_ORIGIN` only when the
+deployment requires a different internal origin.
+
 Railway/Nixpacks deployments also use `nixpacks.toml` to install the Linux
 shared libraries required by Chromium, including `libnspr4` and `libnss3`.
 The repository-root configuration supports Railway services whose root

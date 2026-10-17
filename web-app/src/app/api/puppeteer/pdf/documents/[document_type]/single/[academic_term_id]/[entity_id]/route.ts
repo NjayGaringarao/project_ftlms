@@ -2,7 +2,10 @@ import "@/features/document-export/lib/document-export/register-providers";
 import { type NextRequest } from "next/server";
 import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";
 import { toDocumentExportError } from "@/features/document-export/lib/document-export/errors";
-import { renderPdfFromPrintRoute } from "@/features/document-export/lib/document-export/pdf";
+import {
+  getDocumentExportOrigin,
+  renderPdfFromPrintRoute,
+} from "@/features/document-export/lib/document-export/pdf";
 import { getDocumentExportProvider } from "@/features/document-export/lib/document-export/provider";
 
 type DocumentSinglePdfRouteContext = {
@@ -32,7 +35,7 @@ export async function GET(
 
     const printRouteUrl = new URL(
       `/print/documents/${document_type}/single/${academic_term_id}/${entity_id}`,
-      request.nextUrl.origin,
+      getDocumentExportOrigin(),
     );
 
     const pdfBytes = await renderPdfFromPrintRoute({

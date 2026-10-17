@@ -3,7 +3,10 @@ import { type NextRequest } from "next/server";
 import { SYNC_PDF_MAX_COUNT } from "@/features/document-export/lib/document-export/constants";
 import { requireAuthenticatedForApi } from "@/features/document-export/lib/document-export/auth";
 import { toDocumentExportError } from "@/features/document-export/lib/document-export/errors";
-import { renderPdfFromPrintRoute } from "@/features/document-export/lib/document-export/pdf";
+import {
+  getDocumentExportOrigin,
+  renderPdfFromPrintRoute,
+} from "@/features/document-export/lib/document-export/pdf";
 import { getDocumentExportProvider } from "@/features/document-export/lib/document-export/provider";
 
 type DocumentScopePdfRouteContext = {
@@ -42,7 +45,7 @@ export async function GET(
 
     const printRouteUrl = new URL(
       `/print/documents/${document_type}/scope/${academic_term_id}`,
-      request.nextUrl.origin,
+      getDocumentExportOrigin(),
     );
     request.nextUrl.searchParams.forEach((value, key) => {
       printRouteUrl.searchParams.append(key, value);
