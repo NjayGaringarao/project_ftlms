@@ -33,6 +33,9 @@ pack is present, including on Railway. `PUPPETEER_EXECUTABLE_PATH` or
 `CHROME_EXECUTABLE_PATH` may be set only when the deployment provides its own
 Chrome or Chromium binary.
 
+Railway/Nixpacks deployments also use `nixpacks.toml` to install the Linux
+shared libraries required by Chromium, including `libnspr4` and `libnss3`.
+
 ### API Route
 
 Use the screenshot route:
