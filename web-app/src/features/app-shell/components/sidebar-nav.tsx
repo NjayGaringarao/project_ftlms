@@ -2,24 +2,21 @@
 
 import { cn } from "@/utils/style";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { getNavigationItems } from "@/features/app-shell/lib/navigation/items";
 import { useEffect, useState } from "react";
 import { NavigationItem } from "@/features/app-shell/lib/navigation/types";
 import { LogOutIcon } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { mapIcon } from "@/utils/icon";
 
 export function SidebarNav() {
   const pathname = usePathname();
   const [menuItems, setMenuItems] = useState<NavigationItem[]>([]);
-  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const logout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+  const handleLogoutSubmit = () => {
+    setIsLoggingOut(true);
   };
 
   useEffect(() => {
@@ -77,13 +74,18 @@ export function SidebarNav() {
             </Link>
           );
         })}
-        <button
-          className="w-full text-foreground text-sm py-2 px-4 font-normal hover:bg-foreground/5 rounded-none flex flex-row items-center justify-start"
-          onClick={logout}
-        >
-          <LogOutIcon className="w-5 h-5 ml-1 mr-1" />
-          <span className="truncate hidden md:block">Logout</span>
-        </button>
+        <form action="/auth/logout" method="post" onSubmit={handleLogoutSubmit}>
+          <button
+            type="submit"
+            disabled={isLoggingOut}
+            className="w-full text-foreground text-sm py-2 px-4 font-normal hover:bg-foreground/5 rounded-none flex flex-row items-center justify-start disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <LogOutIcon className="w-5 h-5 ml-1 mr-1" />
+            <span className="truncate hidden md:block">
+              {isLoggingOut ? "Logging out..." : "Logout"}
+            </span>
+          </button>
+        </form>
       </div>
     </nav>
   );
