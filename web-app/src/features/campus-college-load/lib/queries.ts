@@ -392,7 +392,7 @@ export const getCampusCollegeLoadList = async (
 
 export const getCampusCollegeLoadDetail = async (
   loadId: string,
-  options?: { revisionId?: string | null },
+  options: { academicTermId: string; revisionId?: string | null },
 ): Promise<CampusCollegeLoadDetail | null> => {
   const supabase = await createClient();
 
@@ -407,6 +407,7 @@ export const getCampusCollegeLoadDetail = async (
       .from("campus_college_load")
       .select("*, campus:campus_id(code, name), college:college_id(code, name)")
       .eq("id", loadId)
+      .eq("academic_term_id", options.academicTermId)
       .maybeSingle(),
     supabase
       .from("campus_college_load_revision")

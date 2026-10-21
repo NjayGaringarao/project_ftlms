@@ -71,8 +71,11 @@ const CampusCollegeLoadContent = async ({
       ? getCampusCollegeLoadList(academicTerm.id)
       : null;
   // An explicit ?id= doesn't depend on the list result — fetch both in parallel.
-  const eagerDetailPromise = selectedId
-    ? getCampusCollegeLoadDetail(selectedId, { revisionId: selectedRevisionId })
+  const eagerDetailPromise = selectedId && academicTerm
+    ? getCampusCollegeLoadDetail(selectedId, {
+        academicTermId: academicTerm.id,
+        revisionId: selectedRevisionId,
+      })
     : null;
   const [items, eagerDetail] = await Promise.all([
     listPromise ?? [],
@@ -107,6 +110,7 @@ const CampusCollegeLoadContent = async ({
     const effectiveSelectedId = matchedItem?.load?.id ?? null;
     detail = effectiveSelectedId
       ? await getCampusCollegeLoadDetail(effectiveSelectedId, {
+          academicTermId: academicTerm.id,
           revisionId: selectedRevisionId,
         })
       : null;
