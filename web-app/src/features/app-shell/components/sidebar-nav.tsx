@@ -2,24 +2,24 @@
 
 import { cn } from "@/utils/style";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { getNavigationItems } from "@/features/app-shell/lib/navigation/items";
 import { useEffect, useState } from "react";
 import { NavigationItem } from "@/features/app-shell/lib/navigation/types";
 import { LogOutIcon } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { mapIcon } from "@/utils/icon";
+import { AppDialog } from "@/components/ui/app-dialog";
+import { Button } from "@/components/ui/button";
 
 export function SidebarNav() {
   const pathname = usePathname();
   const [menuItems, setMenuItems] = useState<NavigationItem[]>([]);
-  const router = useRouter();
+  const [isConfirmLogoutOpen, setIsConfirmLogoutOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const logout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+  const handleConfirmLogoutSubmit = () => {
+    setIsLoggingOut(true);
   };
 
   useEffect(() => {
@@ -78,13 +78,49 @@ export function SidebarNav() {
           );
         })}
         <button
-          className="w-full text-foreground text-sm py-2 px-4 font-normal hover:bg-foreground/5 rounded-none flex flex-row items-center justify-start"
-          onClick={logout}
+          type="button"
+          disabled={isLoggingOut}
+          onClick={() => setIsConfirmLogoutOpen(true)}
+          className={cn(
+            "w-full px-4 py-2 hover:bg-foreground/5 flex items-center gap-3 text-sm",
+            "border-transparent border-b-4 justify-center md:border-l-4 md:border-b-0 md:justify-start",
+            "disabled:opacity-60 disabled:cursor-not-allowed",
+          )}
         >
-          <LogOutIcon className="w-5 h-5 ml-1 mr-1" />
-          <span className="truncate hidden md:block">Logout</span>
+          <LogOutIcon className="w-5 h-5" />
+          <span className="truncate hidden md:block">
+            {isLoggingOut ? "Logging out..." : "Logout"}
+          </span>
         </button>
       </div>
+
+      <AppDialog
+        open={isConfirmLogoutOpen}
+        onOpenChange={setIsConfirmLogoutOpen}
+        variant="floating-small"
+        title="Confirm Logout"
+        description="You can login anytime but unsaved changes will be lost."
+        contentClassName="p-4"
+      >
+        <form
+          action="/auth/logout"
+          method="post"
+          onSubmit={handleConfirmLogoutSubmit}
+          className="flex justify-end gap-2"
+        >
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsConfirmLogoutOpen(false)}
+            disabled={isLoggingOut}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isLoggingOut}>
+            Confirm
+          </Button>
+        </form>
+      </AppDialog>
     </nav>
   );
 }

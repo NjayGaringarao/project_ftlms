@@ -35,6 +35,9 @@ export const renderPdfFromPrintRoute = async ({
       timeout: DOCUMENT_EXPORT_PAGE_TIMEOUT_MS,
       waitUntil: "networkidle2",
     });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
     await page.emulateMediaType("print");
 
     const pdfBytes = await page.pdf({
