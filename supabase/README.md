@@ -5,13 +5,16 @@
 - Node.js installed
 - Supabase account (logged in via browser)
 - Supabase project (already initialized)
+- Docker Desktop running when using the local database or schema diff commands
+
+Run the commands below from the repository root. These examples use Supabase CLI v3. Database commands target the local stack by default; add `--remote` to target the linked hosted project. See [local and hosted project targeting](https://supabase.com/docs/guides/local-development/local-and-hosted-projects).
 
 ## Initial Setup
 
-1. **Install Supabase CLI**
+1. **Check Supabase CLI**
 
    ```bash
-   npx supabase
+   npx supabase --version
    ```
 
    The terminal will prompt you to install Supabase CLI if not already installed.
@@ -30,16 +33,42 @@
    ```
    Run this again whenever you switch to a different Supabase project.
 
+4. **Check Local Email Configuration**
+
+   Supabase CLI v3 uses `[local_smtp]` for the email testing server in `supabase/config.toml`. If an older configuration has `[inbucket]`, rename that section and keep its settings:
+
+   ```toml
+   [local_smtp]
+   enabled = true
+   port = 54324
+   ```
+
 ## Migration Commands
 
-| Command                             | Description                              |
-| ----------------------------------- | ---------------------------------------- |
-| `npx supabase db push --linked`     | Run all pending migrations               |
-| `npx supabase db reset --linked`    | Reset database and re-run all migrations |
-| `npx supabase migration list`       | List all migrations and their status     |
-| `npx supabase migration new <name>` | Create a new migration file              |
+| Command                               | Description                                                     |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `npx supabase db push --remote`        | Apply pending migrations to the linked remote database           |
+| `npx supabase db reset`                | Rebuild the local database from migrations and configured seeds  |
+| `npx supabase db reset --remote`       | Rebuild the linked remote database from migrations and seeds     |
+| `npx supabase migration list`          | Compare migration files with the local database history          |
+| `npx supabase migration list --remote` | Compare migration files with the linked remote database history  |
+| `npx supabase migration new <name>`    | Create a new migration file                                      |
 
-> **Warning**: `db reset` will destroy all data. Never use in production!
+> **Warning**: `db reset` destroys existing data in its target database. Use remote resets only for disposable development or staging projects, never for production data.
+
+### Resetting a Remote Development Database
+
+After logging in, linking the intended project, and checking the configuration above:
+
+```bash
+# Check the selected remote target and migration history
+npx supabase migration list --remote
+
+# Wipe the remote database, replay migrations, and load configured seeds
+npx supabase db reset --remote
+```
+
+Review the `Target:` line and confirm the CLI prompt only when it identifies the project you intend to wipe. The CLI labels the hosted project's primary database as `production`, even when you use that project for development. Add `--no-seed` to the reset command to skip seed data. To apply pending migrations, use `npx supabase db push --remote`.
 
 ## Migration File Structure
 
@@ -210,24 +239,36 @@ migrations/
     - Campus Director, DI, and VPAA step ordering
     - required return comments
   - Runs inside a transaction and rolls back automatically.
-  - Execute via Supabase SQL Editor (local/linked) or any SQL client against your dev database.
+  - Execute via Supabase SQL Editor (local or remote) or any SQL client against your dev database.
 
 ## Migration Consistency Check
 
 Run this sequence after editing migration history (development only):
 
 ```bash
+# Start the local stack
+npx supabase start
+
 # Rebuild local database from migration chain
 npx supabase db reset
 
-# Confirm local/linked migration status
+# Confirm local migration status
 npx supabase migration list
 
-# Confirm no unexpected schema drift
-npx supabase db diff --linked
+# Confirm no unexpected local schema drift
+npx supabase db diff
 ```
 
-Expected result: `db reset` succeeds and `db diff --linked` is empty (or only contains intentional pending changes).
+Expected result: `db reset` succeeds and `db diff` reports no schema differences.
+
+When also validating a linked remote development or staging project, check its migration history and compare its schema with the local migration chain:
+
+```bash
+npx supabase migration list --remote
+npx supabase db diff --remote
+```
+
+Expected result: the remote diff is empty, or contains only expected differences between the migration files and the remote database.
 
 ## Development-Only Migration Rewrite Policy
 
@@ -250,7 +291,7 @@ This project uses two migration management modes:
   - Purpose: fold append-only migrations into their canonical base files to keep a clean, readable history.
   - Rule: may edit/delete/reorder existing migration files **only** in local development, and only after verifying no trigger/RPC dependencies are broken.
   - Preferred approach: move the *latest* definition into the correct category file (schema → constraints → triggers → RPC) and delete the append-only file.
-  - Required follow-up: run the Migration Consistency Check section before continuing work (include `db reset --linked` when validating against the linked project).
+  - Required follow-up: run the Migration Consistency Check section before continuing work (include `db reset --remote` when rebuilding a disposable linked development or staging project).
 
 ### AI Agent Guidance
 
@@ -289,14 +330,20 @@ Seed SQL files are stored in `seeds/` and loaded during `db reset` based on `con
 ## Useful Commands
 
 ```bash
-# Check migration status
+# Check local migration status
 npx supabase migration list
 
-# Generate types for TypeScript
-npx supabase gen types typescript --linked > types/supabase.ts
+# Check linked remote migration status
+npx supabase migration list --remote
 
-# View database diff
+# Generate TypeScript types from the linked remote database
+npx supabase gen types typescript --remote > types/supabase.ts
+
+# Compare migrations with the local database
 npx supabase db diff
+
+# Compare migrations with the linked remote database
+npx supabase db diff --remote
 
 # Start local development
 npx supabase start

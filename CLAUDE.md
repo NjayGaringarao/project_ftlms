@@ -20,10 +20,10 @@ Supabase commands run from the repo root:
 
 ```bash
 npx supabase start                              # Start local Supabase (Postgres + Studio)
-npx supabase db reset                          # Wipe and re-run all migrations + seeds
+npx supabase db reset                          # Wipe local DB and replay migrations + seeds
 npx supabase migration new <name>              # Create a new migration file
-npx supabase db push --linked                  # Push migrations to remote project
-npx supabase gen types typescript --linked     # Regenerate TypeScript types from DB schema
+npx supabase db push --remote                  # Push migrations to linked remote project
+npx supabase gen types typescript --remote     # Generate TypeScript types from remote DB schema
 ```
 
 ## Architecture

@@ -197,9 +197,13 @@ Build/runtime commands in current project setup:
 - Lint: `npm run lint`
 
 Database lifecycle commands (Supabase CLI):
-- Push migrations: `npx supabase db push --linked`
-- Reset and replay migrations+seeds: `npx supabase db reset --linked`
-- Check migration state: `npx supabase migration list`
+
+- Push migrations to the linked remote database: `npx supabase db push --remote`
+- Reset the local database and replay migrations+seeds: `npx supabase db reset`
+- Reset a disposable linked remote development/staging database: `npx supabase db reset --remote`
+- Check linked remote migration state: `npx supabase migration list --remote`
+
+Database commands target the local stack by default. Remote reset destroys existing data; review the CLI's `Target:` line before confirming. See [Supabase Database Setup](../../supabase/README.md) for configuration and reset instructions.
 
 ## 5. Traceability References
 
