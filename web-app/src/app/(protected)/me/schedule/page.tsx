@@ -35,7 +35,7 @@ const SchedulePage = async ({ searchParams }: SchedulePageProps) => {
   const data = await getFacultySchedulePageData(user.id, requestedTermId);
 
   return (
-    <div className="bg-background h-full w-full overflow-y-auto p-6">
+    <div className="bg-background h-full w-full overflow-y-auto p-4">
       <FacultyScheduleView data={data} userId={user.id} />
     </div>
   );

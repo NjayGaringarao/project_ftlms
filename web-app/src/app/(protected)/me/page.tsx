@@ -39,16 +39,16 @@ const MePage = async ({ searchParams }: MePageProps) => {
   return (
     <div
       className={cn(
-        "bg-background h-full w-full p-6 overflow-y-auto",
+        "bg-background h-full w-full p-4 overflow-y-auto",
         "flex flex-col gap-4",
         "xl:grid xl:grid-cols-2 2xl:grid-cols-3",
       )}
     >
       <UserSummaryCard userOverview={userOverview} />
 
-      <div className="2xl:col-span-2 space-y-4">
+      <div className="2xl:col-span-2 flex flex-col gap-8">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-sm font-medium">Academic Term</h2>
+          <h2 className="text-base font-black">Academic Term</h2>
           <TermSwitcher
             terms={terms}
             selectedTermId={selectedTerm?.id}

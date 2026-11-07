@@ -31,7 +31,7 @@ const AssignedClassesCard = ({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <CardTitle className="text-base">Assigned Classes</CardTitle>
+        <p className="text-base">Assigned Classes</p>
         {statusInfo && (
           <span
             className={`text-xs rounded px-1.5 py-0.5 ${ftlStatusVariantClass[statusInfo.variant]}`}

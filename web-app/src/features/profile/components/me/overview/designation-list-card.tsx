@@ -10,7 +10,7 @@ type DesignationListCardProps = {
 const DesignationListCard = ({ designations }: DesignationListCardProps) => {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-base font-semibold">Designation</p>
+      <p className="text-base">Designation</p>
 
       <DesignationInformationContent designations={designations} />
     </div>
