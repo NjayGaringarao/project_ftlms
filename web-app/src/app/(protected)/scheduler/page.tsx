@@ -44,7 +44,6 @@ const SchedulerPage = async ({ searchParams }: SchedulerPageProps) => {
               "courseUtilizationId",
             ],
           }}
-          description="Search and switch the active scheduling term."
           refreshOnSelect
         />
       </TopBarNav>

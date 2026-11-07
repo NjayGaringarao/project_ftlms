@@ -53,7 +53,6 @@ const MePage = async ({ searchParams }: MePageProps) => {
             terms={terms}
             selectedTermId={selectedTerm?.id}
             routeConfig={{ mode: "query", paramName: "academic_term_id" }}
-            description="View your assigned classes and teaching load for an academic term."
             buttonClassName="w-full min-w-0 bg-background sm:w-auto sm:max-w-full"
           />
         </div>

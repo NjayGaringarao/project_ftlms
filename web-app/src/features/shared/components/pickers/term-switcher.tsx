@@ -30,11 +30,9 @@ type TermSwitcherProps = {
   selectedTermId?: string;
   routeConfig: TermSwitcherRouteConfig;
   title?: string;
-  description?: string;
   emptyLabel?: string;
   buttonClassName?: string;
   buttonSize?: "sm" | "default";
-  showSubtitle?: boolean;
   refreshOnSelect?: boolean;
 };
 
@@ -43,11 +41,9 @@ const TermSwitcher = ({
   selectedTermId: selectedTermIdProp,
   routeConfig,
   title = "Select Academic Term",
-  description = "Search and switch the active academic term.",
   emptyLabel = "No academic terms found.",
   buttonClassName,
   buttonSize = "sm",
-  showSubtitle = true,
   refreshOnSelect = false,
 }: TermSwitcherProps) => {
   const pathname = usePathname();
@@ -160,7 +156,6 @@ const TermSwitcher = ({
         open={open}
         onOpenChange={setOpen}
         title={title}
-        description={description}
         variant="floating-medium"
         contentClassName="flex max-h-[85vh] p-4 flex-col overflow-hidden"
       >
@@ -185,14 +180,15 @@ const TermSwitcher = ({
               return (
                 <ListItemSmall
                   key={term.id}
-                  title={formatAcademicTermLabel(term)}
-                  subtitle={showSubtitle ? [term.code] : []}
+                  title={term.code}
+                  subtitle={[]}
                   isSelected={isSelected}
                   onClick={() => {
                     handleSelectTerm(term.id);
                     setOpen(false);
                   }}
                   icon={<Calendar className="h-6 w-6 text-background/70" />}
+                  listType="modal"
                 />
               );
             })}

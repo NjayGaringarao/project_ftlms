@@ -75,11 +75,9 @@ const SectionsContent = async ({ searchParams }: SectionsPageProps) => {
             paramName: "academic_term_id",
             resetParamsOnSelect: ["id", "new"],
           }}
-          description="Filter sections by academic term."
           emptyLabel="No academic terms found."
           buttonClassName="bg-background/95 text-foreground justify-between"
           buttonSize="default"
-          showSubtitle={false}
         />
       </TopBarNav>
 

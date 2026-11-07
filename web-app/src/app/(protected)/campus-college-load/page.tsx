@@ -131,11 +131,9 @@ const CampusCollegeLoadContent = async ({
               paramName: "academic_term_id",
               resetParamsOnSelect: ["id", "campus_id", "college_id", "revision_id"],
             }}
-            description="Filter campus-college loads by academic term."
             emptyLabel="No academic terms found."
             buttonClassName="bg-background/95 text-foreground justify-between"
             buttonSize="default"
-            showSubtitle={false}
           />
         </div>
       </TopBarNav>
