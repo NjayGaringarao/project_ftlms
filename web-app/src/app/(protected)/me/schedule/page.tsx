@@ -36,7 +36,11 @@ const SchedulePage = async ({ searchParams }: SchedulePageProps) => {
 
   return (
     <div className="bg-background h-full w-full overflow-y-auto p-4">
-      <FacultyScheduleView data={data} userId={user.id} />
+      <FacultyScheduleView
+        key={data.selected_term_id}
+        data={data}
+        userId={user.id}
+      />
     </div>
   );
 };

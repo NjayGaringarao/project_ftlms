@@ -1,22 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, ChevronDown } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AcademicTermPickerDialog } from "@/features/profile/components/schedule/academic-term-picker-dialog";
+import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
 import {
   FacultyScheduleCard,
   FacultyTeachingLoadCard,
 } from "@/features/profile/components/schedule/faculty/faculty-load-schedule-cards";
 import { FacultyFtlExportTrigger } from "@/features/document-export/components/faculty-ftl-export-trigger";
-import { AddTile } from "@/components/ui/add-tile";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ACADEMIC_TERM_QUERY_PARAM,
   FacultySchedulePageData,
 } from "@/features/scheduler/lib/schedule/types";
-import { formatAcademicTermLabel } from "@/utils/string";
 
 type FacultyScheduleViewProps = {
   data: FacultySchedulePageData;
@@ -27,7 +22,7 @@ export const FacultyScheduleView = ({
   data,
   userId,
 }: FacultyScheduleViewProps) => {
-  const [isTermPickerOpen, setIsTermPickerOpen] = useState(false);
+  // The page keys this view by term so pending state resets when data arrives.
   const [isNavigating, setIsNavigating] = useState(false);
 
   const router = useRouter();
@@ -41,22 +36,11 @@ export const FacultyScheduleView = ({
     ? {
         ...data,
         teaching_load_rows: [],
+        total_teaching_load: 0,
         schedule_rows: [],
         has_schedule: false,
       }
     : data;
-
-  const setAcademicTermQuery = (termId: string) => {
-    setIsNavigating(true);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(ACADEMIC_TERM_QUERY_PARAM, termId);
-    router.replace(`${pathname}?${params.toString()}`);
-  };
-
-  // Reset navigation flag once server data reflects the new term
-  useEffect(() => {
-    setIsNavigating(false);
-  }, [data.selected_term_id]);
 
   useEffect(() => {
     if (!data.selected_term_id) return;
@@ -72,41 +56,21 @@ export const FacultyScheduleView = ({
   return (
     <div className="h-full overflow-hidden grid grid-cols-1 lg:grid-cols-4 gap-4">
       <div className="h-full overflow-hidden flex flex-col gap-4">
-        {selectedTerm ? (
-          <div className="rounded-md w-full border flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 p-4 text-sm">
-              <Calendar className="h-8 w-8 text-foreground/70" />
-              <div>
-                <p className="font-medium">
-                  {formatAcademicTermLabel(selectedTerm)}
-                </p>
-
-                {selectedTerm.is_active ? (
-                  <p className="text-emerald-700">Current active term</p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="pr-3 flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsTermPickerOpen(true)}
-                title="Change academic term"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {!selectedTerm ? (
-          <AddTile
-            title="Select Academic Term"
-            description="Open searchable term list"
-            onClick={() => setIsTermPickerOpen(true)}
+        <div className="space-y-2">
+          <TermSwitcher
+            terms={data.terms}
+            selectedTermId={data.selected_term_id ?? undefined}
+            routeConfig={{ mode: "query", paramName: ACADEMIC_TERM_QUERY_PARAM }}
+            buttonClassName="w-full min-w-0 justify-between bg-background"
+            buttonSize="default"
+            onTermSelect={(termId) =>
+              setIsNavigating(termId !== data.selected_term_id)
+            }
           />
-        ) : null}
+          {selectedTerm?.is_active ? (
+            <p className="text-sm text-emerald-700">Current active term</p>
+          ) : null}
+        </div>
 
         <FacultyTeachingLoadCard
           className="flex-1"
@@ -130,17 +94,6 @@ export const FacultyScheduleView = ({
           scheduleRows={displayData.schedule_rows}
         />
       </div>
-
-      <AcademicTermPickerDialog
-        open={isTermPickerOpen}
-        onOpenChange={setIsTermPickerOpen}
-        terms={data.terms}
-        selectedTermId={data.selected_term_id}
-        onSelectTerm={(termId) => {
-          setAcademicTermQuery(termId);
-          setIsTermPickerOpen(false);
-        }}
-      />
     </div>
   );
 };

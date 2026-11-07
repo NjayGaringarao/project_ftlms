@@ -34,6 +34,7 @@ type TermSwitcherProps = {
   buttonClassName?: string;
   buttonSize?: "sm" | "default";
   refreshOnSelect?: boolean;
+  onTermSelect?: (termId: string) => void;
 };
 
 const TermSwitcher = ({
@@ -45,6 +46,7 @@ const TermSwitcher = ({
   buttonClassName,
   buttonSize = "sm",
   refreshOnSelect = false,
+  onTermSelect,
 }: TermSwitcherProps) => {
   const pathname = usePathname();
   const router = useRouter();
@@ -94,6 +96,8 @@ const TermSwitcher = ({
   }, [routeConfig, selectedTermId, terms, pathname, router, searchParams]);
 
   const handleSelectTerm = (termId: string) => {
+    onTermSelect?.(termId);
+
     if (routeConfig.mode === "query") {
       const next = new URLSearchParams(searchParams.toString());
       next.set(routeConfig.paramName, termId);
@@ -146,7 +150,7 @@ const TermSwitcher = ({
         <Calendar className="h-4 w-4" />
         <span className="truncate text-base">
           {selectedTerm
-            ? formatAcademicTermLabel(selectedTerm)
+            ? (selectedTerm.code)
             : "Select academic term..."}
         </span>
         <ChevronDown className="h-4 w-4" />
