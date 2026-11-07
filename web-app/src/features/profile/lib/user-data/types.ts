@@ -61,7 +61,7 @@ export type UserDataOptions = {
   includeDesignations?: boolean;
   includeClasses?: boolean;
   includeLoads?: boolean;
-  useSnapshotClasses?: boolean;
+  useSnapshotLoads?: boolean;
 };
 
 export type UserDataRpcRow = {

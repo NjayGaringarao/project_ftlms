@@ -30,6 +30,7 @@ const FacultyDashboard = async () => {
         designationLoad={overview.designationLoad}
         actualTeachingLoad={overview.actualTeachingLoad}
         totalWorkingLoad={overview.totalWorkingLoad}
+        isAvailable={overview.ftlStatus !== null}
         size="Large"
       />
 

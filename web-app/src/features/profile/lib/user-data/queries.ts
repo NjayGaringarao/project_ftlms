@@ -63,11 +63,13 @@ const mapClassRows = (value: unknown): OverviewClassLoad[] => {
 
 type SnapshotResult = {
   classes: OverviewClassLoad[];
+  actualTeachingLoad: number;
+  designationLoad: number;
   status: CampusCollegeLoadStatus;
   step: CampusCollegeLoadStep;
 };
 
-const getSnapshotClassesForUser = async (
+const getSnapshotLoadForUser = async (
   userId: string,
   academicTermId: string,
 ): Promise<SnapshotResult | null> => {
@@ -132,9 +134,15 @@ const getSnapshotClassesForUser = async (
           laboratory_unit: cls.laboratory_unit,
           section_code: cls.section_code,
           student_count: cls.student_count,
-          campus_name: faculty.campus_code ?? "Not assigned",
+          campus_name:
+            cls.campus_name ??
+            normalized.metadata.campus_name ??
+            faculty.campus_code ??
+            "Not assigned",
           load: cls.load,
         })),
+        actualTeachingLoad: toNumber(faculty.actual_teaching_load),
+        designationLoad: toNumber(faculty.equivalent_teaching_load),
         status: load.status as CampusCollegeLoadStatus,
         step: load.current_step as CampusCollegeLoadStep,
       };
@@ -274,7 +282,14 @@ export const getUserDataById = async (
   if (rows.length === 0) return null;
   const result = mapRowToUserData(rows[0]);
 
-  if (options?.useSnapshotClasses) {
+  if (options?.useSnapshotLoads) {
+    // Missing snapshots must not expose live assignments or designation loads
+    // as historical data. Callers use ftlStatus to show unavailable metrics.
+    result.classes = [];
+    result.actualTeachingLoad = 0;
+    result.designationLoad = 0;
+    result.totalWorkingLoad = 0;
+
     let termId = result.term?.id;
 
     if (!termId) {
@@ -294,12 +309,13 @@ export const getUserDataById = async (
     }
 
     if (termId) {
-      const snapshot = await getSnapshotClassesForUser(userId, termId);
+      const snapshot = await getSnapshotLoadForUser(userId, termId);
       if (snapshot) {
         result.classes = snapshot.classes;
         result.ftlStatus = snapshot.status;
         result.ftlStep = snapshot.step;
-        result.actualTeachingLoad = snapshot.classes.reduce((sum, c) => sum + c.load, 0);
+        result.actualTeachingLoad = snapshot.actualTeachingLoad;
+        result.designationLoad = snapshot.designationLoad;
         result.totalWorkingLoad = result.actualTeachingLoad + result.designationLoad;
       }
     }

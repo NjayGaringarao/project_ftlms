@@ -11,6 +11,7 @@ type WorkingLoadMetricsProps = {
   designationLoad?: number;
   actualTeachingLoad?: number;
   totalWorkingLoad?: number;
+  isAvailable?: boolean;
   size?: "Default" | "Compact" | "Large";
 };
 
@@ -20,6 +21,7 @@ const WorkingLoadMetrics = ({
   designationLoad,
   actualTeachingLoad,
   totalWorkingLoad,
+  isAvailable = true,
   size = "Default",
 }: WorkingLoadMetricsProps) => {
   return (
@@ -42,7 +44,7 @@ const WorkingLoadMetrics = ({
           <CardContent>
             <div className="flex flex-row gap-2 items-center">
               <p className="text-3xl font-semibold">
-                {toFixedLoad(totalWorkingLoad)}
+                {isAvailable ? toFixedLoad(totalWorkingLoad) : "\u2014"}
               </p>
               <WeightTilde />
             </div>
@@ -62,7 +64,7 @@ const WorkingLoadMetrics = ({
           <CardContent>
             <div className="flex flex-row gap-2 items-center">
               <p className="text-3xl font-semibold">
-                {toFixedLoad(designationLoad)}
+                {isAvailable ? toFixedLoad(designationLoad) : "\u2014"}
               </p>
               <WeightTilde />
             </div>
@@ -84,7 +86,7 @@ const WorkingLoadMetrics = ({
           <CardContent>
             <div className="flex flex-row gap-2 items-center">
               <p className="text-3xl font-semibold">
-                {toFixedLoad(actualTeachingLoad)}
+                {isAvailable ? toFixedLoad(actualTeachingLoad) : "\u2014"}
               </p>
               <WeightTilde />
             </div>

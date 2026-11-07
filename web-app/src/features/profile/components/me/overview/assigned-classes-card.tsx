@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardTitle, Card, CardHeader } from "@/components/ui/card";
 import {
   ftlStatusVariantClass,
   getFtlStatusLabel,
@@ -9,6 +9,7 @@ import type {
   CampusCollegeLoadStatus,
   CampusCollegeLoadStep,
 } from "@/features/shared/types/models/campus_college_load";
+import { WeightTilde, UserRoundGroup, Landmark } from "lucide-react";
 
 type AssignedClassesCardProps = {
   term: AcademicTerm | null;
@@ -28,60 +29,58 @@ const AssignedClassesCard = ({
   const statusInfo = getFtlStatusLabel(ftlStatus, ftlStep);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base">
-            Currently Assigned Classes
-          </CardTitle>
-          {statusInfo && (
-            <span
-              className={`text-xs rounded px-1.5 py-0.5 ${ftlStatusVariantClass[statusInfo.variant]}`}
-            >
-              {statusInfo.label}
-            </span>
-          )}
-        </div>
-        {term && (
-          <p className="text-sm text-foreground/60">
-            {term.name} ({term.code})
-          </p>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <CardTitle className="text-base">Assigned Classes</CardTitle>
+        {statusInfo && (
+          <span
+            className={`text-xs rounded px-1.5 py-0.5 ${ftlStatusVariantClass[statusInfo.variant]}`}
+          >
+            {statusInfo.label}
+          </span>
         )}
-      </CardHeader>
-      <CardContent>
+      </div>
+
+      <div className="flex flex-col gap-4">
         {classes.length === 0 ? (
           <p className="text-sm text-foreground/60">
-            No classes assigned for the current term.
+            {ftlStatus
+              ? "No classes assigned for this term."
+              : "No teaching load snapshot is available for this term."}
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {classes.map((classItem) => (
-              <div
+              <Card
                 key={classItem.id}
                 className="border border-border rounded-lg p-3 flex flex-col gap-2"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold">{classItem.course_code}</p>
-                    <p className="text-sm text-foreground/70">
+                <CardHeader className="flex flex-wrap items-start justify-between gap-2 px-0 border-b">
+                  <div className="flex flex-row gap-1">
+                    <p className="font-semibold">[{classItem.course_code}]</p>
+                    <p className="text-foreground/70">
                       {classItem.course_title}
                     </p>
                   </div>
-                  <p className="text-sm font-medium">
-                    Load: {toFixedLoad(classItem.load)}
-                  </p>
-                </div>
+                </CardHeader>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-foreground/70">
-                  <p>Section: {classItem.section_code}</p>
-                  <p>Campus: {classItem.campus_name}</p>
+                <div className="grid grid-cols-3 gap-2 text-sm text-foreground/70 font-medium">
+                  <div className="flex flex-row items-center gap-1">
+                    <UserRoundGroup /> <p>{classItem.section_code}</p>
+                  </div>
+                  <div className="flex flex-row items-center gap-1">
+                    <Landmark /> <p>{classItem.campus_name}</p>
+                  </div>
+                  <div className="flex flex-row items-center gap-1">
+                    <WeightTilde /> <p>{toFixedLoad(classItem.load)}</p>
+                  </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

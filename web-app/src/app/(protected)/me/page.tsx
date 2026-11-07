@@ -1,14 +1,36 @@
+import {
+  getDefaultAcademicTermCached,
+  getTermsListCached,
+} from "@/features/admin/lib/terms-cached";
 import AssignedClassesCard from "@/features/profile/components/me/overview/assigned-classes-card";
 import DesignationListCard from "@/features/profile/components/me/overview/designation-list-card";
 import UserSummaryCard from "@/features/profile/components/me/overview/user-summary-card";
+import TermSwitcher from "@/features/shared/components/pickers/term-switcher";
 import WorkingLoadMetrics from "@/features/shared/components/user/working-load-metrics";
 import { getCurrentUserOverview } from "@/features/profile/lib/user-overview";
 import { cn } from "@/utils/style";
 
 import { redirect } from "next/navigation";
 
-const MePage = async () => {
-  const userOverview = await getCurrentUserOverview();
+type MePageProps = {
+  searchParams: Promise<{
+    academic_term_id?: string | string[];
+  }>;
+};
+
+const MePage = async ({ searchParams }: MePageProps) => {
+  const { academic_term_id: termParam } = await searchParams;
+  const requestedTermId = Array.isArray(termParam) ? termParam[0] : termParam;
+  const [terms, defaultTerm] = await Promise.all([
+    getTermsListCached(),
+    getDefaultAcademicTermCached(),
+  ]);
+  const selectedTerm =
+    terms.find((term) => term.id === requestedTermId) ??
+    defaultTerm ??
+    terms[0] ??
+    null;
+  const userOverview = await getCurrentUserOverview(selectedTerm?.id);
 
   if (!userOverview) {
     redirect("/auth/login");
@@ -25,10 +47,22 @@ const MePage = async () => {
       <UserSummaryCard userOverview={userOverview} />
 
       <div className="2xl:col-span-2 space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-medium">Academic Term</h2>
+          <TermSwitcher
+            terms={terms}
+            selectedTermId={selectedTerm?.id}
+            routeConfig={{ mode: "query", paramName: "academic_term_id" }}
+            description="View your assigned classes and teaching load for an academic term."
+            buttonClassName="w-full min-w-0 bg-background sm:w-auto sm:max-w-full"
+          />
+        </div>
+
         <WorkingLoadMetrics
           designationLoad={userOverview.designationLoad}
           actualTeachingLoad={userOverview.actualTeachingLoad}
           totalWorkingLoad={userOverview.totalWorkingLoad}
+          isAvailable={userOverview.ftlStatus !== null}
           size="Large"
         />
 

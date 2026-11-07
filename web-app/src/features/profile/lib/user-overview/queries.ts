@@ -13,7 +13,7 @@ const fullOverviewOptions: UserDataOptions = {
   includeDesignations: true,
   includeClasses: true,
   includeLoads: true,
-  useSnapshotClasses: true,
+  useSnapshotLoads: true,
 };
 
 export const getUserOverviewById = async (
@@ -21,12 +21,16 @@ export const getUserOverviewById = async (
 ): Promise<UserOverviewReadModel | null> =>
   getUserDataById(userId, fullOverviewOptions);
 
-export const getCurrentUserOverview =
-  async (): Promise<UserOverviewReadModel | null> => {
-    const currentUser = await getCurrentUser();
-    if (!currentUser) return null;
-    return getUserDataById(currentUser.id, fullOverviewOptions);
-  };
+export const getCurrentUserOverview = async (
+  academicTermId?: string,
+): Promise<UserOverviewReadModel | null> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return null;
+  return getUserDataById(currentUser.id, {
+    ...fullOverviewOptions,
+    academicTermId,
+  });
+};
 
 export const getUserOverviewList = async (): Promise<
   UserOverviewListItem[]
