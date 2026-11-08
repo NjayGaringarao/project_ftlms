@@ -99,9 +99,11 @@ export function SidebarNav() {
         onOpenChange={setIsConfirmLogoutOpen}
         variant="floating-small"
         title="Confirm Logout"
-        description="You can login anytime but unsaved changes will be lost."
-        contentClassName="p-4"
+        contentClassName="p-4 flex flex-col gap-4"
       >
+        <p className="text-base text-foreground/90">
+          You can login anytime but unsaved changes will be lost.
+        </p>
         <form
           action="/auth/logout"
           method="post"
