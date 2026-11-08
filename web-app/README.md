@@ -20,6 +20,46 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Authentication email redirects
+
+Configure the deployed app origin, including `https://`, in Railway:
+
+```dotenv
+SITE_URL=https://your-app-name.up.railway.app
+NEXT_PUBLIC_SITE_URL=https://your-app-name.up.railway.app
+```
+
+`SITE_URL` is a server-only runtime override for email callbacks.
+`NEXT_PUBLIC_SITE_URL` is the fallback and must be present during the Next.js
+build if no runtime override is used. A bare hostname is normalized to HTTPS,
+but missing or invalid configuration prevents an email from being sent with a
+broken callback.
+
+In Supabase **Authentication → URL Configuration**, set **Site URL** to the same
+absolute app origin and add these exact **Redirect URLs** (replace the host):
+
+```text
+https://your-app-name.up.railway.app/api/auth/change-email?next=%2Fme%2Fsecurity
+https://your-app-name.up.railway.app/api/auth/confirm?next=%2Fhome
+https://your-app-name.up.railway.app/api/auth/reset-password?next=%2Fauth%2Fupdate-password
+```
+
+The standard Change Email Address template can keep its
+`{{ .ConfirmationURL }}` link. If a custom template uses a direct token-hash link,
+point it at your app's `/api/auth/change-email` endpoint with
+`token_hash={{ .TokenHash }}`, `type=email_change`, and `next=/me/security`.
+The callback handles both that format and Supabase's PKCE `code` format.
+
+With secure email change enabled, the first confirmed inbox shows a pending
+message; the second completes the change. Open PKCE links in the same browser
+that requested the change, since it holds the verifier cookie. After correcting
+URLs, submit a fresh email-change request and use the latest email in each inbox.
+Expired, already-used, or replaced links cannot be repaired by changing the URLs.
+
+References: [Supabase redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls),
+[email templates](https://supabase.com/docs/guides/auth/auth-email-templates), and
+[related missing-scheme issue](https://github.com/supabase/supabase-flutter/issues/327#issuecomment-1379715830).
+
 ## Puppeteer Setup (Vercel, Railway, and Next.js 16)
 
 This app is configured to run Puppeteer in a Next.js App Router route handler with a bundled Chromium setup:

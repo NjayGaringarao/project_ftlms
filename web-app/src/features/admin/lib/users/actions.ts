@@ -5,6 +5,7 @@ import { createClient as createAdminClient } from "@/utils/supabase/admin";
 import { Identity } from "@/features/shared/types/models/identity";
 import { revalidatePath } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { getAuthRedirectUrl } from "@/features/auth/lib/redirects";
 
 type CreateUserInput = {
   email: string;
@@ -93,6 +94,13 @@ export async function createUser(
   if (!input.campus_id?.trim()) return { error: "Campus is required" };
   if (!input.college_id?.trim()) return { error: "College is required" };
 
+  let emailRedirectTo: string | undefined;
+  if (input.is_admin) {
+    const callback = getAuthRedirectUrl("/api/auth/confirm", "/home");
+    if ("error" in callback) return callback;
+    emailRedirectTo = callback.url;
+  }
+
   // Create admin client for user creation
   const adminClient = await createAdminClient();
 
@@ -112,7 +120,7 @@ export async function createUser(
         email: input.email.trim(),
         password: input.password.trim(),
         options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/confirm?next=/home`,
+          emailRedirectTo,
           data: {
             user_role: "ADMIN",
           },
