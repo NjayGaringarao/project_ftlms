@@ -32,6 +32,7 @@ export type SchedulerMatricesResult = {
   section: SchedulerMatrixSession[];
   faculty: SchedulerMatrixSession[];
   room: SchedulerMatrixSession[];
+  error?: string;
 };
 
 type RawClassCourseRow = {
@@ -649,7 +650,12 @@ export const getSchedulerMapperMatrices = async (
 
   if (error) {
     console.error("lib.schedule.mapper.getSchedulerMapperMatrices ::", error);
-    return { section: [], faculty: [], room: [] };
+    return {
+      section: [],
+      faculty: [],
+      room: [],
+      error: "Unable to load schedules. Please try again.",
+    };
   }
 
   const payload = (data ?? {}) as {

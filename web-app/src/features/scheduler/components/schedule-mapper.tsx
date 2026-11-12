@@ -1389,25 +1389,37 @@ const ScheduleMapper = ({ academic_term_id }: ScheduleMapperProps) => {
         defaultCampusId={selectedSection?.campus_id ?? null}
       />
 
-      <ConfirmScheduleDialog
-        open={confirmOpen}
-        onOpenChange={(open) => {
-          setConfirmOpen(open);
-          if (!open) {
-            setPendingRange(null);
+      {confirmOpen ? (
+        <ConfirmScheduleDialog
+          key={`${academic_term_id}:${movingSession ? movingSession.faculty_id : selectedFacultyId}`}
+          open={confirmOpen}
+          academicTermId={academic_term_id}
+          facultyId={movingSession ? movingSession.faculty_id : selectedFacultyId}
+          facultyName={
+            movingSession
+              ? movingSession.faculty_name
+              : selectedFaculty?.name ?? null
           }
-        }}
-        pendingRange={pendingRange}
-        timeSlots={timeSlots}
-        sessionType={sessionType}
-        selectedSection={selectedSection}
-        selectedOffering={selectedOffering}
-        selectedFaculty={selectedFaculty}
-        selectedRoom={selectedRoom}
-        errorMessage={dragError}
-        isSaving={isSaving}
-        onConfirm={handleConfirmSchedule}
-      />
+          excludeSessionId={
+            pendingRange?.mode === "move" ? movingSession?.session_id : null
+          }
+          onOpenChange={(open) => {
+            setConfirmOpen(open);
+            if (!open) {
+              setPendingRange(null);
+            }
+          }}
+          pendingRange={pendingRange}
+          timeSlots={timeSlots}
+          sessionType={sessionType}
+          selectedSection={selectedSection}
+          selectedOffering={selectedOffering}
+          selectedRoom={selectedRoom}
+          errorMessage={dragError}
+          isSaving={isSaving}
+          onConfirm={handleConfirmSchedule}
+        />
+      ) : null}
     </SchedulerProvider>
   );
 };

@@ -43,6 +43,7 @@ const getFacultySummaryRow = (faculty: CampusCollegeLoadSnapshotFaculty) => {
     equivalent_teaching_load: equivalentTeachingLoad,
     actual_teaching_load: actualTeachingLoad,
     total_working_load: totalWorkingLoad,
+    load_status: totalWorkingLoad >= 21 ? "Overload" : "Underload",
   };
 };
 
@@ -117,7 +118,7 @@ export const FacultyLoadTable = ({
       </div>
 
         <div className="hidden overflow-x-auto rounded-md border md:block">
-          <table className="min-w-245 w-full text-sm">
+          <table className="min-w-275 w-full text-sm">
             <thead className="bg-slate-100 text-left text-xs uppercase text-slate-700">
               <tr>
                 <th className="w-12 px-3 py-2 text-center">No.</th>
@@ -130,12 +131,13 @@ export const FacultyLoadTable = ({
                 <th className="px-3 py-2 text-right">Equivalent Units</th>
                 <th className="px-3 py-2 text-right">ATL</th>
                 <th className="px-3 py-2 text-right">TWL</th>
+                <th className="px-3 py-2 whitespace-nowrap">Load Status</th>
               </tr>
             </thead>
             {groups.map((group) => (
               <tbody key={group.status}>
                 <tr className="border-t bg-slate-50">
-                  <td colSpan={10} className="px-3 py-2 font-medium">
+                  <td colSpan={11} className="px-3 py-2 font-medium">
                     {group.status}
                   </td>
                 </tr>
@@ -169,6 +171,9 @@ export const FacultyLoadTable = ({
                       <td className="px-3 py-2 text-right">
                         {formatNumber(row.total_working_load)}
                       </td>
+                      <td className="px-3 py-2 font-medium whitespace-nowrap">
+                        {row.load_status}
+                      </td>
                     </tr>
                   );
                 })}
@@ -195,9 +200,12 @@ export const FacultyLoadTable = ({
                         {row.designation_summary}
                       </p>
                     </div>
-                    <p className="text-right text-sm font-semibold">
-                      TWL {formatNumber(row.total_working_load)}
-                    </p>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">
+                        TWL {formatNumber(row.total_working_load)}
+                      </p>
+                      <p className="text-xs font-medium">{row.load_status}</p>
+                    </div>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     <p>ETL: {formatNumber(row.equivalent_teaching_load)}</p>
